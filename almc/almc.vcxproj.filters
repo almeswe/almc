@@ -18,7 +18,7 @@
     <ClCompile Include="main.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="list.h">
+    <ClCompile Include="sb.h">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
