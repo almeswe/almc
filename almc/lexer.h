@@ -3,31 +3,24 @@
 #include <ctype.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include "sbuffer.h"
 
-//todo: is needed?
+//todo: is needed?	
 #ifndef LEXER_STREAM_MACROS
 #define LEXER_STREAM_MACROS
 
 #define get__next_char_cstream(lex) (*(++lex->char_stream))
 #define get__next_char_fstream(lex) (fgetc(lex->file_stream))
+#define get__next_char(lex) ((lex->type == STREAM_FILE) ? get__next_char_fstream(lex) : get__next_char_cstream(lex))
+
 #define get__curr_char_cstream(lex) (*lex->char_stream)
-#define get__curr_char_fstream(lex) (getc(lex->file_stream))
+#define get__curr_char_fstream(lex) (fseek(lex->file_stream, 0, SEEK_CUR))
 
 #define get_curr_char(lex) ((lex->type == STREAM_FILE) ? get__curr_char_fstream(lex) : get__curr_char_cstream(lex))
-#define get_next_char(lex) ((lex->type == STREAM_FILE) ? get__next_char_fstream(lex) : get__next_char_cstream(lex))
 #define is_stream_empty(lex) ((lex->type == STREAM_FILE) ? (feof(lex->file_stream)) : (*lex->char_stream == '\0'))
 
 #endif
-
-/*static char* keywords[6] = {
-	"sizeof",
-	"typeof",
-	"for",
-	"if",
-	"void",
-	"int"
-};*/
 
 typedef enum
 {
@@ -47,8 +40,8 @@ typedef struct
 {
 	union
 	{
-		char char_value;
 		uint64_t int_value;
+		const char* op_value;
 		const char* idnt_value;
 	};
 	TokenType type;
@@ -83,6 +76,12 @@ SrcContext* src_context_new(const char* file, size_t sym, size_t size, size_t li
 
 Token* lexer_get_tokens(Lexer* lex);
 
+void multi_line_comment(Lexer* lex);
+void single_line_comment(Lexer* lex);
+
+char get_next_char(Lexer* lex);
 Token* get_next_token();
 Token* get_num_token(Lexer* lex);
 Token* get_idnt_token(Lexer* lex);
+
+int fgetc_ext(FILE* file);
