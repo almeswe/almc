@@ -23,7 +23,9 @@ typedef struct Buffer
 #define sbuffer_add(buf, item) (sbuffer__fit(buf), (buf)[sbuffer__len(buf)++] = (item))
 #define sbuffer_pop(buf) ((buf) ? (sbuffer__len(buf) > 0 ? sbuffer__len(buf)-- : 0) : 0)
 #define sbuffer_free(buf) ((buf) ? free(sbuffer__hdr(buf)) : 0)
+#define sbuffer_rdc(buf, by) sbuffer_reduce(buf, by, sizeof(*buf));
 
 #endif
 
 void* sbuffer__extend(const void* buffer, const size_t typesize);
+void* sbuffer_reduce(const void* buffer, const size_t by_size, const size_t typesize);

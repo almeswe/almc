@@ -9,3 +9,14 @@ void* sbuffer__extend(const void* buffer, const size_t typesize)
 	hdr->cap = new_cap;
 	return hdr->buffer;
 }
+
+void* sbuffer_reduce(const void* buffer, const size_t by_size, const size_t typesize)
+{
+	if (by_size > 0 && by_size <= sbuffer_len(buffer))
+	{
+		Buffer* new_buffer = realloc(sbuffer__hdr(buffer), offsetof(Buffer, buffer) + by_size * typesize);
+ 		new_buffer->cap = sbuffer_len(new_buffer->buffer);
+		buffer = new_buffer->buffer;
+	}
+	return buffer;
+}
