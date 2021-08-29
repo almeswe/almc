@@ -1,6 +1,14 @@
+#ifndef STRETCHY_BUFFERS_H
+#define STRETCHY_BUFFERS_H
+
 #include <stdlib.h>
 
-typedef struct Buffer Buffer;
+typedef struct Buffer
+{
+	size_t cap;
+	size_t len;
+	char buffer[0];
+} Buffer;
 
 #define sbuffer__hdr(buf) ((Buffer*)((char*)(buf) - offsetof(Buffer, buffer)))
 #define sbuffer__len(buf) sbuffer__hdr(buf)->len
@@ -16,4 +24,6 @@ typedef struct Buffer Buffer;
 #define sbuffer_pop(buf) ((buf) ? (sbuffer__len(buf) > 0 ? sbuffer__len(buf)-- : 0) : 0)
 #define sbuffer_free(buf) ((buf) ? free(sbuffer__hdr(buf)) : 0)
 
-void* sbuffer__extend(const char* buffer, const size_t typesize);
+#endif
+
+void* sbuffer__extend(const void* buffer, const size_t typesize);
