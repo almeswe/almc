@@ -11,21 +11,26 @@
 
 #define get__next_char_cstream(lex) (*(++lex->char_stream))
 #define get__next_char_fstream(lex) (fgetc(lex->file_stream))
-#define get__next_char(lex) ((lex->type == STREAM_FILE) ? get__next_char_fstream(lex) : get__next_char_cstream(lex))
+#define get__next_char(lex) ((lex->stream_type == STREAM_FILE) ? get__next_char_fstream(lex) : get__next_char_cstream(lex))
 
 #define get__curr_char_cstream(lex) (*lex->char_stream)
 #define get__curr_char_fstream(lex) (fgetc_ext(lex->file_stream))
 
 #define unget__curr_char_fstream(lex) (ungetc(get__curr_char_fstream(lex), lex->file_stream))
 #define unget__curr_char_cstream(lex) (--lex->char_stream)
+#define unget__curr_char(lex) ((lex->stream_type == STREAM_FILE) ? unget__curr_char_fstream(lex) : unget__curr_char_cstream(lex))
 
-#define get_curr_char(lex) ((lex->type == STREAM_FILE) ? get__curr_char_fstream(lex) : get__curr_char_cstream(lex))
-//TODO: process needed (like in get_next_char)
-#define unget__curr_char(lex) ((lex->type == STREAM_FILE) ? unget__curr_char_fstream(lex) : unget__curr_char_cstream(lex))
+#define get_curr_char(lex) ((lex->stream_type == STREAM_FILE) ? get__curr_char_fstream(lex) : get__curr_char_cstream(lex))
 
-#define is_stream_empty(lex) ((lex->type == STREAM_FILE) ? (feof(lex->file_stream)) : (*lex->char_stream == '\0'))
+#define is_stream_empty(lex) ((lex->stream_type == STREAM_FILE) ? (feof(lex->file_stream)) : (*lex->char_stream == '\0'))
+#define close_stream(lex) ((lex->stream_type == STREAM_FILE) ? (fclose(lex->file_stream)) : (free(lex->char_stream)))
 
 #define matchc(lex, ch) (get_curr_char(lex) == ch)
+#define matchc_in(lex, c1, c2) ((get_curr_char(lex)) >= (c1) && (get_curr_char(lex)) <= (c2))
+
+//todo: remove assert here
+#define check_overflow() ((value < prev_value) ? assert(!"Overflow occured!") : assert(1)), (prev_value = value)
+#define get_token_not_in_dec_format(lex) (matchc(lex, 'x') ? get_hex_num_token(lex) : get_bin_num_token(lex))
 //#define matcht(lex, type) (g)
 
 #endif
@@ -140,10 +145,9 @@ typedef struct
 {
 	union
 	{
-		uint64_t int_value;
-		double float_value;
-		const char* op_value;
-		const char* idnt_value;
+		double fvalue;
+		uint64_t ivalue;
+		const char* str_value;
 	};
 	TokenType type;
 	SrcContext* context;
@@ -157,13 +161,21 @@ typedef enum
 
 typedef struct
 {
+	size_t prev_line;
+	size_t prev_line_offset;
+} LexerBackupData;
+
+typedef struct
+{
 	Token* tokens;
 	uint32_t token_index;
 
 	uint32_t curr_line;
 	uint32_t curr_line_offset;
 
-	InputStreamType type;
+	LexerBackupData backup;
+
+	InputStreamType stream_type;
 	union
 	{
 		FILE* file_stream;
@@ -183,8 +195,12 @@ void single_line_comment(Lexer* lex);
 char get_next_char(Lexer* lex);
 void unget_curr_char(Lexer* lex);
 Token* get_next_token();
-Token* get_inum_token(Lexer* lex);
-Token* get_fnum_token(Lexer* lex, uint64_t base_inum, size_t size);
+Token* get_dec_num_token(Lexer* lex);
+Token* get_bin_num_token(Lexer* lex);
+Token* get_hex_num_token(Lexer* lex);
+Token* get_dec_fnum_token(Lexer* lex, uint64_t base_inum, size_t size);
 Token* get_idnt_token(Lexer* lex);
-Token* get_char_token(Lexer* lex, int order);
+Token* get_char_token(Lexer* lex);
+Token* get_string_token(Lexer* lex);
+Token* get_keychar_token(Lexer* lex, int order);
 Token* get_keyword_token(Lexer* lex, int order);
