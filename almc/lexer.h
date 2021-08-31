@@ -16,23 +16,35 @@
 #define get__curr_char_cstream(lex) (*lex->char_stream)
 #define get__curr_char_fstream(lex) (fgetc_ext(lex->file_stream))
 
+#define unget__curr_char_fstream(lex) (ungetc(get__curr_char_fstream(lex), lex->file_stream))
+#define unget__curr_char_cstream(lex) (--lex->char_stream)
+
 #define get_curr_char(lex) ((lex->type == STREAM_FILE) ? get__curr_char_fstream(lex) : get__curr_char_cstream(lex))
+//TODO: process needed (like in get_next_char)
+#define unget__curr_char(lex) ((lex->type == STREAM_FILE) ? unget__curr_char_fstream(lex) : unget__curr_char_cstream(lex))
+
 #define is_stream_empty(lex) ((lex->type == STREAM_FILE) ? (feof(lex->file_stream)) : (*lex->char_stream == '\0'))
+
+#define matchc(lex, ch) (get_curr_char(lex) == ch)
+//#define matcht(lex, type) (g)
 
 #endif
 
+#define EXT_CHARS 19
+#define EXT_CHARS_IN_TOKEN_ENUM_OFFSET TOKEN_RIGHT_ANGLE + 1
+
+#define CHARS 25
+#define CHARS_IN_TOKEN_ENUM_OFFSET 0
+
 #define KEYWORDS 32
 #define KEYWORD_IN_TOKEN_ENUM_OFFSET TOKEN_IDNT + 1
-
-const char chars[];
-const char* keywords[];
 
 typedef enum
 {
 	TOKEN_PLUS,
 	TOKEN_DASH,
 	TOKEN_ASTERISK,
-	TOKEN_SLASH,
+	TOKEN_SLASH,	
 	TOKEN_MODULUS,
 	TOKEN_BAR,
 	TOKEN_TILDE,
@@ -46,7 +58,6 @@ typedef enum
 	TOKEN_ASSIGN,
 	TOKEN_QUESTION,
 	TOKEN_AMPERSAND,
-	TOKEN_APOSTROPHE,
 	TOKEN_CL_PAREN,
 	TOKEN_OP_PAREN,
 	TOKEN_CL_BRACKET,
@@ -56,7 +67,31 @@ typedef enum
 	TOKEN_LEFT_ANGLE,
 	TOKEN_RIGHT_ANGLE,
 
-	TOKEN_NUM,
+	TOKEN_ADD_ASSIGN,
+	TOKEN_SUB_ASSIGN,
+	TOKEN_MUL_ASSIGN,
+	TOKEN_DIV_ASSIGN,
+	TOKEN_MOD_ASSIGN,
+	TOKEN_LSHIFT_ASSIGN,
+	TOKEN_RSHIFT_ASSIGN,
+
+	TOKEN_BW_NOT_ASSIGN,
+	TOKEN_BW_OR_ASSIGN,
+	TOKEN_BW_AND_ASSIGN,
+	TOKEN_BW_XOR_ASSIGN,
+
+	TOKEN_LG_OR,
+	TOKEN_LG_NEQ,
+	TOKEN_LG_EQ,
+	TOKEN_LG_AND,
+	
+	TOKEN_LSHIFT,
+	TOKEN_RSHIFT,
+	TOKEN_INC,
+	TOKEN_DEC,	
+
+	TOKEN_INUM,
+	TOKEN_FNUM,
 	TOKEN_IDNT,
 
 	TOKEN_KEYWORD_AUTO,
@@ -146,7 +181,10 @@ void multi_line_comment(Lexer* lex);
 void single_line_comment(Lexer* lex);
 
 char get_next_char(Lexer* lex);
+void unget_curr_char(Lexer* lex);
 Token* get_next_token();
-Token* get_num_token(Lexer* lex);
+Token* get_inum_token(Lexer* lex);
+Token* get_fnum_token(Lexer* lex, uint64_t base_inum, size_t size);
 Token* get_idnt_token(Lexer* lex);
+Token* get_char_token(Lexer* lex, int order);
 Token* get_keyword_token(Lexer* lex, int order);
