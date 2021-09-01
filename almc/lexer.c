@@ -1,7 +1,7 @@
 #include "lexer.h"
 #include <assert.h>
 
-//TODO: add match (macro or function) for chars & tokens (for future)
+//TODO: try to fix oct integers overflow
 
 const char chars[] = {
 	'+',
@@ -135,7 +135,7 @@ Token* lexer_get_tokens(Lexer* lex)
 	{
 		curr_char = get_curr_char(lex);
 		if (isdigit(curr_char))
-			sbuffer_add(tokens, *get_dec_num_token(lex));
+			sbuffer_add(tokens, *get_num_token(lex));
 		else if (isidnt(curr_char))
 			sbuffer_add(tokens, *get_idnt_token(lex));
 		else if (isknch(curr_char) >= 0)
@@ -226,37 +226,89 @@ Token* get_next_token()
 	return NULL;
 }
 
-int is_not_decimal(Lexer* lex)
+int get_tokens_format(Lexer* lex)
 {
 	if (matchc(lex, '0'))
 	{
-		get_next_char(lex);
-		if (matchc(lex, 'x') || matchc(lex, 'b'))
-			return 1;
-		else
+		char c = get_next_char(lex);
+		switch (tolower(get_curr_char(lex)))
+		{
+		case 'x':
+			return FORMAT_HEX;
+		case 'o':
+			return FORMAT_OCT;
+		case 'b':
+			return FORMAT_BIN;
+		default:
 			unget_curr_char(lex);
+			return FORMAT_DEC;
+		}
+		//todo: remove assert here
+		assert(!"This format is not supported!");
+		return -1;
 	}
-	return 0;
+	return FORMAT_DEC;
+}
+
+Token* get_num_token(Lexer* lex)
+{
+	switch (get_tokens_format(lex))
+	{
+	case FORMAT_BIN:
+		return get_bin_num_token(lex);
+	case FORMAT_OCT:
+		return get_oct_num_token(lex);
+	case FORMAT_HEX:
+		return get_hex_num_token(lex);
+	case FORMAT_DEC:
+		return get_dec_num_token(lex);
+	}
+	assert(!"Token format is not supported!");
+	return NULL;
 }
 
 //TODO: refactor this two functions
 Token* get_hex_num_token(Lexer* lex)
 {
-	size_t size = 2;
+	uint32_t size = 2;
 	uint64_t value = 0;
-	uint64_t prev_value = 0;
-	const int base = 16;
+	add_init_vars(value);
+	sft_init_vars(16, 16);
 
 	while (isdigit_hex(get_next_char(lex)))
 	{
-		value *= base;
+		sft_zero_check(get_curr_char(lex));
+		sft_with_overflow(value);
 		if (matchc_in(lex, '0', '9'))
-			value += get_curr_char(lex) - '0';
+			add_with_overflow(value, get_curr_char(lex) - '0');
 		else if (matchc_in(lex, 'a', 'f'))
-			value += get_curr_char(lex) - 'a' + 10;
+			add_with_overflow(value, get_curr_char(lex) - 'a' + 10);
 		else if (matchc_in(lex, 'A', 'F'))
-			value += get_curr_char(lex) - 'A' + 10;
-		check_overflow();
+			add_with_overflow(value, get_curr_char(lex) - 'A' + 10);
+		size++;
+	}
+
+	Token* token = token_new(TOKEN_INUM,
+		src_context_new("undefined", lex->curr_line_offset, size, lex->curr_line));
+	token->ivalue = value;
+	return token;
+}
+
+Token* get_oct_num_token(Lexer* lex)
+{
+	//todo: use standart types from stdint.h
+	uint32_t size = 2;
+	uint64_t value = 0;
+	add_init_vars(value);
+	sft_init_vars(22, 8);
+
+	// value / prev_value > base
+
+	while (isdigit_oct(get_next_char(lex)))
+	{
+		sft_zero_check(get_curr_char(lex));
+		sft_with_overflow(value);
+		add_with_overflow(value, get_curr_char(lex) - '0');
 		size++;
 	}
 
@@ -268,16 +320,16 @@ Token* get_hex_num_token(Lexer* lex)
 
 Token* get_bin_num_token(Lexer* lex)
 {
-	size_t size = 2;
+	uint32_t size = 2;
 	uint64_t value = 0;
-	uint64_t prev_value = 0;
-	const int base = 2;
+	add_init_vars(value);
+	sft_init_vars(64, 2);
 
 	while (isdigit_bin(get_next_char(lex)))
 	{
-		value *= base;
-		value += get_curr_char(lex) - '0';
-		check_overflow();
+		sft_zero_check(get_curr_char(lex));
+		sft_with_overflow(value);
+		add_with_overflow(value, get_curr_char(lex) - '0');
 		size++;
 	}
 
@@ -289,22 +341,19 @@ Token* get_bin_num_token(Lexer* lex)
 
 Token* get_dec_num_token(Lexer* lex)
 {
-	size_t size = 1; 
-	const int base = 10;
+	uint32_t size = 1; 
 	uint64_t value = get_curr_char(lex) - '0';
-	uint64_t prev_value = value;
-
-	if (is_not_decimal(lex))
-		return get_token_not_in_dec_format(lex);
+	add_init_vars(value);
+	sft_init_vars(19, 10);
+	sft_zero_check(get_curr_char(lex));
 
 	while (isdigit_ext(get_next_char(lex)))
 	{
-		//todo: int32 and int64 token support
 		if (matchc(lex, '.'))
 			return get_dec_fnum_token(lex, value, size);
-		value *= base;
-		value += get_curr_char(lex) - '0';
-		check_overflow();
+		sft_zero_check(get_curr_char(lex));
+		sft_with_overflow(value);
+		add_with_overflow(value, get_curr_char(lex) - '0');
 		size++;
 	}
 
@@ -326,7 +375,6 @@ Token* get_dec_fnum_token(Lexer* lex, uint64_t base_inum, size_t size)
 		scalar /= 10;
 		size++;
 	}
-	//it means that after dot was no any char
 	//todo: resolve this, idk if its needed (i mean check for any digits after dot)
 	//if (scalar == 0.1)
 	//	assert(0);
@@ -443,6 +491,11 @@ inline int isdigit_hex(char ch)
 {
 	return isdigit(ch) || 
 		((ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F'));
+}
+inline int isdigit_oct(char ch)
+{
+	return isdigit(ch) ||
+		(ch >= '0' && ch <= '7');
 }
 inline int isdigit_bin(char ch)
 {

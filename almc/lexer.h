@@ -28,16 +28,21 @@
 #define matchc(lex, ch) (get_curr_char(lex) == ch)
 #define matchc_in(lex, c1, c2) ((get_curr_char(lex)) >= (c1) && (get_curr_char(lex)) <= (c2))
 
-//todo: remove assert here
-#define check_overflow() ((value < prev_value) ? assert(!"Overflow occured!") : assert(1)), (prev_value = value)
-#define get_token_not_in_dec_format(lex) (matchc(lex, 'x') ? get_hex_num_token(lex) : get_bin_num_token(lex))
-//#define matcht(lex, type) (g)
+//todo: remove assert
+#define int_overflow(none) assert(!"Integer size is too large!")
+
+// Initializes all needed variables for sft_with_overflow macro 
+#define sft_init_vars(max_sfts, format) char shifts = 0; char max_shifts = max_sfts; const char base = format; char met = 0
+#define sft_zero_check(ch) (!met && ch == '0' ? max_shifts++ : met++)
+#define sft_with_overflow(a) shifts++, ((shifts <= max_shifts) ? a = a * base : int_overflow())
+#define add_init_vars(a) uint64_t prev_value = a
+#define add_with_overflow(a, b) ((a <= (ULLONG_MAX - (b)) && (a >= prev_value)) ? (a = a + (b), prev_value = a) : int_overflow())
 
 #endif
 
 #define EXT_CHARS 19
 #define EXT_CHARS_IN_TOKEN_ENUM_OFFSET TOKEN_RIGHT_ANGLE + 1
-
+	
 #define CHARS 25
 #define CHARS_IN_TOKEN_ENUM_OFFSET 0
 
@@ -133,6 +138,14 @@ typedef enum
 	TOKEN_KEYWORD_ELSE,
 } TokenType;
 
+typedef enum
+{
+	FORMAT_DEC,
+	FORMAT_BIN,
+	FORMAT_OCT,
+	FORMAT_HEX,
+} NumericFormat;
+
 typedef struct
 {
 	size_t size;
@@ -195,10 +208,15 @@ void single_line_comment(Lexer* lex);
 char get_next_char(Lexer* lex);
 void unget_curr_char(Lexer* lex);
 Token* get_next_token();
-Token* get_dec_num_token(Lexer* lex);
+
+int get_tokens_format(Lexer* lex);
+Token* get_num_token(Lexer* lex);
 Token* get_bin_num_token(Lexer* lex);
 Token* get_hex_num_token(Lexer* lex);
+Token* get_oct_num_token(Lexer* lex);
+Token* get_dec_num_token(Lexer* lex);
 Token* get_dec_fnum_token(Lexer* lex, uint64_t base_inum, size_t size);
+
 Token* get_idnt_token(Lexer* lex);
 Token* get_char_token(Lexer* lex);
 Token* get_string_token(Lexer* lex);
