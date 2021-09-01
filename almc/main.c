@@ -18,17 +18,24 @@ void lexer_test()
 	Lexer* lexer;
 	Token* tokens;
 	const char* stream;
-
+	
+	//18446744073709551615
+	lexer_test_case_init(lexer, tokens, STREAM_CHAR_PTR, "0xfffffffffffffffff");
+	
 	// number lexing test
-	lexer_test_case_init(lexer, tokens, STREAM_CHAR_PTR, "123 0b01010 0xAbCdEf 0.123 0xFFFFFFFFFFFFFFFF 0b1111111111111111111111111111111111111111111111111111111111111111 0x0 0b0");
-	assert(sbuffer_len(tokens) == 8);
-	assert(tokens[0].ivalue == 123);
-	assert(tokens[1].ivalue == 0b01010);
-	assert(tokens[2].ivalue == 0xabcdef);
-	assert(tokens[4].ivalue == ULLONG_MAX);
-	assert(tokens[5].ivalue == ULLONG_MAX);
-	assert(tokens[6].ivalue == 0);
-	assert(tokens[7].ivalue == 0);
+	lexer_test_case_init(lexer, tokens, STREAM_CHAR_PTR, "0X0 0B0 0O0 0o000123 0123 0b01010 0xAbCdEf 0.123 0x00000000FFFFFFFFFFFFFFFF 0o1777777777777777777777 0b1111111111111111111111111111111111111111111111111111111111111111 ");
+	assert(sbuffer_len(tokens) == 11);
+	assert(tokens[0].ivalue == 0);
+	assert(tokens[1].ivalue == 0);
+	assert(tokens[2].ivalue == 0);
+	assert(tokens[3].ivalue == 0123);
+	assert(tokens[4].ivalue == 123);
+	assert(tokens[5].ivalue == 0b01010);
+	assert(tokens[6].ivalue == 0xabcdef);
+	assert(tokens[8].ivalue == ULLONG_MAX);
+	assert(tokens[9].ivalue == ULLONG_MAX);
+	assert(tokens[10].ivalue == ULLONG_MAX);
+
 	//todo: occurs bug
 	//assert(tokens[3].ivalue == 0.123);
 	sbuffer_free(tokens);
@@ -37,7 +44,7 @@ void lexer_test()
 	lexer_test_case_init(lexer, tokens, STREAM_CHAR_PTR, " ^<< <<=\n ++\r -- != ) (= &&");
 	assert(sbuffer_len(tokens) == 10);
 	print_tokens(tokens);
-	sbuffer_free(tokens);
+ 	sbuffer_free(tokens);
 
 	// file + keywords test
 	lexer_test_case_init(lexer, tokens, STREAM_FILE, "C:\\Users\\HP\\source\\repos\\almc\\Debug\\test.txt");
