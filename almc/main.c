@@ -19,9 +19,34 @@ void lexer_test()
 	Token* tokens;
 	const char* stream;
 	
-	//18446744073709551615
-	lexer_test_case_init(lexer, tokens, STREAM_CHAR_PTR, "0xfffffffffffffffff");
+	// char lexing error tests
+	//todo: create more tests for char lexing, but probably its working well
+	//lexer_test_case_init(lexer, tokens, STREAM_CHAR_PTR, "\'nn\'");
+	//sbuffer_free(tokens);
+	//lexer_test_case_init(lexer, tokens, STREAM_CHAR_PTR, "\'\\e\' ");
+	//sbuffer_free(tokens);
+	//lexer_test_case_init(lexer, tokens, STREAM_CHAR_PTR, "\'e");
+	//sbuffer_free(tokens);
+	//----------------------------------------------------------------------
 	
+	// string lexing test
+	lexer_test_case_init(lexer, tokens, STREAM_CHAR_PTR, "\"hello world!\\n\" \"i like \\\'this\\\' word!\"");
+	assert(sbuffer_len(tokens) == 2);
+	assert(strcmp(tokens[0].str_value, "hello world!\n") == 0);
+	assert(strcmp(tokens[1].str_value, "i like \'this\' word!") == 0);
+	sbuffer_free(tokens);
+
+	// char lexing test
+	lexer_test_case_init(lexer, tokens, STREAM_CHAR_PTR, "\'n\' \'\\n\' \'\\f\' \'\\\\\' \'\\\'\' \'\\\"\'");
+	assert(sbuffer_len(tokens) == 6);
+	assert(tokens[0].char_value == 'n');
+	assert(tokens[1].char_value == '\n');
+	assert(tokens[2].char_value == '\f');
+	assert(tokens[3].char_value == '\\');
+	assert(tokens[4].char_value == '\'');
+	assert(tokens[5].char_value == '\"');
+	sbuffer_free(tokens);
+
 	// number lexing test
 	lexer_test_case_init(lexer, tokens, STREAM_CHAR_PTR, "0X0 0B0 0O0 0o000123 0123 0b01010 0xAbCdEf 0.123 0x00000000FFFFFFFFFFFFFFFF 0o1777777777777777777777 0b1111111111111111111111111111111111111111111111111111111111111111 ");
 	assert(sbuffer_len(tokens) == 11);
