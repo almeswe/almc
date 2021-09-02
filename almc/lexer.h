@@ -100,6 +100,8 @@ typedef enum
 	TOKEN_INC,
 	TOKEN_DEC,	
 
+	TOKEN_STRING,
+	TOKEN_CHARACTER,
 	TOKEN_INUM,
 	TOKEN_FNUM,
 	TOKEN_IDNT,
@@ -160,6 +162,7 @@ typedef struct
 	{
 		double fvalue;
 		uint64_t ivalue;
+		char char_value;
 		const char* str_value;
 	};
 	TokenType type;
@@ -222,3 +225,4 @@ Token* get_char_token(Lexer* lex);
 Token* get_string_token(Lexer* lex);
 Token* get_keychar_token(Lexer* lex, int order);
 Token* get_keyword_token(Lexer* lex, int order);
+char is_escape_sequence(Lexer* lex);

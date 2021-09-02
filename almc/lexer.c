@@ -136,6 +136,10 @@ Token* lexer_get_tokens(Lexer* lex)
 		curr_char = get_curr_char(lex);
 		if (isdigit(curr_char))
 			sbuffer_add(tokens, *get_num_token(lex));
+		else if (issquote(curr_char))
+			sbuffer_add(tokens, *get_char_token(lex));
+		else if (isdquote(curr_char))
+			sbuffer_add(tokens, *get_string_token(lex));
 		else if (isidnt(curr_char))
 			sbuffer_add(tokens, *get_idnt_token(lex));
 		else if (isknch(curr_char) >= 0)
@@ -230,7 +234,7 @@ int get_tokens_format(Lexer* lex)
 {
 	if (matchc(lex, '0'))
 	{
-		char c = get_next_char(lex);
+		get_next_char(lex);
 		switch (tolower(get_curr_char(lex)))
 		{
 		case 'x':
@@ -406,6 +410,49 @@ Token* get_idnt_token(Lexer* lex)
 	return token;
 }
 
+Token* get_char_token(Lexer* lex)
+{
+	char character;
+	char is_escape;
+
+	get_next_char(lex);
+	character = ((is_escape = is_escape_sequence(lex)) > 0) ?
+		is_escape : get_curr_char(lex);
+	get_next_char(lex);
+	if (!matchc(lex, '\''))
+		assert(!"Char should be placed in single quotes.");
+	//todo: is_escape ? 0 : 3 is correct??
+	Token* token = token_new(TOKEN_CHARACTER,
+		src_context_new("undefined", lex->curr_line_offset, is_escape > 0 ? 4 : 3, lex->curr_line));
+	token->char_value = character;
+	return token;
+}
+
+Token* get_string_token(Lexer* lex)
+{
+	char curr_char;
+	char is_escape;
+	char* str = NULL;
+	uint32_t size = 2;
+
+	while (isstrc(get_next_char(lex)))
+	{
+		curr_char = ((is_escape = is_escape_sequence(lex)) > 0) ?
+			is_escape : get_curr_char(lex);
+		sbuffer_add(str, curr_char);
+		size++;
+	}
+	if (!matchc(lex, '\"'))
+		assert(!"String must be bounded in double quotes.");
+	sbuffer_add(str, '\0');
+
+	Token* token = token_new(TOKEN_STRING,
+		src_context_new("undefined", lex->curr_line_offset, size, lex->curr_line));
+	sbuffer_rdc(str, size);
+	token->str_value = str;
+	return token;
+}
+
 Token* get_keychar_token(Lexer* lex, int order)
 {
 	#define appendc(c) index++, str[index-1] = c, str[index] = '\0'
@@ -479,6 +526,14 @@ int fgetc_ext(FILE* file)
 	return fgetc(file);
 }
 
+inline int issquote(char ch)
+{
+	return ch == '\'';
+}
+inline int isdquote(char ch)
+{
+	return ch == '\"';
+}
 inline int isidnt(char ch)
 {
 	return isalpha(ch) || ch == '_';
@@ -504,6 +559,12 @@ inline int isdigit_bin(char ch)
 inline int isdigit_ext(char ch)
 {
 	return isdigit(ch) || ch == '.';
+}
+inline int isstrc(char ch)
+{
+	//todo: probably add smth new
+	return ch != '\n' && ch != '\"'
+		&& ch != '\0' && ch != -1;
 }
 inline int isescape(const char ch)
 {
@@ -533,5 +594,38 @@ inline int iskeyword(const char* idnt)
 	for (int i = 0; i < KEYWORDS; i++)
 		if (strcmp(idnt, keywords[i]) == 0)
 			return i;
+	return -1;
+}
+
+char is_escape_sequence(Lexer* lex)
+{
+	if (matchc(lex, '\\'))
+	{
+		switch (get_next_char(lex))
+		{
+		case 'a':
+			return '\a';
+		case 'b':
+			return '\b';
+		case 'f':
+			return '\f';
+		case 'n':
+			return '\n';
+		case 'r':
+			return '\r';
+		case 't':
+			return '\t';
+		case 'v':
+			return '\v';
+		case '\\':
+			return '\\';
+		case '\'':
+			return '\'';
+		case '\"':
+			return '\"';
+		default:
+			unget_curr_char(lex);
+		}
+	}
 	return -1;
 }
