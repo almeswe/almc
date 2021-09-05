@@ -1,7 +1,9 @@
 #include "lexer.h"
 #include <assert.h>
 
-//TODO: try to fix oct integers overflow
+//TODO: incorrect offset while lexing program in global test
+//TODO: add exponent form to dec numbers
+//TODO: how to properly pass the context to errors with overflow
 
 const char chars[] = {
 	'+',
@@ -86,8 +88,6 @@ const char* keywords[] = {
 	"else",
 };
 
-//char* curr_lexer_file = NULL;
-
 Lexer* lexer_new(const char* src, InputStreamType type)
 {
 	Lexer* lex = malloc(sizeof(Lexer));
@@ -96,11 +96,13 @@ Lexer* lexer_new(const char* src, InputStreamType type)
 		case STREAM_FILE:
 		{
 			FILE* file = fopen(src, "rb+");
+			lex->curr_file = src;
 			lex->file_stream = file;
 			break;
 		}
 		case STREAM_CHAR_PTR:
 		{
+			lex->curr_file = "undefined";
 			lex->char_stream = src;
 			break;
 		}
@@ -117,48 +119,41 @@ Token* token_new(TokenType type, SrcContext* context)
 	t->context = context;
 	return t;
 }
-SrcContext* src_context_new(const char* file, size_t start, size_t size, size_t line)
-{
-	SrcContext* c = malloc(sizeof(SrcContext));
-	c->size = size;
-	c->file = file;
-	c->line = line;
-	c->start = start - size + 1;
-	return c;
-}
+
+#define get_last_token(lex) (lex->tokens[sbuffer_len(lex->tokens)-1])
 
 Token* lexer_get_tokens(Lexer* lex)
 {
 	char curr_char;
-	Token* tokens = NULL;
+	lex->tokens = NULL;
 	while (!is_stream_empty(lex))
 	{
 		curr_char = get_curr_char(lex);
 		if (isdigit(curr_char))
-			sbuffer_add(tokens, *get_num_token(lex));
+			sbuffer_add(lex->tokens, *get_num_token(lex));
 		else if (issquote(curr_char))
-			sbuffer_add(tokens, *get_char_token(lex));
+			sbuffer_add(lex->tokens, *get_char_token(lex));
 		else if (isdquote(curr_char))
-			sbuffer_add(tokens, *get_string_token(lex));
+			sbuffer_add(lex->tokens, *get_string_token(lex));
 		else if (isidnt(curr_char))
-			sbuffer_add(tokens, *get_idnt_token(lex));
+			sbuffer_add(lex->tokens, *get_idnt_token(lex));
 		else if (isknch(curr_char) >= 0)
-			sbuffer_add(tokens, *get_keychar_token(lex, isknch(curr_char)));
+			sbuffer_add(lex->tokens, *get_keychar_token(lex, isknch(curr_char)));
 		else
-			if (!isescape(curr_char) && !isspace(curr_char))
-				printf("This character [{'%c'} line: %d, pos: %d] is not supported by lexer!\n", get_curr_char(lex), lex->curr_line, lex->curr_line_offset);
+			if (!isspace(curr_char) && !isescape(curr_char))
+				report_error(frmt("Unknown char met (code: %d): [%c]", (int)get_curr_char(lex), get_curr_char(lex)),
+					src_context_new(lex->curr_file, lex->curr_line_offset, 1, lex->curr_line));
 		get_next_char(lex);
 	}	
-	if (lex->stream_type == STREAM_FILE)
-		fclose(lex->file_stream);
-	return lex->tokens = tokens;
+	close_stream(lex);
+	return lex->tokens;
 }
 
-//TODO: fix bug with position passed to token struct, which is changes here	
 void unget_curr_char(Lexer* lex)
 {
 	if (!is_stream_empty(lex))
 	{
+		unget__curr_char(lex);
 		switch (get_curr_char(lex))
 		{
 		case '\n':
@@ -174,7 +169,6 @@ void unget_curr_char(Lexer* lex)
 			lex->curr_line_offset--;
 			break;
 		}
-		unget__curr_char(lex);
 	}
 }
 char get_next_char(Lexer* lex)
@@ -196,7 +190,6 @@ char get_next_char(Lexer* lex)
 		case '\v': //???
 		case '\t':
 			break;
-		//todo: add escape chars support
 		//todo: comment logic occures bug with 
 		//todo: add preprocessor instead? 
 		case '/':
@@ -234,8 +227,7 @@ int get_tokens_format(Lexer* lex)
 {
 	if (matchc(lex, '0'))
 	{
-		get_next_char(lex);
-		switch (tolower(get_curr_char(lex)))
+		switch (tolower(get_next_char(lex)))
 		{
 		case 'x':
 			return FORMAT_HEX;
@@ -247,16 +239,14 @@ int get_tokens_format(Lexer* lex)
 			unget_curr_char(lex);
 			return FORMAT_DEC;
 		}
-		//todo: remove assert here
-		assert(!"This format is not supported!");
-		return -1;
 	}
 	return FORMAT_DEC;
 }
 
 Token* get_num_token(Lexer* lex)
 {
-	switch (get_tokens_format(lex))
+	int format = get_tokens_format(lex);
+	switch (format)
 	{
 	case FORMAT_BIN:
 		return get_bin_num_token(lex);
@@ -267,17 +257,17 @@ Token* get_num_token(Lexer* lex)
 	case FORMAT_DEC:
 		return get_dec_num_token(lex);
 	}
-	assert(!"Token format is not supported!");
+	report_error(frmt("Unknown format for number met (code: %d).", format), NULL);
 	return NULL;
 }
 
-//TODO: refactor this two functions
 Token* get_hex_num_token(Lexer* lex)
 {
 	uint32_t size = 2;
 	uint64_t value = 0;
 	add_init_vars(value);
 	sft_init_vars(16, 16);
+	SrcContext* context;
 
 	while (isdigit_hex(get_next_char(lex)))
 	{
@@ -291,22 +281,20 @@ Token* get_hex_num_token(Lexer* lex)
 			add_with_overflow(value, get_curr_char(lex) - 'A' + 10);
 		size++;
 	}
+	unget_curr_char(lex);
 
 	Token* token = token_new(TOKEN_INUM,
-		src_context_new("undefined", lex->curr_line_offset, size, lex->curr_line));
+		src_context_new(lex->curr_file, lex->curr_line_offset, size, lex->curr_line));
 	token->ivalue = value;
 	return token;
 }
 
 Token* get_oct_num_token(Lexer* lex)
 {
-	//todo: use standart types from stdint.h
 	uint32_t size = 2;
 	uint64_t value = 0;
 	add_init_vars(value);
 	sft_init_vars(22, 8);
-
-	// value / prev_value > base
 
 	while (isdigit_oct(get_next_char(lex)))
 	{
@@ -315,9 +303,13 @@ Token* get_oct_num_token(Lexer* lex)
 		add_with_overflow(value, get_curr_char(lex) - '0');
 		size++;
 	}
+	unget_curr_char(lex);
+	if (shifts == max_shifts)
+		report_warning("Integer overflow may occure. Check the max 64bit value for octal number.",
+			src_context_new(lex->curr_file, lex->curr_line_offset, size, lex->curr_line));
 
 	Token* token = token_new(TOKEN_INUM,
-		src_context_new("undefined", lex->curr_line_offset, size, lex->curr_line));
+		src_context_new(lex->curr_file, lex->curr_line_offset, size, lex->curr_line));
 	token->ivalue = value;
 	return token;
 }
@@ -336,9 +328,10 @@ Token* get_bin_num_token(Lexer* lex)
 		add_with_overflow(value, get_curr_char(lex) - '0');
 		size++;
 	}
+	unget_curr_char(lex);
 
 	Token* token = token_new(TOKEN_INUM,
-		src_context_new("undefined", lex->curr_line_offset, size, lex->curr_line));
+		src_context_new(lex->curr_file, lex->curr_line_offset, size, lex->curr_line));
 	token->ivalue = value;
 	return token;
 }
@@ -360,40 +353,42 @@ Token* get_dec_num_token(Lexer* lex)
 		add_with_overflow(value, get_curr_char(lex) - '0');
 		size++;
 	}
+	unget_curr_char(lex);
+	if (shifts == max_shifts)
+		report_warning("Integer overflow may occure. Check the max 64bit value for decimal number.", 
+			src_context_new(lex->curr_file, lex->curr_line_offset, size, lex->curr_line));
 
 	Token* token = token_new(TOKEN_INUM, 
-		src_context_new("undefined", lex->curr_line_offset, size, lex->curr_line));
+		src_context_new(lex->curr_file, lex->curr_line_offset, size, lex->curr_line));
 	token->ivalue = value;
 	return token;
 }
 
-Token* get_dec_fnum_token(Lexer* lex, uint64_t base_inum, size_t size)
+Token* get_dec_fnum_token(Lexer* lex, uint64_t base_inum, uint32_t size)
 {
 	double scalar = 0.1;
 	double float_value = (double)base_inum;
 
 	while (isdigit(get_next_char(lex)))
 	{
-		//todo: overflow check?
+		//todo: overflow check for float?
 		float_value += (scalar * (get_curr_char(lex) - '0'));
 		scalar /= 10;
 		size++;
 	}
-	//todo: resolve this, idk if its needed (i mean check for any digits after dot)
-	//if (scalar == 0.1)
-	//	assert(0);
-
+	unget_curr_char(lex);
+	
 	Token* token = token_new(TOKEN_FNUM,
-		src_context_new("undefined", lex->curr_line_offset, size, lex->curr_line));
+		src_context_new(lex->curr_file, lex->curr_line_offset, size, lex->curr_line));
 	token->fvalue = float_value;
 	return token;
 }
 
 Token* get_idnt_token(Lexer* lex)
 {
-	size_t size = 1;
+	Token* token;
+	uint32_t size = 1;
 	char* value = NULL;
-	Token* token = NULL;
 	sbuffer_add(value, get_curr_char(lex));
 
 	while (isidnt_ext(get_next_char(lex)))
@@ -402,10 +397,11 @@ Token* get_idnt_token(Lexer* lex)
 		size++;
 	}
 	sbuffer_add(value, '\0');
+	unget_curr_char(lex);
 
 	int order = iskeyword(value);
 	token = (order >= 0) ? get_keyword_token(lex, order) :
-		 token_new(TOKEN_IDNT, src_context_new("undefined", lex->curr_line_offset, size, lex->curr_line));
+		 token_new(TOKEN_IDNT, src_context_new(lex->curr_file, lex->curr_line_offset, size, lex->curr_line));
 	token->str_value = sbuffer_rdc(value, sbuffer_len(value));
 	return token;
 }
@@ -420,10 +416,11 @@ Token* get_char_token(Lexer* lex)
 		is_escape : get_curr_char(lex);
 	get_next_char(lex);
 	if (!matchc(lex, '\''))
-		assert(!"Char should be placed in single quotes.");
-	//todo: is_escape ? 0 : 3 is correct??
+		report_error(frmt("Expected single quote, but met (code %d): [%c]", (int)get_curr_char(lex), get_curr_char(lex)),
+			src_context_new(lex->curr_file, lex->curr_line_offset, is_escape > 0 ? 4 : 3, lex->curr_line));
+
 	Token* token = token_new(TOKEN_CHARACTER,
-		src_context_new("undefined", lex->curr_line_offset, is_escape > 0 ? 4 : 3, lex->curr_line));
+		src_context_new(lex->curr_file, lex->curr_line_offset, is_escape > 0 ? 4 : 3, lex->curr_line));
 	token->char_value = character;
 	return token;
 }
@@ -435,19 +432,20 @@ Token* get_string_token(Lexer* lex)
 	char* str = NULL;
 	uint32_t size = 2;
 
-	while (isstrc(get_next_char(lex)))
+	while (!is_stream_empty(lex) && isstrc(get_next_char(lex)))
 	{
 		curr_char = ((is_escape = is_escape_sequence(lex)) > 0) ?
 			is_escape : get_curr_char(lex);
 		sbuffer_add(str, curr_char);
-		size++;
+		size += (is_escape > 0) ? 2 : 1;
 	}
 	if (!matchc(lex, '\"'))
-		assert(!"String must be bounded in double quotes.");
+		report_error(frmt("Expected double quote, but met (code %d): [%c]", (int)get_curr_char(lex), get_curr_char(lex)),
+			src_context_new(lex->curr_file, lex->curr_line_offset, size, lex->curr_line));
 	sbuffer_add(str, '\0');
 
 	Token* token = token_new(TOKEN_STRING,
-		src_context_new("undefined", lex->curr_line_offset, size, lex->curr_line));
+		src_context_new(lex->curr_file, lex->curr_line_offset, size, lex->curr_line));
 	sbuffer_rdc(str, size);
 	token->str_value = str;
 	return token;
@@ -455,13 +453,14 @@ Token* get_string_token(Lexer* lex)
 
 Token* get_keychar_token(Lexer* lex, int order)
 {
+	//todo: local defines is good practice?
 	#define appendc(c) index++, str[index-1] = c, str[index] = '\0'
 	#define popc() index--, appendc('\0')  
 	#define single_char() (strlen(str) == 1)
 	char str[5];
-	int index = 0;
-	int found = 0;
-	int type = -1;
+	char found = 0;
+	int32_t index = 0;
+	int32_t type = -1;
 	appendc(chars[order]);
 
 	do
@@ -482,7 +481,7 @@ Token* get_keychar_token(Lexer* lex, int order)
 	unget_curr_char(lex);
 
 	Token* token = token_new(single_char() ? (order + CHARS_IN_TOKEN_ENUM_OFFSET) : type,
-		src_context_new("undefined", lex->curr_line_offset, strlen(str), lex->curr_line));
+		src_context_new(lex->curr_file, lex->curr_line_offset, strlen(str), lex->curr_line));
 	token->str_value = str;
 	return token;
 }
@@ -491,7 +490,7 @@ Token* get_keyword_token(Lexer* lex, int order)
 {
 	const char* keyword = keywords[order];
 	return token_new(order + KEYWORD_IN_TOKEN_ENUM_OFFSET,
-		src_context_new("undefined", lex->curr_line_offset, strlen(keyword), lex->curr_line));
+		src_context_new(lex->curr_file, lex->curr_line_offset, strlen(keyword), lex->curr_line));
 }
 
 void multi_line_comment(Lexer* lex)
@@ -515,7 +514,6 @@ void single_line_comment(Lexer* lex)
 	char curr = get_next_char(lex);
 	while (!is_stream_empty(lex) && !matchc(lex, '\n'))
 		curr = get_next_char(lex);
-	//todo: wrong
 	if (matchc(lex, '\n'))
 		get_next_char(lex);
 }
@@ -562,9 +560,7 @@ inline int isdigit_ext(char ch)
 }
 inline int isstrc(char ch)
 {
-	//todo: probably add smth new
-	return ch != '\n' && ch != '\"'
-		&& ch != '\0' && ch != -1;
+	return ch != '\n' && ch != '\"';
 }
 inline int isescape(const char ch)
 {
@@ -625,6 +621,7 @@ char is_escape_sequence(Lexer* lex)
 			return '\"';
 		default:
 			unget_curr_char(lex);
+			break;
 		}
 	}
 	return -1;
