@@ -2,11 +2,12 @@
 #define STRETCHY_BUFFERS_H
 
 #include <stdlib.h>
+#include <stdint.h>
 
 typedef struct Buffer
 {
-	size_t cap;
-	size_t len;
+	uint32_t cap;
+	uint32_t len;
 	char buffer[0];
 } Buffer;
 
@@ -27,5 +28,5 @@ typedef struct Buffer
 
 #endif
 
-void* sbuffer__extend(const void* buffer, const size_t typesize);
-void* sbuffer_reduce(const void* buffer, const size_t by_size, const size_t typesize);
+void* sbuffer__extend(const void* buffer, const uint32_t typesize);
+void* sbuffer_reduce(const void* buffer, const uint32_t by_size, const uint32_t typesize);
