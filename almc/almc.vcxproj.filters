@@ -9,9 +9,17 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    <Filter Include="Test Files">
+      <UniqueIdentifier>{d1c2f3a7-ddfb-4ae2-9359-879d37ae505a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Common Files">
+      <UniqueIdentifier>{a5b0cfba-2449-448c-8918-d3bcaab935df}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Common Files\Headers">
+      <UniqueIdentifier>{a8230b02-279c-4a2e-bdc7-eb1ce45a0973}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Common Files\Sources">
+      <UniqueIdentifier>{14cd7200-0ee0-4e67-9d9b-7a6c246053d0}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -21,16 +29,45 @@
     <ClCompile Include="lexer.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="test.h">
+      <Filter>Test Files</Filter>
+    </ClCompile>
+    <ClCompile Include="test.c">
+      <Filter>Test Files</Filter>
+    </ClCompile>
     <ClCompile Include="sbuffer.h">
-      <Filter>Header Files</Filter>
+      <Filter>Common Files\Headers</Filter>
+    </ClCompile>
+    <ClCompile Include="context.c">
+      <Filter>Common Files\Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="error.c">
+      <Filter>Common Files\Sources</Filter>
     </ClCompile>
     <ClCompile Include="sbuffer.c">
-      <Filter>Source Files</Filter>
+      <Filter>Common Files\Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="common.c">
+      <Filter>Common Files\Sources</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lexer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="common.h">
+      <Filter>Common Files\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="context.h">
+      <Filter>Common Files\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="error.h">
+      <Filter>Common Files\Headers</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="syntax.txt">
+      <Filter>Test Files</Filter>
+    </Text>
   </ItemGroup>
 </Project>
