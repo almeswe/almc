@@ -2,12 +2,17 @@
 
 char* frmt(const char* format, ...)
 {
+	int len;
+	char* buffer;
 	va_list args;
-	char buffer[1024];
+
 	va_start(args, format);
-	vsprintf_s(buffer, 1024, format, args);
+	len = _vscprintf(format, args) + 1;
+	buffer = newc_s(char, buffer, len);
+	if (NULL != buffer)
+		vsprintf_s(buffer, len, format, args);
 	va_end(args);
-	return (char*)buffer;
+	return buffer ? buffer : new(char);
 }
 
 char* strcatc(char* source, char ch)
