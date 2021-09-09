@@ -2,8 +2,8 @@
 
 #ifndef CONTEXT_H
 #define CONTEXT_H
-
-typedef struct
+ 
+typedef struct SrcContext
 {
 	uint32_t size;
 	uint32_t line;

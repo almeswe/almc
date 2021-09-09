@@ -1,6 +1,5 @@
 #include "error.h"
 
-//todo: add compiler sourse (lexer, parser ...)
 void report_warning(const char* message, SrcContext* context)
 {
 	printf("WARNING: %s,", message);
