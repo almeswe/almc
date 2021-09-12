@@ -3,17 +3,6 @@
 //TODO: lexer backup
 //TODO: mb refactor this macroses
 
-#define EXT_CHARS 19
-#define EXT_CHARS_IN_TOKEN_ENUM_OFFSET TOKEN_RIGHT_ANGLE + 1
-
-#define CHARS 25
-#define CHARS_IN_TOKEN_ENUM_OFFSET 0
-
-#define KEYWORDS 32
-#define KEYWORD_IN_TOKEN_ENUM_OFFSET TOKEN_IDNT + 1
-
-#define TOKEN_TYPE_STR(type) (type < (KEYWORDS + CHARS + EXT_CHARS) && type >= 0) ? tokens_str[type] : tokens_str[0]
-
 #define get__next_char_cstream(lex) (*(++lex->char_stream))
 #define get__next_char_fstream(lex) (fgetc(lex->file_stream))
 #define get__next_char(lex) ((lex->stream_type == STREAM_FILE) ? get__next_char_fstream(lex) : get__next_char_cstream(lex))
@@ -91,6 +80,7 @@ const char* ext_chars[] = {
 const char* keywords[] = {
 	"auto",
 	"break",
+	"cast",
 	"case",
 	"char",
 	"const",
@@ -103,11 +93,11 @@ const char* keywords[] = {
 	"for",
 	"goto",
 	"if",
-	"int",
-	"long",
+	"int32",
+	"int64",
 	"register",
 	"return",
-	"short",
+	"int16",
 	"signed",
 	"sizeof",
 	"static",
@@ -180,6 +170,7 @@ const char* tokens_str[] = {
 
 	"TOKEN_KEYWORD_AUTO",
 	"TOKEN_KEYWORD_BREAK",
+	"TOKEN_KEYWORD_CAST",
 	"TOKEN_KEYWORD_CASE",
 	"TOKEN_KEYWORD_CHAR",
 	"TOKEN_KEYWORD_CONST",
@@ -210,6 +201,7 @@ const char* tokens_str[] = {
 	"TOKEN_KEYWORD_WHILE",
 	"TOKEN_KEYWORD_DO",
 	"TOKEN_KEYWORD_ELSE",
+	"TOKEN_EOF",
 };
 
 Lexer* lexer_new(const char* src, InputStreamType type)
@@ -284,6 +276,7 @@ Token* lexer_get_tokens(Lexer* lex)
 		get_next_char(lex);
 	}	
 	close_stream(lex);
+	sbuffer_add(lex->tokens, *get_eof_token(lex));
 	return lex->tokens;
 }
 
@@ -372,6 +365,17 @@ int get_tokens_format(Lexer* lex)
 		}
 	}
 	return FORMAT_DEC;
+}
+
+Token* get_eof_token(Lexer* lex)
+{
+	//TODO: WOW CONTEXT ERROR!
+	SrcContext* prev_context = lex->tokens[sbuffer_len(lex->tokens) - 1].context;
+	SrcContext* new_context  = src_context_new(
+		prev_context->file, prev_context->start + prev_context->size, 1, prev_context->line);
+	Token* token = token_new(TOKEN_EOF, new_context);
+	token->str_value = "EOF";
+	return token;
 }
 
 Token* get_num_token(Lexer* lex)

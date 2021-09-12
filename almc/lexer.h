@@ -10,6 +10,22 @@
 #include "common.h"
 #include "sbuffer.h"
 
+#define EXT_CHARS 19
+#define EXT_CHARS_IN_TOKEN_ENUM_OFFSET TOKEN_RIGHT_ANGLE + 1
+
+#define CHARS 25
+#define CHARS_IN_TOKEN_ENUM_OFFSET 0
+
+#define KEYWORDS 33
+#define KEYWORD_IN_TOKEN_ENUM_OFFSET TOKEN_IDNT + 1
+
+#define TOKEN_TYPE_STR(type) (type < (KEYWORDS + CHARS + EXT_CHARS + 6) && type >= 0) ? tokens_str[type] : tokens_str[0]
+
+const char chars[];
+const char* keywords[];
+const char* ext_chars[];
+const char* tokens_str[];
+
 typedef enum TokenType
 {
 	TOKEN_PLUS,
@@ -69,6 +85,7 @@ typedef enum TokenType
 
 	TOKEN_KEYWORD_AUTO,
 	TOKEN_KEYWORD_BREAK,
+	TOKEN_KEYWORD_CAST,
 	TOKEN_KEYWORD_CASE,
 	TOKEN_KEYWORD_CHAR,
 	TOKEN_KEYWORD_CONST,
@@ -99,6 +116,7 @@ typedef enum TokenType
 	TOKEN_KEYWORD_WHILE,
 	TOKEN_KEYWORD_DO,
 	TOKEN_KEYWORD_ELSE,
+	TOKEN_EOF
 } TokenType;
 
 typedef enum NumericFormat
@@ -166,6 +184,7 @@ char get_next_char(Lexer* lex);
 void unget_curr_char(Lexer* lex);
 
 int get_tokens_format(Lexer* lex);
+Token* get_eof_token(Lexer* lex);
 Token* get_num_token(Lexer* lex);
 Token* get_bin_num_token(Lexer* lex);
 Token* get_hex_num_token(Lexer* lex);
