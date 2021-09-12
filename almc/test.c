@@ -3,8 +3,7 @@
 void print_tokens(Token* const tokens)
 {
 	for (int i = 0; i < sbuffer_len(tokens); i++)
-		printf("Token: %d, type: %s %s\n",
-			i + 1, TOKEN_TYPE_STR(tokens[i].type), src_context_tostr(tokens[i].context));
+		printf("%s\n", token_tostr(tokens + i));
 }
 
 void lexer_test()
@@ -81,8 +80,8 @@ void lexer_test()
 	sbuffer_free(tokens);
 
 	// different operators (keychars) lexing test
-	lexer_test_case_init(lexer, tokens, STREAM_CHAR_PTR, " ^<< <<=\n ++\r -- != ) (= &&");
-	assert(sbuffer_len(tokens) == 10);
+	lexer_test_case_init(lexer, tokens, STREAM_CHAR_PTR, " ^<< >>= <<=\n ++\r -- != ) (= &&");
+	assert(sbuffer_len(tokens) == 11);
 	print_tokens(tokens);
 	sbuffer_free(tokens);
 
@@ -123,19 +122,22 @@ void lexer_test()
 	print_tokens(tokens);
 	sbuffer_free(tokens);
 }
-void strcatc_test()
-{
-	char* a = "abcd";
-	char  b = 'e';
-	a = strcatc(a, b);
-	assert(strcmp(a, "abcde") == 0);
-	free(a);
 
-	char* bb = "ERROR: ";
-	char* c = "error here";
-	char* d = strcatcst(bb, c);
-	assert(strcmp(d, "ERROR: error here") == 0);
-	free(d);
+void ast_print_test()
+{
+	Expr* idnt = expr_new(EXPR_IDNT, idnt_new("Testvar", NULL));
+	Expr* lconst = expr_new(EXPR_CONST, const_new(CONST_UINT, 12323, NULL));
+	Expr* rconst = expr_new(EXPR_CONST, const_new(CONST_FLOAT, 5.5555, NULL));
+	Expr* unary = expr_new(EXPR_UNARY_EXPR, unary_expr_new(UNARY_BW_NOT, rconst));
+	Expr* binexpr = expr_new(EXPR_BINARY_EXPR, binary_expr_new(BINARY_LG_OR, unary, idnt));
+	Expr* expr = expr_new(EXPR_BINARY_EXPR, binary_expr_new(BINARY_ADD, lconst, binexpr));
+
+	AstRoot* ast = new_s(AstRoot, ast);
+	ast->exprs = NULL;
+	sbuffer_add(ast->exprs, expr);
+	sbuffer_add(ast->exprs, expr);
+
+	print_ast(ast);
 }
 
 void sb_test()
@@ -170,10 +172,24 @@ void sb_test()
 	sbuffer_free(str);
 }
 
+void parser_test()
+{
+	char buffer[1024];
+	while (1)
+	{
+		printf(CYAN); char* str = gets(buffer); printf(RESET);
+		Lexer* l = lexer_new(str, STREAM_CHAR_PTR);
+		lexer_get_tokens(l);
+		Parser* p = parser_new(l);
+
+		print_ast(parse(p));
+	}
+}
+
 void run_tests()
 {
 	sb_test();
-	strcatc_test();
-
-	lexer_test();
+	parser_test();
+	//ast_print_test();
+	//lexer_test();
 }
