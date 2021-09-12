@@ -7,6 +7,7 @@
 //todo: add custom keywords
 //todo: for now add simple arithmetic parsing
 
+#include "lexer.h"
 #include "common.h"
 #include "context.h"
 #include "sbuffer.h"
@@ -24,10 +25,28 @@ typedef enum UnaryExprType
 	UNARY_SIZEOF,
 } UnaryExprType;
 
+typedef struct TypeMods
+{
+	char is_ptr; // 0 - not pointer type, > 0 pointer type + pointer counter
+	char is_void;
+	char is_const;
+	char is_static;
+	char is_register;
+	char is_volatile;
+	char is_const_ptr;
+	char is_predefined;
+} TypeMods;
+
+typedef struct Type
+{
+	TypeMods mods;
+	const char* repr;
+} Type;
+
 typedef struct UnaryExpr
 {
 	Expr* expr;
-	char* cast_type;
+	Type* cast_type;
 	UnaryExprType type;
 } UnaryExpr;
 
@@ -106,6 +125,7 @@ typedef struct AstRoot
 	Expr** exprs;
 } AstRoot;
 
+Type* type_new(const char* repr);
 Expr* expr_new(ExprType type, void* expr_value_ptr);
 Idnt* idnt_new(const char* idnt, SrcContext* context);
 Const* const_new(ConstType type, double value, SrcContext* context);
@@ -118,77 +138,5 @@ void print_idnt(Idnt* idnt, const char* indent);
 void print_const(Const* cnst, const char* indent);
 void print_unary_expr(UnaryExpr* expr, const char* indent);
 void print_binary_expr(BinaryExpr* expr, const char* indent);
-
-/*typedef enum PrimaryExprType
-{
-	TYPE_EXPR,
-	TYPE_CONSTANT,
-	TYPE_IDENTIFIER,
-	TYPE_STR_LITERAL,
-} PrimaryExprType;
-
-typedef enum ConstantType
-{
-	CONST_INUM,
-	CONST_FNUM,
-	CONST_UNUM,
-} ConstantType;
-
-typedef struct Identifier
-{
-	char is_type;
-	SrcContext context;
-	const char* svalue;
-} Identifier;
-
-typedef struct Constant
-{
-	SrcContext context;
-	ConstantType type;
-	union
-	{
-		double fvalue;
-		int64_t ivalue;
-		uint64_t uvalue;
-	};
-} Constant;
-
-typedef struct StrLiteral
-{
-	SrcContext context;
-	const char* svalue;
-} StrLiteral;
-
-typedef struct Expr
-{
-	union
-	{
-		int a;
-		//...
-	};
-} Expr;
-
-typedef struct PrimaryExpr
-{
-	PrimaryExprType type;
-	union
-	{
-		Expr* expr;
-		Constant* cnst;
-		Identifier* idnt;
-		StrLiteral* sliteral;
-	};
-} PrimaryExpr;
-
-
-Identifier* idnt_new(const char* idnt, SrcContext* context);
-StrLiteral* str_literal_new(const char* str, SrcContext* context);
-Constant* const_new(ConstantType type, void* value_ptr, SrcContext* context);
-
-Expr* expr_new();
-PrimaryExpr* pexpr_new();
-
-void set_value_of_const(ConstantType type, void* value_ptr);
-void set_value_of_pexpr(PrimaryExprType type, void* value_ptr);*/
 
 #endif // AST_H 

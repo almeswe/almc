@@ -1,17 +1,16 @@
 #include "parser.h"
 
+//todo: add eof token!!
+//todo: refactor macroses
+
 #define get_curr_token(parser)   parser->tokens[parser->token_index]
 #define unget_curr_token(parser) parser->token_index > 0 ? parser->token_index-- : 0 
 #define get_next_token(parser)   parser->token_index < sbuffer_len(parser->tokens) ? &parser->tokens[parser->token_index++] : NULL
 #define matcht(parser, t) (get_curr_token(parser).type == (t))
 
-#define TOKEN_PREDEF_TYPE    TOKEN_KEYWORD_INT:    \
-						case TOKEN_KEYWORD_LONG:   \
-						case TOKEN_KEYWORD_CHAR:   \
-						case TOKEN_KEYWORD_SHORT:  \
-						case TOKEN_KEYWORD_FLOAT:  \
-						case TOKEN_KEYWORD_DOUBLE 
-	
+#define expect(parser, etype, str) (!matcht(parser, etype) ? \
+	report_error(frmt("Expected \'%s\', but met: %s", str, TOKEN_TYPE_STR(get_curr_token(parser).type)), get_curr_token(parser).context) : 0)				
+#define expect_with_skip(parser, type, str) expect(parser, type, str), get_next_token(parser)
 
 Parser* parser_new(Lexer* lexer)
 {
@@ -33,17 +32,24 @@ Expr* parse_expr(Parser* parser)
 	return parse_add_arith_expr(parser);
 }
 
+Type* parse_type(Parser* parser)
+{
+	//todo: add modifiers
+	Type* type = type_new(get_curr_token(parser).str_value);
+	get_next_token(parser);
+	while (matcht(parser, TOKEN_ASTERISK))
+	{
+		type->mods.is_ptr++;
+		get_next_token(parser);
+	}
+	return type;
+}
+
 Expr* parse_paren_expr(Parser* parser)
 {
-	if (!matcht(parser, TOKEN_OP_PAREN))
-		report_error(frmt("Expected \'(\', but met: %d",
-			get_curr_token(parser).type), get_curr_token(parser).context);
-	get_next_token(parser);
+	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
 	Expr* expr = parse_expr(parser);
-	if (!matcht(parser, TOKEN_CL_PAREN))
-		report_error(frmt("Expected \')\', but met: %d",
-			get_curr_token(parser).type), get_curr_token(parser).context);
-	get_next_token(parser);
+	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
 	return expr;
 }
 
@@ -68,7 +74,7 @@ Expr* parse_primary_expr(Parser* parser)
 	case TOKEN_OP_PAREN:
 		return parse_paren_expr(parser);
 	default:
-		report_error(frmt("Met unexpected token: %d", token.type), token.context);
+		report_error(frmt("Met unexpected token: %s", TOKEN_TYPE_STR(token.type)), token.context);
 	}
 	get_next_token(parser);
 	return expr;
@@ -84,7 +90,6 @@ Expr* parse_unary_expr(Parser* parser)
 			| '-' unary-expression
 
 	*/
-	int token_index = sizeof(token_index);
 	switch (get_curr_token(parser).type)
 	{
 		//TODO: add !, ~, casts, increments
@@ -96,21 +101,13 @@ Expr* parse_unary_expr(Parser* parser)
 		get_next_token(parser);
 		return expr_new(EXPR_UNARY_EXPR,
 			unary_expr_new(UNARY_MINUS, parse_unary_expr(parser)));
-	case TOKEN_KEYWORD_SIZEOF:
+	/*case TOKEN_KEYWORD_SIZEOF:
 		get_next_token(parser);
 		return expr_new(EXPR_UNARY_EXPR,
-			unary_expr_new(UNARY_SIZEOF, parse_unary_expr(parser)));
-	/*case TOKEN_OP_PAREN:
-		get_next_token(parser);
-		switch (get_curr_token(parser).type)
-		{
-		case TOKEN_IDNT:
-		case TOKEN_PREDEF_TYPE:
-			unget_curr_token(parser);
-			unget_curr_token(parser);
-			return parse_unary_cast_expr(parser);
-		}
-	*/
+			unary_expr_new(UNARY_SIZEOF, parse_unary_expr(parser)));*/
+	case TOKEN_KEYWORD_CAST:
+		return parse_unary_cast_expr(parser);
+	
 	default:
 		return parse_primary_expr(parser);
 	}
@@ -143,32 +140,19 @@ Expr* parse_unary_expr(Parser* parser)
 	default:
 		return parse_unary_expr(parser);
 	}
-}
+}*/
 
 Expr* parse_unary_cast_expr(Parser* parser)
 {
-	if (!matcht(parser, TOKEN_OP_PAREN))
-		report_error(frmt("Expected \'(\', but met: %d",
-			get_curr_token(parser).type), get_curr_token(parser).context);
-	get_next_token(parser);
-	Expr* cast_expr = NULL;
-	char* cast_type = get_curr_token(parser).str_value;
-	switch (get_curr_token(parser).type)
-	{
-	//todo: need type parsing, leave it like this for now (float* for example)
-	case TOKEN_IDNT:
-	case TOKEN_PREDEF_TYPE:
-		get_next_token(parser);
-		if (!matcht(parser, TOKEN_CL_PAREN))
-			report_error(frmt("Expected \')\', but met: %d",
-				get_curr_token(parser).type), get_curr_token(parser).context);
-		get_next_token(parser);
-		cast_expr = expr_new(EXPR_UNARY_EXPR,
-			unary_expr_new(UNARY_CAST, parse_unary_expr(parser)));
-		cast_expr->unary_expr->cast_type = cast_type;
-	}
+	expect_with_skip(parser, TOKEN_KEYWORD_CAST, "cast");
+	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
+	Type* type = parse_type(parser);
+	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
+	Expr* cast_expr = expr_new(EXPR_UNARY_EXPR,
+		unary_expr_new(UNARY_CAST, parse_unary_expr(parser)));
+	cast_expr->unary_expr->cast_type = type;
 	return cast_expr;
-}*/
+}
 
 Expr* parse_mul_arith_expr(Parser* parser)
 {
@@ -230,5 +214,4 @@ Expr* parse_add_arith_expr(Parser* parser)
 			binary_expr_new(type, (add_expr) ? add_expr : mul_expr, parse_mul_arith_expr(parser)));
 	}
 	return (add_expr) ? add_expr : mul_expr;
-
 }

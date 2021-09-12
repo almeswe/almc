@@ -1,5 +1,33 @@
 #include "ast.h"
 
+Type* type_new(const char* repr)
+{
+	Type* t = (Type*)calloc(1, sizeof(Type)); new__chk(t);
+	t->repr = repr;
+
+	char index = -1;
+	for (int i = 0; i < KEYWORDS; i++)
+		if (strcmp(repr, keywords[i]) == 0)
+			index = i + KEYWORD_IN_TOKEN_ENUM_OFFSET;
+	switch (index)
+	{
+	case -1:
+		t->mods.is_predefined = 0;
+		break;
+	case TOKEN_KEYWORD_INT:
+	case TOKEN_KEYWORD_LONG:
+	case TOKEN_KEYWORD_CHAR:
+	case TOKEN_KEYWORD_SHORT:
+	case TOKEN_KEYWORD_FLOAT:
+	case TOKEN_KEYWORD_DOUBLE:
+		t->mods.is_predefined = 1;
+		break;
+	default:
+		report_error(frmt("Type expected (identifier or predefined type), met: %s",
+			TOKEN_TYPE_STR(index)), NULL);
+	}
+	return t;
+}
 
 Expr* expr_new(ExprType type, void* expr_value_ptr)
 {
@@ -132,7 +160,7 @@ void print_unary_expr(UnaryExpr* expr, const char* indent)
 		"unary-sizeof: sizeof",
 	};
 	if (expr->type == UNARY_CAST)
-		printf("%s%s (%s)\n", indent, unary_expr_type_str[expr->type], expr->cast_type);
+		printf("%s%s (%s)\n", indent, unary_expr_type_str[expr->type], expr->cast_type->repr);
 	else
 		printf("%s%s\n", indent, unary_expr_type_str[expr->type]);
 	printf(RESET);

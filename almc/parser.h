@@ -15,9 +15,8 @@ Parser* parser_new(Lexer* lexer);
 AstRoot* parse(Parser* parser);
 Expr* parse_expr(Parser* parser);
 Expr* parse_paren_expr(Parser* parser);
-Expr* parse_additive_expr(Parser* parser);
-Expr* parse_multiplicative_expr(Parser* parser);
 
+Type* parse_type(Parser* parser);
 Expr* parse_unary_expr(Parser* parser);
 Expr* parse_unary_cast_expr(Parser* parser);
 Expr* parse_mul_arith_expr(Parser* parser);
