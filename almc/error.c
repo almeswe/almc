@@ -18,7 +18,7 @@ void report_error(const char* message, SrcContext* context)
 		printf(" %s\n", src_context_tostr(context));
 	else
 		printf("\n");
-	//assert(0);
+	assert(0);
 #else
 	printf("ERROR: %s\n", message);
 	system("pause");

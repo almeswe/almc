@@ -1,5 +1,5 @@
-#ifndef LEXER_H
-#define LEXER_H
+#ifndef ALMC_LEXER_H
+#define ALMC_LEXER_H
 
 #include <stdio.h>
 #include <ctype.h>
@@ -8,19 +8,7 @@
 
 #include "error.h"
 #include "common.h"
-#include "context.h"
 #include "sbuffer.h"
-
-#define EXT_CHARS 19
-#define EXT_CHARS_IN_TOKEN_ENUM_OFFSET TOKEN_RIGHT_ANGLE + 1
-	
-#define CHARS 25
-#define CHARS_IN_TOKEN_ENUM_OFFSET 0
-
-#define KEYWORDS 32
-#define KEYWORD_IN_TOKEN_ENUM_OFFSET TOKEN_IDNT + 1
-
-#define TOKEN_TYPE_STR(type) (type < (KEYWORDS + CHARS + EXT_CHARS) && type >= 0) ? tokens_str[type] : tokens_str[0]
 
 typedef enum TokenType
 {
@@ -149,7 +137,6 @@ typedef struct LexerBackupData
 typedef struct Lexer
 {
 	Token* tokens;
-	uint32_t token_index;
 
 	uint32_t curr_line;
 	uint32_t curr_line_offset;
@@ -165,7 +152,6 @@ typedef struct Lexer
 	};
 } Lexer;
 
-#endif //LEXER_H
 
 Lexer* lexer_new(const char* src, InputStreamType type);
 Token* token_new(TokenType type, SrcContext* context);
@@ -173,12 +159,11 @@ char* token_tostr(Token* token);
 
 Token* lexer_get_tokens(Lexer* lex);
 
-void multi_line_comment(Lexer* lex);
-void single_line_comment(Lexer* lex);
+void scomment(Lexer* lex);
+void mcomment(Lexer* lex);
 
 char get_next_char(Lexer* lex);
 void unget_curr_char(Lexer* lex);
-Token* get_next_token();
 
 int get_tokens_format(Lexer* lex);
 Token* get_num_token(Lexer* lex);
@@ -194,3 +179,5 @@ Token* get_string_token(Lexer* lex);
 Token* get_keychar_token(Lexer* lex, int order);
 Token* get_keyword_token(Lexer* lex, int order);
 char is_escape_sequence(Lexer* lex);
+
+#endif //LEXER_H

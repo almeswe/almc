@@ -1,11 +1,18 @@
 #include "lexer.h"
 
-//TODD: think about init macro
-//TODO: read about stringify
-//TODO: use c standart for grammar
-//TODO: fix malloc warning
-//TODO: add exponent form to dec numbers
 //TODO: lexer backup
+//TODO: mb refactor this macroses
+
+#define EXT_CHARS 19
+#define EXT_CHARS_IN_TOKEN_ENUM_OFFSET TOKEN_RIGHT_ANGLE + 1
+
+#define CHARS 25
+#define CHARS_IN_TOKEN_ENUM_OFFSET 0
+
+#define KEYWORDS 32
+#define KEYWORD_IN_TOKEN_ENUM_OFFSET TOKEN_IDNT + 1
+
+#define TOKEN_TYPE_STR(type) (type < (KEYWORDS + CHARS + EXT_CHARS) && type >= 0) ? tokens_str[type] : tokens_str[0]
 
 #define get__next_char_cstream(lex) (*(++lex->char_stream))
 #define get__next_char_fstream(lex) (fgetc(lex->file_stream))
@@ -328,10 +335,10 @@ char get_next_char(Lexer* lex)
 			switch (ch)
 			{
 			case '/':
-				single_line_comment(lex);
+				scomment(lex);
 				break;
 			case '*':
-				multi_line_comment(lex);
+				mcomment(lex);
 				break;
 			default:
 				lex->curr_line_offset += 2;
@@ -345,11 +352,6 @@ char get_next_char(Lexer* lex)
 		}
 	}
 	return get__next_char(lex);
-}
-
-Token* get_next_token()
-{
-	return NULL;
 }
 
 int get_tokens_format(Lexer* lex)
@@ -396,7 +398,6 @@ Token* get_hex_num_token(Lexer* lex)
 	uint64_t value = 0;
 	add_init_vars(value);
 	sft_init_vars(16, 16);
-	SrcContext* context;
 
 	while (isdigit_hex(get_next_char(lex)))
 	{
@@ -538,7 +539,6 @@ Token* get_char_token(Lexer* lex)
 {
 	char character;
 	char is_escape;
-
 	get_next_char(lex);
 	character = ((is_escape = is_escape_sequence(lex)) > 0) ?
 		is_escape : get_curr_char(lex);
@@ -626,7 +626,7 @@ Token* get_keyword_token(Lexer* lex, int order)
 	return token;
 }
 
-void multi_line_comment(Lexer* lex)
+void mcomment(Lexer* lex)
 {
 	char curr = get_next_char(lex);
 	while (!check_stream(lex))
@@ -636,13 +636,15 @@ void multi_line_comment(Lexer* lex)
 			curr = get_next_char(lex);
 			if (matchc(lex, '/'))
 				break;
+			else
+				unget_curr_char(lex);
 		}
 		else
 			curr = get_next_char(lex);
 	}
 }
 
-void single_line_comment(Lexer* lex)
+void scomment(Lexer* lex)
 {
 	char curr = get_next_char(lex);
 	while (!check_stream(lex) && !matchc(lex, '\n'))
