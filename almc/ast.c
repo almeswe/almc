@@ -47,6 +47,9 @@ Expr* expr_new(ExprType type, void* expr_value_ptr)
 	case EXPR_BINARY_EXPR:
 		expr_set_value(BinaryExpr, binary_expr);
 		break;
+	case EXPR_TERNARY_EXPR:
+		expr_set_value(TernaryExpr, ternary_expr);
+		break;
 	}
 	return e;
 }
@@ -95,6 +98,15 @@ BinaryExpr* binary_expr_new(BinaryExprType type, Expr* lexpr, Expr* rexpr)
 	return be;
 }
 
+TernaryExpr* ternary_expr_new(Expr* cond, Expr* lexpr, Expr* rexpr)
+{
+	TernaryExpr* te = new_s(TernaryExpr, te);
+	te->cond = cond;
+	te->lexpr = lexpr;
+	te->rexpr = rexpr;
+	return te;
+}
+
 void print_ast(AstRoot* ast)
 {
 	printf("ast-root\n");
@@ -106,6 +118,7 @@ void print_expr(Expr* expr, const char* indent)
 {
 	// |——
 	char* new_indent = frmt("%s   ", indent);
+	if (expr)
 	switch (expr->type)
 	{
 	case EXPR_IDNT:
@@ -120,11 +133,15 @@ void print_expr(Expr* expr, const char* indent)
 	case EXPR_BINARY_EXPR:
 		print_binary_expr(expr->binary_expr, new_indent);
 		break;
+	case EXPR_TERNARY_EXPR:
+		print_ternary_expr(expr->ternary_expr, new_indent);
+		break;
 	}
 }
 
 void print_idnt(Idnt* idnt, const char* indent)
 {
+	sizeof(char);
 	printf(BOLDWHITE);
 	printf("%sidnt: %s\n", indent, idnt->svalue);
 	printf(RESET);
@@ -153,13 +170,20 @@ void print_unary_expr(UnaryExpr* expr, const char* indent)
 	const char* unary_expr_type_str[] = {
 		"unary-plus: +",
 		"unary-minus: -",
+		"unary-addr: &",
+		"unary-deref: *",
+
 		"unary-lg-not: !",
 		"unary-bw-not: ~",
 
+		"unary-inc: ++",
+		"unary-dec: --",
+
 		"unary-cast:",
-		"unary-sizeof: sizeof",
+		"unary-datasize:",
+		"unary-typesize:",
 	};
-	if (expr->type == UNARY_CAST)
+	if (expr->type == UNARY_CAST || expr->type == UNARY_TYPESIZE)
 		printf("%s%s (%s)\n", indent, unary_expr_type_str[expr->type], expr->cast_type->repr);
 	else
 		printf("%s%s\n", indent, unary_expr_type_str[expr->type]);
@@ -169,6 +193,7 @@ void print_unary_expr(UnaryExpr* expr, const char* indent)
 
 void print_binary_expr(BinaryExpr* expr, const char* indent)
 {
+
 	printf(BOLDYELLOW);
 	const char* binary_expr_type_str[] = {
 		"binary-add: +",
@@ -176,6 +201,14 @@ void print_binary_expr(BinaryExpr* expr, const char* indent)
 		"binary-div: /",
 		"binary-mod: %",
 		"binary-mult: *",
+
+		"binary-lshift: <<",
+		"binary-rshift: >>",
+		
+		"binary-less-than: <",
+		"binary-greater-than: >",
+		"binary-less-eq-than: <=",
+		"binary-greater-eq-than: >=",
 
 		"binary-lg-or: ||",
 		"binary-lg-and: &&",
@@ -185,9 +218,32 @@ void print_binary_expr(BinaryExpr* expr, const char* indent)
 		"binary-bw-or: |",
 		"binary-bw-and: &",
 		"binary-bw-xor: ^",
+
+		"binary-asgn: =",
+		"binary-add-asgn: +=",
+		"binary-sub-asgn: -=",
+		"binary-mul-asgn: *=",
+		"binary-div-asgn: /=",
+		"binary-mod-asgn: %=",
+		"binary-shl-asgn: <<=",
+		"binary-shr-asgn: >>=",
+		"binary-bw-or-asgn: |=",
+		"binary-bw-and-asgn: &=",
+		"binary-bw-xor-asgn: ^=",
+		"binary-bw-not-asgn: ~=",
 	};
 	printf("%s%s\n", indent, binary_expr_type_str[expr->type]);
 	printf(RESET);
+	print_expr(expr->lexpr, indent);
+	print_expr(expr->rexpr, indent);
+}
+
+void print_ternary_expr(TernaryExpr* expr, const char* indent)
+{
+	printf(BOLDGREEN);
+	printf("%s%s\n", indent, "ternary-expr:");
+	printf(RESET);
+	print_expr(expr->cond, indent);
 	print_expr(expr->lexpr, indent);
 	print_expr(expr->rexpr, indent);
 }

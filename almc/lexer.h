@@ -10,13 +10,13 @@
 #include "common.h"
 #include "sbuffer.h"
 
-#define EXT_CHARS 19
+#define EXT_CHARS 21
 #define EXT_CHARS_IN_TOKEN_ENUM_OFFSET TOKEN_RIGHT_ANGLE + 1
 
 #define CHARS 25
 #define CHARS_IN_TOKEN_ENUM_OFFSET 0
 
-#define KEYWORDS 33
+#define KEYWORDS 34
 #define KEYWORD_IN_TOKEN_ENUM_OFFSET TOKEN_IDNT + 1
 
 #define TOKEN_TYPE_STR(type) (type < (KEYWORDS + CHARS + EXT_CHARS + 6) && type >= 0) ? tokens_str[type] : tokens_str[0]
@@ -62,10 +62,10 @@ typedef enum TokenType
 	TOKEN_LSHIFT_ASSIGN,
 	TOKEN_RSHIFT_ASSIGN,
 
-	TOKEN_BW_NOT_ASSIGN,
 	TOKEN_BW_OR_ASSIGN,
 	TOKEN_BW_AND_ASSIGN,
 	TOKEN_BW_XOR_ASSIGN,
+	TOKEN_BW_NOT_ASSIGN,
 
 	TOKEN_LG_OR,
 	TOKEN_LG_NEQ,
@@ -74,6 +74,8 @@ typedef enum TokenType
 	
 	TOKEN_LSHIFT,
 	TOKEN_RSHIFT,
+	TOKEN_LESS_EQ_THAN,
+	TOKEN_GREATER_EQ_THAN,
 	TOKEN_INC,
 	TOKEN_DEC,	
 
@@ -92,6 +94,7 @@ typedef enum TokenType
 	TOKEN_KEYWORD_CONTINUE,
 	TOKEN_KEYWORD_DEFAULT,
 	TOKEN_KEYWORD_DOUBLE,
+	TOKEN_KEYWORD_DATASIZE,
 	TOKEN_KEYWORD_ENUM,
 	TOKEN_KEYWORD_EXTERN,
 	TOKEN_KEYWORD_FLOAT,
@@ -104,11 +107,11 @@ typedef enum TokenType
 	TOKEN_KEYWORD_RETURN,
 	TOKEN_KEYWORD_SHORT,
 	TOKEN_KEYWORD_SIGNED,
-	TOKEN_KEYWORD_SIZEOF,
 	TOKEN_KEYWORD_STATIC,
 	TOKEN_KEYWORD_STRUCT,
 	TOKEN_KEYWORD_SWITCH,
 	TOKEN_KEYWORD_TYPEOF,
+	TOKEN_KEYWORD_TYPESIZE,
 	TOKEN_KEYWORD_UNION,
 	TOKEN_KEYWORD_UNSIGNED,
 	TOKEN_KEYWORD_VOID,
@@ -169,7 +172,6 @@ typedef struct Lexer
 		const char* char_stream;
 	};
 } Lexer;
-
 
 Lexer* lexer_new(const char* src, InputStreamType type);
 Token* token_new(TokenType type, SrcContext* context);

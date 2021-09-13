@@ -18,11 +18,18 @@ typedef enum UnaryExprType
 {
 	UNARY_PLUS,
 	UNARY_MINUS,
+	UNARY_ADDRESS,
+	UNARY_DEREFERENCE,
+
 	UNARY_LG_NOT,
 	UNARY_BW_NOT,
 
+	UNARY_INC,
+	UNARY_DEC,
+
 	UNARY_CAST,
-	UNARY_SIZEOF,
+	UNARY_DATASIZE,
+	UNARY_TYPESIZE,
 } UnaryExprType;
 
 typedef struct TypeMods
@@ -58,6 +65,14 @@ typedef enum BinaryExprType
 	BINARY_MOD,
 	BINARY_MULT,
 
+	BINARY_LSHIFT,
+	BINARY_RSHIFT,
+
+	BINARY_LESS_THAN,
+	BINARY_GREATER_THAN,
+	BINARY_LESS_EQ_THAN,
+	BINARY_GREATER_EQ_THAN,
+
 	BINARY_LG_OR,
 	BINARY_LG_AND,
 	BINARY_LG_EQ,
@@ -66,6 +81,20 @@ typedef enum BinaryExprType
 	BINARY_BW_OR,
 	BINARY_BW_AND,
 	BINARY_BW_XOR,
+
+	BINARY_ASSIGN,
+	BINARY_ADD_ASSIGN,
+	BINARY_SUB_ASSIGN,
+	BINARY_MUL_ASSIGN,
+	BINARY_DIV_ASSIGN,
+	BINARY_MOD_ASSIGN,
+	BINARY_LSHIFT_ASSIGN,
+	BINARY_RSHIFT_ASSIGN,
+
+	BINARY_BW_OR_ASSIGN,
+	BINARY_BW_AND_ASSIGN,
+	BINARY_BW_XOR_ASSIGN,
+	BINARY_BW_NOT_ASSIGN,
 } BinaryExprType;
 
 typedef struct BinaryExpr
@@ -74,6 +103,13 @@ typedef struct BinaryExpr
 	Expr* rexpr;
 	BinaryExprType type;
 } BinaryExpr;
+
+typedef struct TernaryExpr
+{
+	Expr* cond;
+	Expr* lexpr;
+	Expr* rexpr;
+} TernaryExpr;
 
 typedef struct Idnt
 {
@@ -106,6 +142,7 @@ typedef enum ExprType
 	EXPR_CONST,
 	EXPR_UNARY_EXPR,
 	EXPR_BINARY_EXPR,
+	EXPR_TERNARY_EXPR,
 } ExprType;
 
 typedef struct Expr
@@ -117,6 +154,7 @@ typedef struct Expr
 		Const* cnst;
 		UnaryExpr* unary_expr;
 		BinaryExpr* binary_expr;
+		TernaryExpr* ternary_expr;
 	};
 } Expr;
 
@@ -131,6 +169,7 @@ Idnt* idnt_new(const char* idnt, SrcContext* context);
 Const* const_new(ConstType type, double value, SrcContext* context);
 UnaryExpr* unary_expr_new(UnaryExprType type, Expr* expr);
 BinaryExpr* binary_expr_new(BinaryExprType type, Expr* lexpr, Expr* rexpr);
+TernaryExpr* ternary_expr_new(Expr* cond, Expr* lexpr, Expr* rexpr);
 
 void print_ast(AstRoot* ast);
 void print_expr(Expr* expr, const char* indent);
@@ -138,5 +177,6 @@ void print_idnt(Idnt* idnt, const char* indent);
 void print_const(Const* cnst, const char* indent);
 void print_unary_expr(UnaryExpr* expr, const char* indent);
 void print_binary_expr(BinaryExpr* expr, const char* indent);
+void print_ternary_expr(TernaryExpr* expr, const char* indent);
 
 #endif // AST_H 

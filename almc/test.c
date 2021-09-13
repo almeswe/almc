@@ -88,7 +88,7 @@ void lexer_test()
 	// file + keywords test
 	lexer_test_case_init(lexer, tokens, STREAM_FILE, "C:\\Users\\HP\\source\\repos\\almc\\Debug\\test.txt");
 	assert(sbuffer_len(tokens) == 14);
-	assert(tokens[4].type == TOKEN_KEYWORD_SIZEOF);
+	assert(tokens[4].type == TOKEN_KEYWORD_DATASIZE);
 	assert(tokens[5].type == TOKEN_KEYWORD_FOR);
 	assert(tokens[6].type == TOKEN_KEYWORD_STRUCT);
 	assert(tokens[7].type == TOKEN_KEYWORD_REGISTER);
