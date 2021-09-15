@@ -19,26 +19,26 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ast.c" />
-    <ClCompile Include="common.c" />
-    <ClCompile Include="context.c" />
-    <ClCompile Include="error.c" />
-    <ClCompile Include="lexer.c" />
-    <ClCompile Include="parser.c" />
-    <ClCompile Include="sbuffer.c" />
-    <ClCompile Include="sbuffer.h" />
-    <ClCompile Include="main.c" />
-    <ClCompile Include="test.c" />
-    <ClCompile Include="test.h" />
-    <Text Include="syntax.txt" />
+    <ClCompile Include="src\front-end\ast.c" />
+    <ClCompile Include="src\utils\common.c" />
+    <ClCompile Include="src\utils\context.c" />
+    <ClCompile Include="src\error.c" />
+    <ClCompile Include="src\front-end\lexer.c" />
+    <ClCompile Include="src\front-end\parser.c" />
+    <ClCompile Include="src\utils\sbuffer.c" />
+    <ClCompile Include="src\utils\sbuffer.h" />
+    <ClCompile Include="src\main.c" />
+    <ClCompile Include="test\test.c" />
+    <ClCompile Include="test\test.h" />
+    <Text Include="test\syntax.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ast.h" />
-    <ClInclude Include="common.h" />
-    <ClInclude Include="context.h" />
-    <ClInclude Include="error.h" />
-    <ClInclude Include="lexer.h" />
-    <ClInclude Include="parser.h" />
+    <ClInclude Include="src\front-end\ast.h" />
+    <ClInclude Include="src\utils\common.h" />
+    <ClInclude Include="src\utils\context.h" />
+    <ClInclude Include="src\error.h" />
+    <ClInclude Include="src\front-end\lexer.h" />
+    <ClInclude Include="src\front-end\parser.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

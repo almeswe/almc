@@ -10,7 +10,8 @@ typedef struct Parser
 	uint32_t token_index;
 } Parser;
 
-Parser* parser_new(Lexer* lexer);
+Parser* parser_new(Token* tokens);
+void parser_free(Parser* parser);
 
 AstRoot* parse(Parser* parser);
 Expr* parse_expr(Parser* parser);

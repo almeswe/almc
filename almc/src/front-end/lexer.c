@@ -1,7 +1,6 @@
 #include "lexer.h"
 
 //TODO: lexer backup
-//TODO: mb refactor this macroses
 
 #define get__next_char_cstream(lex) (*(++lex->char_stream))
 #define get__next_char_fstream(lex) (fgetc(lex->file_stream))
@@ -42,6 +41,7 @@ const char chars[] = {
 	'"',
 	'!',
 	',',
+	'.',
 	':',
 	';',
 	'=',
@@ -69,8 +69,8 @@ const char* ext_chars[] = {
 	"^=",
 	"~=",
 	"||",
-	"!=",
 	"==",
+	"!=",
 	"&&",
 	"<<",
 	">>",
@@ -129,6 +129,7 @@ const char* tokens_str[] = {
 	"TOKEN_D_QUOTE",
 	"TOKEN_EXCL_MARK",
 	"TOKEN_COMMA",
+	"TOKEN_DOT",
 	"TOKEN_COLON",
 	"TOKEN_SEMICOLON",
 	"TOKEN_ASSIGN",
@@ -157,8 +158,8 @@ const char* tokens_str[] = {
 	"TOKEN_BW_NOT_ASSIGN",
 
 	"TOKEN_LG_OR",
-	"TOKEN_LG_NEQ",
 	"TOKEN_LG_EQ",
+	"TOKEN_LG_NEQ",
 	"TOKEN_LG_AND",
 
 	"TOKEN_LSHIFT",
@@ -244,6 +245,19 @@ Token* token_new(TokenType type, SrcContext* context)
 	return t;
 }
 
+void lexer_free(Lexer* lexer)
+{
+	//todo: need to free char_stream
+	sbuffer_free(lexer->tokens);
+	free(lexer);
+}
+
+void token_free(Token* token)
+{
+	src_context_free(token->context);
+	free(token);
+}
+
 char* token_tostr(Token* token)
 {
 	char* str;
@@ -259,7 +273,7 @@ char* token_tostr(Token* token)
 	return frmt("%s %s", str, src_context_tostr(token->context));
 }
 
-Token* lexer_get_tokens(Lexer* lex)
+Token* lex(Lexer* lex)
 {
 	char curr_char;
 	lex->tokens = NULL;
@@ -329,7 +343,7 @@ char get_next_char(Lexer* lex)
 		//case '\t':
 		//	break;
 		//todo: deal with comments (mb remove them out)
-		case '/':
+		/*case '/':
 		{
 			ch = get__next_char(lex);
 			switch (ch)
@@ -341,11 +355,13 @@ char get_next_char(Lexer* lex)
 				mcomment(lex);
 				break;
 			default:
+				// todo: refactor unget and get chars while in comment
+				unget__curr_char(lex);
 				lex->curr_line_offset += 2;
 				break;
 			}
 			break;
-		}
+		}*/
 		default:
 			lex->curr_line_offset++;
 			break;
@@ -367,7 +383,8 @@ int get_tokens_format(Lexer* lex)
 		case 'b':
 			return FORMAT_BIN;
 		default:
-			unget_curr_char(lex);
+			//macro here because of bug with 0 repr in decimal
+			unget__curr_char(lex);
 			return FORMAT_DEC;
 		}
 	}
@@ -376,8 +393,9 @@ int get_tokens_format(Lexer* lex)
 
 Token* get_eof_token(Lexer* lex)
 {
-	//TODO: WOW CONTEXT ERROR!
-	SrcContext* prev_context = lex->tokens[sbuffer_len(lex->tokens) - 1].context;
+	size_t len = sbuffer_len(lex->tokens);
+	SrcContext* prev_context = len > 1 ? lex->tokens[len - 1].context :
+		src_context_new(lex->curr_file, 0, 1, 1);
 	SrcContext* new_context  = src_context_new(
 		prev_context->file, prev_context->start + prev_context->size, 1, prev_context->line);
 	Token* token = token_new(TOKEN_EOF, new_context);

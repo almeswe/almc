@@ -1,6 +1,5 @@
 #include "parser.h"
 
-//todo: add eof token!!
 //todo: refactor macroses
 
 #define get_curr_token(parser)   parser->tokens[parser->token_index]
@@ -12,12 +11,19 @@
 	report_error(frmt("Expected \'%s\', but met: %s", str, TOKEN_TYPE_STR(get_curr_token(parser).type)), get_curr_token(parser).context) : 0)				
 #define expect_with_skip(parser, type, str) expect(parser, type, str), get_next_token(parser)
 
-Parser* parser_new(Lexer* lexer)
+Parser* parser_new(Token* tokens)
 {
 	Parser* p = new_s(Parser, p);
 	p->token_index = 0;
-	p->tokens = lexer->tokens;
+	p->tokens = tokens;
 	return p;
+}
+
+void parser_free(Parser* parser)
+{
+	if (sbuffer_len(parser->tokens) > 0)
+		sbuffer_free(parser->tokens);
+	free(parser);
 }
 
 AstRoot* parse(Parser* parser)
@@ -104,52 +110,31 @@ Expr* parse_unary_expr(Parser* parser)
 				| !
 
 	*/
+#define unary_case(parser, type) get_next_token(parser);			\
+     							 return expr_new(EXPR_UNARY_EXPR,   \
+									 unary_expr_new(type, parse_unary_expr(parser)))
 
-	//todo: remake this for switch (now occurrs bug)
-	assert(0);
-	Expr* unary_expr = NULL;
-	while (matcht(parser, TOKEN_INC)
-		|| matcht(parser, TOKEN_DEC)
-		|| matcht(parser, TOKEN_PLUS)
-		|| matcht(parser, TOKEN_DASH)
-		|| matcht(parser, TOKEN_TILDE)
-		|| matcht(parser, TOKEN_ASTERISK)
-		|| matcht(parser, TOKEN_AMPERSAND)
-		|| matcht(parser, TOKEN_EXCL_MARK))
+	switch (get_curr_token(parser).type)
 	{
-		BinaryExprType type = 0;
-		switch (get_curr_token(parser).type)
-		{
-		case TOKEN_INC:
-			type = UNARY_INC; break;
-		case TOKEN_DEC:
-			type = UNARY_DEC; break;
-		case TOKEN_PLUS:
-			type = UNARY_PLUS; break;
-		case TOKEN_DASH:
-			type = UNARY_MINUS; break;
-		case TOKEN_TILDE:
-			type = UNARY_BW_NOT; break;
-		case TOKEN_EXCL_MARK:
-			type = UNARY_LG_NOT; break;
-		case TOKEN_AMPERSAND:
-			type = UNARY_ADDRESS; break;
-		case TOKEN_ASTERISK:
-			type = UNARY_DEREFERENCE; break;
-		}
-		get_next_token(parser);
-		unary_expr = expr_new(EXPR_UNARY_EXPR,
-			unary_expr_new(type, parse_unary_expr(parser)));
+	case TOKEN_INC:
+		unary_case(parser, UNARY_INC);
+	case TOKEN_DEC:
+		unary_case(parser, UNARY_DEC);
+	case TOKEN_PLUS:
+		unary_case(parser, UNARY_PLUS);
+	case TOKEN_DASH:
+		unary_case(parser, UNARY_MINUS);
+	case TOKEN_TILDE:
+		unary_case(parser, UNARY_BW_NOT);
+	case TOKEN_ASTERISK:
+		unary_case(parser, UNARY_DEREFERENCE);
+	case TOKEN_AMPERSAND:
+		unary_case(parser, UNARY_ADDRESS);
+	case TOKEN_EXCL_MARK:
+		unary_case(parser, UNARY_LG_NOT);
+	default:
+		return parse_primary_expr(parser);
 	}
-	return unary_expr ? unary_expr : parse_primary_expr(parser);
-
-	// todo: for now this three unaries ignored
-	/*case TOKEN_KEYWORD_CAST:
-		return parse_unary_cast_expr(parser);
-	case TOKEN_KEYWORD_DATASIZE:
-		return parse_unary_datasize_expr(parser);
-	case TOKEN_KEYWORD_TYPESIZE:
-		return parse_unary_typesize_expr(parser);*/
 }
 
 Expr* parse_unary_cast_expr(Parser* parser)
@@ -484,10 +469,34 @@ Expr* parse_assignment_expr(Parser* parser)
 		|| matcht(parser, TOKEN_BW_AND_ASSIGN)
 		|| matcht(parser, TOKEN_BW_XOR_ASSIGN))
 	{
-		TokenType ttype = get_curr_token(parser).type;
-		BinaryExprType type = ttype == TOKEN_ASSIGN ?
-			BINARY_ASSIGN : ttype - 6; // token type enum - binary type enum 
-		
+		BinaryExprType type = 0;
+		switch (get_curr_token(parser).type)
+		{
+		case TOKEN_ASSIGN:
+			type = BINARY_ASSIGN; break;
+		case TOKEN_ADD_ASSIGN:
+			type = BINARY_ADD_ASSIGN; break;
+		case TOKEN_SUB_ASSIGN:
+			type = BINARY_SUB_ASSIGN; break;
+		case TOKEN_MUL_ASSIGN:
+			type = BINARY_MUL_ASSIGN; break;
+		case TOKEN_DIV_ASSIGN:
+			type = BINARY_DIV_ASSIGN; break;
+		case TOKEN_MOD_ASSIGN:
+			type = BINARY_MOD_ASSIGN; break;
+		case TOKEN_LSHIFT_ASSIGN:
+			type = BINARY_LSHIFT_ASSIGN; break;
+		case TOKEN_RSHIFT_ASSIGN:
+			type = BINARY_RSHIFT_ASSIGN; break;
+		case TOKEN_BW_NOT_ASSIGN:
+			type = BINARY_BW_NOT_ASSIGN; break;
+		case TOKEN_BW_OR_ASSIGN:
+			type = BINARY_BW_OR_ASSIGN; break;
+		case TOKEN_BW_AND_ASSIGN:
+			type = BINARY_BW_AND_ASSIGN; break;
+		case TOKEN_BW_XOR_ASSIGN:
+			type = BINARY_BW_XOR_ASSIGN; break;
+		}
 		get_next_token(parser);
 		assign_expr = expr_new(EXPR_BINARY_EXPR,
 			binary_expr_new(type, (assign_expr) ? assign_expr : cond_expr, parse_assignment_expr(parser)));

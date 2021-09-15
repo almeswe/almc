@@ -109,7 +109,7 @@ TernaryExpr* ternary_expr_new(Expr* cond, Expr* lexpr, Expr* rexpr)
 
 void print_ast(AstRoot* ast)
 {
-	printf("ast-root\n");
+	printf("ast-root:\n");
 	for (int i = 0; i < sbuffer_len(ast->exprs); i++)
 		print_expr(ast->exprs[i], "");
 }
@@ -202,8 +202,8 @@ void print_binary_expr(BinaryExpr* expr, const char* indent)
 		"binary-mod: %",
 		"binary-mult: *",
 
-		"binary-lshift: <<",
-		"binary-rshift: >>",
+		"binary-shl: <<",
+		"binary-shr: >>",
 		
 		"binary-less-than: <",
 		"binary-greater-than: >",

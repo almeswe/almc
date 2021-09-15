@@ -6,14 +6,14 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "error.h"
-#include "common.h"
-#include "sbuffer.h"
+#include "..\error.h"
+#include "..\utils\common.h"
+#include "..\utils\sbuffer.h"
 
 #define EXT_CHARS 21
 #define EXT_CHARS_IN_TOKEN_ENUM_OFFSET TOKEN_RIGHT_ANGLE + 1
 
-#define CHARS 25
+#define CHARS 26
 #define CHARS_IN_TOKEN_ENUM_OFFSET 0
 
 #define KEYWORDS 34
@@ -21,7 +21,7 @@
 
 #define TOKEN_TYPE_STR(type) (type < (KEYWORDS + CHARS + EXT_CHARS + 6) && type >= 0) ? tokens_str[type] : tokens_str[0]
 
-const char chars[];
+extern const char chars[];
 const char* keywords[];
 const char* ext_chars[];
 const char* tokens_str[];
@@ -40,6 +40,7 @@ typedef enum TokenType
 	TOKEN_D_QUOTE,
 	TOKEN_EXCL_MARK,
 	TOKEN_COMMA,
+	TOKEN_DOT,
 	TOKEN_COLON,
 	TOKEN_SEMICOLON,
 	TOKEN_ASSIGN,
@@ -68,8 +69,8 @@ typedef enum TokenType
 	TOKEN_BW_NOT_ASSIGN,
 
 	TOKEN_LG_OR,
-	TOKEN_LG_NEQ,
 	TOKEN_LG_EQ,
+	TOKEN_LG_NEQ,
 	TOKEN_LG_AND,
 	
 	TOKEN_LSHIFT,
@@ -175,9 +176,11 @@ typedef struct Lexer
 
 Lexer* lexer_new(const char* src, InputStreamType type);
 Token* token_new(TokenType type, SrcContext* context);
+void lexer_free(Lexer* lexer);
+void token_free(Token* token);
 char* token_tostr(Token* token);
 
-Token* lexer_get_tokens(Lexer* lex);
+Token* lex(Lexer* lex);
 
 void scomment(Lexer* lex);
 void mcomment(Lexer* lex);

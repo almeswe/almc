@@ -15,3 +15,9 @@ SrcContext* src_context_new(const char* file, uint32_t start, uint32_t size, uin
 	c->start = start - size + 1;
 	return c;
 }
+
+void src_context_free(SrcContext* context)
+{
+	free(context->file);
+	free(context);
+}

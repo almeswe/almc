@@ -23,62 +23,62 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.c">
+    <ClCompile Include="src\main.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lexer.c">
+    <ClCompile Include="src\front-end\lexer.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="test.h">
+    <ClCompile Include="test\test.h">
       <Filter>Test Files</Filter>
     </ClCompile>
-    <ClCompile Include="test.c">
+    <ClCompile Include="test\test.c">
       <Filter>Test Files</Filter>
     </ClCompile>
-    <ClCompile Include="sbuffer.h">
+    <ClCompile Include="src\utils\sbuffer.h">
       <Filter>Common Files\Headers</Filter>
     </ClCompile>
-    <ClCompile Include="context.c">
+    <ClCompile Include="src\utils\context.c">
       <Filter>Common Files\Sources</Filter>
     </ClCompile>
-    <ClCompile Include="error.c">
+    <ClCompile Include="src\error.c">
       <Filter>Common Files\Sources</Filter>
     </ClCompile>
-    <ClCompile Include="sbuffer.c">
+    <ClCompile Include="src\utils\sbuffer.c">
       <Filter>Common Files\Sources</Filter>
     </ClCompile>
-    <ClCompile Include="common.c">
+    <ClCompile Include="src\utils\common.c">
       <Filter>Common Files\Sources</Filter>
     </ClCompile>
-    <ClCompile Include="ast.c">
+    <ClCompile Include="src\front-end\ast.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="parser.c">
+    <ClCompile Include="src\front-end\parser.c">
       <Filter>Common Files\Sources</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="lexer.h">
+    <ClInclude Include="src\front-end\lexer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="common.h">
+    <ClInclude Include="src\utils\common.h">
       <Filter>Common Files\Headers</Filter>
     </ClInclude>
-    <ClInclude Include="context.h">
+    <ClInclude Include="src\utils\context.h">
       <Filter>Common Files\Headers</Filter>
     </ClInclude>
-    <ClInclude Include="error.h">
+    <ClInclude Include="src\error.h">
       <Filter>Common Files\Headers</Filter>
     </ClInclude>
-    <ClInclude Include="ast.h">
+    <ClInclude Include="src\front-end\ast.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="parser.h">
+    <ClInclude Include="src\front-end\parser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="syntax.txt">
+    <Text Include="test\syntax.txt">
       <Filter>Test Files</Filter>
     </Text>
   </ItemGroup>

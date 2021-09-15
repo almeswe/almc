@@ -8,29 +8,11 @@
 //todo: for now add simple arithmetic parsing
 
 #include "lexer.h"
-#include "common.h"
-#include "context.h"
-#include "sbuffer.h"
+#include "..\utils\common.h"
+#include "..\utils\context.h"
+#include "..\utils\sbuffer.h"
 
 typedef struct Expr Expr;
-
-typedef enum UnaryExprType
-{
-	UNARY_PLUS,
-	UNARY_MINUS,
-	UNARY_ADDRESS,
-	UNARY_DEREFERENCE,
-
-	UNARY_LG_NOT,
-	UNARY_BW_NOT,
-
-	UNARY_INC,
-	UNARY_DEC,
-
-	UNARY_CAST,
-	UNARY_DATASIZE,
-	UNARY_TYPESIZE,
-} UnaryExprType;
 
 typedef struct TypeMods
 {
@@ -49,6 +31,24 @@ typedef struct Type
 	TypeMods mods;
 	const char* repr;
 } Type;
+
+typedef enum UnaryExprType
+{
+	UNARY_PLUS,
+	UNARY_MINUS,
+	UNARY_ADDRESS,
+	UNARY_DEREFERENCE,
+
+	UNARY_LG_NOT,
+	UNARY_BW_NOT,
+
+	UNARY_INC,
+	UNARY_DEC,
+
+	UNARY_CAST,
+	UNARY_DATASIZE,
+	UNARY_TYPESIZE,
+} UnaryExprType;
 
 typedef struct UnaryExpr
 {
