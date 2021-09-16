@@ -14,17 +14,22 @@ Type* type_new(const char* repr)
 	case -1:
 		t->mods.is_predefined = 0;
 		break;
-	case TOKEN_KEYWORD_INT:
-	case TOKEN_KEYWORD_LONG:
 	case TOKEN_KEYWORD_CHAR:
-	case TOKEN_KEYWORD_SHORT:
-	case TOKEN_KEYWORD_FLOAT:
-	case TOKEN_KEYWORD_DOUBLE:
+	case TOKEN_KEYWORD_INT8:
+	case TOKEN_KEYWORD_INT16:
+	case TOKEN_KEYWORD_INT32:
+	case TOKEN_KEYWORD_INT64:
+	case TOKEN_KEYWORD_UINT8:
+	case TOKEN_KEYWORD_UINT16:
+	case TOKEN_KEYWORD_UINT32:
+	case TOKEN_KEYWORD_UINT64:
+	case TOKEN_KEYWORD_FLOAT32:
+	case TOKEN_KEYWORD_FLOAT64:
 		t->mods.is_predefined = 1;
 		break;
 	default:
 		report_error(frmt("Type expected (identifier or predefined type), met: %s",
-			TOKEN_TYPE_STR(index)), NULL);
+			token_type_tostr(index)), NULL);
 	}
 	return t;
 }
@@ -110,7 +115,7 @@ TernaryExpr* ternary_expr_new(Expr* cond, Expr* lexpr, Expr* rexpr)
 void print_ast(AstRoot* ast)
 {
 	printf("ast-root:\n");
-	for (int i = 0; i < sbuffer_len(ast->exprs); i++)
+	for (uint32_t i = 0; i < sbuffer_len(ast->exprs); i++)
 		print_expr(ast->exprs[i], "");
 }
 

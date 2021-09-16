@@ -1,14 +1,6 @@
 #include "parser.h"
 
-//todo: refactor macroses
-
-#define get_curr_token(parser)   parser->tokens[parser->token_index]
-#define unget_curr_token(parser) parser->token_index > 0 ? parser->token_index-- : 0 
-#define get_next_token(parser)   parser->token_index < sbuffer_len(parser->tokens) ? &parser->tokens[parser->token_index++] : NULL
 #define matcht(parser, t) (get_curr_token(parser).type == (t))
-
-#define expect(parser, etype, str) (!matcht(parser, etype) ? \
-	report_error(frmt("Expected \'%s\', but met: %s", str, TOKEN_TYPE_STR(get_curr_token(parser).type)), get_curr_token(parser).context) : 0)				
 #define expect_with_skip(parser, type, str) expect(parser, type, str), get_next_token(parser)
 
 Parser* parser_new(Token* tokens)
@@ -24,6 +16,46 @@ void parser_free(Parser* parser)
 	if (sbuffer_len(parser->tokens) > 0)
 		sbuffer_free(parser->tokens);
 	free(parser);
+}
+
+Token get_next_token(Parser* parser)
+{
+	if (!parser->tokens)
+		report_error("Cannot get next token, because parser->tokens is NULL!", NULL);
+	else
+		return parser->token_index >= 0 &&
+			parser->token_index < sbuffer_len(parser->tokens) ?
+			parser->tokens[parser->token_index++] : parser->tokens[parser->token_index];
+}
+
+Token get_curr_token(Parser* parser)
+{
+	if (!parser->tokens)
+		report_error("Cannot get current token, because parser->tokens is NULL!", NULL);
+	else
+		return parser->token_index >= 0 &&
+			parser->token_index < sbuffer_len(parser->tokens) ?
+			parser->tokens[parser->token_index] : parser->tokens[0];
+}
+
+void unget_curr_token(Parser* parser)
+{
+	if (parser->token_index > 0)
+		parser->token_index--;
+}
+
+void expect(Parser* parser, TokenType type, const char* token_value)
+{
+	if (!matcht(parser, type))
+	{
+		Token token = get_curr_token(parser);
+		report_error(frmt(
+			"Expected \'%s\', but met: %s",
+			token_value,
+			token_type_tostr(token.type)),
+			token.context
+		);
+	}
 }
 
 AstRoot* parse(Parser* parser)
@@ -81,7 +113,7 @@ Expr* parse_primary_expr(Parser* parser)
 	case TOKEN_OP_PAREN:
 		return parse_paren_expr(parser);
 	default:
-		report_error(frmt("Met unexpected token: %s", TOKEN_TYPE_STR(token.type)), token.context);
+		report_error(frmt("Primary expression token expected, but met: %s", token_type_tostr(token.type)), token.context);
 	}
 	get_next_token(parser);
 	return expr;
@@ -139,7 +171,7 @@ Expr* parse_unary_expr(Parser* parser)
 
 Expr* parse_unary_cast_expr(Parser* parser)
 {
-	expect_with_skip(parser, TOKEN_KEYWORD_CAST, "cast");
+	if (matcht(parser, TOKEN_OP_PAREN))
 	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
 	Type* type = parse_type(parser);
 	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
@@ -149,7 +181,7 @@ Expr* parse_unary_cast_expr(Parser* parser)
 	return cast_expr;
 }
 
-Expr* parse_unary_datasize_expr(Parser* parser)
+/*Expr* parse_unary_datasize_expr(Parser* parser)
 {
 	expect_with_skip(parser, TOKEN_KEYWORD_DATASIZE, "datasize");
 	return expr_new(EXPR_UNARY_EXPR,
@@ -166,7 +198,7 @@ Expr* parse_unary_typesize_expr(Parser* parser)
 		unary_expr_new(UNARY_TYPESIZE, NULL));
 	typesize_expr->unary_expr->cast_type = type;
 	return typesize_expr;
-}
+}*/
 
 Expr* parse_mul_arith_expr(Parser* parser)
 {

@@ -4,7 +4,7 @@ int eval_expr(Expr* expr);
 int eval_ast(AstRoot* ast)
 {
 	int res = 0;
-	for (int i = 0; i < sbuffer_len(ast->exprs); i++)
+	for (uint32_t i = 0; i < sbuffer_len(ast->exprs); i++)
 		res += eval_expr(ast->exprs[i]);
 	return res;
 }
@@ -89,6 +89,7 @@ int eval_bexpr(BinaryExpr* bexpr)
 	default:
 		assert(0);
 	}
+	return 0;
 }
 int eval_texpr(TernaryExpr* texpr)
 {
@@ -108,11 +109,12 @@ int eval_expr(Expr* expr)
 	case EXPR_TERNARY_EXPR:
 		return eval_texpr(expr->ternary_expr);
 	}
+	return 0;
 }
 
 void print_tokens(Token* const tokens)
 {
-	for (int i = 0; i < sbuffer_len(tokens); i++)
+	for (uint32_t i = 0; i < sbuffer_len(tokens); i++)
 		printf("%s\n", token_tostr(tokens + i));
 }
 
@@ -154,9 +156,12 @@ void lexer_test()
 	#define lexer_test_case_free(lexer) \
 		lexer_free(lexer);
 
-	Lexer* lexer;
-	Token* tokens;
-	const char* stream;
+	Lexer* lexer = 0;
+	Token* tokens = 0;
+	const char* stream = 0;
+
+	//lexing table test
+	lexer_test_case_init(lexer, tokens, STREAM_FILE, "C:\\Users\\HP\\source\\repos\\almc\\Debug\\test5.txt");
 
 	// string lexing error test
 	//lexer_test_case_init(lexer, tokens, STREAM_FILE, "C:\\Users\\HP\\source\\repos\\almc\\Debug\\test5.txt");
@@ -232,7 +237,7 @@ void lexer_test()
 	// file + keywords test
 	lexer_test_case_init(lexer, tokens, STREAM_FILE, "C:\\Users\\HP\\source\\repos\\almc\\Debug\\test.txt");
 	assert(sbuffer_len(tokens) == 11);
-	assert(tokens[0].type == TOKEN_KEYWORD_DATASIZE);
+	assert(tokens[0].type == TOKEN_KEYWORD_UINT8);
 	assert(tokens[1].type == TOKEN_KEYWORD_FOR);
 	assert(tokens[2].type == TOKEN_KEYWORD_STRUCT);
 	assert(tokens[3].type == TOKEN_KEYWORD_REGISTER);
@@ -340,7 +345,7 @@ void parser_eval_test()
 void run_tests()
 {
 	sb_test();
-	//lexer_test();
-	//parser_eval_test();
+	lexer_test();
+	parser_eval_test();
 	parser_test();
 }

@@ -1,12 +1,6 @@
 #ifndef ALMC_AST_H
 #define ALMC_AST_H
 
-//todo: how to deal with ast printing?
-//TODO: use c standart for grammar
-
-//todo: add custom keywords
-//todo: for now add simple arithmetic parsing
-
 #include "lexer.h"
 #include "..\utils\common.h"
 #include "..\utils\context.h"

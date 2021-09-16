@@ -23,13 +23,15 @@
 #define BOLDCYAN    "\033[1m\033[36m"      /* Bold Cyan */
 #define BOLDWHITE   "\033[1m\033[37m"      /* Bold White */
 
-#define new(type)         (type*)malloc(sizeof(type));        
-#define newc(type, count) (type*)malloc(sizeof(type) * count);
+#define new(type)         (type*)malloc(sizeof(type))        
+#define newc(type, count) (type*)malloc(sizeof(type) * count)
+#define cnew(type, count) (type*)calloc(count, sizeof(type))
 
 #define new__err(var) (printf("Memory allocation failure [variable: %s, line: %d, file: %s]", #var, __LINE__, __FILE__), exit(1))
 #define new__chk(var) var ? 0 : new__err(var)	
 #define new_s(type, var)     new(type);     new__chk(var)
-#define newc_s(type, var, c) newc(type, c); new__chk(var) 
+#define newc_s(type, var, c) newc(type, c); new__chk(var)
+#define cnew_s(type, var, c)  cnew(type, c); new__chk(var)
 
 char* frmt(const char* format, ...);
 

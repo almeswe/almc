@@ -26,7 +26,4 @@ typedef struct Buffer
 #define sbuffer_free(buf) ((buf) ? free(sbuffer__hdr(buf)) : 0)
 #define sbuffer_rdc(buf, by) sbuffer_reduce(buf, by, sizeof(*buf));
 
-void* sbuffer__extend(const void* buffer, const uint32_t typesize);
-void* sbuffer_reduce(const void* buffer, const uint32_t by_size, const uint32_t typesize);
-
 #endif

@@ -19,9 +19,7 @@
 #define KEYWORDS 34
 #define KEYWORD_IN_TOKEN_ENUM_OFFSET TOKEN_IDNT + 1
 
-#define TOKEN_TYPE_STR(type) (type < (KEYWORDS + CHARS + EXT_CHARS + 6) && type >= 0) ? tokens_str[type] : tokens_str[0]
-
-extern const char chars[];
+const char chars[];
 const char* keywords[];
 const char* ext_chars[];
 const char* tokens_str[];
@@ -88,33 +86,33 @@ typedef enum TokenType
 
 	TOKEN_KEYWORD_AUTO,
 	TOKEN_KEYWORD_BREAK,
-	TOKEN_KEYWORD_CAST,
 	TOKEN_KEYWORD_CASE,
 	TOKEN_KEYWORD_CHAR,
 	TOKEN_KEYWORD_CONST,
 	TOKEN_KEYWORD_CONTINUE,
 	TOKEN_KEYWORD_DEFAULT,
-	TOKEN_KEYWORD_DOUBLE,
-	TOKEN_KEYWORD_DATASIZE,
 	TOKEN_KEYWORD_ENUM,
 	TOKEN_KEYWORD_EXTERN,
-	TOKEN_KEYWORD_FLOAT,
 	TOKEN_KEYWORD_FOR,
+	TOKEN_KEYWORD_FLOAT32,
+	TOKEN_KEYWORD_FLOAT64,
 	TOKEN_KEYWORD_GOTO,
 	TOKEN_KEYWORD_IF,
-	TOKEN_KEYWORD_INT,
-	TOKEN_KEYWORD_LONG,
+	TOKEN_KEYWORD_INT8,
+	TOKEN_KEYWORD_INT16,
+	TOKEN_KEYWORD_INT32,
+	TOKEN_KEYWORD_INT64,
 	TOKEN_KEYWORD_REGISTER,
 	TOKEN_KEYWORD_RETURN,
-	TOKEN_KEYWORD_SHORT,
-	TOKEN_KEYWORD_SIGNED,
 	TOKEN_KEYWORD_STATIC,
 	TOKEN_KEYWORD_STRUCT,
 	TOKEN_KEYWORD_SWITCH,
 	TOKEN_KEYWORD_TYPEOF,
-	TOKEN_KEYWORD_TYPESIZE,
 	TOKEN_KEYWORD_UNION,
-	TOKEN_KEYWORD_UNSIGNED,
+	TOKEN_KEYWORD_UINT8,
+	TOKEN_KEYWORD_UINT16,
+	TOKEN_KEYWORD_UINT32,
+	TOKEN_KEYWORD_UINT64,
 	TOKEN_KEYWORD_VOID,
 	TOKEN_KEYWORD_VOLATILE,
 	TOKEN_KEYWORD_WHILE,
@@ -179,29 +177,22 @@ Token* token_new(TokenType type, SrcContext* context);
 void lexer_free(Lexer* lexer);
 void token_free(Token* token);
 char* token_tostr(Token* token);
+char* token_type_tostr(TokenType type);
 
-Token* lex(Lexer* lex);
+Token* lex(Lexer* lexer);
 
-void scomment(Lexer* lex);
-void mcomment(Lexer* lex);
+Token* get_eof_token(Lexer* lexer);
+Token* get_num_token(Lexer* lexer);
+Token* get_bin_num_token(Lexer* lexer);
+Token* get_hex_num_token(Lexer* lexer);
+Token* get_oct_num_token(Lexer* lexer);
+Token* get_dec_num_token(Lexer* lexer);
+Token* get_dec_fnum_token(Lexer* lexer, uint64_t base_inum, uint32_t size);
 
-char get_next_char(Lexer* lex);
-void unget_curr_char(Lexer* lex);
-
-int get_tokens_format(Lexer* lex);
-Token* get_eof_token(Lexer* lex);
-Token* get_num_token(Lexer* lex);
-Token* get_bin_num_token(Lexer* lex);
-Token* get_hex_num_token(Lexer* lex);
-Token* get_oct_num_token(Lexer* lex);
-Token* get_dec_num_token(Lexer* lex);
-Token* get_dec_fnum_token(Lexer* lex, uint64_t base_inum, uint32_t size);
-
-Token* get_idnt_token(Lexer* lex);
-Token* get_char_token(Lexer* lex);
-Token* get_string_token(Lexer* lex);
-Token* get_keychar_token(Lexer* lex, int order);
-Token* get_keyword_token(Lexer* lex, int order);
-char is_escape_sequence(Lexer* lex);
+Token* get_idnt_token(Lexer* lexer);
+Token* get_char_token(Lexer* lexer);
+Token* get_string_token(Lexer* lexer);
+Token* get_keychar_token(Lexer* lexer, int order);
+Token* get_keyword_token(Lexer* lexer, int order);
 
 #endif //LEXER_H
