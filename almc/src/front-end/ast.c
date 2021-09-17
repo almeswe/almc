@@ -189,7 +189,13 @@ void print_unary_expr(UnaryExpr* expr, const char* indent)
 		"unary-typesize:",
 	};
 	if (expr->type == UNARY_CAST || expr->type == UNARY_TYPESIZE)
-		printf("%s%s (%s)\n", indent, unary_expr_type_str[expr->type], expr->cast_type->repr);
+		printf(
+			"%s%s (%s ptr:%d)\n",
+			indent,
+			unary_expr_type_str[expr->type],
+			expr->cast_type->repr,
+			expr->cast_type->mods.is_ptr
+		);
 	else
 		printf("%s%s\n", indent, unary_expr_type_str[expr->type]);
 	printf(RESET);

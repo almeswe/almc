@@ -24,9 +24,12 @@ Expr* parse_unary_datasize_expr(Parser* parser);
 Expr* parse_unary_typesize_expr(Parser* parser);
 */
 
+Type* parse_type_name(Parser* parser);
+
 Expr* parse_primary_expr(Parser* parser);
 Expr* postfix_expr(Parser* parser);
 Expr* parse_unary_expr(Parser* parser);
+Expr* parse_cast_expr(Parser* parser);
 
 Expr* parse_mul_arith_expr(Parser* parser);
 Expr* parse_add_arith_expr(Parser* parser);

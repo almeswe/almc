@@ -3,6 +3,20 @@
 #define matcht(parser, t) (get_curr_token(parser).type == (t))
 #define expect_with_skip(parser, type, str) expect(parser, type, str), get_next_token(parser)
 
+#define TOKEN_PREDEFINED_TYPE     \
+         TOKEN_KEYWORD_VOID:	  \
+	case TOKEN_KEYWORD_CHAR:      \
+	case TOKEN_KEYWORD_INT8:      \
+	case TOKEN_KEYWORD_INT16:	  \
+	case TOKEN_KEYWORD_INT32:	  \
+	case TOKEN_KEYWORD_INT64:	  \
+	case TOKEN_KEYWORD_UINT8:	  \
+	case TOKEN_KEYWORD_UINT16:	  \
+	case TOKEN_KEYWORD_UINT32:	  \
+	case TOKEN_KEYWORD_UINT64:	  \
+	case TOKEN_KEYWORD_FLOAT32:	  \
+	case TOKEN_KEYWORD_FLOAT64
+
 Parser* parser_new(Token* tokens)
 {
 	Parser* p = new_s(Parser, p);
@@ -70,18 +84,68 @@ Expr* parse_expr(Parser* parser)
 	return parse_constant_expr(parser);
 }
 
-Type* parse_type(Parser* parser)
+Type* parse_abstract_declarator(Parser* parser, Type* type)
 {
-	//todo: add modifiers
-	//todo: recode this type_new
-	Type* type = type_new(get_curr_token(parser).str_value);
-	get_next_token(parser);
-	while (matcht(parser, TOKEN_ASTERISK))
+	/*
+	<abstract-declarator> ::= <pointer>
+					| <pointer> <direct-abstract-declarator>
+					| <direct-abstract-declarator>
+
+	<direct-abstract-declarator> ::=  ( <abstract-declarator> )
+			| {<direct-abstract-declarator>}? [ {<constant-expression>}? ]
+			| {<direct-abstract-declarator>}? ( {<parameter-type-list>}? )
+	*/
+
+	switch (get_curr_token(parser).type)
 	{
+	case TOKEN_ASTERISK:
 		type->mods.is_ptr++;
 		get_next_token(parser);
+		return parse_abstract_declarator(parser, type);
+	default:
+		return type;
 	}
-	return type;
+}
+
+Type* parse_type_name(Parser* parser)
+{
+	Type* type = cnew_s(Type, type, 1);
+	Token token = get_curr_token(parser);
+	switch (token.type)
+	{
+	case TOKEN_IDNT:
+	case TOKEN_PREDEFINED_TYPE:
+		type->repr = token.str_value;
+		type->mods.is_predefined = (token.type != TOKEN_IDNT);
+		type->mods.is_void = (token.type == TOKEN_KEYWORD_VOID);
+		get_next_token(parser);
+		return parse_abstract_declarator(parser, type);
+	default:
+		assert(0);
+	}
+	return 0;
+	/*
+	<type-name> ::= {<specifier-qualifier>}+ {<abstract-declarator>}?
+
+	<specifier-qualifier> ::= <type-specifier>
+						| <type-qualifier>
+
+	<type-qualifier> ::= const
+				   | volatile
+
+	<type-specifier> ::= char
+                   | void
+                   | int8
+                   | int16
+                   | int32
+                   | uint8
+                   | uint16
+                   | uint32
+                   | uint64
+                   | float32
+                   | float64
+				   | idnt
+	*/
 }
 
 Expr* parse_paren_expr(Parser* parser)
@@ -142,63 +206,79 @@ Expr* parse_unary_expr(Parser* parser)
 				| !
 
 	*/
-#define unary_case(parser, type) get_next_token(parser);			\
-     							 return expr_new(EXPR_UNARY_EXPR,   \
-									 unary_expr_new(type, parse_unary_expr(parser)))
 
+#define unary_cast_case(parser, type)  \
+	get_next_token(parser);			   \
+    return expr_new(EXPR_UNARY_EXPR,   \
+		unary_expr_new(type, parse_cast_expr(parser)))
+
+#define unary_unary_case(parser, type) \
+	get_next_token(parser);			   \
+    return expr_new(EXPR_UNARY_EXPR,   \
+		unary_expr_new(type, parse_unary_expr(parser)))
+
+	//todo: add cast
 	switch (get_curr_token(parser).type)
 	{
 	case TOKEN_INC:
-		unary_case(parser, UNARY_INC);
+		unary_unary_case(parser, UNARY_INC);
 	case TOKEN_DEC:
-		unary_case(parser, UNARY_DEC);
+		unary_unary_case(parser, UNARY_DEC);
 	case TOKEN_PLUS:
-		unary_case(parser, UNARY_PLUS);
+		unary_cast_case(parser, UNARY_PLUS);
 	case TOKEN_DASH:
-		unary_case(parser, UNARY_MINUS);
+		unary_cast_case(parser, UNARY_MINUS);
 	case TOKEN_TILDE:
-		unary_case(parser, UNARY_BW_NOT);
+		unary_cast_case(parser, UNARY_BW_NOT);
 	case TOKEN_ASTERISK:
-		unary_case(parser, UNARY_DEREFERENCE);
+		unary_cast_case(parser, UNARY_DEREFERENCE);
 	case TOKEN_AMPERSAND:
-		unary_case(parser, UNARY_ADDRESS);
+		unary_cast_case(parser, UNARY_ADDRESS);
 	case TOKEN_EXCL_MARK:
-		unary_case(parser, UNARY_LG_NOT);
+		unary_cast_case(parser, UNARY_LG_NOT);
 	default:
 		return parse_primary_expr(parser);
 	}
 }
 
-Expr* parse_unary_cast_expr(Parser* parser)
+Expr* parse_cast_expr(Parser* parser)
 {
-	if (matcht(parser, TOKEN_OP_PAREN))
-	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
-	Type* type = parse_type(parser);
-	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
-	Expr* cast_expr = expr_new(EXPR_UNARY_EXPR,
-		unary_expr_new(UNARY_CAST, parse_unary_expr(parser)));
-	cast_expr->unary_expr->cast_type = type;
-	return cast_expr;
-}
+	/*
+	<cast-expression> ::= <unary-expression>
+						| ( <type-name> ) <cast-expression>
+	*/
 
-/*Expr* parse_unary_datasize_expr(Parser* parser)
-{
-	expect_with_skip(parser, TOKEN_KEYWORD_DATASIZE, "datasize");
-	return expr_new(EXPR_UNARY_EXPR,
-		unary_expr_new(UNARY_DATASIZE, parse_unary_expr(parser)));
+	Type* cast_type = NULL;
+	Expr* unary_cast = NULL;
+	switch (get_curr_token(parser).type)
+	{
+	case TOKEN_OP_PAREN:
+		get_next_token(parser);
+		switch (get_curr_token(parser).type)
+		{
+		case TOKEN_IDNT:
+			//TODO: this method of idnt cast expr is not finished
+			cast_type = parse_type_name(parser);
+			if (matcht(parser, TOKEN_CL_PAREN) && cast_type->mods.is_ptr)
+				goto cast_expr_declaration;
+			else
+				for (int i = 0; i < cast_type->mods.is_ptr; i++)
+					unget_curr_token(parser);
+			break;
+		case TOKEN_PREDEFINED_TYPE:
+			cast_type = parse_type_name(parser);
+			cast_expr_declaration:
+			expect_with_skip(parser, TOKEN_CL_PAREN, ")");
+			unary_cast = expr_new(EXPR_UNARY_EXPR,
+				unary_expr_new(UNARY_CAST, parse_cast_expr(parser)));
+			unary_cast->unary_expr->cast_type = cast_type;
+			return unary_cast;
+		}
+		unget_curr_token(parser);
+	default:
+		return parse_unary_expr(parser);
+	}
 }
-
-Expr* parse_unary_typesize_expr(Parser* parser)
-{
-	expect_with_skip(parser, TOKEN_KEYWORD_TYPESIZE, "typesize");
-	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
-	Type* type = parse_type(parser);
-	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
-	Expr* typesize_expr = expr_new(EXPR_UNARY_EXPR,
-		unary_expr_new(UNARY_TYPESIZE, NULL));
-	typesize_expr->unary_expr->cast_type = type;
-	return typesize_expr;
-}*/
 
 Expr* parse_mul_arith_expr(Parser* parser)
 {
@@ -210,7 +290,7 @@ Expr* parse_mul_arith_expr(Parser* parser)
 	*/
 
 	Expr* mul_expr = NULL;
-	Expr* unary_expr = parse_unary_expr(parser);
+	Expr* unary_expr = parse_cast_expr(parser);
 	while (matcht(parser, TOKEN_SLASH)
 		|| matcht(parser, TOKEN_MODULUS)
 		|| matcht(parser, TOKEN_ASTERISK))
@@ -227,7 +307,7 @@ Expr* parse_mul_arith_expr(Parser* parser)
 		}
 		get_next_token(parser);
 		mul_expr = expr_new(EXPR_BINARY_EXPR,
-			binary_expr_new(type, (mul_expr) ? mul_expr : unary_expr, parse_unary_expr(parser)));
+			binary_expr_new(type, (mul_expr) ? mul_expr : unary_expr, parse_cast_expr(parser)));
 	}
 	return (mul_expr) ? mul_expr : unary_expr;
 }
