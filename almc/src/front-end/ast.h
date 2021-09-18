@@ -41,8 +41,7 @@ typedef enum UnaryExprType
 	UNARY_DEC,
 
 	UNARY_CAST,
-	UNARY_DATASIZE,
-	UNARY_TYPESIZE,
+	UNARY_SIZEOF,
 } UnaryExprType;
 
 typedef struct UnaryExpr

@@ -30,6 +30,7 @@ Expr* parse_primary_expr(Parser* parser);
 Expr* postfix_expr(Parser* parser);
 Expr* parse_unary_expr(Parser* parser);
 Expr* parse_cast_expr(Parser* parser);
+Expr* parse_sizeof_expr(Parser* parser);
 
 Expr* parse_mul_arith_expr(Parser* parser);
 Expr* parse_add_arith_expr(Parser* parser);

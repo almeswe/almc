@@ -91,6 +91,7 @@ UnaryExpr* unary_expr_new(UnaryExprType type, Expr* expr)
 	UnaryExpr* ue = new_s(UnaryExpr, ue);
 	ue->type = type;
 	ue->expr = expr;
+	ue->cast_type = NULL;
 	return ue;
 }
 
@@ -124,24 +125,26 @@ void print_expr(Expr* expr, const char* indent)
 	// |——
 	char* new_indent = frmt("%s   ", indent);
 	if (expr)
-	switch (expr->type)
-	{
-	case EXPR_IDNT:
-		print_idnt(expr->idnt, new_indent);
-		break;
-	case EXPR_CONST:
-		print_const(expr->cnst, new_indent);
-		break;
-	case EXPR_UNARY_EXPR:
-		print_unary_expr(expr->unary_expr, new_indent);
-		break;
-	case EXPR_BINARY_EXPR:
-		print_binary_expr(expr->binary_expr, new_indent);
-		break;
-	case EXPR_TERNARY_EXPR:
-		print_ternary_expr(expr->ternary_expr, new_indent);
-		break;
-	}
+		switch (expr->type)
+		{
+		case EXPR_IDNT:
+			print_idnt(expr->idnt, new_indent);
+			break;
+		case EXPR_CONST:
+			print_const(expr->cnst, new_indent);
+			break;
+		case EXPR_UNARY_EXPR:
+			print_unary_expr(expr->unary_expr, new_indent);
+			break;
+		case EXPR_BINARY_EXPR:
+			print_binary_expr(expr->binary_expr, new_indent);
+			break;
+		case EXPR_TERNARY_EXPR:
+			print_ternary_expr(expr->ternary_expr, new_indent);
+			break;
+		}
+	else
+		printf("%s   null-body\n", indent);
 }
 
 void print_idnt(Idnt* idnt, const char* indent)
@@ -185,10 +188,11 @@ void print_unary_expr(UnaryExpr* expr, const char* indent)
 		"unary-dec: --",
 
 		"unary-cast:",
-		"unary-datasize:",
-		"unary-typesize:",
+		"unary-sizeof:",
 	};
-	if (expr->type == UNARY_CAST || expr->type == UNARY_TYPESIZE)
+	switch (expr->type)
+	{
+	case UNARY_CAST:
 		printf(
 			"%s%s (%s ptr:%d)\n",
 			indent,
@@ -196,8 +200,16 @@ void print_unary_expr(UnaryExpr* expr, const char* indent)
 			expr->cast_type->repr,
 			expr->cast_type->mods.is_ptr
 		);
-	else
+		break;
+	case UNARY_SIZEOF:
+		printf("%s%s", indent, unary_expr_type_str[expr->type]);
+		if (expr->cast_type)
+			printf(" (%s ptr:%d)", expr->cast_type->repr, expr->cast_type->mods.is_ptr);
+		printf("\n");
+		break;
+	default:
 		printf("%s%s\n", indent, unary_expr_type_str[expr->type]);
+	}
 	printf(RESET);
 	print_expr(expr->expr, indent);
 }

@@ -195,8 +195,7 @@ Expr* parse_unary_expr(Parser* parser)
 							 | ++ <unary-expression>
 							 | -- <unary-expression>
 							 | <unary-operator> <cast-expression>
-							 | sizeof <unary-expression>
-							 | sizeof <type-name>
+							 | <sizeof-expression>
 
 		<unary-operator> ::= &
 				| *
@@ -236,8 +235,42 @@ Expr* parse_unary_expr(Parser* parser)
 		unary_cast_case(parser, UNARY_ADDRESS);
 	case TOKEN_EXCL_MARK:
 		unary_cast_case(parser, UNARY_LG_NOT);
+	case TOKEN_KEYWORD_SIZEOF:
+		return parse_sizeof_expr(parser);
 	default:
 		return parse_primary_expr(parser);
+	}
+}
+
+Type* try_to_get_type(Parser* parser)
+{
+	Type* type = NULL;
+	switch (get_curr_token(parser).type)
+	{
+	case TOKEN_OP_PAREN:
+		get_next_token(parser);
+		switch (get_curr_token(parser).type)
+		{
+		case TOKEN_IDNT:
+			//TODO: this method of idnt cast expr is not finished
+			type = parse_type_name(parser);
+			if (matcht(parser, TOKEN_CL_PAREN) && type->mods.is_ptr)
+				goto type_declaration;
+			else
+				// <= here because we also need to unget idnt token
+				for (int i = 0; i <= type->mods.is_ptr; i++)
+					unget_curr_token(parser);
+			type = NULL;
+			break;
+		case TOKEN_PREDEFINED_TYPE:
+			type = parse_type_name(parser);
+			type_declaration:
+			expect_with_skip(parser, TOKEN_CL_PAREN, ")");
+			return type;
+		}
+		unget_curr_token(parser);
+	default:
+		return type;
 	}
 }
 
@@ -248,35 +281,39 @@ Expr* parse_cast_expr(Parser* parser)
 						| ( <type-name> ) <cast-expression>
 	*/
 
-	Type* cast_type = NULL;
-	Expr* unary_cast = NULL;
-	switch (get_curr_token(parser).type)
-	{
-	case TOKEN_OP_PAREN:
-		get_next_token(parser);
-		switch (get_curr_token(parser).type)
-		{
-		case TOKEN_IDNT:
-			//TODO: this method of idnt cast expr is not finished
-			cast_type = parse_type_name(parser);
-			if (matcht(parser, TOKEN_CL_PAREN) && cast_type->mods.is_ptr)
-				goto cast_expr_declaration;
-			else
-				for (int i = 0; i < cast_type->mods.is_ptr; i++)
-					unget_curr_token(parser);
-			break;
-		case TOKEN_PREDEFINED_TYPE:
-			cast_type = parse_type_name(parser);
-			cast_expr_declaration:
-			expect_with_skip(parser, TOKEN_CL_PAREN, ")");
-			unary_cast = expr_new(EXPR_UNARY_EXPR,
-				unary_expr_new(UNARY_CAST, parse_cast_expr(parser)));
-			unary_cast->unary_expr->cast_type = cast_type;
-			return unary_cast;
-		}
-		unget_curr_token(parser);
-	default:
+	Type* type = NULL;
+	Expr* expr = NULL;
+	if (!(type = try_to_get_type(parser)))
 		return parse_unary_expr(parser);
+	else
+	{
+		expr = expr_new(EXPR_UNARY_EXPR,
+			unary_expr_new(UNARY_CAST, parse_cast_expr(parser)));
+		expr->unary_expr->cast_type = type;
+		return expr;
+	}
+}
+
+Expr* parse_sizeof_expr(Parser* parser)
+{
+	/*
+	<sizeof-expression> ::= sizeof <unary-expression> 
+						 || sizeof ( <type-name> )
+	*/
+	Type* type = NULL;
+	Expr* expr = NULL;
+	expect_with_skip(parser, TOKEN_KEYWORD_SIZEOF, "sizeof");
+	if (!(type = try_to_get_type(parser)))
+	{
+		return expr_new(EXPR_UNARY_EXPR,
+			unary_expr_new(UNARY_SIZEOF, parse_unary_expr(parser)));
+	}
+	else
+	{
+		expr = expr_new(EXPR_UNARY_EXPR,
+			unary_expr_new(UNARY_SIZEOF, NULL));
+		expr->unary_expr->cast_type = type;
+		return expr;
 	}
 }
 
