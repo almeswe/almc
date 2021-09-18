@@ -37,11 +37,14 @@ typedef enum UnaryExprType
 	UNARY_LG_NOT,
 	UNARY_BW_NOT,
 
-	UNARY_INC,
-	UNARY_DEC,
+	UNARY_PREFIX_INC,
+	UNARY_PREFIX_DEC,
 
 	UNARY_CAST,
 	UNARY_SIZEOF,
+
+	UNARY_POSTFIX_INC,
+	UNARY_POSTFIX_DEC,
 } UnaryExprType;
 
 typedef struct UnaryExpr
@@ -89,6 +92,10 @@ typedef enum BinaryExprType
 	BINARY_BW_AND_ASSIGN,
 	BINARY_BW_XOR_ASSIGN,
 	BINARY_BW_NOT_ASSIGN,
+
+	BINARY_POSTFIX_DOT,
+	BINARY_POSTFIX_ARROW,
+	BINARY_POSTFIX_ARR_ELEM,
 } BinaryExprType;
 
 typedef struct BinaryExpr
@@ -134,6 +141,7 @@ typedef enum ExprType
 {
 	EXPR_IDNT,
 	EXPR_CONST,
+	EXPR_STRING,
 	EXPR_UNARY_EXPR,
 	EXPR_BINARY_EXPR,
 	EXPR_TERNARY_EXPR,
@@ -157,7 +165,6 @@ typedef struct AstRoot
 	Expr** exprs;
 } AstRoot;
 
-Type* type_new(const char* repr);
 Expr* expr_new(ExprType type, void* expr_value_ptr);
 Idnt* idnt_new(const char* idnt, SrcContext* context);
 Const* const_new(ConstType type, double value, SrcContext* context);

@@ -109,6 +109,29 @@ Type* parse_abstract_declarator(Parser* parser, Type* type)
 
 Type* parse_type_name(Parser* parser)
 {
+	/*
+	<type-name> ::= {<specifier-qualifier>}+ {<abstract-declarator>}?
+
+	<specifier-qualifier> ::= <type-specifier>
+						| <type-qualifier>
+
+	<type-qualifier> ::= const
+				   | volatile
+
+	<type-specifier> ::= char
+				   | void
+				   | int8
+				   | int16
+				   | int32
+				   | uint8
+				   | uint16
+				   | uint32
+				   | uint64
+				   | float32
+				   | float64
+				   | idnt
+	*/
+
 	Type* type = cnew_s(Type, type, 1);
 	Token token = get_curr_token(parser);
 	switch (token.type)
@@ -124,28 +147,6 @@ Type* parse_type_name(Parser* parser)
 		assert(0);
 	}
 	return 0;
-	/*
-	<type-name> ::= {<specifier-qualifier>}+ {<abstract-declarator>}?
-
-	<specifier-qualifier> ::= <type-specifier>
-						| <type-qualifier>
-
-	<type-qualifier> ::= const
-				   | volatile
-
-	<type-specifier> ::= char
-                   | void
-                   | int8
-                   | int16
-                   | int32
-                   | uint8
-                   | uint16
-                   | uint32
-                   | uint64
-                   | float32
-                   | float64
-				   | idnt
-	*/
 }
 
 Expr* parse_paren_expr(Parser* parser)
@@ -183,9 +184,68 @@ Expr* parse_primary_expr(Parser* parser)
 	return expr;
 }
 
-Expr* postfix_expr(Parser* parser)
+Expr* parse_postfix_expr(Parser* parser)
 {
+	/*
+	<postfix-expression> ::= <primary-expression>
+                       | <postfix-expression> [ <expression> ]
+                       | <postfix-expression> ( {<assignment-expression>}* )
+                       | <postfix-expression> . <identifier>
+                       | <postfix-expression> -> <identifier>
+                       | <postfix-expression> ++
+                       | <postfix-expression> --
+	*/
 
+	Expr* postfix_expr = NULL;
+	Expr* primary_expr = parse_primary_expr(parser);
+	//todo: extend while
+	while (matcht(parser, TOKEN_DOT)
+		|| matcht(parser, TOKEN_ARROW)
+		|| matcht(parser, TOKEN_OP_BRACKET))
+	{
+		//for left operand of binary expr
+		Expr* lexpr = NULL;
+		ExprType expr_type = 0;
+		BinaryExprType type = 0;
+		switch (get_curr_token(parser).type)
+		{
+		case TOKEN_DOT:
+			type = BINARY_POSTFIX_DOT; 
+			expr_type = EXPR_BINARY_EXPR; break;
+		case TOKEN_ARROW:
+			type = BINARY_POSTFIX_ARROW; 
+			expr_type = EXPR_BINARY_EXPR; break;
+		case TOKEN_OP_BRACKET:
+			type = BINARY_POSTFIX_ARR_ELEM;
+			expr_type = EXPR_BINARY_EXPR; break;
+/*		case TOKEN_INC:
+			type = UNARY_POSTFIX_INC;
+			expr_type = EXPR_UNARY_EXPR; break;
+		case TOKEN_DEC:
+			type = UNARY_POSTFIX_DEC;
+			expr_type = EXPR_UNARY_EXPR; break;*/
+		}
+		//todo: check for idnt
+		get_next_token(parser);
+		/*Token token = get_next_token(parser);
+		if(!matcht(parser, TOKEN_IDNT))
+			report_error(frmt("Expected identifier token, but met: %s",
+				token_type_tostr(token.type)), token.context);
+		unget_curr_token(parser);
+		*/
+
+		if (type != BINARY_POSTFIX_ARR_ELEM)
+			lexpr = parse_primary_expr(parser);
+		else
+		{
+			lexpr = parse_expr(parser);
+			expect_with_skip(parser, TOKEN_CL_BRACKET, "]");
+		}
+
+		postfix_expr = expr_new(expr_type,
+			binary_expr_new(type, (postfix_expr) ? postfix_expr : primary_expr, lexpr));
+	}
+	return (postfix_expr) ? postfix_expr : primary_expr;
 }
 
 Expr* parse_unary_expr(Parser* parser)
@@ -220,9 +280,9 @@ Expr* parse_unary_expr(Parser* parser)
 	switch (get_curr_token(parser).type)
 	{
 	case TOKEN_INC:
-		unary_unary_case(parser, UNARY_INC);
+		unary_unary_case(parser, UNARY_PREFIX_INC);
 	case TOKEN_DEC:
-		unary_unary_case(parser, UNARY_DEC);
+		unary_unary_case(parser, UNARY_PREFIX_DEC);
 	case TOKEN_PLUS:
 		unary_cast_case(parser, UNARY_PLUS);
 	case TOKEN_DASH:
@@ -238,7 +298,7 @@ Expr* parse_unary_expr(Parser* parser)
 	case TOKEN_KEYWORD_SIZEOF:
 		return parse_sizeof_expr(parser);
 	default:
-		return parse_primary_expr(parser);
+		return parse_postfix_expr(parser);
 	}
 }
 

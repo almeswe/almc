@@ -1,39 +1,5 @@
 #include "ast.h"
 
-Type* type_new(const char* repr)
-{
-	Type* t = (Type*)calloc(1, sizeof(Type)); new__chk(t);
-	t->repr = repr;
-
-	char index = -1;
-	for (int i = 0; i < KEYWORDS; i++)
-		if (strcmp(repr, keywords[i]) == 0)
-			index = i + KEYWORD_IN_TOKEN_ENUM_OFFSET;
-	switch (index)
-	{
-	case -1:
-		t->mods.is_predefined = 0;
-		break;
-	case TOKEN_KEYWORD_CHAR:
-	case TOKEN_KEYWORD_INT8:
-	case TOKEN_KEYWORD_INT16:
-	case TOKEN_KEYWORD_INT32:
-	case TOKEN_KEYWORD_INT64:
-	case TOKEN_KEYWORD_UINT8:
-	case TOKEN_KEYWORD_UINT16:
-	case TOKEN_KEYWORD_UINT32:
-	case TOKEN_KEYWORD_UINT64:
-	case TOKEN_KEYWORD_FLOAT32:
-	case TOKEN_KEYWORD_FLOAT64:
-		t->mods.is_predefined = 1;
-		break;
-	default:
-		report_error(frmt("Type expected (identifier or predefined type), met: %s",
-			token_type_tostr(index)), NULL);
-	}
-	return t;
-}
-
 Expr* expr_new(ExprType type, void* expr_value_ptr)
 {
 	#define expr_set_value(type, field) e->field = (type*)expr_value_ptr
@@ -216,7 +182,6 @@ void print_unary_expr(UnaryExpr* expr, const char* indent)
 
 void print_binary_expr(BinaryExpr* expr, const char* indent)
 {
-
 	printf(BOLDYELLOW);
 	const char* binary_expr_type_str[] = {
 		"binary-add: +",
@@ -254,6 +219,10 @@ void print_binary_expr(BinaryExpr* expr, const char* indent)
 		"binary-bw-and-asgn: &=",
 		"binary-bw-xor-asgn: ^=",
 		"binary-bw-not-asgn: ~=",
+
+		"binary-postf-dot: .",
+		"binary-postf-arrow: ->",
+		"binary-postf-arr-elem: []"
 	};
 	printf("%s%s\n", indent, binary_expr_type_str[expr->type]);
 	printf(RESET);

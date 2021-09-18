@@ -17,17 +17,10 @@ AstRoot* parse(Parser* parser);
 Expr* parse_expr(Parser* parser);
 Expr* parse_paren_expr(Parser* parser);
 
-Type* parse_type(Parser* parser);
-
-/*Expr* parse_unary_cast_expr(Parser* parser);
-Expr* parse_unary_datasize_expr(Parser* parser);
-Expr* parse_unary_typesize_expr(Parser* parser);
-*/
-
 Type* parse_type_name(Parser* parser);
 
 Expr* parse_primary_expr(Parser* parser);
-Expr* postfix_expr(Parser* parser);
+Expr* parse_postfix_expr(Parser* parser);
 Expr* parse_unary_expr(Parser* parser);
 Expr* parse_cast_expr(Parser* parser);
 Expr* parse_sizeof_expr(Parser* parser);

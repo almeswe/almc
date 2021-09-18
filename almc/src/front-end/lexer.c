@@ -79,6 +79,7 @@ const char* ext_chars[] = {
 	">=",
 	"++",
 	"--",
+	"->",
 };
 
 const char* keywords[] = {
@@ -170,6 +171,7 @@ const char* tokens_str[] = {
 	"TOKEN_GREATER_EQ_THAN",
 	"TOKEN_INC",
 	"TOKEN_DEC",
+	"TOKEN_ARROW",
 
 	"TOKEN_STRING",
 	"TOKEN_CHARACTER",
