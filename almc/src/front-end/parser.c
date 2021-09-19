@@ -2,6 +2,7 @@
 
 #define matcht(parser, t) (get_curr_token(parser).type == (t))
 #define expect_with_skip(parser, type, str) expect(parser, type, str), get_next_token(parser)
+#define token_index_fits(parser) (parser->token_index >= 0 && parser->token_index < sbuffer_len(parser->tokens))
 
 #define TOKEN_PREDEFINED_TYPE     \
          TOKEN_KEYWORD_VOID:	  \
@@ -37,9 +38,8 @@ Token get_next_token(Parser* parser)
 	if (!parser->tokens)
 		report_error("Cannot get next token, because parser->tokens is NULL!", NULL);
 	else
-		return parser->token_index >= 0 &&
-			parser->token_index < sbuffer_len(parser->tokens) ?
-			parser->tokens[parser->token_index++] : parser->tokens[parser->token_index];
+		return token_index_fits(parser) ?
+			parser->tokens[++parser->token_index] : parser->tokens[parser->token_index];
 }
 
 Token get_curr_token(Parser* parser)
@@ -47,8 +47,7 @@ Token get_curr_token(Parser* parser)
 	if (!parser->tokens)
 		report_error("Cannot get current token, because parser->tokens is NULL!", NULL);
 	else
-		return parser->token_index >= 0 &&
-			parser->token_index < sbuffer_len(parser->tokens) ?
+		return token_index_fits(parser) ?
 			parser->tokens[parser->token_index] : parser->tokens[0];
 }
 
@@ -157,6 +156,26 @@ Expr* parse_paren_expr(Parser* parser)
 	return expr;
 }
 
+Expr* parse_func_call_expr(Parser* parser)
+{
+	Expr** fargs = NULL;
+	const char* fname = get_curr_token(parser).str_value;
+	expect_with_skip(parser, TOKEN_IDNT, "identifier");
+	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
+	if (!matcht(parser, TOKEN_CL_PAREN))
+	{
+		do
+		{
+			if (sbuffer_len(fargs) && matcht(parser, TOKEN_COMMA))
+				get_next_token(parser);
+			sbuffer_add(fargs, parse_expr(parser));
+		} while (matcht(parser, TOKEN_COMMA));
+	}
+	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
+	return expr_new(EXPR_FUNC_CALL,
+		func_call_new(fname, fargs));
+}
+
 Expr* parse_primary_expr(Parser* parser)
 {
 	Expr* expr = NULL;
@@ -172,16 +191,86 @@ Expr* parse_primary_expr(Parser* parser)
 			const_new(CONST_FLOAT, token.fvalue, token.context));
 		break;
 	case TOKEN_IDNT:
-		expr = expr_new(EXPR_IDNT,
-			idnt_new(token.str_value, token.context));
+		get_next_token(parser);
+		//todo: refactor
+		if (matcht(parser, TOKEN_OP_PAREN))
+		{
+			unget_curr_token(parser);
+			return parse_func_call_expr(parser);
+		}
+		else
+		{
+			unget_curr_token(parser);
+			expr = expr_new(EXPR_IDNT,
+				idnt_new(token.str_value, token.context));
+		}
+		break;
+	case TOKEN_STRING:
+		expr = expr_new(EXPR_STRING,
+			str_new(token.str_value, token.context));
+		break;
+	case TOKEN_CHARACTER:
+		expr = expr_new(EXPR_CONST,
+			const_new(CONST_INT, (int64_t)token.char_value, token.context));
 		break;
 	case TOKEN_OP_PAREN:
 		return parse_paren_expr(parser);
 	default:
-		report_error(frmt("Primary expression token expected, but met: %s", token_type_tostr(token.type)), token.context);
+		report_error(frmt("Primary expression token expected, but met: %s",
+			token_type_tostr(token.type)), token.context);
 	}
 	get_next_token(parser);
 	return expr;
+}
+
+Expr* parse_postfix_xxcrement_expr(Parser* parser, Expr* expr, TokenType xxcrmt_type)
+{
+	Expr* unary_expr = NULL;
+	Token token = get_curr_token(parser);
+	switch (token.type)
+	{
+	case TOKEN_INC:
+	case TOKEN_DEC:
+		unary_expr = expr_new(EXPR_UNARY_EXPR,
+			unary_expr_new(xxcrmt_type == TOKEN_INC ? UNARY_POSTFIX_INC : UNARY_POSTFIX_DEC, 
+				expr));
+		get_next_token(parser);
+		return unary_expr;
+	default:
+		report_error(frmt("Expected postfix (in/de)crement, but met: %s",
+			token_type_tostr(token.type)), token.context);
+	}
+}
+
+Expr* parse_array_accessor_expr(Parser* parser, Expr* rexpr)
+{
+	expect_with_skip(parser, TOKEN_OP_BRACKET, "[");
+	Expr* expr = expr_new(EXPR_BINARY_EXPR,
+		binary_expr_new(BINARY_ARR_MEMBER_ACCESSOR, rexpr, parse_expr(parser)));
+	expect_with_skip(parser, TOKEN_CL_BRACKET, "]");
+	return expr;
+}
+
+Expr* parse_member_accessor_expr(Parser* parser, Expr* rexpr, TokenType accessor_type)
+{
+	Token token = get_curr_token(parser);
+	switch (accessor_type)
+	{
+	case TOKEN_DOT:
+	case TOKEN_ARROW:
+		//todo: check for func call after referencing
+		token = get_next_token(parser);
+		if (!matcht(parser, TOKEN_IDNT))
+			report_error(frmt("Expected identifier as acessed member, but met: %s",
+				token_type_tostr(token.type)), token.context);
+		get_next_token(parser);
+		return expr_new(EXPR_BINARY_EXPR, 
+			binary_expr_new(accessor_type == TOKEN_DOT ? BINARY_MEMBER_ACCESSOR : BINARY_PTR_MEMBER_ACCESSOR,
+				rexpr, expr_new(EXPR_IDNT, idnt_new(token.str_value, token.context))));
+	default:
+		report_error(frmt("Expected member accessor, but met: %s",
+			token_type_tostr(token.type)), token.context);
+	}
 }
 
 Expr* parse_postfix_expr(Parser* parser)
@@ -198,52 +287,31 @@ Expr* parse_postfix_expr(Parser* parser)
 
 	Expr* postfix_expr = NULL;
 	Expr* primary_expr = parse_primary_expr(parser);
-	//todo: extend while
-	while (matcht(parser, TOKEN_DOT)
+	while (matcht(parser, TOKEN_INC)
+		|| matcht(parser, TOKEN_DEC)
+		|| matcht(parser, TOKEN_DOT)
 		|| matcht(parser, TOKEN_ARROW)
 		|| matcht(parser, TOKEN_OP_BRACKET))
 	{
-		//for left operand of binary expr
-		Expr* lexpr = NULL;
-		ExprType expr_type = 0;
-		BinaryExprType type = 0;
+		Expr* rexpr = postfix_expr ?
+			postfix_expr : primary_expr;
+
 		switch (get_curr_token(parser).type)
 		{
-		case TOKEN_DOT:
-			type = BINARY_POSTFIX_DOT; 
-			expr_type = EXPR_BINARY_EXPR; break;
-		case TOKEN_ARROW:
-			type = BINARY_POSTFIX_ARROW; 
-			expr_type = EXPR_BINARY_EXPR; break;
-		case TOKEN_OP_BRACKET:
-			type = BINARY_POSTFIX_ARR_ELEM;
-			expr_type = EXPR_BINARY_EXPR; break;
-/*		case TOKEN_INC:
-			type = UNARY_POSTFIX_INC;
-			expr_type = EXPR_UNARY_EXPR; break;
+		case TOKEN_INC:
 		case TOKEN_DEC:
-			type = UNARY_POSTFIX_DEC;
-			expr_type = EXPR_UNARY_EXPR; break;*/
+			postfix_expr = parse_postfix_xxcrement_expr(parser,
+				rexpr, get_curr_token(parser).type);
+			break;
+		case TOKEN_DOT:
+		case TOKEN_ARROW:
+			postfix_expr = parse_member_accessor_expr(parser,
+				rexpr, get_curr_token(parser).type);
+			break;
+		case TOKEN_OP_BRACKET:
+			postfix_expr = parse_array_accessor_expr(parser,
+				rexpr, get_curr_token(parser).type);
 		}
-		//todo: check for idnt
-		get_next_token(parser);
-		/*Token token = get_next_token(parser);
-		if(!matcht(parser, TOKEN_IDNT))
-			report_error(frmt("Expected identifier token, but met: %s",
-				token_type_tostr(token.type)), token.context);
-		unget_curr_token(parser);
-		*/
-
-		if (type != BINARY_POSTFIX_ARR_ELEM)
-			lexpr = parse_primary_expr(parser);
-		else
-		{
-			lexpr = parse_expr(parser);
-			expect_with_skip(parser, TOKEN_CL_BRACKET, "]");
-		}
-
-		postfix_expr = expr_new(expr_type,
-			binary_expr_new(type, (postfix_expr) ? postfix_expr : primary_expr, lexpr));
 	}
 	return (postfix_expr) ? postfix_expr : primary_expr;
 }
@@ -363,6 +431,7 @@ Expr* parse_sizeof_expr(Parser* parser)
 	Type* type = NULL;
 	Expr* expr = NULL;
 	expect_with_skip(parser, TOKEN_KEYWORD_SIZEOF, "sizeof");
+	//todo: sizeof(Lexer) works right?
 	if (!(type = try_to_get_type(parser)))
 	{
 		return expr_new(EXPR_UNARY_EXPR,

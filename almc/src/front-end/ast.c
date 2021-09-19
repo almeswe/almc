@@ -12,6 +12,12 @@ Expr* expr_new(ExprType type, void* expr_value_ptr)
 	case EXPR_CONST:
 		expr_set_value(Const, cnst);
 		break;
+	case EXPR_STRING:
+		expr_set_value(Str, str);
+		break;
+	case EXPR_FUNC_CALL:
+		expr_set_value(FuncCall, func_call);
+		break;
 	case EXPR_UNARY_EXPR:
 		expr_set_value(UnaryExpr, unary_expr);
 		break;
@@ -23,6 +29,14 @@ Expr* expr_new(ExprType type, void* expr_value_ptr)
 		break;
 	}
 	return e;
+}
+
+Str* str_new(const char* string, SrcContext* context)
+{
+	Str* s = new_s(Str, s);
+	s->svalue = string;
+	s->context = context;
+	return s;
 }
 
 Idnt* idnt_new(const char* idnt, SrcContext* context)
@@ -50,6 +64,14 @@ Const* const_new(ConstType type, double value, SrcContext* context)
 		break;
 	}
 	return c;
+}
+
+FuncCall* func_call_new(const char* func_name, Expr** func_args)
+{
+	FuncCall* fc = new_s(FuncCall, fc);
+	fc->func_args = func_args;
+	fc->func_name = func_name;
+	return fc;
 }
 
 UnaryExpr* unary_expr_new(UnaryExprType type, Expr* expr)
@@ -99,6 +121,12 @@ void print_expr(Expr* expr, const char* indent)
 		case EXPR_CONST:
 			print_const(expr->cnst, new_indent);
 			break;
+		case EXPR_STRING:
+			print_str(expr->str, new_indent);
+			break;
+		case EXPR_FUNC_CALL:
+			print_func_call(expr->func_call, new_indent);
+			break;
 		case EXPR_UNARY_EXPR:
 			print_unary_expr(expr->unary_expr, new_indent);
 			break;
@@ -110,12 +138,18 @@ void print_expr(Expr* expr, const char* indent)
 			break;
 		}
 	else
-		printf("%s   null-body\n", indent);
+		printf("%s   no-body\n", indent);
+}
+
+void print_str(Str* str, const char* indent)
+{
+	printf(WHITE);
+	printf("%sstr: \"%s\"\n", indent, str->svalue);
+	printf(RESET);
 }
 
 void print_idnt(Idnt* idnt, const char* indent)
 {
-	sizeof(char);
 	printf(BOLDWHITE);
 	printf("%sidnt: %s\n", indent, idnt->svalue);
 	printf(RESET);
@@ -138,6 +172,21 @@ void print_const(Const* cnst, const char* indent)
 	}
 	printf(RESET);
 }
+
+void print_func_call(FuncCall* func_call, const char* indent)
+{
+	printf(GREEN);
+	size_t len = sbuffer_len(func_call->func_args);
+	printf("%sfunc-call: %s(args: %d)\n", indent,
+		func_call->func_name, len);
+	printf(RESET);
+	if (len)
+		for (int i = 0; i < len; i++)
+			print_expr(func_call->func_args[i], indent);
+	else
+		printf("%s   no-args\n", indent);
+}
+
 void print_unary_expr(UnaryExpr* expr, const char* indent)
 {
 	printf(YELLOW);
@@ -155,6 +204,9 @@ void print_unary_expr(UnaryExpr* expr, const char* indent)
 
 		"unary-cast:",
 		"unary-sizeof:",
+
+		"unary-postfix-inc: ++",
+		"unary-postfix-dec: --",
 	};
 	switch (expr->type)
 	{
@@ -220,9 +272,9 @@ void print_binary_expr(BinaryExpr* expr, const char* indent)
 		"binary-bw-xor-asgn: ^=",
 		"binary-bw-not-asgn: ~=",
 
-		"binary-postf-dot: .",
-		"binary-postf-arrow: ->",
-		"binary-postf-arr-elem: []"
+		"binary-mmbr-accsr: .",
+		"binary-ptr-mmbr-accsr: ->",
+		"binary-arr-mmbr-accsr: []"
 	};
 	printf("%s%s\n", indent, binary_expr_type_str[expr->type]);
 	printf(RESET);

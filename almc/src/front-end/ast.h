@@ -93,9 +93,9 @@ typedef enum BinaryExprType
 	BINARY_BW_XOR_ASSIGN,
 	BINARY_BW_NOT_ASSIGN,
 
-	BINARY_POSTFIX_DOT,
-	BINARY_POSTFIX_ARROW,
-	BINARY_POSTFIX_ARR_ELEM,
+	BINARY_MEMBER_ACCESSOR,
+	BINARY_PTR_MEMBER_ACCESSOR,
+	BINARY_ARR_MEMBER_ACCESSOR,
 } BinaryExprType;
 
 typedef struct BinaryExpr
@@ -111,6 +111,12 @@ typedef struct TernaryExpr
 	Expr* lexpr;
 	Expr* rexpr;
 } TernaryExpr;
+
+typedef struct Str
+{
+	const char* svalue;
+	SrcContext* context;
+} Str;
 
 typedef struct Idnt
 {
@@ -137,11 +143,18 @@ typedef struct Const
 	SrcContext* context;
 } Const;
 
-typedef enum ExprType
+typedef struct FuncCall
 {
+	Expr** func_args;
+	const char* func_name;
+} FuncCall;
+
+typedef enum ExprType
+{	
 	EXPR_IDNT,
 	EXPR_CONST,
 	EXPR_STRING,
+	EXPR_FUNC_CALL,
 	EXPR_UNARY_EXPR,
 	EXPR_BINARY_EXPR,
 	EXPR_TERNARY_EXPR,
@@ -152,8 +165,10 @@ typedef struct Expr
 	ExprType type;
 	union
 	{
+		Str* str;
 		Idnt* idnt;
 		Const* cnst;
+		FuncCall* func_call;
 		UnaryExpr* unary_expr;
 		BinaryExpr* binary_expr;
 		TernaryExpr* ternary_expr;
@@ -166,16 +181,20 @@ typedef struct AstRoot
 } AstRoot;
 
 Expr* expr_new(ExprType type, void* expr_value_ptr);
+Str* str_new(const char* string, SrcContext* context);
 Idnt* idnt_new(const char* idnt, SrcContext* context);
 Const* const_new(ConstType type, double value, SrcContext* context);
+FuncCall* func_call_new(const char* func_name, Expr** func_args);
 UnaryExpr* unary_expr_new(UnaryExprType type, Expr* expr);
 BinaryExpr* binary_expr_new(BinaryExprType type, Expr* lexpr, Expr* rexpr);
 TernaryExpr* ternary_expr_new(Expr* cond, Expr* lexpr, Expr* rexpr);
 
 void print_ast(AstRoot* ast);
 void print_expr(Expr* expr, const char* indent);
+void print_str(Str* str, const char* indent);
 void print_idnt(Idnt* idnt, const char* indent);
 void print_const(Const* cnst, const char* indent);
+void print_func_call(FuncCall* func_call, const char* indent);
 void print_unary_expr(UnaryExpr* expr, const char* indent);
 void print_binary_expr(BinaryExpr* expr, const char* indent);
 void print_ternary_expr(TernaryExpr* expr, const char* indent);
