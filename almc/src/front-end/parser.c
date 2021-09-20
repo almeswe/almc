@@ -215,6 +215,11 @@ Expr* parse_primary_expr(Parser* parser)
 		break;
 	case TOKEN_OP_PAREN:
 		return parse_paren_expr(parser);
+	case TOKEN_KEYWORD_TRUE:
+	case TOKEN_KEYWORD_FALSE:
+		expr = expr_new(EXPR_CONST,
+			const_new(CONST_INT, (int64_t)(token.type == TOKEN_KEYWORD_TRUE ? 1 : 0), token.context));
+		break;
 	default:
 		report_error(frmt("Primary expression token expected, but met: %s",
 			token_type_tostr(token.type)), token.context);

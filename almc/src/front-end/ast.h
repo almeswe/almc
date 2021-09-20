@@ -150,7 +150,7 @@ typedef struct FuncCall
 } FuncCall;
 
 typedef enum ExprType
-{	
+{
 	EXPR_IDNT,
 	EXPR_CONST,
 	EXPR_STRING,

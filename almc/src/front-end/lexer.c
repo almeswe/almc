@@ -1,6 +1,9 @@
 #include "lexer.h"
 
 //TODO: lexer backup
+//TODO: add boolean
+//todo: add new namings for types (like in rust)
+//todo: add string
 
 #define get__next_char_cstream(lexer) (*(++lexer->char_stream))
 #define get__next_char_fstream(lexer) (fgetc(lexer->file_stream))
@@ -86,33 +89,35 @@ const char* keywords[] = {
 	"auto",
 	"break",
 	"case",
-	"char",
+	"chr",
 	"const",
 	"continue",
 	"default",
 	"enum",
 	"extern",
 	"for",
-	"float32",
-	"float64",
+	"false",
+	"f32",
+	"f64",
 	"goto",
 	"if",
-	"int8",
-	"int16",
-	"int32",
-	"int64",
+	"i8",
+	"i16",
+	"i32",
+	"i64",
 	"register",
 	"return",
 	"static",
 	"struct",
 	"switch",
 	"sizeof",
+	"true",
 	"typeof",
 	"union",
-	"uint8",
-	"uint16",
-	"uint32",
-	"uint64",
+	"u8",
+	"u16",
+	"u32",
+	"u64",
 	"void",
 	"volatile",
 	"while",
@@ -189,6 +194,7 @@ const char* tokens_str[] = {
 	"TOKEN_KEYWORD_ENUM",
 	"TOKEN_KEYWORD_EXTERN",
 	"TOKEN_KEYWORD_FOR",
+	"TOKEN_KEYWORD_FALSE",
 	"TOKEN_KEYWORD_FLOAT32",
 	"TOKEN_KEYWORD_FLOAT64",
 	"TOKEN_KEYWORD_GOTO",
@@ -203,6 +209,7 @@ const char* tokens_str[] = {
 	"TOKEN_KEYWORD_STRUCT",
 	"TOKEN_KEYWORD_SWITCH",
 	"TOKEN_KEYWORD_SIZEOF",
+	"TOKEN_KEYWORD_TRUE",
 	"TOKEN_KEYWORD_TYPEOF",
 	"TOKEN_KEYWORD_UNION",
 	"TOKEN_KEYWORD_UINT8",
@@ -226,6 +233,8 @@ Lexer* lexer_new(const char* src, InputStreamType type)
 		{
 			FILE* file;
 			fopen_s(&file, src, "rb+");
+			if (!file)
+				report_error(frmt("Cannot open file: \'%s\'", src), NULL);
 			lex->curr_file = src;
 			lex->file_stream = file;
 			break;
