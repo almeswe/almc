@@ -27,6 +27,8 @@ Expr* expr_new(ExprType type, void* expr_value_ptr)
 	case EXPR_TERNARY_EXPR:
 		expr_set_value(TernaryExpr, ternary_expr);
 		break;
+	default:
+		assert(0);
 	}
 	return e;
 }
@@ -62,6 +64,8 @@ Const* const_new(ConstType type, double value, SrcContext* context)
 	case CONST_FLOAT:
 		c->fvalue = value;
 		break;
+	default:
+		assert(0);
 	}
 	return c;
 }
@@ -99,6 +103,79 @@ TernaryExpr* ternary_expr_new(Expr* cond, Expr* lexpr, Expr* rexpr)
 	te->lexpr = lexpr;
 	te->rexpr = rexpr;
 	return te;
+}
+
+Stmt* stmt_new(StmtType type, void* stmt_value_ptr)
+{
+	#define stmt_set_value(type, field) s->field = (type*)stmt_value_ptr
+	Stmt* s = new_s(Stmt, s);
+	switch (s->type = type)
+	{
+	case STMT_TYPE_DECL:
+		stmt_set_value(TypeDecl, type_decl);
+		break;
+	case STMT_VAR_DECL:
+		stmt_set_value(VarDecl, var_decl);
+		break;
+	default:
+		assert(0);
+	}
+	return s;
+}
+
+TypeDecl* type_decl_new(TypeDeclType type, void* type_decl_value_ptr)
+{
+	#define type_decl_set_value(type, field) td->field = (type*)type_decl_value_ptr
+	TypeDecl* td = new_s(TypeDecl, td);
+	switch (td->type = type)
+	{
+	case TYPE_DECL_ENUM:
+		type_decl_set_value(EnumDecl, enum_decl);
+		break;
+	case TYPE_DECL_UNION:
+		type_decl_set_value(UnionDecl, enum_decl);
+		break;
+	case TYPE_DECL_STRUCT:
+		type_decl_set_value(StructDecl, enum_decl);
+		break;
+	default:
+		assert(0);
+	}
+	return td;
+}
+
+EnumDecl* enum_decl_new(Idnt** enum_idnts, Expr** enum_idnt_values, const char* enum_name)
+{
+	EnumDecl* ed = new_s(EnumDecl, ed);
+	ed->enum_name = enum_name;
+	ed->enum_idnts = enum_idnts;
+	ed->enum_idnt_values = enum_idnt_values;
+	return ed;
+}
+
+UnionDecl* union_decl_new(VarDecl** union_mmbrs, const char* union_name)
+{
+	UnionDecl* ud = new_s(UnionDecl, ud);
+	ud->union_name = union_name;
+	ud->union_mmbrs = union_mmbrs;
+	return ud;
+}
+
+StructDecl* struct_decl_new(VarDecl** struct_mmbrs, const char* struct_name)
+{
+	StructDecl* sd = new_s(StructDecl, sd);
+	sd->struct_name = struct_name;
+	sd->struct_mmbrs = struct_mmbrs;
+	return sd;
+}
+
+VarDecl* var_decl_new(Type* var_type, Expr* var_init, const char* var_name)
+{
+	VarDecl* vd = new_s(VarDecl, vd);
+	vd->var_type = var_type;
+	vd->var_name = var_name;
+	vd->var_init = var_init;
+	return vd;
 }
 
 void print_ast(AstRoot* ast)
@@ -139,6 +216,23 @@ void print_expr(Expr* expr, const char* indent)
 		}
 	else
 		printf("%s   no-body\n", indent);
+}
+
+void print_type(Type* type, const char* indent)
+{
+#define print_type_mode(mode) type->mods.mode ? \
+	printf("%s%s: %d\n", frmt("%s   ", indent), #mode, type->mods.mode) : 0
+
+	printf(BOLDRED);
+	printf("%stype: %s\n", indent, type->repr);
+	printf(RESET);
+	print_type_mode(is_ptr);
+	print_type_mode(is_void);
+	print_type_mode(is_static);
+	print_type_mode(is_register);
+	print_type_mode(is_volatile);
+	print_type_mode(is_const_ptr);
+	print_type_mode(is_predefined);
 }
 
 void print_str(Str* str, const char* indent)
@@ -211,19 +305,10 @@ void print_unary_expr(UnaryExpr* expr, const char* indent)
 	switch (expr->type)
 	{
 	case UNARY_CAST:
-		printf(
-			"%s%s (%s ptr:%d)\n",
-			indent,
-			unary_expr_type_str[expr->type],
-			expr->cast_type->repr,
-			expr->cast_type->mods.is_ptr
-		);
-		break;
 	case UNARY_SIZEOF:
-		printf("%s%s", indent, unary_expr_type_str[expr->type]);
+		printf("%s%s\n", indent, unary_expr_type_str[expr->type]);
 		if (expr->cast_type)
-			printf(" (%s ptr:%d)", expr->cast_type->repr, expr->cast_type->mods.is_ptr);
-		printf("\n");
+			print_type(expr->cast_type, frmt("%s   ", indent));
 		break;
 	default:
 		printf("%s%s\n", indent, unary_expr_type_str[expr->type]);
@@ -285,9 +370,80 @@ void print_binary_expr(BinaryExpr* expr, const char* indent)
 void print_ternary_expr(TernaryExpr* expr, const char* indent)
 {
 	printf(BOLDGREEN);
-	printf("%s%s\n", indent, "ternary-expr:");
+	printf("%sternary:\n", indent);
 	printf(RESET);
 	print_expr(expr->cond, indent);
 	print_expr(expr->lexpr, indent);
 	print_expr(expr->rexpr, indent);
+}
+
+void print_stmt(Stmt* stmt, const char* indent)
+{
+	char* new_indent = frmt("%s   ", indent);
+	if (stmt)
+		switch (stmt->type)
+		{
+		case STMT_VAR_DECL:
+			print_var_decl(stmt->var_decl, new_indent);
+			break;
+		case STMT_TYPE_DECL:
+			print_type_decl(stmt->type_decl, new_indent);
+			break;
+		default:
+			assert(0);
+		}
+	else
+		printf("%s   no-body\n", indent);
+}
+
+void print_type_decl(TypeDecl* type_decl, const char* indent)
+{
+	switch (type_decl->type)
+	{
+	case TYPE_DECL_ENUM:
+		print_enum_decl(type_decl->enum_decl, indent);
+		break;
+	case TYPE_DECL_STRUCT:
+		print_struct_decl(type_decl->struct_decl, indent);
+		break;
+	default:
+		assert(0);
+	}
+}
+
+void print_enum_decl(EnumDecl* enum_decl, const char* indent)
+{
+	printf(BOLDCYAN);
+	printf("%senum-decl: %s {idnts: %d}\n", indent, enum_decl->enum_name, sbuffer_len(enum_decl->enum_idnts));
+	printf(RESET);
+	for (int i = 0; i < sbuffer_len(enum_decl->enum_idnts); i++)
+	{
+		printf("%s   %s:\n", indent, enum_decl->enum_idnts[i]->svalue);
+		print_expr(enum_decl->enum_idnt_values[i], frmt("   %s", indent));
+	}
+}
+
+void print_union_decl(UnionDecl* union_decl, const char* indent)
+{
+	assert(0);
+}
+
+void print_struct_decl(StructDecl* struct_decl, const char* indent)
+{
+	printf(BOLDCYAN);
+	printf("%sstruct-decl: %s {idnts: %d}\n", indent, struct_decl->struct_name, sbuffer_len(struct_decl->struct_mmbrs));
+	printf(RESET);
+	for (int i = 0; i < sbuffer_len(struct_decl->struct_mmbrs); i++)
+		print_var_decl(struct_decl->struct_mmbrs[i], frmt("   %s", indent));
+}
+
+void print_var_decl(VarDecl* var_decl, const char* indent)
+{
+	printf(CYAN);
+	printf("%svar-decl: %s\n", indent, var_decl->var_name);
+	printf(RESET);
+	indent = frmt("   %s", indent);
+	print_type(var_decl->var_type, indent);
+	printf("%sinit-expr:\n", indent);
+	print_expr(var_decl->var_init, indent);
 }

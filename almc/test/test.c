@@ -258,7 +258,8 @@ void lexer_test()
 	//print_tokens(tokens);
 	lexer_test_case_free(lexer);
 }
-void parser_test()
+
+void parser_expr_manual_test()
 {
 	char buffer[1024];
 	while (1)
@@ -266,8 +267,21 @@ void parser_test()
 		printf(CYAN); char* str = gets(buffer); printf(RESET);
 		Lexer* l = lexer_new(str, STREAM_CHAR_PTR);
 		Parser* p = parser_new(lex(l));
-		AstRoot* root = parse(p);
-		print_ast(root);
+		Expr* root = parse_expr(p);
+		print_expr(root, "");
+	}
+}
+
+void parser_stmt_manual_test()
+{
+	const char* file = "C:\\Users\\HP\\source\\repos\\almc\\Debug\\stmt-test.txt";
+	while (1)
+	{ 
+		Lexer* l = lexer_new(file, STREAM_FILE);
+		Parser* p = parser_new(lex(l));
+		Stmt* root = parse_stmt(p);
+		print_stmt(root, "");
+		getchar();
 	}
 }
 
@@ -283,8 +297,8 @@ void parser_eval_test()
 #define parser_eval_test_case_init(expr, str_expr) \
 	l = lexer_new(str_expr, STREAM_CHAR_PTR);      \
 	p = parser_new(lex(l));						   \
-	ast = parse(p);								   \
-	assert((expr) == eval_ast(ast)); 			   \
+	ast = parse_expr(p);						   \
+	assert((expr) == eval_expr(ast)); 			   \
 	parser_eval_test_case_free(l, p)
 
 	Lexer* l;
@@ -347,5 +361,6 @@ void run_tests()
 	sb_test();
 	lexer_test();
 	parser_eval_test();
-	parser_test();
+	//parser_expr_manual_test();
+	parser_stmt_manual_test();
 }

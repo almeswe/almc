@@ -8,6 +8,7 @@
 
 
 typedef struct Expr Expr;
+typedef struct Stmt Stmt;
 
 typedef struct TypeMods
 {
@@ -175,6 +176,79 @@ typedef struct Expr
 	};
 } Expr;
 
+typedef struct Block
+{
+	Stmt** stmts;
+} Block;
+
+typedef struct VarDecl
+{
+	Type* var_type;
+	Expr* var_init;
+	const char* var_name;
+} VarDecl;
+
+typedef struct FuncDecl
+{
+	Type* func_ret_type;
+	Block* func_body;
+	VarDecl** func_params;
+	const char* func_name;
+} FuncDecl;
+
+typedef struct EnumDecl
+{
+	Idnt** enum_idnts;
+	Expr** enum_idnt_values;
+	const char* enum_name;
+} EnumDecl;
+
+typedef struct UnionDecl
+{
+	VarDecl** union_mmbrs;
+	const char* union_name;
+} UnionDecl;
+
+typedef struct StructDecl
+{
+	VarDecl** struct_mmbrs;
+	const char* struct_name;
+} StructDecl;
+
+typedef enum TypeDeclType
+{
+	TYPE_DECL_ENUM,
+	TYPE_DECL_UNION,
+	TYPE_DECL_STRUCT,
+} TypeDeclType;
+
+typedef struct TypeDecl
+{
+	TypeDeclType type;
+	union
+	{
+		EnumDecl* enum_decl;
+		UnionDecl* union_decl;
+		StructDecl* struct_decl;
+	};
+} TypeDecl;
+
+typedef enum StmtType
+{	
+	STMT_VAR_DECL,
+	STMT_TYPE_DECL,
+} StmtType;
+
+typedef struct Stmt
+{
+	StmtType type;
+	union
+	{
+		VarDecl* var_decl;
+		TypeDecl* type_decl;
+	};
+} Stmt;
+
 typedef struct AstRoot
 {
 	Expr** exprs;
@@ -189,8 +263,16 @@ UnaryExpr* unary_expr_new(UnaryExprType type, Expr* expr);
 BinaryExpr* binary_expr_new(BinaryExprType type, Expr* lexpr, Expr* rexpr);
 TernaryExpr* ternary_expr_new(Expr* cond, Expr* lexpr, Expr* rexpr);
 
+Stmt* stmt_new(StmtType type, void* stmt_value_ptr);
+TypeDecl* type_decl_new(TypeDeclType type, void* type_decl_value_ptr);
+EnumDecl* enum_decl_new(Idnt** enum_idnts, Expr** enum_idnt_values, const char* enum_name);
+UnionDecl* union_decl_new(VarDecl** union_mmbrs, const char* union_name);
+StructDecl* struct_decl_new(VarDecl** struct_mmbrs, const char* struct_name);
+VarDecl* var_decl_new(Type* var_type, Expr* var_init, const char* var_name);
+
 void print_ast(AstRoot* ast);
 void print_expr(Expr* expr, const char* indent);
+void print_type(Type* type, const char* indent);
 void print_str(Str* str, const char* indent);
 void print_idnt(Idnt* idnt, const char* indent);
 void print_const(Const* cnst, const char* indent);
@@ -198,5 +280,13 @@ void print_func_call(FuncCall* func_call, const char* indent);
 void print_unary_expr(UnaryExpr* expr, const char* indent);
 void print_binary_expr(BinaryExpr* expr, const char* indent);
 void print_ternary_expr(TernaryExpr* expr, const char* indent);
+
+void print_stmt(Stmt* stmt, const char* indent);
+void print_type_decl(TypeDecl* type_decl, const char* indent);
+void print_enum_decl(EnumDecl* enum_decl, const char* indent);
+void print_union_decl(UnionDecl* union_decl, const char* indent);
+void print_struct_decl(StructDecl* struct_decl, const char* indent);
+
+void print_var_decl(VarDecl* var_decl, const char* indent);
 
 #endif // AST_H 

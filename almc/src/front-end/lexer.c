@@ -2,8 +2,6 @@
 
 //TODO: lexer backup
 //TODO: add boolean
-//todo: add new namings for types (like in rust)
-//todo: add string
 
 #define get__next_char_cstream(lexer) (*(++lexer->char_stream))
 #define get__next_char_fstream(lexer) (fgetc(lexer->file_stream))
@@ -107,6 +105,7 @@ const char* keywords[] = {
 	"i64",
 	"register",
 	"return",
+	"str",
 	"static",
 	"struct",
 	"switch",
@@ -205,6 +204,7 @@ const char* tokens_str[] = {
 	"TOKEN_KEYWORD_INT64",
 	"TOKEN_KEYWORD_REGISTER",
 	"TOKEN_KEYWORD_RETURN",
+	"TOKEN_KEYWORD_STRING",
 	"TOKEN_KEYWORD_STATIC",
 	"TOKEN_KEYWORD_STRUCT",
 	"TOKEN_KEYWORD_SWITCH",
@@ -404,6 +404,8 @@ char is_escape_sequence(Lexer* lex)
 			return '\t';
 		case 'v':
 			return '\v';
+		case '0':
+			return '\0';
 		case '\\':
 			return '\\';
 		case '\'':
@@ -599,7 +601,6 @@ Token* get_dec_fnum_token(Lexer* lexer, uint64_t base_inum, uint32_t size)
 
 Token* get_idnt_token(Lexer* lexer)
 {
-	Token* token;
 	uint32_t size = 1;
 	char* value = NULL;
 	sbuffer_add(value, get_curr_char(lexer));
@@ -613,7 +614,7 @@ Token* get_idnt_token(Lexer* lexer)
 	unget_curr_char(lexer);
 
 	int order = iskeyword(value);
-	token = (order >= 0) ? get_keyword_token(lexer, order) :
+	Token* token = (order >= 0) ? get_keyword_token(lexer, order) :
 		 token_new(TOKEN_IDNT, src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
 	token->str_value = value;
 	return token;
@@ -624,7 +625,7 @@ Token* get_char_token(Lexer* lexer)
 	char character;
 	char is_escape;
 	get_next_char(lexer);
-	character = ((is_escape = is_escape_sequence(lexer)) > 0) ?
+	character = ((is_escape = is_escape_sequence(lexer)) >= 0) ?
 		is_escape : get_curr_char(lexer);
 	get_next_char(lexer);
 	if (!matchc(lexer, '\''))
@@ -646,7 +647,7 @@ Token* get_string_token(Lexer* lexer)
 
 	while (!check_stream(lexer) && isstrc(get_next_char(lexer)))
 	{
-		curr_char = ((is_escape = is_escape_sequence(lexer)) > 0) ?
+		curr_char = ((is_escape = is_escape_sequence(lexer)) >= 0) ?
 			is_escape : get_curr_char(lexer);
 		sbuffer_add(str, curr_char);
 		size += (is_escape > 0) ? 2 : 1;

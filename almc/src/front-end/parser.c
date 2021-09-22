@@ -1,11 +1,13 @@
 #include "parser.h"
 
+//todo: add initializer;
+
 #define matcht(parser, t) (get_curr_token(parser).type == (t))
 #define expect_with_skip(parser, type, str) expect(parser, type, str), get_next_token(parser)
 #define token_index_fits(parser) (parser->token_index >= 0 && parser->token_index < sbuffer_len(parser->tokens))
 
 #define TOKEN_PREDEFINED_TYPE     \
-         TOKEN_KEYWORD_VOID:	  \
+	     TOKEN_KEYWORD_VOID:	  \
 	case TOKEN_KEYWORD_CHAR:      \
 	case TOKEN_KEYWORD_INT8:      \
 	case TOKEN_KEYWORD_INT16:	  \
@@ -16,7 +18,8 @@
 	case TOKEN_KEYWORD_UINT32:	  \
 	case TOKEN_KEYWORD_UINT64:	  \
 	case TOKEN_KEYWORD_FLOAT32:	  \
-	case TOKEN_KEYWORD_FLOAT64
+	case TOKEN_KEYWORD_FLOAT64:   \
+	case TOKEN_KEYWORD_STRING      
 
 Parser* parser_new(Token* tokens)
 {
@@ -158,22 +161,22 @@ Expr* parse_paren_expr(Parser* parser)
 
 Expr* parse_func_call_expr(Parser* parser)
 {
-	Expr** fargs = NULL;
-	const char* fname = get_curr_token(parser).str_value;
-	expect_with_skip(parser, TOKEN_IDNT, "identifier");
+	Expr** func_args = NULL;
+	const char* func_name = get_curr_token(parser).str_value;
+	expect_with_skip(parser, TOKEN_IDNT, "func name");
 	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
 	if (!matcht(parser, TOKEN_CL_PAREN))
 	{
 		do
 		{
-			if (sbuffer_len(fargs) && matcht(parser, TOKEN_COMMA))
+			if (sbuffer_len(func_args) && matcht(parser, TOKEN_COMMA))
 				get_next_token(parser);
-			sbuffer_add(fargs, parse_expr(parser));
+			sbuffer_add(func_args, parse_expr(parser));
 		} while (matcht(parser, TOKEN_COMMA));
 	}
 	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
 	return expr_new(EXPR_FUNC_CALL,
-		func_call_new(fname, fargs));
+		func_call_new(func_name, func_args));
 }
 
 Expr* parse_primary_expr(Parser* parser)
@@ -349,7 +352,6 @@ Expr* parse_unary_expr(Parser* parser)
     return expr_new(EXPR_UNARY_EXPR,   \
 		unary_expr_new(type, parse_unary_expr(parser)))
 
-	//todo: add cast
 	switch (get_curr_token(parser).type)
 	{
 	case TOKEN_INC:
@@ -785,4 +787,127 @@ Expr* parse_assignment_expr(Parser* parser)
 			binary_expr_new(type, (assign_expr) ? assign_expr : cond_expr, parse_assignment_expr(parser)));
 	}
 	return (assign_expr) ? assign_expr : cond_expr;
+}
+
+Stmt* parse_stmt(Parser* parser)
+{
+	switch (get_curr_token(parser).type)
+	{
+	case TOKEN_KEYWORD_ENUM:
+	case TOKEN_KEYWORD_UNION:
+	case TOKEN_KEYWORD_STRUCT:
+		return parse_type_decl(parser);
+	case TOKEN_IDNT:
+		get_next_token(parser);
+		if (matcht(parser, TOKEN_COLON))
+		{
+			unget_curr_token(parser);
+			return parse_var_decl(parser);
+		}
+		unget_curr_token(parser);
+		break;
+	default:
+		assert(0);
+	}
+}
+
+Stmt* parse_type_decl(Parser* parser)
+{
+	switch (get_curr_token(parser).type)
+	{
+	case TOKEN_KEYWORD_ENUM:
+		return parse_enum_decl(parser);
+	/*case TOKEN_KEYWORD_UNION:
+		return parse_union_decl(parser);*/
+	case TOKEN_KEYWORD_STRUCT:
+		return parse_struct_decl(parser);
+	default:
+		assert(0);
+	}
+}
+
+Stmt* parse_enum_decl(Parser* parser)
+{
+	char* enum_name;
+	Idnt** enum_idnts = NULL;
+	Expr* enum_idnt_value = NULL;
+	Expr** enum_idnt_values = NULL;
+	expect_with_skip(parser, TOKEN_KEYWORD_ENUM, "enum");
+	enum_name = get_curr_token(parser).str_value;
+	expect_with_skip(parser, TOKEN_IDNT, "enum name");
+	expect_with_skip(parser, TOKEN_OP_BRACE, "{");
+	do
+	{
+		// here i check if the prev-value is not null, if not, add 1 to the previous value
+		// and set it as actual value, either create 0 const
+		if (!enum_idnt_value)
+			enum_idnt_value = expr_new(EXPR_CONST, const_new(CONST_INT, 0, NULL));
+		else
+			enum_idnt_value = enum_idnt_value->type == EXPR_CONST ?
+				expr_new(EXPR_CONST, const_new(CONST_INT, enum_idnt_value->cnst->ivalue+1, NULL)) : 
+				expr_new(EXPR_BINARY_EXPR, binary_expr_new(BINARY_ADD, enum_idnt_value, 
+					expr_new(EXPR_CONST, const_new(CONST_INT, 1, NULL))));
+		
+		if (sbuffer_len(enum_idnts) && matcht(parser, TOKEN_COMMA))
+			get_next_token(parser);
+		sbuffer_add(enum_idnts, idnt_new(get_curr_token(parser).str_value, 
+			get_curr_token(parser).context));
+		expect_with_skip(parser, TOKEN_IDNT, "enum's identifier");
+		if (matcht(parser, TOKEN_ASSIGN))
+		{
+			get_next_token(parser);
+			// here i skip the parse_assignment_expr function
+			enum_idnt_value =
+				parse_conditional_expr(parser);
+			//todo: free prev value
+		}
+		sbuffer_add(enum_idnt_values, enum_idnt_value);
+	}
+	while (matcht(parser, TOKEN_COMMA));
+	expect_with_skip(parser, TOKEN_CL_BRACE, "}");
+	return stmt_new(STMT_TYPE_DECL,
+		type_decl_new(TYPE_DECL_ENUM, enum_decl_new(enum_idnts, enum_idnt_values, enum_name)));
+}
+
+Stmt* parse_struct_decl(Parser* parser)
+{
+	char* struct_name = NULL;
+	// todo: ENUM_IDNT = expr!!;
+	// todo: Stmt here must be for struct's members
+	VarDecl* struct_mmbr = NULL;
+	VarDecl** struct_mmbrs = NULL;
+	expect_with_skip(parser, TOKEN_KEYWORD_STRUCT, "struct");
+	struct_name = get_curr_token(parser).str_value;
+	expect_with_skip(parser, TOKEN_IDNT, "struct name");
+	expect_with_skip(parser, TOKEN_OP_BRACE, "{");
+	do
+	{
+		struct_mmbr = parse_var_decl(parser)->var_decl;
+		if (struct_mmbr->var_init)
+			report_error(frmt("Struct member should be only declarated, not initialized.",
+				token_type_tostr(get_curr_token(parser).type)), get_curr_token(parser).context);
+		sbuffer_add(struct_mmbrs, struct_mmbr);
+	} while (!matcht(parser, TOKEN_CL_BRACE));
+	expect_with_skip(parser, TOKEN_CL_BRACE, "}");
+	return stmt_new(STMT_TYPE_DECL,
+		type_decl_new(TYPE_DECL_STRUCT, struct_decl_new(struct_mmbrs, struct_name)));
+}
+
+Stmt* parse_var_decl(Parser* parser)
+{
+	Type* var_type = NULL;
+	Expr* var_init = NULL;
+	const char* var_name = 
+		get_curr_token(parser).str_value;
+	expect_with_skip(parser, TOKEN_IDNT, "variable's name");
+	expect_with_skip(parser, TOKEN_COLON, ":");
+	var_type = parse_type_name(parser);
+	if (matcht(parser, TOKEN_ASSIGN))
+	{
+		get_next_token(parser);
+		var_init = parse_expr(parser);
+	}
+	expect_with_skip(parser, TOKEN_SEMICOLON, ";");
+	return stmt_new(STMT_VAR_DECL,
+		var_decl_new(var_type, var_init, var_name));
 }
