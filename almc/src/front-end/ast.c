@@ -111,11 +111,14 @@ Stmt* stmt_new(StmtType type, void* stmt_value_ptr)
 	Stmt* s = new_s(Stmt, s);
 	switch (s->type = type)
 	{
+	case STMT_VAR_DECL:
+		stmt_set_value(VarDecl, var_decl);
+		break;
 	case STMT_TYPE_DECL:
 		stmt_set_value(TypeDecl, type_decl);
 		break;
-	case STMT_VAR_DECL:
-		stmt_set_value(VarDecl, var_decl);
+	case STMT_FUNC_DECL:
+		stmt_set_value(FuncDecl, func_decl);
 		break;
 	default:
 		assert(0);
@@ -153,7 +156,7 @@ EnumDecl* enum_decl_new(Idnt** enum_idnts, Expr** enum_idnt_values, const char* 
 	return ed;
 }
 
-UnionDecl* union_decl_new(VarDecl** union_mmbrs, const char* union_name)
+UnionDecl* union_decl_new(TypeVar** union_mmbrs, const char* union_name)
 {
 	UnionDecl* ud = new_s(UnionDecl, ud);
 	ud->union_name = union_name;
@@ -161,7 +164,7 @@ UnionDecl* union_decl_new(VarDecl** union_mmbrs, const char* union_name)
 	return ud;
 }
 
-StructDecl* struct_decl_new(VarDecl** struct_mmbrs, const char* struct_name)
+StructDecl* struct_decl_new(TypeVar** struct_mmbrs, const char* struct_name)
 {
 	StructDecl* sd = new_s(StructDecl, sd);
 	sd->struct_name = struct_name;
@@ -169,13 +172,30 @@ StructDecl* struct_decl_new(VarDecl** struct_mmbrs, const char* struct_name)
 	return sd;
 }
 
-VarDecl* var_decl_new(Type* var_type, Expr* var_init, const char* var_name)
+TypeVar* type_var_new(Type* type, const char* var)
+{
+	TypeVar* tv = new_s(TypeVar, tv);
+	tv->var = var;
+	tv->type = type;
+	return tv;
+}
+
+VarDecl* var_decl_new(TypeVar* type_var, Expr* var_init)
 {
 	VarDecl* vd = new_s(VarDecl, vd);
-	vd->var_type = var_type;
-	vd->var_name = var_name;
+	vd->type_var = type_var;
 	vd->var_init = var_init;
 	return vd;
+}
+
+FuncDecl* func_decl_new(const char* func_name, TypeVar** func_params, Type* func_type, Block* func_body)
+{
+	FuncDecl* fd = new_s(FuncDecl, fd);
+	fd->func_name = func_name;
+	fd->func_type = func_type;
+	fd->func_body = func_body;
+	fd->func_params = func_params;
+	return fd;
 }
 
 void print_ast(AstRoot* ast)
@@ -389,6 +409,9 @@ void print_stmt(Stmt* stmt, const char* indent)
 		case STMT_TYPE_DECL:
 			print_type_decl(stmt->type_decl, new_indent);
 			break;
+		case STMT_FUNC_DECL:
+			print_func_decl(stmt->func_decl, new_indent);
+			break;
 		default:
 			assert(0);
 		}
@@ -403,6 +426,9 @@ void print_type_decl(TypeDecl* type_decl, const char* indent)
 	case TYPE_DECL_ENUM:
 		print_enum_decl(type_decl->enum_decl, indent);
 		break;
+	case TYPE_DECL_UNION:
+		print_union_decl(type_decl->union_decl, indent);
+		break;
 	case TYPE_DECL_STRUCT:
 		print_struct_decl(type_decl->struct_decl, indent);
 		break;
@@ -414,7 +440,7 @@ void print_type_decl(TypeDecl* type_decl, const char* indent)
 void print_enum_decl(EnumDecl* enum_decl, const char* indent)
 {
 	printf(BOLDCYAN);
-	printf("%senum-decl: %s {idnts: %d}\n", indent, enum_decl->enum_name, sbuffer_len(enum_decl->enum_idnts));
+	printf("%senum-decl: %s{idnts: %d}\n", indent, enum_decl->enum_name, sbuffer_len(enum_decl->enum_idnts));
 	printf(RESET);
 	for (int i = 0; i < sbuffer_len(enum_decl->enum_idnts); i++)
 	{
@@ -425,25 +451,49 @@ void print_enum_decl(EnumDecl* enum_decl, const char* indent)
 
 void print_union_decl(UnionDecl* union_decl, const char* indent)
 {
-	assert(0);
+	printf(BOLDCYAN);
+	printf("%sunion-decl: %s{mmbrs: %d}\n", indent, union_decl->union_name, sbuffer_len(union_decl->union_mmbrs));
+	printf(RESET);
+	for (int i = 0; i < sbuffer_len(union_decl->union_mmbrs); i++)
+		print_type_var(union_decl->union_mmbrs[i], frmt("   %s", indent));
 }
 
 void print_struct_decl(StructDecl* struct_decl, const char* indent)
 {
 	printf(BOLDCYAN);
-	printf("%sstruct-decl: %s {idnts: %d}\n", indent, struct_decl->struct_name, sbuffer_len(struct_decl->struct_mmbrs));
+	printf("%sstruct-decl: %s{mmbrs: %d}\n", indent, struct_decl->struct_name, sbuffer_len(struct_decl->struct_mmbrs));
 	printf(RESET);
 	for (int i = 0; i < sbuffer_len(struct_decl->struct_mmbrs); i++)
-		print_var_decl(struct_decl->struct_mmbrs[i], frmt("   %s", indent));
+		print_type_var(struct_decl->struct_mmbrs[i], frmt("   %s", indent));
+}
+
+void print_type_var(TypeVar* type_var, const char* indent)
+{
+	printf(CYAN);
+	printf("%stype-var: %s\n", indent, type_var->var);
+	printf(RESET);
+	print_type(type_var->type, frmt("   %s", indent));
 }
 
 void print_var_decl(VarDecl* var_decl, const char* indent)
 {
 	printf(CYAN);
-	printf("%svar-decl: %s\n", indent, var_decl->var_name);
+	printf("%svar-decl:\n", indent);
 	printf(RESET);
 	indent = frmt("   %s", indent);
-	print_type(var_decl->var_type, indent);
+	print_type_var(var_decl->type_var, indent);
 	printf("%sinit-expr:\n", indent);
 	print_expr(var_decl->var_init, indent);
+}
+
+void print_func_decl(FuncDecl* func_decl, const char* indent)
+{
+	printf(BOLDCYAN);
+	printf("%sfunc-decl: %s(params: %d)\n", indent, func_decl->func_name, sbuffer_len(func_decl->func_params));
+	printf(RESET);
+	indent = frmt("   %s", indent);
+	print_type(func_decl->func_type, indent);
+	for (int i = 0; i < sbuffer_len(func_decl->func_params); i++)
+		print_type_var(func_decl->func_params[i], indent);
+	printf("%sblock-here\n", indent);
 }

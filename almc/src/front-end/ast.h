@@ -181,18 +181,23 @@ typedef struct Block
 	Stmt** stmts;
 } Block;
 
+typedef struct TypeVar
+{
+	Type* type;
+	const char* var;
+} TypeVar;
+
 typedef struct VarDecl
 {
-	Type* var_type;
 	Expr* var_init;
-	const char* var_name;
+	TypeVar* type_var;
 } VarDecl;
 
 typedef struct FuncDecl
 {
-	Type* func_ret_type;
+	Type* func_type;
 	Block* func_body;
-	VarDecl** func_params;
+	TypeVar** func_params;
 	const char* func_name;
 } FuncDecl;
 
@@ -205,13 +210,13 @@ typedef struct EnumDecl
 
 typedef struct UnionDecl
 {
-	VarDecl** union_mmbrs;
+	TypeVar** union_mmbrs;
 	const char* union_name;
 } UnionDecl;
 
 typedef struct StructDecl
 {
-	VarDecl** struct_mmbrs;
+	TypeVar** struct_mmbrs;
 	const char* struct_name;
 } StructDecl;
 
@@ -237,6 +242,7 @@ typedef enum StmtType
 {	
 	STMT_VAR_DECL,
 	STMT_TYPE_DECL,
+	STMT_FUNC_DECL,
 } StmtType;
 
 typedef struct Stmt
@@ -246,6 +252,7 @@ typedef struct Stmt
 	{
 		VarDecl* var_decl;
 		TypeDecl* type_decl;
+		FuncDecl* func_decl;
 	};
 } Stmt;
 
@@ -266,9 +273,12 @@ TernaryExpr* ternary_expr_new(Expr* cond, Expr* lexpr, Expr* rexpr);
 Stmt* stmt_new(StmtType type, void* stmt_value_ptr);
 TypeDecl* type_decl_new(TypeDeclType type, void* type_decl_value_ptr);
 EnumDecl* enum_decl_new(Idnt** enum_idnts, Expr** enum_idnt_values, const char* enum_name);
-UnionDecl* union_decl_new(VarDecl** union_mmbrs, const char* union_name);
-StructDecl* struct_decl_new(VarDecl** struct_mmbrs, const char* struct_name);
-VarDecl* var_decl_new(Type* var_type, Expr* var_init, const char* var_name);
+UnionDecl* union_decl_new(TypeVar** union_mmbrs, const char* union_name);
+StructDecl* struct_decl_new(TypeVar** struct_mmbrs, const char* struct_name);
+
+TypeVar* type_var_new(Type* type, const char* var);
+VarDecl* var_decl_new(TypeVar* type_var, Expr* var_init);
+FuncDecl* func_decl_new(const char* func_name, TypeVar** func_params, Type* func_type, Block* func_body);
 
 void print_ast(AstRoot* ast);
 void print_expr(Expr* expr, const char* indent);
@@ -287,6 +297,8 @@ void print_enum_decl(EnumDecl* enum_decl, const char* indent);
 void print_union_decl(UnionDecl* union_decl, const char* indent);
 void print_struct_decl(StructDecl* struct_decl, const char* indent);
 
+void print_type_var(TypeVar* type_var, const char* indent);
 void print_var_decl(VarDecl* var_decl, const char* indent);
+void print_func_decl(FuncDecl* func_decl, const char* indent);
 
 #endif // AST_H 

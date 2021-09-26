@@ -94,6 +94,8 @@ const char* keywords[] = {
 	"enum",
 	"extern",
 	"for",
+	"fnc",
+
 	"false",
 	"f32",
 	"f64",
@@ -193,6 +195,7 @@ const char* tokens_str[] = {
 	"TOKEN_KEYWORD_ENUM",
 	"TOKEN_KEYWORD_EXTERN",
 	"TOKEN_KEYWORD_FOR",
+	"TOKEN_KEYWORD_FUNC",
 	"TOKEN_KEYWORD_FALSE",
 	"TOKEN_KEYWORD_FLOAT32",
 	"TOKEN_KEYWORD_FLOAT64",

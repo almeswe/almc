@@ -43,11 +43,14 @@ Expr* parse_constant_expr(Parser* parser);
 Expr* parse_assignment_expr(Parser* parser);
 
 Stmt* parse_stmt(Parser* parser);
-Stmt* parse_type_decl(Parser* parser);
-Stmt* parse_enum_decl(Parser* parser);
-Stmt* parse_union_decl(Parser* parser);
-Stmt* parse_struct_decl(Parser* parser);
+Stmt* parse_type_decl_stmt(Parser* parser);
+Stmt* parse_enum_decl_stmt(Parser* parser);
+Stmt* parse_union_decl_stmt(Parser* parser);
+Stmt* parse_struct_decl_stmt(Parser* parser);
 
-Stmt* parse_var_decl(Parser* parser);
+Stmt* parse_func_decl_stmt(Parser* parser);
+Stmt* parse_var_decl_stmt(Parser* parser);
+
+TypeVar* parse_type_var(Parser* parser);
 
 #endif
