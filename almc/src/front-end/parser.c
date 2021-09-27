@@ -22,6 +22,16 @@
 	case TOKEN_KEYWORD_FLOAT64:   \
 	case TOKEN_KEYWORD_STRING      
 
+#define TOKEN_USER_TYPEDECL    \
+		 TOKEN_KEYWORD_ENUM:   \
+	case TOKEN_KEYWORD_UNION:  \
+	case TOKEN_KEYWORD_STRUCT
+
+#define TOKEN_KEYWORD_LOOP   \
+		 TOKEN_KEYWORD_DO:   \
+	case TOKEN_KEYWORD_FOR:  \
+	case TOKEN_KEYWORD_WHILE
+
 Parser* parser_new(Token* tokens)
 {
 	Parser* p = new_s(Parser, p);
@@ -795,11 +805,13 @@ Stmt* parse_stmt(Parser* parser)
 {
 	switch (get_curr_token(parser).type)
 	{
+	case TOKEN_OP_BRACE:
+		return parse_block(parser);
+	case TOKEN_KEYWORD_LOOP:
+		return parse_loop_stmt(parser);
 	case TOKEN_KEYWORD_FUNC:
 		return parse_func_decl_stmt(parser);
-	case TOKEN_KEYWORD_ENUM:
-	case TOKEN_KEYWORD_UNION:
-	case TOKEN_KEYWORD_STRUCT:
+	case TOKEN_USER_TYPEDECL:
 		return parse_type_decl_stmt(parser);
 	case TOKEN_IDNT:
 		get_next_token(parser);
@@ -809,9 +821,12 @@ Stmt* parse_stmt(Parser* parser)
 			return parse_var_decl_stmt(parser);
 		}
 		unget_curr_token(parser);
-		break;
+		return parse_expr_stmt(parser);
+	case TOKEN_SEMICOLON:
+		return parse_empty_stmt(parser);
 	default:
-		assert(0);
+		report_error(frmt("Expected token that specifies statement, but met: %s",
+			token_type_tostr(get_curr_token(parser).type)), get_curr_token(parser).context);
 	}
 }
 
@@ -826,7 +841,8 @@ Stmt* parse_type_decl_stmt(Parser* parser)
 	case TOKEN_KEYWORD_STRUCT:
 		return parse_struct_decl_stmt(parser);
 	default:
-		assert(0);
+		report_error(frmt("Expected keyword (enum, struct or union), but met: %s",
+			token_type_tostr(get_curr_token(parser).type)), get_curr_token(parser).context);
 	}
 }
 
@@ -917,6 +933,51 @@ Stmt* parse_struct_decl_stmt(Parser* parser)
 		type_decl_new(TYPE_DECL_STRUCT, struct_decl_new(struct_mmbrs, struct_name)));
 }
 
+Stmt* parse_block(Parser* parser)
+{
+	Stmt** stmts = NULL;
+	char is_simple = matcht(parser, TOKEN_OP_BRACE);
+	//todo: func decl is illegal
+	if (!is_simple)
+		sbuffer_add(stmts, parse_stmt(parser));
+	else
+	{
+		expect_with_skip(parser, TOKEN_OP_BRACE, "{");
+		while (!matcht(parser, TOKEN_CL_BRACE))
+			sbuffer_add(stmts, parse_stmt(parser));
+		expect_with_skip(parser, TOKEN_CL_BRACE, "}");
+	}
+	return stmt_new(STMT_BLOCK, block_new(stmts));
+}
+
+Stmt* parse_expr_stmt(Parser* parser)
+{
+	Expr* expr = parse_expr(parser);
+	expect_with_skip(parser, TOKEN_SEMICOLON, ";");
+	return stmt_new(STMT_EXPR, expr_stmt_new(expr));
+}
+
+Stmt* parse_empty_stmt(Parser* parser)
+{
+	expect_with_skip(parser, TOKEN_SEMICOLON, ";");
+	return stmt_new(STMT_EMPTY,
+		empty_stmt_new());
+}
+
+Stmt* parse_var_decl_stmt(Parser* parser)
+{
+	Expr* var_init = NULL;
+	TypeVar* type_var = parse_type_var(parser);
+	if (matcht(parser, TOKEN_ASSIGN))
+	{
+		get_next_token(parser);
+		var_init = parse_expr(parser);
+	}
+	expect_with_skip(parser, TOKEN_SEMICOLON, ";");
+	return stmt_new(STMT_VAR_DECL,
+		var_decl_new(type_var, var_init));
+}
+
 Stmt* parse_func_decl_stmt(Parser* parser)
 {
 	char* func_name = NULL;
@@ -937,11 +998,47 @@ Stmt* parse_func_decl_stmt(Parser* parser)
 	expect_with_skip(parser, TOKEN_COLON, ":");
 	func_type = parse_type_name(parser);
 	
-	//todo: add parse_block
-	expect_with_skip(parser, TOKEN_OP_BRACE, "{");
-	expect_with_skip(parser, TOKEN_CL_BRACE, "}");
+	if (!matcht(parser, TOKEN_OP_BRACE))
+		expect_with_skip(parser, TOKEN_OP_BRACE, "{");
+	func_body = parse_block(parser)->block;
 	return stmt_new(STMT_FUNC_DECL, 
 		func_decl_new(func_name, func_params, func_type, func_body));
+}
+
+Stmt* parse_loop_stmt(Parser* parser)
+{
+	switch (get_curr_token(parser).type)
+	{
+	case TOKEN_KEYWORD_FOR:
+		return parse_for_loop_stmt(parser);
+	default:
+		report_error(frmt("Expected keyword (do, while or for), but met: %s",
+			token_type_tostr(get_curr_token(parser).type)), get_curr_token(parser).context);
+	}
+}
+
+Stmt* parse_for_loop_stmt(Parser* parser)
+{
+	Expr* for_cond = NULL;
+	Expr* for_step = NULL;
+	Block* for_body = NULL;
+	VarDecl* for_init = NULL;
+
+	expect_with_skip(parser, TOKEN_KEYWORD_FOR, "for");
+	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
+	if (!matcht(parser, TOKEN_SEMICOLON))
+		for_init = parse_var_decl_stmt(parser)->var_decl;
+	else
+		expect_with_skip(parser, TOKEN_SEMICOLON, ";");
+	if (!matcht(parser, TOKEN_SEMICOLON))
+		for_cond = parse_expr(parser);
+	expect_with_skip(parser, TOKEN_SEMICOLON, ";");
+	if (!matcht(parser, TOKEN_CL_PAREN))
+		for_step = parse_expr(parser);
+	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
+	for_body = parse_block(parser)->block;
+	return stmt_new(STMT_LOOP, 
+		loop_stmt_new(LOOP_FOR, for_loop_new(for_init, for_cond, for_step, for_body)));
 }
 
 TypeVar* parse_type_var(Parser* parser)
@@ -953,18 +1050,4 @@ TypeVar* parse_type_var(Parser* parser)
 	expect_with_skip(parser, TOKEN_COLON, ":");
 	type = parse_type_name(parser);
 	return type_var_new(type, var);
-}
-
-Stmt* parse_var_decl_stmt(Parser* parser)
-{
-	Expr* var_init = NULL;
-	TypeVar* type_var = parse_type_var(parser);
-	if (matcht(parser, TOKEN_ASSIGN))
-	{
-		get_next_token(parser);
-		var_init = parse_expr(parser);
-	}
-	expect_with_skip(parser, TOKEN_SEMICOLON, ";");
-	return stmt_new(STMT_VAR_DECL,
-		var_decl_new(type_var, var_init));
 }

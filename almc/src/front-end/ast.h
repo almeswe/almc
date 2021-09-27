@@ -181,6 +181,11 @@ typedef struct Block
 	Stmt** stmts;
 } Block;
 
+typedef struct ExprStmt
+{
+	Expr* expr;
+} ExprStmt;
+
 typedef struct TypeVar
 {
 	Type* type;
@@ -238,21 +243,58 @@ typedef struct TypeDecl
 	};
 } TypeDecl;
 
+typedef struct ForLoop
+{
+	Expr* for_cond;
+	Expr* for_step;
+	Block* for_body;
+	VarDecl* for_init;
+} ForLoop;
+
+typedef enum LoopStmtType
+{
+	LOOP_FOR,
+	LOOP_WHILE,
+	LOOP_DO_WHILE,
+} LoopStmtType;
+
+typedef struct LoopStmt
+{
+	LoopStmtType type;
+	union
+	{
+		ForLoop* for_loop;
+	};
+} LoopStmt;
+
 typedef enum StmtType
 {	
+	STMT_EXPR,
+	STMT_LOOP,
+	STMT_BLOCK,
+	STMT_EMPTY,
 	STMT_VAR_DECL,
 	STMT_TYPE_DECL,
 	STMT_FUNC_DECL,
 } StmtType;
+
+typedef struct EmptyStmt
+{
+	char filler[0];
+} EmptyStmt;
 
 typedef struct Stmt
 {
 	StmtType type;
 	union
 	{
+		Block* block;
 		VarDecl* var_decl;
+		LoopStmt* loop_stmt;
 		TypeDecl* type_decl;
 		FuncDecl* func_decl;
+		ExprStmt* expr_stmt;
+		EmptyStmt* empty_stmt;
 	};
 } Stmt;
 
@@ -276,9 +318,16 @@ EnumDecl* enum_decl_new(Idnt** enum_idnts, Expr** enum_idnt_values, const char* 
 UnionDecl* union_decl_new(TypeVar** union_mmbrs, const char* union_name);
 StructDecl* struct_decl_new(TypeVar** struct_mmbrs, const char* struct_name);
 
+EmptyStmt* empty_stmt_new();
+ExprStmt* expr_stmt_new(Expr* expr);
+
+Block* block_new(Stmt** stmts);
 TypeVar* type_var_new(Type* type, const char* var);
 VarDecl* var_decl_new(TypeVar* type_var, Expr* var_init);
 FuncDecl* func_decl_new(const char* func_name, TypeVar** func_params, Type* func_type, Block* func_body);
+
+LoopStmt* loop_stmt_new(LoopStmtType type, void* loop_stmt_value_ptr);
+ForLoop* for_loop_new(VarDecl* for_init, Expr* for_cond, Expr* for_step, Block* for_body);
 
 void print_ast(AstRoot* ast);
 void print_expr(Expr* expr, const char* indent);
@@ -297,8 +346,14 @@ void print_enum_decl(EnumDecl* enum_decl, const char* indent);
 void print_union_decl(UnionDecl* union_decl, const char* indent);
 void print_struct_decl(StructDecl* struct_decl, const char* indent);
 
+void print_block(Block* block, const char* indent);
 void print_type_var(TypeVar* type_var, const char* indent);
 void print_var_decl(VarDecl* var_decl, const char* indent);
 void print_func_decl(FuncDecl* func_decl, const char* indent);
+void print_expr_stmt(ExprStmt* expr_stmt, const char* indent);
+void print_empty_stmt(EmptyStmt* empty_stmt, const char* indent);
+
+void print_loop_stmt(LoopStmt* loop_stmt, const char* indent);
+void print_for_loop(ForLoop* for_loop, const char* indent);
 
 #endif // AST_H 
