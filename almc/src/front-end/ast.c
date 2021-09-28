@@ -226,6 +226,8 @@ LoopStmt* loop_stmt_new(LoopStmtType type, void* loop_stmt_value_ptr)
 	LoopStmt* lp = new_s(LoopStmt, lp);
 	switch (lp->type = type)
 	{
+	case LOOP_DO:
+		loop_stmt_set_value(DoLoop, do_loop);
 	case LOOP_FOR:
 		loop_stmt_set_value(ForLoop, for_loop);
 	case LOOP_WHILE:
@@ -234,6 +236,14 @@ LoopStmt* loop_stmt_new(LoopStmtType type, void* loop_stmt_value_ptr)
 		assert(0);
 	}
 	return lp;
+}
+
+DoLoop* do_loop_new(Expr* do_cond, Block* do_body)
+{
+	DoLoop* dl = new_s(DoLoop, dl);
+	dl->do_cond = do_cond;
+	dl->do_body = do_body;
+	return dl;
 }
 
 ForLoop* for_loop_new(VarDecl* for_init, Expr* for_cond, Expr* for_step, Block* for_body)
@@ -617,6 +627,9 @@ void print_loop_stmt(LoopStmt* loop_stmt, const char* indent)
 {
 	switch (loop_stmt->type)
 	{
+	case LOOP_DO:
+		print_do_loop(loop_stmt->do_loop, indent);
+		break;
 	case LOOP_FOR:
 		print_for_loop(loop_stmt->for_loop, indent);
 		break;
@@ -626,6 +639,24 @@ void print_loop_stmt(LoopStmt* loop_stmt, const char* indent)
 	default:
 		assert(0);
 	}
+}
+
+void print_do_loop(DoLoop* do_loop, const char* indent)
+{
+	printf(BOLDMAGENTA);
+	printf("%sdo-loop:\n", indent);
+	indent = frmt("   %s", indent);
+	printf(RESET);
+
+	printf(BOLDCYAN);
+	printf("%sdo-body:\n", indent);
+	printf(RESET);
+	print_block(do_loop->do_body, frmt("   %s", indent));
+
+	printf(BOLDCYAN);
+	printf("%sdo-cond:\n", indent);
+	printf(RESET);
+	print_expr(do_loop->do_cond, indent);
 }
 
 void print_for_loop(ForLoop* for_loop, const char* indent)

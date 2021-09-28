@@ -1,7 +1,6 @@
 #include "parser.h"
 
 //todo: add initializer ( a = {2, 3, ...}; )
-//todo: resolve problem with variable declaration (it must be reusable + do not allow ';' at the end)
 
 #define matcht(parser, t) (get_curr_token(parser).type == (t))
 #define expect_with_skip(parser, type, str) expect(parser, type, str), get_next_token(parser)
@@ -1009,6 +1008,8 @@ Stmt* parse_loop_stmt(Parser* parser)
 {
 	switch (get_curr_token(parser).type)
 	{
+	case TOKEN_KEYWORD_DO:
+		return parse_do_loop_stmt(parser);
 	case TOKEN_KEYWORD_FOR:
 		return parse_for_loop_stmt(parser);
 	case TOKEN_KEYWORD_WHILE:
@@ -1017,6 +1018,22 @@ Stmt* parse_loop_stmt(Parser* parser)
 		report_error(frmt("Expected keyword (do, while or for), but met: %s",
 			token_type_tostr(get_curr_token(parser).type)), get_curr_token(parser).context);
 	}
+}
+
+Stmt* parse_do_loop_stmt(Parser* parser)
+{
+	Expr* do_cond = NULL;
+	Block* do_body = NULL;
+
+	expect_with_skip(parser, TOKEN_KEYWORD_DO, "do");
+	do_body = parse_block(parser)->block;
+	expect_with_skip(parser, TOKEN_KEYWORD_WHILE, "while");
+	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
+	do_cond = parse_expr(parser);
+	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
+	expect_with_skip(parser, TOKEN_SEMICOLON, ";");
+	return stmt_new(STMT_LOOP,
+		loop_stmt_new(LOOP_DO, do_loop_new(do_cond, do_body)));
 }
 
 Stmt* parse_for_loop_stmt(Parser* parser)

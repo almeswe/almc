@@ -243,6 +243,12 @@ typedef struct TypeDecl
 	};
 } TypeDecl;
 
+typedef struct DoLoop
+{
+	Expr* do_cond;
+	Block* do_body;
+} DoLoop;
+
 typedef struct ForLoop
 {
 	Expr* for_cond;
@@ -259,9 +265,9 @@ typedef struct WhileLoop
 
 typedef enum LoopStmtType
 {
+	LOOP_DO,
 	LOOP_FOR,
 	LOOP_WHILE,
-	LOOP_DO_WHILE,
 } LoopStmtType;
 
 typedef struct LoopStmt
@@ -269,6 +275,7 @@ typedef struct LoopStmt
 	LoopStmtType type;
 	union
 	{
+		DoLoop* do_loop;
 		ForLoop* for_loop;
 		WhileLoop* while_loop;
 	};
@@ -334,6 +341,7 @@ VarDecl* var_decl_new(TypeVar* type_var, Expr* var_init);
 FuncDecl* func_decl_new(const char* func_name, TypeVar** func_params, Type* func_type, Block* func_body);
 
 LoopStmt* loop_stmt_new(LoopStmtType type, void* loop_stmt_value_ptr);
+DoLoop* do_loop_new(Expr* do_cond, Block* do_body);
 ForLoop* for_loop_new(VarDecl* for_init, Expr* for_cond, Expr* for_step, Block* for_body);
 WhileLoop* while_loop_new(Expr* while_cond, Block* while_body);
 
@@ -362,6 +370,7 @@ void print_expr_stmt(ExprStmt* expr_stmt, const char* indent);
 void print_empty_stmt(EmptyStmt* empty_stmt, const char* indent);
 
 void print_loop_stmt(LoopStmt* loop_stmt, const char* indent);
+void print_do_loop(DoLoop* do_loop, const char* indent);
 void print_for_loop(ForLoop* for_loop, const char* indent);
 void print_while_loop(WhileLoop* while_loop, const char* indent);
 
