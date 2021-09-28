@@ -56,6 +56,7 @@ Stmt* parse_func_decl_stmt(Parser* parser);
 
 Stmt* parse_loop_stmt(Parser* parser);
 Stmt* parse_for_loop_stmt(Parser* parser);
+Stmt* parse_while_loop_stmt(Parser* parser);
 
 TypeVar* parse_type_var(Parser* parser);
 

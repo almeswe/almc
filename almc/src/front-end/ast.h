@@ -251,6 +251,12 @@ typedef struct ForLoop
 	VarDecl* for_init;
 } ForLoop;
 
+typedef struct WhileLoop
+{
+	Expr* while_cond;
+	Block* while_body;
+} WhileLoop;
+
 typedef enum LoopStmtType
 {
 	LOOP_FOR,
@@ -264,6 +270,7 @@ typedef struct LoopStmt
 	union
 	{
 		ForLoop* for_loop;
+		WhileLoop* while_loop;
 	};
 } LoopStmt;
 
@@ -328,6 +335,7 @@ FuncDecl* func_decl_new(const char* func_name, TypeVar** func_params, Type* func
 
 LoopStmt* loop_stmt_new(LoopStmtType type, void* loop_stmt_value_ptr);
 ForLoop* for_loop_new(VarDecl* for_init, Expr* for_cond, Expr* for_step, Block* for_body);
+WhileLoop* while_loop_new(Expr* while_cond, Block* while_body);
 
 void print_ast(AstRoot* ast);
 void print_expr(Expr* expr, const char* indent);
@@ -355,5 +363,6 @@ void print_empty_stmt(EmptyStmt* empty_stmt, const char* indent);
 
 void print_loop_stmt(LoopStmt* loop_stmt, const char* indent);
 void print_for_loop(ForLoop* for_loop, const char* indent);
+void print_while_loop(WhileLoop* while_loop, const char* indent);
 
 #endif // AST_H 

@@ -228,6 +228,8 @@ LoopStmt* loop_stmt_new(LoopStmtType type, void* loop_stmt_value_ptr)
 	{
 	case LOOP_FOR:
 		loop_stmt_set_value(ForLoop, for_loop);
+	case LOOP_WHILE:
+		loop_stmt_set_value(WhileLoop, while_loop);
 	default:
 		assert(0);
 	}
@@ -242,6 +244,14 @@ ForLoop* for_loop_new(VarDecl* for_init, Expr* for_cond, Expr* for_step, Block* 
 	fl->for_step = for_step;
 	fl->for_body = for_body;
 	return fl;
+}
+
+WhileLoop* while_loop_new(Expr* while_cond, Block* while_body)
+{
+	WhileLoop* wl = new_s(WhileLoop, wl);
+	wl->while_cond = while_cond;
+	wl->while_body = while_body;
+	return wl;
 }
 
 void print_ast(AstRoot* ast)
@@ -610,6 +620,9 @@ void print_loop_stmt(LoopStmt* loop_stmt, const char* indent)
 	case LOOP_FOR:
 		print_for_loop(loop_stmt->for_loop, indent);
 		break;
+	case LOOP_WHILE:
+		print_while_loop(loop_stmt->while_loop, indent);
+		break;
 	default:
 		assert(0);
 	}
@@ -639,4 +652,22 @@ void print_for_loop(ForLoop* for_loop, const char* indent)
 	printf("%sfor-body:\n", indent);
 	printf(RESET);
 	print_block(for_loop->for_body, frmt("   %s", indent));
+}
+
+void print_while_loop(WhileLoop* while_loop, const char* indent)
+{
+	printf(BOLDMAGENTA);
+	printf("%swhile-loop:\n", indent);
+	indent = frmt("   %s", indent);
+	printf(RESET);
+
+	printf(BOLDCYAN);
+	printf("%swhile-cond:\n", indent);
+	printf(RESET);
+	print_expr(while_loop->while_cond, indent);
+
+	printf(BOLDCYAN);
+	printf("%swhile-body:\n", indent);
+	printf(RESET);
+	print_block(while_loop->while_body, frmt("   %s", indent));
 }

@@ -1011,6 +1011,8 @@ Stmt* parse_loop_stmt(Parser* parser)
 	{
 	case TOKEN_KEYWORD_FOR:
 		return parse_for_loop_stmt(parser);
+	case TOKEN_KEYWORD_WHILE:
+		return parse_while_loop_stmt(parser);
 	default:
 		report_error(frmt("Expected keyword (do, while or for), but met: %s",
 			token_type_tostr(get_curr_token(parser).type)), get_curr_token(parser).context);
@@ -1039,6 +1041,20 @@ Stmt* parse_for_loop_stmt(Parser* parser)
 	for_body = parse_block(parser)->block;
 	return stmt_new(STMT_LOOP, 
 		loop_stmt_new(LOOP_FOR, for_loop_new(for_init, for_cond, for_step, for_body)));
+}
+
+Stmt* parse_while_loop_stmt(Parser* parser)
+{
+	Expr* while_cond = NULL;
+	Block* while_body = NULL;
+
+	expect_with_skip(parser, TOKEN_KEYWORD_WHILE, "while");
+	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
+	while_cond = parse_expr(parser);
+	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
+	while_body = parse_block(parser)->block;
+	return stmt_new(STMT_LOOP, 
+		loop_stmt_new(LOOP_WHILE, while_loop_new(while_cond, while_body)));
 }
 
 TypeVar* parse_type_var(Parser* parser)
