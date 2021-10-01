@@ -281,7 +281,7 @@ void parser_stmt_manual_test()
 		Parser* p = parser_new(lex(l));
 		Stmt* root = parse_stmt(p);
 		print_stmt(root, "");
-		getchar();
+		int a = getchar();
 	}
 }
 
@@ -303,7 +303,7 @@ void parser_eval_test()
 
 	Lexer* l;
 	Parser* p;
-	AstRoot* ast;
+	Expr* ast;
 
 	parser_eval_test_case_init(+-+-1, "+-+-1");
 	parser_eval_test_case_init(- - - 1, "- - - 1");

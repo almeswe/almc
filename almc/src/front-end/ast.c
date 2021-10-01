@@ -111,6 +111,8 @@ Stmt* stmt_new(StmtType type, void* stmt_value_ptr)
 	Stmt* s = new_s(Stmt, s);
 	switch (s->type = type)
 	{
+	case STMT_IF:
+		stmt_set_value(IfStmt, if_stmt);
 	case STMT_EXPR:
 		stmt_set_value(ExprStmt, expr_stmt);
 	case STMT_BLOCK:
@@ -262,6 +264,24 @@ WhileLoop* while_loop_new(Expr* while_cond, Block* while_body)
 	wl->while_cond = while_cond;
 	wl->while_body = while_body;
 	return wl;
+}
+
+ElseIf* elif_stmt_new(Expr* elif_cond, Block* elif_body)
+{
+	ElseIf* ei = new_s(ElseIf, ei);
+	ei->elif_cond = elif_cond;
+	ei->elif_body = elif_body;
+	return ei;
+}
+
+IfStmt* if_stmt_new(Expr* if_cond, Block* if_body, ElseIf** elifs, Block* else_body)
+{
+	IfStmt* i = new_s(IfStmt, i);
+	i->if_cond = if_cond;
+	i->if_body = if_body;
+	i->elifs = elifs;
+	i->else_body = else_body;
+	return i;
 }
 
 void print_ast(AstRoot* ast)
@@ -469,6 +489,9 @@ void print_stmt(Stmt* stmt, const char* indent)
 	if (stmt)
 		switch (stmt->type)
 		{
+		case STMT_IF:
+			print_if_stmt(stmt->if_stmt, new_indent);
+			break;
 		case STMT_EXPR:
 			print_expr_stmt(stmt->expr_stmt, new_indent);
 			break;
@@ -701,4 +724,47 @@ void print_while_loop(WhileLoop* while_loop, const char* indent)
 	printf("%swhile-body:\n", indent);
 	printf(RESET);
 	print_block(while_loop->while_body, frmt("   %s", indent));
+}
+
+void print_if_stmt(IfStmt* if_stmt, const char* indent)
+{
+	printf(BOLDMAGENTA);
+	printf("%sif-stmt:\n", indent);
+	char* indent2 = frmt("   %s", indent);
+	printf(RESET);
+
+	printf(BOLDCYAN);
+	printf("%sif-cond:\n", indent2);
+	printf(RESET);
+	print_expr(if_stmt->if_cond, indent2);
+
+	printf(BOLDCYAN);
+	printf("%sif-body:\n", indent2);
+	printf(RESET);
+	print_block(if_stmt->if_body, frmt("   %s", indent2));
+
+	for (int i = 0; i < sbuffer_len(if_stmt->elifs); i++)
+	{
+		printf(BOLDMAGENTA);
+		printf("%selif-stmt:\n", indent);
+		printf(RESET);
+
+		printf(BOLDCYAN);
+		printf("%selif-cond:\n", indent2);
+		printf(RESET);
+		print_expr(if_stmt->elifs[i]->elif_cond, indent2);
+
+		printf(BOLDCYAN);
+		printf("%selif-body:\n", indent2);
+		printf(RESET);
+		print_block(if_stmt->elifs[i]->elif_body, frmt("   %s", indent2));
+	}
+
+	if (if_stmt->else_body)
+	{
+		printf(BOLDMAGENTA);
+		printf("%selse-stmt:\n", indent);
+		printf(RESET);
+		print_block(if_stmt->else_body, frmt("   %s", indent));
+	}
 }

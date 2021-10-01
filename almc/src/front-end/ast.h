@@ -6,7 +6,6 @@
 #include "..\utils\context.h"
 #include "..\utils\sbuffer.h"
 
-
 typedef struct Expr Expr;
 typedef struct Stmt Stmt;
 
@@ -281,8 +280,24 @@ typedef struct LoopStmt
 	};
 } LoopStmt;
 
+typedef struct ElseIf
+{
+	Expr* elif_cond;
+	Block* elif_body;
+} ElseIf;
+
+typedef struct IfStmt
+{
+	Expr* if_cond;
+	Block* if_body;
+	Block* else_body;
+
+	ElseIf** elifs;
+} IfStmt;
+
 typedef enum StmtType
 {	
+	STMT_IF,
 	STMT_EXPR,
 	STMT_LOOP,
 	STMT_BLOCK,
@@ -303,6 +318,7 @@ typedef struct Stmt
 	union
 	{
 		Block* block;
+		IfStmt* if_stmt;
 		VarDecl* var_decl;
 		LoopStmt* loop_stmt;
 		TypeDecl* type_decl;
@@ -345,6 +361,9 @@ DoLoop* do_loop_new(Expr* do_cond, Block* do_body);
 ForLoop* for_loop_new(VarDecl* for_init, Expr* for_cond, Expr* for_step, Block* for_body);
 WhileLoop* while_loop_new(Expr* while_cond, Block* while_body);
 
+ElseIf* elif_stmt_new(Expr* elif_cond, Block* elif_body);
+IfStmt* if_stmt_new(Expr* if_cond, Block* if_body, ElseIf** elifs, Block* else_body);
+
 void print_ast(AstRoot* ast);
 void print_expr(Expr* expr, const char* indent);
 void print_type(Type* type, const char* indent);
@@ -373,5 +392,7 @@ void print_loop_stmt(LoopStmt* loop_stmt, const char* indent);
 void print_do_loop(DoLoop* do_loop, const char* indent);
 void print_for_loop(ForLoop* for_loop, const char* indent);
 void print_while_loop(WhileLoop* while_loop, const char* indent);
+
+void print_if_stmt(IfStmt* if_stmt, const char* indent);
 
 #endif // AST_H 

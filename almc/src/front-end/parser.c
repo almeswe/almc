@@ -806,6 +806,8 @@ Stmt* parse_stmt(Parser* parser)
 	{
 	case TOKEN_OP_BRACE:
 		return parse_block(parser);
+	case TOKEN_KEYWORD_IF:
+		return parse_if_stmt(parser);
 	case TOKEN_KEYWORD_LOOP:
 		return parse_loop_stmt(parser);
 	case TOKEN_KEYWORD_FUNC:
@@ -1072,6 +1074,43 @@ Stmt* parse_while_loop_stmt(Parser* parser)
 	while_body = parse_block(parser)->block;
 	return stmt_new(STMT_LOOP, 
 		loop_stmt_new(LOOP_WHILE, while_loop_new(while_cond, while_body)));
+}
+
+Stmt* parse_if_stmt(Parser* parser)
+{
+	Expr* if_cond = NULL;
+	Block* if_body = NULL;
+	ElseIf** elifs = NULL;
+	Block* else_body = NULL;
+
+	char elif_met = 0;
+	expect_with_skip(parser, TOKEN_KEYWORD_IF, "if");
+	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
+	if_cond = parse_expr(parser);
+	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
+	if_body = parse_block(parser)->block;
+	while (matcht(parser, TOKEN_KEYWORD_ELIF))
+		sbuffer_add(elifs, parse_elif_stmt(parser)), elif_met = 1;
+	if (matcht(parser, TOKEN_KEYWORD_ELSE) || elif_met)
+	{
+		expect_with_skip(parser, TOKEN_KEYWORD_ELSE, "else");
+		else_body = parse_block(parser)->block;
+	}
+	return stmt_new(STMT_IF, if_stmt_new(if_cond,
+		if_body, elifs, else_body));
+}
+
+ElseIf* parse_elif_stmt(Parser* parser)
+{
+	Expr* elif_cond = NULL;
+	Block* elif_body = NULL;
+
+	expect_with_skip(parser, TOKEN_KEYWORD_ELIF, "elif");
+	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
+	elif_cond = parse_expr(parser);
+	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
+	elif_body = parse_block(parser)->block;
+	return elif_stmt_new(elif_cond, elif_body);
 }
 
 TypeVar* parse_type_var(Parser* parser)
