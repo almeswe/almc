@@ -364,35 +364,4 @@ WhileLoop* while_loop_new(Expr* while_cond, Block* while_body);
 ElseIf* elif_stmt_new(Expr* elif_cond, Block* elif_body);
 IfStmt* if_stmt_new(Expr* if_cond, Block* if_body, ElseIf** elifs, Block* else_body);
 
-void print_ast(AstRoot* ast);
-void print_expr(Expr* expr, const char* indent);
-void print_type(Type* type, const char* indent);
-void print_str(Str* str, const char* indent);
-void print_idnt(Idnt* idnt, const char* indent);
-void print_const(Const* cnst, const char* indent);
-void print_func_call(FuncCall* func_call, const char* indent);
-void print_unary_expr(UnaryExpr* expr, const char* indent);
-void print_binary_expr(BinaryExpr* expr, const char* indent);
-void print_ternary_expr(TernaryExpr* expr, const char* indent);
-
-void print_stmt(Stmt* stmt, const char* indent);
-void print_type_decl(TypeDecl* type_decl, const char* indent);
-void print_enum_decl(EnumDecl* enum_decl, const char* indent);
-void print_union_decl(UnionDecl* union_decl, const char* indent);
-void print_struct_decl(StructDecl* struct_decl, const char* indent);
-
-void print_block(Block* block, const char* indent);
-void print_type_var(TypeVar* type_var, const char* indent);
-void print_var_decl(VarDecl* var_decl, const char* indent);
-void print_func_decl(FuncDecl* func_decl, const char* indent);
-void print_expr_stmt(ExprStmt* expr_stmt, const char* indent);
-void print_empty_stmt(EmptyStmt* empty_stmt, const char* indent);
-
-void print_loop_stmt(LoopStmt* loop_stmt, const char* indent);
-void print_do_loop(DoLoop* do_loop, const char* indent);
-void print_for_loop(ForLoop* for_loop, const char* indent);
-void print_while_loop(WhileLoop* while_loop, const char* indent);
-
-void print_if_stmt(IfStmt* if_stmt, const char* indent);
-
 #endif // AST_H 

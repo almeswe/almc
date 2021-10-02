@@ -56,6 +56,9 @@
     <ClCompile Include="src\front-end\parser.c">
       <Filter>Common Files\Sources</Filter>
     </ClCompile>
+    <ClCompile Include="src\front-end\ast-expr-eval.h">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\front-end\lexer.h">
@@ -75,6 +78,9 @@
     </ClInclude>
     <ClInclude Include="src\front-end\parser.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\front-end\ast-print.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

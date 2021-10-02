@@ -19,6 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\front-end\ast-print.h">
+      <FileType>CppCode</FileType>
+    </ClInclude>
+    <ClCompile Include="src\front-end\ast-expr-eval.h" />
     <ClCompile Include="src\front-end\ast.c" />
     <ClCompile Include="src\utils\common.c" />
     <ClCompile Include="src\utils\context.c" />
