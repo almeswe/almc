@@ -334,6 +334,7 @@ typedef struct AstRoot
 } AstRoot;
 
 Expr* expr_new(ExprType type, void* expr_value_ptr);
+
 Str* str_new(const char* string, SrcContext* context);
 Idnt* idnt_new(const char* idnt, SrcContext* context);
 Const* const_new(ConstType type, double value, SrcContext* context);
@@ -363,5 +364,38 @@ WhileLoop* while_loop_new(Expr* while_cond, Block* while_body);
 
 ElseIf* elif_stmt_new(Expr* elif_cond, Block* elif_body);
 IfStmt* if_stmt_new(Expr* if_cond, Block* if_body, ElseIf** elifs, Block* else_body);
+
+void type_free(Type* type);
+
+void expr_free(Expr* expr);
+void str_free(Str* str);
+void idnt_free(Idnt* idnt);
+void const_free(Const* cnst);
+void func_call_free(FuncCall* func_call);
+void unary_expr_free(UnaryExpr* unary_expr);
+void binary_expr_free(BinaryExpr* binary_expr);
+void ternary_expr_free(TernaryExpr* ternary_expr);
+
+void stmt_free(Stmt* stmt);
+void type_decl_free(TypeDecl* type_decl);
+void enum_decl_free(EnumDecl* enum_decl);
+void union_decl_free(UnionDecl* union_decl);
+void struct_decl_free(StructDecl* struct_decl);
+
+void empty_stmt_free(EmptyStmt* empty_stmt);
+void expr_stmt_free(ExprStmt* expr_stmt);
+
+void block_free(Block* block);
+void type_var_free(TypeVar* type_var);
+void var_decl_free(VarDecl* var_decl);
+void func_decl_free(FuncDecl* func_decl);
+
+void loop_stmt_free(LoopStmt* loop_stmt);
+void do_loop_free(DoLoop* do_loop);
+void for_loop_free(ForLoop* for_loop);
+void while_loop_free(WhileLoop* while_loop);
+
+void elif_stmt_free(ElseIf* elif_stmt);
+void if_stmt_free(IfStmt* if_stmt);
 
 #endif // AST_H 

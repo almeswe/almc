@@ -2,13 +2,14 @@
 #define ALMC_CONTEXT_H
 
 #include <stdint.h>
+#include <stdlib.h>
 
 typedef struct SrcContext
 {
 	uint32_t size;
 	uint32_t line;
 	uint32_t start;
-	const char* file;
+	char* file;
 } SrcContext;
 
 const char* src_context_tostr(SrcContext* context);

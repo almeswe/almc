@@ -171,6 +171,7 @@ void parser_stmt_manual_test()
 		Parser* p = parser_new(lex(l));
 		Stmt* root = parse_stmt(p);
 		print_stmt(root, "");
+		stmt_free(root);
 		int a = getchar();
 	}
 }

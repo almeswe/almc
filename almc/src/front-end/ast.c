@@ -2,31 +2,24 @@
 
 Expr* expr_new(ExprType type, void* expr_value_ptr)
 {
-	#define expr_set_value(type, field) e->field = (type*)expr_value_ptr
+	#define expr_set_value(type, field) e->field = (type*)expr_value_ptr; break
 	Expr* e = new_s(Expr, e);
 	switch (e->type = type)
 	{
 	case EXPR_IDNT:
 		expr_set_value(Idnt, idnt);
-		break;
 	case EXPR_CONST:
 		expr_set_value(Const, cnst);
-		break;
 	case EXPR_STRING:
 		expr_set_value(Str, str);
-		break;
 	case EXPR_FUNC_CALL:
 		expr_set_value(FuncCall, func_call);
-		break;
 	case EXPR_UNARY_EXPR:
 		expr_set_value(UnaryExpr, unary_expr);
-		break;
 	case EXPR_BINARY_EXPR:
 		expr_set_value(BinaryExpr, binary_expr);
-		break;
 	case EXPR_TERNARY_EXPR:
 		expr_set_value(TernaryExpr, ternary_expr);
-		break;
 	default:
 		assert(0);
 	}
@@ -282,4 +275,351 @@ IfStmt* if_stmt_new(Expr* if_cond, Block* if_body, ElseIf** elifs, Block* else_b
 	i->elifs = elifs;
 	i->else_body = else_body;
 	return i;
+}
+
+//todo: still have mem leak, but not so big as before
+
+void type_free(Type* type)
+{
+	if (type)
+	{ 
+		//free(type->repr);
+		free(type);
+	}
+}
+
+void expr_free(Expr* expr)
+{
+	if (expr)
+	{
+		switch (expr->type)
+		{
+		case EXPR_IDNT:
+			idnt_free(expr->idnt);
+			break;
+		case EXPR_CONST:
+			const_free(expr->cnst);
+			break;
+		case EXPR_STRING:
+			str_free(expr->str);
+			break;
+		case EXPR_FUNC_CALL:
+			func_call_free(expr->func_call);
+			break;
+		case EXPR_UNARY_EXPR:
+			unary_expr_free(expr->unary_expr);
+			break;
+		case EXPR_BINARY_EXPR:
+			binary_expr_free(expr->binary_expr);
+			break;
+		case EXPR_TERNARY_EXPR:
+			ternary_expr_free(expr->ternary_expr);
+			break;
+		default:
+			assert(0);
+		}
+		free(expr);
+	}
+}
+
+void str_free(Str* str)
+{
+	if (str)
+	{
+		//free(str->svalue);
+		src_context_free(str->context);
+		free(str);
+	}
+}
+
+void idnt_free(Idnt* idnt)
+{
+	if (idnt)
+	{
+		//free(idnt->svalue);
+		src_context_free(idnt->context);
+		free(idnt);
+	}
+}
+
+void const_free(Const* cnst)
+{
+	if (cnst)
+	{
+		src_context_free(cnst->context);
+		free(cnst);
+	}
+}
+
+void func_call_free(FuncCall* func_call)
+{
+	if (func_call)
+	{
+		for (int i = 0; i < sbuffer_len(func_call->func_args); i++)
+			expr_free(func_call->func_args[i]);
+		//free(func_call->func_name);
+		free(func_call);
+	}
+}
+
+void unary_expr_free(UnaryExpr* unary_expr)
+{
+	if (unary_expr)
+	{
+		expr_free(unary_expr->expr);
+		type_free(unary_expr->cast_type);
+		free(unary_expr);
+	}
+}
+
+void binary_expr_free(BinaryExpr* binary_expr)
+{
+	if (binary_expr)
+	{
+		expr_free(binary_expr->lexpr);
+		expr_free(binary_expr->rexpr);
+		free(binary_expr);
+	}
+}
+
+void ternary_expr_free(TernaryExpr* ternary_expr)
+{
+	if (ternary_expr)
+	{
+		expr_free(ternary_expr->cond);
+		expr_free(ternary_expr->lexpr);
+		expr_free(ternary_expr->rexpr);
+		free(ternary_expr);
+	}
+}
+
+void stmt_free(Stmt* stmt)
+{
+	if (stmt)
+	{
+		switch (stmt->type)
+		{
+		case STMT_IF:
+			if_stmt_free(stmt->if_stmt);
+			break;
+		case STMT_EXPR:
+			expr_stmt_free(stmt->expr_stmt);
+			break;
+		case STMT_BLOCK:
+			block_free(stmt->block);
+			break;
+		case STMT_LOOP:
+			loop_stmt_free(stmt->loop_stmt);
+			break;
+		case STMT_EMPTY:
+			empty_stmt_free(stmt->empty_stmt);
+			break;
+		case STMT_VAR_DECL:
+			var_decl_free(stmt->var_decl);
+			break;
+		case STMT_TYPE_DECL:
+			type_var_free(stmt->type_decl);
+			break;
+		case STMT_FUNC_DECL:
+			func_decl_free(stmt->func_decl);
+			break;
+		default:
+			assert(0);
+		}
+		free(stmt);
+	}
+}
+
+void type_decl_free(TypeDecl* type_decl)
+{
+	if (type_decl)
+	{
+		switch (type_decl->type)
+		{
+		case TYPE_DECL_ENUM:
+			enum_decl_free(type_decl->enum_decl);
+			break;
+		case TYPE_DECL_UNION:
+			union_decl_free(type_decl->union_decl);
+			break;
+		case TYPE_DECL_STRUCT:
+			struct_decl_free(type_decl->struct_decl);
+			break;
+		default:
+			assert(0);
+		}
+		free(type_decl);
+	}
+}
+
+void enum_decl_free(EnumDecl* enum_decl)
+{
+	if (enum_decl)
+	{
+		//free(enum_decl->enum_name);
+		for (int i = 0; i < sbuffer_len(enum_decl->enum_idnts); i++)
+		{
+			idnt_free(enum_decl->enum_idnts[i]);
+			expr_free(enum_decl->enum_idnt_values[i]);
+		}
+		free(enum_decl);
+	}
+}
+
+void union_decl_free(UnionDecl* union_decl)
+{
+	if (union_decl)
+	{
+		//free(union_decl->union_name);
+		for (int i = 0; i < sbuffer_len(union_decl->union_mmbrs); i++)
+			type_var_free(union_decl->union_mmbrs[i]);
+		free(union_decl);
+	}
+}
+
+void struct_decl_free(StructDecl* struct_decl)
+{
+	if (struct_decl)
+	{
+		//free(struct_decl->struct_name);
+		for (int i = 0; i < sbuffer_len(struct_decl->struct_mmbrs); i++)
+			type_var_free(struct_decl->struct_mmbrs[i]);
+		free(struct_decl);
+	}
+}
+
+void empty_stmt_free(EmptyStmt* empty_stmt)
+{
+	if (empty_stmt)
+		free(empty_stmt);
+}
+
+void expr_stmt_free(ExprStmt* expr_stmt)
+{
+	if (expr_stmt)
+	{
+		expr_free(expr_stmt);
+		free(expr_stmt);
+	}
+}
+
+void block_free(Block* block)
+{
+	if (block)
+	{
+		for (int i = 0; i < sbuffer_len(block->stmts); i++)
+			stmt_free(block->stmts[i]);
+		free(block);
+	}
+}
+
+void type_var_free(TypeVar* type_var)
+{
+	if (type_var)
+	{
+		type_free(type_var->type);
+		//free(type_var->var);
+		free(type_var);
+	}
+}
+
+void var_decl_free(VarDecl* var_decl)
+{
+	if (var_decl)
+	{
+		expr_free(var_decl->var_init);
+		type_var_free(var_decl->type_var);
+		free(var_decl);
+	}
+}
+
+void func_decl_free(FuncDecl* func_decl)
+{
+	if (func_decl)
+	{
+		type_free(func_decl->func_type);
+		block_free(func_decl->func_body);
+		for (int i = 0; i < sbuffer_len(func_decl->func_params); i++)
+			type_var_free(func_decl->func_params[i]);
+		//free(func_decl->func_name);
+		free(func_decl);
+	}
+}
+
+void loop_stmt_free(LoopStmt* loop_stmt)
+{
+	if (loop_stmt)
+	{
+		switch (loop_stmt->type)
+		{
+		case LOOP_DO:
+			do_loop_free(loop_stmt->do_loop);
+			break;
+		case LOOP_FOR:
+			for_loop_free(loop_stmt->for_loop);
+			break;
+		case LOOP_WHILE:
+			while_loop_free(loop_stmt->while_loop);
+			break;
+		default:
+			assert(0);
+		}
+		free(loop_stmt);
+	}
+}
+
+void do_loop_free(DoLoop* do_loop)
+{
+	if (do_loop)
+	{
+		expr_free(do_loop->do_cond);
+		block_free(do_loop->do_body);
+		free(do_loop);
+	}
+}
+
+void for_loop_free(ForLoop* for_loop)
+{
+	if (for_loop)
+	{
+		var_decl_free(for_loop->for_init);
+		expr_free(for_loop->for_cond);
+		expr_free(for_loop->for_step);
+		block_free(for_loop->for_body);
+		free(for_loop);
+	}
+}
+
+void while_loop_free(WhileLoop* while_loop)
+{
+	if (while_loop)
+	{
+		expr_free(while_loop->while_cond);
+		block_free(while_loop->while_body);
+		free(while_loop);
+	}
+}
+
+
+void elif_stmt_free(ElseIf* elif_stmt)
+{
+	if (elif_stmt)
+	{
+		expr_free(elif_stmt->elif_cond);
+		block_free(elif_stmt->elif_body);
+		free(elif_stmt);
+	}
+}
+
+void if_stmt_free(IfStmt* if_stmt)
+{
+	if (if_stmt)
+	{
+		expr_free(if_stmt->if_cond);
+		block_free(if_stmt->if_body);
+		for (int i = 0; i < sbuffer_len(if_stmt->elifs); i++)
+			elif_stmt_free(if_stmt->elifs[i]);
+		block_free(if_stmt->else_body);
+		free(if_stmt);
+	}
 }
