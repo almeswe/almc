@@ -472,6 +472,28 @@ void print_if_stmt(IfStmt* if_stmt, const char* indent)
 	}
 }
 
+void print_jump_stmt(JumpStmt* jump_stmt, const char* indent)
+{
+	printf(MAGENTA);
+	printf(indent);
+	switch (jump_stmt->type)
+	{
+	case JUMP_BREAK:
+		printf("break-stmt\n");
+		break;
+	case JUMP_RETURN:
+		printf("return-stmt\n");
+		if (jump_stmt->return_expr)
+			print_expr(jump_stmt->return_expr, indent);
+		break;
+	case JUMP_CONTINUE:
+		printf("continue-stmt\n");
+		break;
+	default:
+		assert(0);
+	}
+	printf(RESET);
+}
 void print_stmt(Stmt* stmt, const char* indent)
 {
 	char* new_indent = frmt("%s   ", indent);
@@ -489,6 +511,9 @@ void print_stmt(Stmt* stmt, const char* indent)
 			break;
 		case STMT_LOOP:
 			print_loop_stmt(stmt->loop_stmt, new_indent);
+			break;
+		case STMT_JUMP:
+			print_jump_stmt(stmt->jump_stmt, new_indent);
 			break;
 		case STMT_EMPTY:
 			print_empty_stmt(stmt->empty_stmt, new_indent);

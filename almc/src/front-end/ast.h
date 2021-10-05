@@ -295,13 +295,28 @@ typedef struct IfStmt
 	ElseIf** elifs;
 } IfStmt;
 
+typedef struct Case
+{
+	Expr* case_value;
+	Block* case_body;
+} Case;
+
+typedef struct SwitchStmt
+{
+	Expr* switch_cond;
+	Case** switch_cases;
+	Block* switch_default;
+} SwitchStmt;
+
 typedef enum StmtType
 {	
 	STMT_IF,
 	STMT_EXPR,
 	STMT_LOOP,
+	STMT_JUMP,
 	STMT_BLOCK,
 	STMT_EMPTY,
+	STMT_SWITCH,
 	STMT_VAR_DECL,
 	STMT_TYPE_DECL,
 	STMT_FUNC_DECL,
@@ -312,18 +327,33 @@ typedef struct EmptyStmt
 	char filler[0];
 } EmptyStmt;
 
+typedef enum JumpStmtType
+{
+	JUMP_BREAK,
+	JUMP_RETURN,
+	JUMP_CONTINUE,
+} JumpStmtType;
+
+typedef struct JumpStmt
+{
+	Expr* return_expr;
+	JumpStmtType type;
+} JumpStmt;
+
 typedef struct Stmt
 {
 	StmtType type;
 	union
 	{
+		//todo: add stmt endian ?
 		Block* block;
 		IfStmt* if_stmt;
 		VarDecl* var_decl;
-		LoopStmt* loop_stmt;
 		TypeDecl* type_decl;
 		FuncDecl* func_decl;
+		LoopStmt* loop_stmt;
 		ExprStmt* expr_stmt;
+		JumpStmt* jump_stmt;
 		EmptyStmt* empty_stmt;
 	};
 } Stmt;
@@ -365,6 +395,7 @@ WhileLoop* while_loop_new(Expr* while_cond, Block* while_body);
 ElseIf* elif_stmt_new(Expr* elif_cond, Block* elif_body);
 IfStmt* if_stmt_new(Expr* if_cond, Block* if_body, ElseIf** elifs, Block* else_body);
 
+JumpStmt* jump_stmt_new(JumpStmtType type, Expr* return_expr);
 void type_free(Type* type);
 
 void expr_free(Expr* expr);
@@ -397,5 +428,7 @@ void while_loop_free(WhileLoop* while_loop);
 
 void elif_stmt_free(ElseIf* elif_stmt);
 void if_stmt_free(IfStmt* if_stmt);
+
+void jump_stmt_free(JumpStmt* jump_stmt);
 
 #endif // AST_H 

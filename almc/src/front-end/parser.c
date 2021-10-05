@@ -21,7 +21,7 @@
 	case TOKEN_KEYWORD_FLOAT64:   \
 	case TOKEN_KEYWORD_STRING      
 
-#define TOKEN_USER_TYPEDECL    \
+#define TOKEN_KEYWORD_USER_TYPEDECL    \
 		 TOKEN_KEYWORD_ENUM:   \
 	case TOKEN_KEYWORD_UNION:  \
 	case TOKEN_KEYWORD_STRUCT
@@ -30,6 +30,11 @@
 		 TOKEN_KEYWORD_DO:   \
 	case TOKEN_KEYWORD_FOR:  \
 	case TOKEN_KEYWORD_WHILE
+
+#define TOKEN_KEYWORD_JUMP     \
+		 TOKEN_KEYWORD_BREAK:  \
+	case TOKEN_KEYWORD_RETURN: \
+	case TOKEN_KEYWORD_CONTINUE
 
 Parser* parser_new(Token* tokens)
 {
@@ -810,9 +815,11 @@ Stmt* parse_stmt(Parser* parser)
 		return parse_if_stmt(parser);
 	case TOKEN_KEYWORD_LOOP:
 		return parse_loop_stmt(parser);
+	case TOKEN_KEYWORD_JUMP:
+		return parse_jump_stmt(parser);
 	case TOKEN_KEYWORD_FUNC:
 		return parse_func_decl_stmt(parser);
-	case TOKEN_USER_TYPEDECL:
+	case TOKEN_KEYWORD_USER_TYPEDECL:
 		return parse_type_decl_stmt(parser);
 	case TOKEN_IDNT:
 		get_next_token(parser);
@@ -1111,6 +1118,35 @@ ElseIf* parse_elif_stmt(Parser* parser)
 	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
 	elif_body = parse_block(parser)->block;
 	return elif_stmt_new(elif_cond, elif_body);
+}
+
+Stmt* parse_jump_stmt(Parser* parser)
+{
+	JumpStmtType type = -1;
+	Expr* return_expr = NULL;
+	switch (get_curr_token(parser).type)
+	{
+	case TOKEN_KEYWORD_BREAK:
+		type = JUMP_BREAK;
+		expect_with_skip(parser, TOKEN_KEYWORD_BREAK, "break");
+		break;
+	case TOKEN_KEYWORD_CONTINUE:
+		type = JUMP_CONTINUE;
+		expect_with_skip(parser, TOKEN_KEYWORD_CONTINUE, "continue");
+		break;
+	case TOKEN_KEYWORD_RETURN:
+		type = JUMP_RETURN;
+		expect_with_skip(parser, TOKEN_KEYWORD_RETURN, "return");
+		if (!matcht(parser, TOKEN_SEMICOLON))
+			return_expr = parse_expr(parser);
+		break;
+	default:
+		report_error(frmt("Expected keyword (return, break or continue), but met: %s",
+			token_type_tostr(get_curr_token(parser).type)), get_curr_token(parser).context);
+	}
+	expect_with_skip(parser, TOKEN_SEMICOLON, ";");
+	return stmt_new(STMT_JUMP, jump_stmt_new(type, 
+		return_expr));
 }
 
 TypeVar* parse_type_var(Parser* parser)

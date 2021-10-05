@@ -1,5 +1,8 @@
 #include "ast.h"
 
+//todo: finish connecting switch-case-stmt??
+//todo: replace assert(0) by report_error
+
 Expr* expr_new(ExprType type, void* expr_value_ptr)
 {
 	#define expr_set_value(type, field) e->field = (type*)expr_value_ptr; break
@@ -112,6 +115,8 @@ Stmt* stmt_new(StmtType type, void* stmt_value_ptr)
 		stmt_set_value(Block, block);
 	case STMT_LOOP:
 		stmt_set_value(LoopStmt, loop_stmt);
+	case STMT_JUMP:
+		stmt_set_value(JumpStmt, jump_stmt);
 	case STMT_EMPTY:
 		stmt_set_value(EmptyStmt, empty_stmt);
 	case STMT_VAR_DECL:
@@ -277,6 +282,24 @@ IfStmt* if_stmt_new(Expr* if_cond, Block* if_body, ElseIf** elifs, Block* else_b
 	return i;
 }
 
+JumpStmt* jump_stmt_new(JumpStmtType type, Expr* return_expr)
+{
+	JumpStmt* js = new_s(JumpStmt, js);
+	switch (js->type = type)
+	{
+	case JUMP_BREAK:
+	case JUMP_CONTINUE:
+		js->return_expr = NULL;
+		break;
+	case JUMP_RETURN:
+		js->return_expr = return_expr;
+		break;
+	default:
+		assert(0);
+	}
+	return js;
+}
+
 //todo: still have mem leak, but not so big as before
 
 void type_free(Type* type)
@@ -357,6 +380,7 @@ void func_call_free(FuncCall* func_call)
 	{
 		for (int i = 0; i < sbuffer_len(func_call->func_args); i++)
 			expr_free(func_call->func_args[i]);
+		sbuffer_free(func_call->func_args);
 		//free(func_call->func_name);
 		free(func_call);
 	}
@@ -410,6 +434,9 @@ void stmt_free(Stmt* stmt)
 			break;
 		case STMT_LOOP:
 			loop_stmt_free(stmt->loop_stmt);
+			break;
+		case STMT_JUMP:
+			jump_stmt_free(stmt->jump_stmt);
 			break;
 		case STMT_EMPTY:
 			empty_stmt_free(stmt->empty_stmt);
@@ -621,5 +648,22 @@ void if_stmt_free(IfStmt* if_stmt)
 			elif_stmt_free(if_stmt->elifs[i]);
 		block_free(if_stmt->else_body);
 		free(if_stmt);
+	}
+void jump_stmt_free(JumpStmt* jump_stmt)
+{
+	if (jump_stmt)
+	{
+		switch (jump_stmt->type)
+		{
+		case JUMP_BREAK:
+		case JUMP_CONTINUE:
+			break;
+		case JUMP_RETURN:
+			expr_free(jump_stmt->return_expr);
+			break;
+		default:
+			assert(0);
+		}
+		free(jump_stmt);
 	}
 }

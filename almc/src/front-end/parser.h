@@ -62,6 +62,7 @@ Stmt* parse_while_loop_stmt(Parser* parser);
 Stmt* parse_if_stmt(Parser* parser);
 ElseIf* parse_elif_stmt(Parser* parser);
 
+Stmt* parse_jump_stmt(Parser* parser);
 TypeVar* parse_type_var(Parser* parser);
 
 #endif

@@ -1,5 +1,7 @@
 #include "lexer.h"
 
+//todo: rewrite lexer?
+
 //TODO: lexer backup
 //TODO: add boolean
 
@@ -267,7 +269,9 @@ Token* token_new(TokenType type, SrcContext* context)
 
 void lexer_free(Lexer* lexer)
 {
-	//todo: need to free char_stream
+	//todo: need properly free tokens 
+	//for (int i = 0; i < sbuffer_len(lexer->tokens); i++)
+	//	token_free(&lexer->tokens[i]);
 	sbuffer_free(lexer->tokens);
 	free(lexer);
 }
