@@ -19,9 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\front-end\ast-print.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
     <ClCompile Include="src\front-end\ast-expr-eval.h" />
     <ClCompile Include="src\front-end\ast.c" />
     <ClCompile Include="src\utils\common.c" />
@@ -37,6 +34,7 @@
     <Text Include="test\syntax.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\front-end\ast-print.h" />
     <ClInclude Include="src\front-end\ast.h" />
     <ClInclude Include="src\utils\common.h" />
     <ClInclude Include="src\utils\context.h" />

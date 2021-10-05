@@ -80,7 +80,7 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\front-end\ast-print.h">
-      <Filter>Source Files</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
