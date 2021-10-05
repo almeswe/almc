@@ -511,6 +511,7 @@ void enum_decl_free(EnumDecl* enum_decl)
 			idnt_free(enum_decl->enum_idnts[i]);
 			expr_free(enum_decl->enum_idnt_values[i]);
 		}
+		sbuffer_free(enum_decl->enum_idnts);
 		free(enum_decl);
 	}
 }
@@ -522,6 +523,7 @@ void union_decl_free(UnionDecl* union_decl)
 		//free(union_decl->union_name);
 		for (int i = 0; i < sbuffer_len(union_decl->union_mmbrs); i++)
 			type_var_free(union_decl->union_mmbrs[i]);
+		sbuffer_free(union_decl->union_mmbrs);
 		free(union_decl);
 	}
 }
@@ -533,6 +535,7 @@ void struct_decl_free(StructDecl* struct_decl)
 		//free(struct_decl->struct_name);
 		for (int i = 0; i < sbuffer_len(struct_decl->struct_mmbrs); i++)
 			type_var_free(struct_decl->struct_mmbrs[i]);
+		sbuffer_free(struct_decl->struct_mmbrs);
 		free(struct_decl);
 	}
 }
@@ -547,7 +550,7 @@ void expr_stmt_free(ExprStmt* expr_stmt)
 {
 	if (expr_stmt)
 	{
-		expr_free(expr_stmt);
+		expr_free(expr_stmt->expr);
 		free(expr_stmt);
 	}
 }
@@ -558,6 +561,7 @@ void block_free(Block* block)
 	{
 		for (int i = 0; i < sbuffer_len(block->stmts); i++)
 			stmt_free(block->stmts[i]);
+		sbuffer_free(block->stmts);
 		free(block);
 	}
 }
@@ -590,6 +594,7 @@ void func_decl_free(FuncDecl* func_decl)
 		block_free(func_decl->func_body);
 		for (int i = 0; i < sbuffer_len(func_decl->func_params); i++)
 			type_var_free(func_decl->func_params[i]);
+		sbuffer_free(func_decl->func_params);
 		//free(func_decl->func_name);
 		free(func_decl);
 	}
@@ -668,6 +673,7 @@ void if_stmt_free(IfStmt* if_stmt)
 		block_free(if_stmt->if_body);
 		for (int i = 0; i < sbuffer_len(if_stmt->elifs); i++)
 			elif_stmt_free(if_stmt->elifs[i]);
+		sbuffer_free(if_stmt->elifs);
 		block_free(if_stmt->else_body);
 		free(if_stmt);
 	}

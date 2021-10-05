@@ -172,6 +172,8 @@ void parser_stmt_manual_test()
 		Stmt* root = parse_stmt(p);
 		print_stmt(root, "");
 		stmt_free(root);
+		lexer_free(l);
+		free(p);
 		int a = getchar();
 	}
 }
@@ -249,8 +251,8 @@ void parser_eval_test()
 
 void run_tests()
 {
-	//sb_test();
-	//lexer_test();
+	sb_test();
+	lexer_test();
 	parser_eval_test();
 	//parser_expr_manual_test();
 	parser_stmt_manual_test();
