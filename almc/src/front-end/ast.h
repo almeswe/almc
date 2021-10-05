@@ -355,6 +355,7 @@ typedef struct Stmt
 		ExprStmt* expr_stmt;
 		JumpStmt* jump_stmt;
 		EmptyStmt* empty_stmt;
+		SwitchStmt* switch_stmt;
 	};
 } Stmt;
 
@@ -395,7 +396,11 @@ WhileLoop* while_loop_new(Expr* while_cond, Block* while_body);
 ElseIf* elif_stmt_new(Expr* elif_cond, Block* elif_body);
 IfStmt* if_stmt_new(Expr* if_cond, Block* if_body, ElseIf** elifs, Block* else_body);
 
+Case* case_stmt_new(Expr* case_value, Block* case_body);
+SwitchStmt* switch_stmt_new(Expr* switch_cond, Case** switch_cases, Block* switch_default);
+
 JumpStmt* jump_stmt_new(JumpStmtType type, Expr* return_expr);
+
 void type_free(Type* type);
 
 void expr_free(Expr* expr);
@@ -428,6 +433,9 @@ void while_loop_free(WhileLoop* while_loop);
 
 void elif_stmt_free(ElseIf* elif_stmt);
 void if_stmt_free(IfStmt* if_stmt);
+
+void case_stmt_free(Case* case_stmt);
+void switch_stmt_free(SwitchStmt* switch_stmt);
 
 void jump_stmt_free(JumpStmt* jump_stmt);
 

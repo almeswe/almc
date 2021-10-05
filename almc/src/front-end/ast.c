@@ -119,6 +119,8 @@ Stmt* stmt_new(StmtType type, void* stmt_value_ptr)
 		stmt_set_value(JumpStmt, jump_stmt);
 	case STMT_EMPTY:
 		stmt_set_value(EmptyStmt, empty_stmt);
+	case STMT_SWITCH:
+		stmt_set_value(SwitchStmt, switch_stmt);
 	case STMT_VAR_DECL:
 		stmt_set_value(VarDecl, var_decl);
 	case STMT_TYPE_DECL:
@@ -282,6 +284,23 @@ IfStmt* if_stmt_new(Expr* if_cond, Block* if_body, ElseIf** elifs, Block* else_b
 	return i;
 }
 
+Case* case_stmt_new(Expr* case_value, Block* case_body)
+{
+	Case* c = new_s(Case, c);
+	c->case_value = case_value;
+	c->case_body = case_body;
+	return c;
+}
+
+SwitchStmt* switch_stmt_new(Expr* switch_cond, Case** switch_cases, Block* switch_default)
+{
+	SwitchStmt* ss = new_s(SwitchStmt, ss);
+	ss->switch_cond = switch_cond;
+	ss->switch_cases = switch_cases;
+	ss->switch_default = switch_default;
+	return ss;
+}
+
 JumpStmt* jump_stmt_new(JumpStmtType type, Expr* return_expr)
 {
 	JumpStmt* js = new_s(JumpStmt, js);
@@ -440,6 +459,9 @@ void stmt_free(Stmt* stmt)
 			break;
 		case STMT_EMPTY:
 			empty_stmt_free(stmt->empty_stmt);
+			break;
+		case STMT_SWITCH:
+			switch_stmt_free(stmt->switch_stmt);
 			break;
 		case STMT_VAR_DECL:
 			var_decl_free(stmt->var_decl);
@@ -649,6 +671,31 @@ void if_stmt_free(IfStmt* if_stmt)
 		block_free(if_stmt->else_body);
 		free(if_stmt);
 	}
+}
+
+void case_stmt_free(Case* case_stmt)
+{
+	if (case_stmt)
+	{
+		expr_free(case_stmt->case_value);
+		block_free(case_stmt->case_body);
+		free(case_stmt);
+	}
+}
+
+void switch_stmt_free(SwitchStmt* switch_stmt)
+{
+	if (switch_stmt)
+	{
+		expr_free(switch_stmt->switch_cond);
+		for (int i = 0; i < sbuffer_len(switch_stmt->switch_cases); i++)
+			case_stmt_free(switch_stmt->switch_cases[i]);
+		sbuffer_free(switch_stmt->switch_cases);
+		block_free(switch_stmt->switch_default);
+		free(switch_stmt);
+	}
+}
+
 void jump_stmt_free(JumpStmt* jump_stmt)
 {
 	if (jump_stmt)

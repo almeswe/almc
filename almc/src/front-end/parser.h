@@ -63,6 +63,11 @@ Stmt* parse_if_stmt(Parser* parser);
 ElseIf* parse_elif_stmt(Parser* parser);
 
 Stmt* parse_jump_stmt(Parser* parser);
+
+Case* parse_case_stmt(Parser* parser);
+Block* parse_case_block(Parser* parser);
+Stmt* parse_switch_stmt(Parser* parser);
+
 TypeVar* parse_type_var(Parser* parser);
 
 #endif

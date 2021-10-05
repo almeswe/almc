@@ -819,6 +819,8 @@ Stmt* parse_stmt(Parser* parser)
 		return parse_jump_stmt(parser);
 	case TOKEN_KEYWORD_FUNC:
 		return parse_func_decl_stmt(parser);
+	case TOKEN_KEYWORD_SWITCH:
+		return parse_switch_stmt(parser);
 	case TOKEN_KEYWORD_USER_TYPEDECL:
 		return parse_type_decl_stmt(parser);
 	case TOKEN_IDNT:
@@ -1118,6 +1120,58 @@ ElseIf* parse_elif_stmt(Parser* parser)
 	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
 	elif_body = parse_block(parser)->block;
 	return elif_stmt_new(elif_cond, elif_body);
+}
+
+Case* parse_case_stmt(Parser* parser)
+{
+	Expr* case_cond = NULL;
+	Block* case_body = NULL;
+
+	expect_with_skip(parser, TOKEN_KEYWORD_CASE, "case");
+	case_cond = parse_expr(parser);
+	expect_with_skip(parser, TOKEN_COLON, ":");
+	case_body = !matcht(parser, TOKEN_KEYWORD_CASE) ?
+		parse_case_block(parser) : NULL;
+	return case_stmt_new(case_cond, case_body);
+}
+
+Block* parse_case_block(Parser* parser)
+{
+	Stmt** stmts = NULL;
+	while (!matcht(parser, TOKEN_KEYWORD_BREAK))
+		sbuffer_add(stmts, parse_stmt(parser));
+	expect_with_skip(parser, TOKEN_KEYWORD_BREAK, "break");
+	expect_with_skip(parser, TOKEN_SEMICOLON, ";");
+	sbuffer_add(stmts, stmt_new(STMT_JUMP, jump_stmt_new(JUMP_BREAK, NULL)));
+	return block_new(stmts);
+}
+
+Stmt* parse_switch_stmt(Parser* parser)
+{
+	Expr* switch_cond = NULL;
+	Case** switch_cases = NULL;
+	Block* switch_default = NULL;
+
+	expect_with_skip(parser, TOKEN_KEYWORD_SWITCH, "switch");
+	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
+	switch_cond = parse_expr(parser);
+	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
+	expect_with_skip(parser, TOKEN_OP_BRACE, "{");
+	while (!matcht(parser, TOKEN_CL_BRACE))
+	{
+		if (!matcht(parser, TOKEN_KEYWORD_DEFAULT))
+			sbuffer_add(switch_cases, parse_case_stmt(parser));
+		else
+		{
+			expect_with_skip(parser, TOKEN_KEYWORD_DEFAULT, "default");
+			expect_with_skip(parser, TOKEN_COLON, ":");
+			switch_default = parse_case_block(parser);
+			break;
+		}
+	}
+	expect_with_skip(parser, TOKEN_CL_BRACE, "}");
+	return stmt_new(STMT_SWITCH, 
+		switch_stmt_new(switch_cond, switch_cases, switch_default));
 }
 
 Stmt* parse_jump_stmt(Parser* parser)

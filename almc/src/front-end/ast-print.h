@@ -494,6 +494,49 @@ void print_jump_stmt(JumpStmt* jump_stmt, const char* indent)
 	}
 	printf(RESET);
 }
+
+void print_case_stmt(Case* case_stmt, const char* indent)
+{
+	printf(BOLDMAGENTA);
+	printf("%scase-stmt:\n", indent);
+	indent = frmt("%s   ", indent);
+	printf("%scase-value:\n", indent);
+	printf(RESET);
+	print_expr(case_stmt->case_value, indent);
+
+	if (case_stmt->case_body)
+	{
+		printf(BOLDMAGENTA);
+		printf("%scase-body:\n", indent);
+		printf(RESET);
+		print_block(case_stmt->case_body, frmt("%s   ", indent));
+	}
+}
+
+void print_switch_stmt(SwitchStmt* switch_stmt, const char* indent)
+{
+	printf(BOLDMAGENTA);
+	printf("%sswitch-stmt:\n", indent);
+	indent = frmt("%s   ", indent);
+	printf(RESET);
+
+	printf(BOLDMAGENTA);
+	printf("%sswitch-cond:\n", indent);
+	printf(RESET);
+	print_expr(switch_stmt->switch_cond, indent);
+
+	for (int i = 0; i < sbuffer_len(switch_stmt->switch_cases); i++)
+		print_case_stmt(switch_stmt->switch_cases[i], frmt("%s   ", indent));
+
+	if (switch_stmt->switch_default)
+	{
+		printf(BOLDMAGENTA);
+		printf("%sdefault-stmt:\n", indent);
+		printf(RESET);
+		print_block(switch_stmt->switch_default, frmt("%s   ", indent));
+	}
+}
+
 void print_stmt(Stmt* stmt, const char* indent)
 {
 	char* new_indent = frmt("%s   ", indent);
@@ -517,6 +560,9 @@ void print_stmt(Stmt* stmt, const char* indent)
 			break;
 		case STMT_EMPTY:
 			print_empty_stmt(stmt->empty_stmt, new_indent);
+			break;
+		case STMT_SWITCH:
+			print_switch_stmt(stmt->switch_stmt, new_indent);
 			break;
 		case STMT_VAR_DECL:
 			print_var_decl(stmt->var_decl, new_indent);
