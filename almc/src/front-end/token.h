@@ -1,11 +1,6 @@
 #ifndef ALMC_LEXER_TOKEN_H
 #define ALMC_LEXER_TOKEN_H
 
-#include <stdio.h>
-#include <ctype.h>
-#include <stdint.h>
-#include <string.h>
-
 #include "..\utils\common.h"
 #include "..\utils\context.h"
 
@@ -126,10 +121,10 @@ typedef struct Token
 	};
 } Token;
 
-Token* token_new(TokenType type, SrcContext* context);
-void token_free(Token* token);
+Token* token2_new(TokenType type, SrcContext* context);
+void token2_free(Token* token);
 
-char* token_tostr(Token* token);
-char* token_type_tostr(TokenType type);
+char* token2_tostr(Token* token);
+char* token2_type_tostr(TokenType type);
 
 #endif

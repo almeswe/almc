@@ -1,6 +1,6 @@
 #include "token.h"
 
-static char* tokens_str[] = {
+char* tokens2_str[] = {
 	"TOKEN_PLUS",
 	"TOKEN_DASH",
 	"TOKEN_ASTERISK",
@@ -103,7 +103,7 @@ static char* tokens_str[] = {
 	"TOKEN_EOF",
 };
 
-Token* token_new(TokenType type, SrcContext* context)
+Token* token2_new(TokenType type, SrcContext* context)
 {
 	Token* t = new_s(Token, t);
 	t->uvalue = 0; // union's initialization here
@@ -112,7 +112,7 @@ Token* token_new(TokenType type, SrcContext* context)
 	return t;
 }
 
-void token_free(Token* token)
+void token2_free(Token* token)
 {
 	if (token)
 	{
@@ -122,7 +122,7 @@ void token_free(Token* token)
 	}
 }
 
-char* token_tostr(Token* token)
+char* token2_tostr(Token* token)
 {
 	char* str = NULL;
 	if (token->type == TOKEN_FNUM)
@@ -137,8 +137,8 @@ char* token_tostr(Token* token)
 	return frmt("%s %s", str, src_context_tostr(token->context));
 }
 
-char* token_type_tostr(TokenType type)
+char* token2_type_tostr(TokenType type)
 {
 	return (type >= 0 && type < TOKEN_EOF) ?
-		tokens_str[type] : tokens_str[0];
+		tokens2_str[type] : tokens2_str[0];
 }
