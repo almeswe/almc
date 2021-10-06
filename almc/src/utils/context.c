@@ -1,6 +1,6 @@
 #include "context.h"
 
-const char* src_context_tostr(SrcContext* context)
+char* src_context_tostr(SrcContext* context)
 {
 	return frmt("(line: %d, position: %d, file: \'%s\')",
 		context->line, context->start, context->file);

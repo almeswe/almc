@@ -19,11 +19,6 @@
 #define KEYWORDS 40
 #define KEYWORD_IN_TOKEN_ENUM_OFFSET TOKEN_IDNT + 1
 
-const char chars[];
-const char* keywords[];
-const char* ext_chars[];
-const char* tokens_str[];
-
 typedef enum TokenType
 {
 	TOKEN_PLUS,
