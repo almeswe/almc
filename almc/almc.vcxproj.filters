@@ -59,6 +59,9 @@
     <ClCompile Include="src\front-end\ast-expr-eval.h">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\front-end\new-lexer\lexer2.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\front-end\token.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -83,6 +86,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\front-end\ast-print.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\front-end\new-lexer\lexer2.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\front-end\token.h">
