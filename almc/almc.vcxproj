@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="src\front-end\ast-expr-eval.h" />
     <ClCompile Include="src\front-end\ast.c" />
+    <ClCompile Include="src\front-end\token.c" />
     <ClCompile Include="src\utils\common.c" />
     <ClCompile Include="src\utils\context.c" />
     <ClCompile Include="src\error.c" />
@@ -36,6 +37,7 @@
   <ItemGroup>
     <ClInclude Include="src\front-end\ast-print.h" />
     <ClInclude Include="src\front-end\ast.h" />
+    <ClInclude Include="src\front-end\token.h" />
     <ClInclude Include="src\utils\common.h" />
     <ClInclude Include="src\utils\context.h" />
     <ClInclude Include="src\error.h" />
