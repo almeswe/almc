@@ -862,6 +862,7 @@ Stmt* parse_enum_decl_stmt(Parser* parser)
 	Idnt** enum_idnts = NULL;
 	Expr* enum_idnt_value = NULL;
 	Expr** enum_idnt_values = NULL;
+
 	expect_with_skip(parser, TOKEN_KEYWORD_ENUM, "enum");
 	if (matcht(parser, TOKEN_IDNT))
 	{
@@ -888,7 +889,8 @@ Stmt* parse_enum_decl_stmt(Parser* parser)
 		{
 			get_next_token(parser);
 			//todo: it is not proper free of previous node
-			free(enum_idnt_value);
+			expr_free(enum_idnt_value);
+			//free(enum_idnt_value);
 			enum_idnt_value =
 				parse_constant_expr(parser);
 		}
@@ -905,6 +907,7 @@ Stmt* parse_union_decl_stmt(Parser* parser)
 {
 	char* union_name = "";
 	TypeVar** union_mmbrs = NULL;
+
 	expect_with_skip(parser, TOKEN_KEYWORD_UNION, "union");
 	if (matcht(parser, TOKEN_IDNT))
 	{
@@ -926,6 +929,7 @@ Stmt* parse_struct_decl_stmt(Parser* parser)
 {
 	char* struct_name = "";
 	TypeVar** struct_mmbrs = NULL;
+
 	expect_with_skip(parser, TOKEN_KEYWORD_STRUCT, "struct");
 	if (matcht(parser, TOKEN_IDNT))
 	{
@@ -978,6 +982,7 @@ Stmt* parse_var_decl_stmt(Parser* parser)
 {
 	Expr* var_init = NULL;
 	TypeVar* type_var = parse_type_var(parser);
+
 	if (matcht(parser, TOKEN_ASSIGN))
 	{
 		get_next_token(parser);
@@ -994,6 +999,7 @@ Stmt* parse_func_decl_stmt(Parser* parser)
 	Type* func_type = NULL;
 	Block* func_body = NULL;
 	TypeVar** func_params = NULL;
+
 	expect_with_skip(parser, TOKEN_KEYWORD_FUNC, "fnc");
 	func_name = get_curr_token(parser).str_value;
 	expect_with_skip(parser, TOKEN_IDNT, "func name");

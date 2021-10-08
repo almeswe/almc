@@ -19,34 +19,27 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\front-end\ast-expr-eval.h" />
-    <ClCompile Include="src\front-end\ast.c" />
+    <ClCompile Include="src\error.c" />
+    <ClCompile Include="src\front-end\new-lexer\lexer.c" />
+    <ClCompile Include="src\front-end\token.c" />
+    <ClCompile Include="src\main.c" />
     <ClCompile Include="src\utils\common.c" />
     <ClCompile Include="src\utils\context.c" />
-    <ClCompile Include="src\error.c" />
-    <ClCompile Include="src\front-end\lexer.c" />
-    <ClCompile Include="src\front-end\parser.c" />
     <ClCompile Include="src\utils\sbuffer.c" />
-    <ClCompile Include="src\utils\sbuffer.h" />
-    <ClCompile Include="src\main.c" />
-    <ClCompile Include="test\test.c" />
-    <ClCompile Include="test\test.h" />
-    <Text Include="test\syntax.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\front-end\ast-print.h" />
-    <ClInclude Include="src\front-end\ast.h" />
+    <ClInclude Include="src\error.h" />
+    <ClInclude Include="src\front-end\new-lexer\lexer.h" />
+    <ClInclude Include="src\front-end\token.h" />
     <ClInclude Include="src\utils\common.h" />
     <ClInclude Include="src\utils\context.h" />
-    <ClInclude Include="src\error.h" />
-    <ClInclude Include="src\front-end\lexer.h" />
-    <ClInclude Include="src\front-end\parser.h" />
+    <ClInclude Include="src\utils\sbuffer.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{7267317d-5ceb-4961-a11b-ed94008c0a6e}</ProjectGuid>
-    <RootNamespace>almc</RootNamespace>
+    <ProjectGuid>{11dc1327-86a8-4522-854e-dfccd3debd13}</ProjectGuid>
+    <RootNamespace>almcnewlexer</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

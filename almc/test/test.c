@@ -164,7 +164,7 @@ void parser_expr_manual_test()
 
 void parser_stmt_manual_test()
 {
-	const char* file = "C:\\Users\\almeswe\\source\\repos\\almc\\Debug\\stmt-test.txt";
+	const char* file = "C:\\Users\\HP\\source\\repos\\almc\\Debug\\stmt-test.txt";
 	while (1)
 	{ 
 		Lexer* l = lexer_new(file, STREAM_FILE);

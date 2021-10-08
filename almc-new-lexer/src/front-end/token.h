@@ -121,10 +121,10 @@ typedef struct Token
 	};
 } Token;
 
-Token* token2_new(TokenType type, SrcContext* context);
-void token2_free(Token* token);
+Token* token_new(TokenType type, SrcContext* context);
+void token_free(Token* token);
 
-char* token2_tostr(Token* token);
-char* token2_type_tostr(TokenType type);
+char* token_tostr(Token* token);
+char* token_type_tostr(TokenType type);
 
 #endif

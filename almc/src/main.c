@@ -1,4 +1,4 @@
-#include "..\test\test.h"
+#include "../test/test.h"
 
 void main(int argc, char** argv)
 {
