@@ -67,5 +67,6 @@ Token* get_hex_num_token(Lexer* lexer);
 Token* get_oct_num_token(Lexer* lexer);
 Token* get_dec_num_token(Lexer* lexer);
 Token* get_dec_fnum_token(Lexer* lexer, char* buffer, uint32_t size);
+Token* get_dec_expnum_token(Lexer* lexer, char* buffer, uint32_t size, char is_float);
 
 #endif

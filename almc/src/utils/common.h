@@ -64,7 +64,8 @@ inline int isescape(char c)
 	case '\n':
 	case '\r':
 	case '\t':
-	case '\v':
+	case '\v':	
+	case '\0':
 		return 1;
 	}
 	return 0;

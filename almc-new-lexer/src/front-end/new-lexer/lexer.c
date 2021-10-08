@@ -14,7 +14,23 @@
 #define matchc(lexer, c) (get_curr_char(lexer) == c)
 #define matchc_in(lexer, c1, c2) ((get_curr_char(lexer)) >= (c1) && (get_curr_char(lexer)) <= (c2))
 
-#define zeroLL 48LL
+#define NUM_BUILDER_BUFFER 128
+
+#define num_builder_create_buffer(buffer) \
+	char* buffer = newc_s(char, buffer, NUM_BUILDER_BUFFER)
+
+//todo: fix realloc warning
+#define num_builder_reduce_buffer(buffer, size) \
+	buffer = rnew_s(char, buffer, size+1);      \
+	buffer[size] = '\0';
+
+#define num_builder_err										\
+	report_error(frmt("Number size should be less than %d", \
+		NUM_BUILDER_BUFFER), NULL)
+
+#define num_builder_add(buffer, digit, index)			 \
+	((index)+1 > NUM_BUILDER_BUFFER) ? num_builder_err : \
+		(buffer[index] = digit)
 
 char chars[] = {
 	'+',
@@ -126,7 +142,7 @@ Lexer* lexer_new(char* input, StreamType input_type)
 	else
 	{
 		FILE* file;
-		fopen_s(&file, input, "r");
+		fopen_s(&file, input, "rb");
 		if (!file)
 			report_error(frmt("Cannot open file: \'%s\'", input), NULL);
 		else
@@ -135,8 +151,9 @@ Lexer* lexer_new(char* input, StreamType input_type)
 			fseek(file, 0L, SEEK_END);
 			l->stream_size = ftell(file);
 			rewind(file);
-			l->stream_origin = newc_s(char, l->stream_origin, l->stream_size);
+			l->stream_origin = newc_s(char, l->stream_origin, l->stream_size + 1);
 			fread(l->stream_origin, sizeof(char), l->stream_size, file);
+			l->stream_origin[l->stream_size] = '\0';
 			fclose(file);
 		}
 	}
@@ -188,7 +205,6 @@ int32_t get_next_char(Lexer* lexer)
 	else
 	{
 		int32_t ch;
-		lexer->stream += 1;
 		switch (ch = *lexer->stream) 
 		{
 		case '\r':
@@ -204,7 +220,7 @@ int32_t get_next_char(Lexer* lexer)
 			lexer->curr_line_offset++;
 			break;
 		}
-		return ch;
+		return *(++lexer->stream);
 	}
 }
 
@@ -255,8 +271,6 @@ int get_tokens_format(Lexer* lex)
 		case 'b':
 			return FORMAT_BIN;
 		default:
-			//todo: solve this macro
-			//macro here because of bug with 0 repr in decimal
 			unget_curr_char(lex);
 			return FORMAT_DEC;
 		}
@@ -276,35 +290,17 @@ Token* get_eof_token(Lexer* lexer, Token** tokens)
 	return token;
 }
 
-#define NUM_BUILDER_BUFFER 128
-
-#define num_builder_create_buffer(buffer) \
-	char* buffer = newc_s(char, buffer, NUM_BUILDER_BUFFER)
-
-//todo: fix realloc warning
-#define num_builder_reduce_buffer(buffer, size) \
-	buffer = rnew_s(char, buffer, size+1);      \
-	buffer[size] = '\0';
-
-#define num_builder_err										\
-	report_error(frmt("Number size should be less than %d", \
-		NUM_BUILDER_BUFFER), NULL)
-
-#define num_builder_add(buffer, digit, index)			 \
-	((index)+1 > NUM_BUILDER_BUFFER) ? num_builder_err : \
-		(buffer[index] = digit)
-
 Token* get_num_token(Lexer* lexer)
 {
 	int format = get_tokens_format(lexer);
 	switch (format)
 	{
-//	case FORMAT_BIN:
-//		return get_bin_num_token2(lexer);
-	//case FORMAT_OCT:
-//		return get_oct_num_token2(lexer);
-//	case FORMAT_HEX:
-//		return get_hex_num_token2(lexer);
+	case FORMAT_BIN:
+		return get_bin_num_token(lexer);
+	case FORMAT_OCT:
+		return get_oct_num_token(lexer);
+	case FORMAT_HEX:
+		return get_hex_num_token(lexer);
 	case FORMAT_DEC:
 		return get_dec_num_token(lexer);
 	}
@@ -312,27 +308,61 @@ Token* get_num_token(Lexer* lexer)
 	return NULL;
 }
 
-Token* get_dec_expnum_token(Lexer* lexer, char* buffer, uint32_t size, char is_float)
+Token* get_bin_num_token(Lexer* lexer)
 {
-	if (tolower(get_curr_char(lexer)) != 'e')
-		report_error(frmt("Expected exponent sign!"), NULL);
-	num_builder_add(buffer, get_curr_char(lexer), size); size++;
-	int32_t ch = get_next_char(lexer);
-	if (ch != '+' && ch != '-')
-		report_error(frmt("Unknown char for decimal exponent form. Expected \'-\' or \'+\'!"), NULL);
-	num_builder_add(buffer, get_curr_char(lexer), size); size++;
-	ch = get_next_char(lexer);
-	if (!matchc_in(lexer, '0', '9'))
-		report_error(frmt("Expected at least one digit after \'e\'!"), NULL);
-	num_builder_add(buffer, get_curr_char(lexer), size); size++;
-	while (isdigit(get_next_char(lexer)))
+	uint32_t size = 2;
+	num_builder_create_buffer(buffer);
+	num_builder_add(buffer, '0', 0);
+	num_builder_add(buffer, get_curr_char(lexer), 1);
+
+	while (isdigit_bin(get_next_char(lexer)))
 	{
 		num_builder_add(buffer, get_curr_char(lexer), size);
 		size++;
 	}
 	unget_curr_char(lexer);
 	num_builder_reduce_buffer(buffer, size);
-	Token* token = token_new(is_float? TOKEN_FNUM : TOKEN_INUM,
+	Token* token = token_new(TOKEN_INUM,
+		src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
+	token->svalue = buffer;
+	return token;
+}
+
+Token* get_oct_num_token(Lexer* lexer)
+{
+	uint32_t size = 2;
+	num_builder_create_buffer(buffer);
+	num_builder_add(buffer, '0', 0);
+	num_builder_add(buffer, get_curr_char(lexer), 1);
+
+	while (isdigit_oct(get_next_char(lexer)))
+	{
+		num_builder_add(buffer, get_curr_char(lexer), size);
+		size++;
+	}
+	unget_curr_char(lexer);
+	num_builder_reduce_buffer(buffer, size);
+	Token* token = token_new(TOKEN_INUM,
+		src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
+	token->svalue = buffer;
+	return token;
+}
+
+Token* get_hex_num_token(Lexer* lexer)
+{
+	uint32_t size = 2;
+	num_builder_create_buffer(buffer);
+	num_builder_add(buffer, '0', 0);
+	num_builder_add(buffer, get_curr_char(lexer), 1);
+
+	while (isdigit_hex(get_next_char(lexer)))
+	{
+		num_builder_add(buffer, get_curr_char(lexer), size);
+		size++;
+	}
+	unget_curr_char(lexer);
+	num_builder_reduce_buffer(buffer, size);
+	Token* token = token_new(TOKEN_INUM,
 		src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
 	token->svalue = buffer;
 	return token;
@@ -369,7 +399,8 @@ Token* get_dec_fnum_token(Lexer* lexer, char* buffer, uint32_t size)
 	num_builder_add(buffer, get_curr_char(lexer), size); size++;
 	get_next_char(lexer);
 	if (!matchc_in(lexer, '0', '9'))
-		report_error(frmt("Expected at least one digit after \'.\'!"), NULL);
+		report_error(frmt("Expected at least one digit after \'.\'!"), 
+			src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
 	num_builder_add(buffer, get_curr_char(lexer), size); size++;
 	while (isdigit_fext(get_next_char(lexer)))
 	{
@@ -381,6 +412,35 @@ Token* get_dec_fnum_token(Lexer* lexer, char* buffer, uint32_t size)
 	unget_curr_char(lexer);
 	num_builder_reduce_buffer(buffer, size);
 	Token* token = token_new(TOKEN_FNUM,
+		src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
+	token->svalue = buffer;
+	return token;
+}
+
+Token* get_dec_expnum_token(Lexer* lexer, char* buffer, uint32_t size, char is_float)
+{
+	if (tolower(get_curr_char(lexer)) != 'e')
+		//context is null because this error in my case will never occure
+		report_error(frmt("Expected exponent sign!"), NULL); 
+	num_builder_add(buffer, get_curr_char(lexer), size); size++;
+	int32_t ch = get_next_char(lexer);
+	if (ch != '+' && ch != '-')
+		report_error(frmt("Unknown char for decimal exponent form. Expected \'-\' or \'+\'!"), 
+			src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
+	num_builder_add(buffer, get_curr_char(lexer), size); size++;
+	ch = get_next_char(lexer);
+	if (!matchc_in(lexer, '0', '9'))
+		report_error(frmt("Expected at least one digit after exponent sign!"), 
+			src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
+	num_builder_add(buffer, get_curr_char(lexer), size); size++;
+	while (isdigit(get_next_char(lexer)))
+	{
+		num_builder_add(buffer, get_curr_char(lexer), size);
+		size++;
+	}
+	unget_curr_char(lexer);
+	num_builder_reduce_buffer(buffer, size);
+	Token* token = token_new(is_float ? TOKEN_FNUM : TOKEN_INUM,
 		src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
 	token->svalue = buffer;
 	return token;

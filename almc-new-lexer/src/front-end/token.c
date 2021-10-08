@@ -125,11 +125,7 @@ void token_free(Token* token)
 char* token_tostr(Token* token)
 {
 	char* str = NULL;
-	if (token->type == TOKEN_FNUM)
-		str = frmt("%s: %f", token_type_tostr(token->type), token->fvalue);
-	else if (token->type == TOKEN_INUM)
-		str = frmt("%s: %u", token_type_tostr(token->type), token->uvalue);
-	else if (token->type == TOKEN_CHARACTER ||
+	if (token->type == TOKEN_CHARACTER ||
 		(token->type >= TOKEN_PLUS && token->type <= TOKEN_RIGHT_ANGLE))
 			str = frmt("%s: %c", token_type_tostr(token->type), token->cvalue);
 	else
@@ -139,6 +135,6 @@ char* token_tostr(Token* token)
 
 char* token_type_tostr(TokenType type)
 {
-	return (type >= 0 && type < TOKEN_EOF) ?
+	return (type >= 0 && type <= TOKEN_EOF) ?
 		tokens_str[type] : tokens_str[0];
 }
