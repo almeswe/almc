@@ -71,4 +71,4 @@ inline int isescape(char c)
 	return 0;
 }
 
-#endif // COMMON_H
+#endif// COMMON_H

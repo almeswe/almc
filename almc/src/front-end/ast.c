@@ -1,6 +1,5 @@
 #include "ast.h"
 
-//todo: finish connecting switch-case-stmt??
 //todo: replace assert(0) by report_error
 
 Expr* expr_new(ExprType type, void* expr_value_ptr)
@@ -23,6 +22,8 @@ Expr* expr_new(ExprType type, void* expr_value_ptr)
 		expr_set_value(BinaryExpr, binary_expr);
 	case EXPR_TERNARY_EXPR:
 		expr_set_value(TernaryExpr, ternary_expr);
+	case EXPR_INITIALIZER:
+		expr_set_value(Initializer, initializer);
 	default:
 		assert(0);
 	}
@@ -101,6 +102,13 @@ TernaryExpr* ternary_expr_new(Expr* cond, Expr* lexpr, Expr* rexpr)
 	return te;
 }
 
+Initializer* initializer_new(Expr** values)
+{
+	Initializer* si = new_s(Initializer, si);
+	si->values = values;
+	return si;
+}
+
 Stmt* stmt_new(StmtType type, void* stmt_value_ptr)
 {
 	#define stmt_set_value(type, field) s->field = (type*)stmt_value_ptr; break
@@ -127,6 +135,8 @@ Stmt* stmt_new(StmtType type, void* stmt_value_ptr)
 		stmt_set_value(TypeDecl, type_decl);
 	case STMT_FUNC_DECL:
 		stmt_set_value(FuncDecl, func_decl);
+	case STMT_LABEL_DECL:
+		stmt_set_value(LabelDecl, label_decl);
 	default:
 		assert(0);
 	}
@@ -222,6 +232,13 @@ FuncDecl* func_decl_new(const char* func_name, TypeVar** func_params, Type* func
 	return fd;
 }
 
+LabelDecl* label_decl_new(Idnt* label_idnt)
+{
+	LabelDecl* ld = new_s(LabelDecl, ld);
+	ld->label_idnt = label_idnt;
+	return ld;
+}
+
 LoopStmt* loop_stmt_new(LoopStmtType type, void* loop_stmt_value_ptr)
 {
 	#define loop_stmt_set_value(type, field) lp->field = (type*)loop_stmt_value_ptr; break
@@ -301,17 +318,19 @@ SwitchStmt* switch_stmt_new(Expr* switch_cond, Case** switch_cases, Block* switc
 	return ss;
 }
 
-JumpStmt* jump_stmt_new(JumpStmtType type, Expr* return_expr)
+JumpStmt* jump_stmt_new(JumpStmtType type, Expr* additional_expr)
 {
 	JumpStmt* js = new_s(JumpStmt, js);
 	switch (js->type = type)
 	{
 	case JUMP_BREAK:
 	case JUMP_CONTINUE:
-		js->return_expr = NULL;
+		js->additional_expr = NULL;
 		break;
+	case JUMP_GOTO:
 	case JUMP_RETURN:
-		js->return_expr = return_expr;
+		js->additional_expr 
+			= additional_expr;
 		break;
 	default:
 		assert(0);
@@ -320,7 +339,6 @@ JumpStmt* jump_stmt_new(JumpStmtType type, Expr* return_expr)
 }
 
 //todo: still have mem leak, but not so big as before
-
 void type_free(Type* type)
 {
 	if (type)
@@ -356,6 +374,9 @@ void expr_free(Expr* expr)
 			break;
 		case EXPR_TERNARY_EXPR:
 			ternary_expr_free(expr->ternary_expr);
+			break;
+		case EXPR_INITIALIZER:
+			initializer_free(expr->initializer);
 			break;
 		default:
 			assert(0);
@@ -436,6 +457,17 @@ void ternary_expr_free(TernaryExpr* ternary_expr)
 	}
 }
 
+void initializer_free(Initializer* initializer)
+{
+	if (initializer)
+	{
+		for (int i = 0; i < sbuffer_len(initializer->values); i++)
+			expr_free(initializer->values[i]);
+		sbuffer_free(initializer->values);
+		free(initializer);
+	}
+}
+
 void stmt_free(Stmt* stmt)
 {
 	if (stmt)
@@ -467,10 +499,13 @@ void stmt_free(Stmt* stmt)
 			var_decl_free(stmt->var_decl);
 			break;
 		case STMT_TYPE_DECL:
-			type_var_free(stmt->type_decl);
+			type_decl_free(stmt->type_decl);
 			break;
 		case STMT_FUNC_DECL:
 			func_decl_free(stmt->func_decl);
+			break;
+		case STMT_LABEL_DECL:
+			label_decl_free(stmt->label_decl);
 			break;
 		default:
 			assert(0);
@@ -600,6 +635,15 @@ void func_decl_free(FuncDecl* func_decl)
 	}
 }
 
+void label_decl_free(LabelDecl* label_decl)
+{
+	if (label_decl)
+	{
+		idnt_free(label_decl->label_idnt);
+		free(label_decl);
+	}
+}
+
 void loop_stmt_free(LoopStmt* loop_stmt)
 {
 	if (loop_stmt)
@@ -711,8 +755,9 @@ void jump_stmt_free(JumpStmt* jump_stmt)
 		case JUMP_BREAK:
 		case JUMP_CONTINUE:
 			break;
+		case JUMP_GOTO:
 		case JUMP_RETURN:
-			expr_free(jump_stmt->return_expr);
+			expr_free(jump_stmt->additional_expr);
 			break;
 		default:
 			assert(0);

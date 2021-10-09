@@ -149,6 +149,11 @@ typedef struct FuncCall
 	const char* func_name;
 } FuncCall;
 
+typedef struct Initializer
+{
+	Expr** values;
+} Initializer;
+
 typedef enum ExprType
 {
 	EXPR_IDNT,
@@ -158,6 +163,7 @@ typedef enum ExprType
 	EXPR_UNARY_EXPR,
 	EXPR_BINARY_EXPR,
 	EXPR_TERNARY_EXPR,
+	EXPR_INITIALIZER,
 } ExprType;
 
 typedef struct Expr
@@ -172,6 +178,7 @@ typedef struct Expr
 		UnaryExpr* unary_expr;
 		BinaryExpr* binary_expr;
 		TernaryExpr* ternary_expr;
+		Initializer* initializer;
 	};
 } Expr;
 
@@ -204,6 +211,11 @@ typedef struct FuncDecl
 	TypeVar** func_params;
 	const char* func_name;
 } FuncDecl;
+
+typedef struct LabelDecl
+{
+	Idnt* label_idnt;
+} LabelDecl;
 
 typedef struct EnumDecl
 {
@@ -308,8 +320,28 @@ typedef struct SwitchStmt
 	Block* switch_default;
 } SwitchStmt;
 
+typedef struct EmptyStmt
+{
+	char filler[0];
+} EmptyStmt;
+
+typedef enum JumpStmtType
+{
+	JUMP_GOTO,
+	JUMP_BREAK,
+	JUMP_RETURN,
+	JUMP_CONTINUE,
+} JumpStmtType;
+
+typedef struct JumpStmt
+{
+	JumpStmtType type;
+	//used by goto && return stmts
+	Expr* additional_expr;
+} JumpStmt;
+
 typedef enum StmtType
-{	
+{
 	STMT_IF,
 	STMT_EXPR,
 	STMT_LOOP,
@@ -320,42 +352,26 @@ typedef enum StmtType
 	STMT_VAR_DECL,
 	STMT_TYPE_DECL,
 	STMT_FUNC_DECL,
+	STMT_LABEL_DECL,
 } StmtType;
-
-typedef struct EmptyStmt
-{
-	char filler[0];
-} EmptyStmt;
-
-typedef enum JumpStmtType
-{
-	JUMP_BREAK,
-	JUMP_RETURN,
-	JUMP_CONTINUE,
-} JumpStmtType;
-
-typedef struct JumpStmt
-{
-	Expr* return_expr;
-	JumpStmtType type;
-} JumpStmt;
 
 typedef struct Stmt
 {
 	StmtType type;
 	union
 	{
-		//todo: add stmt endian ?
 		Block* block;
 		IfStmt* if_stmt;
-		VarDecl* var_decl;
-		TypeDecl* type_decl;
-		FuncDecl* func_decl;
 		LoopStmt* loop_stmt;
 		ExprStmt* expr_stmt;
 		JumpStmt* jump_stmt;
 		EmptyStmt* empty_stmt;
 		SwitchStmt* switch_stmt;
+
+		VarDecl* var_decl;
+		TypeDecl* type_decl;
+		FuncDecl* func_decl;
+		LabelDecl* label_decl;
 	};
 } Stmt;
 
@@ -373,6 +389,7 @@ FuncCall* func_call_new(const char* func_name, Expr** func_args);
 UnaryExpr* unary_expr_new(UnaryExprType type, Expr* expr);
 BinaryExpr* binary_expr_new(BinaryExprType type, Expr* lexpr, Expr* rexpr);
 TernaryExpr* ternary_expr_new(Expr* cond, Expr* lexpr, Expr* rexpr);
+Initializer* initializer_new(Expr** values);
 
 Stmt* stmt_new(StmtType type, void* stmt_value_ptr);
 TypeDecl* type_decl_new(TypeDeclType type, void* type_decl_value_ptr);
@@ -387,6 +404,7 @@ Block* block_new(Stmt** stmts);
 TypeVar* type_var_new(Type* type, const char* var);
 VarDecl* var_decl_new(TypeVar* type_var, Expr* var_init);
 FuncDecl* func_decl_new(const char* func_name, TypeVar** func_params, Type* func_type, Block* func_body);
+LabelDecl* label_decl_new(Idnt* label_idnt);
 
 LoopStmt* loop_stmt_new(LoopStmtType type, void* loop_stmt_value_ptr);
 DoLoop* do_loop_new(Expr* do_cond, Block* do_body);
@@ -411,6 +429,7 @@ void func_call_free(FuncCall* func_call);
 void unary_expr_free(UnaryExpr* unary_expr);
 void binary_expr_free(BinaryExpr* binary_expr);
 void ternary_expr_free(TernaryExpr* ternary_expr);
+void initializer_free(Initializer* initializer);
 
 void stmt_free(Stmt* stmt);
 void type_decl_free(TypeDecl* type_decl);
@@ -425,6 +444,7 @@ void block_free(Block* block);
 void type_var_free(TypeVar* type_var);
 void var_decl_free(VarDecl* var_decl);
 void func_decl_free(FuncDecl* func_decl);
+void label_decl_free(LabelDecl* label_decl);
 
 void loop_stmt_free(LoopStmt* loop_stmt);
 void do_loop_free(DoLoop* do_loop);

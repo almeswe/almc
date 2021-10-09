@@ -1,6 +1,6 @@
 #include "parser.h"
 
-//todo: add initializer ( a = {2, 3, ...}; )
+//todo: think about how i can access struct members (alos if struct is pointer) in initializer
 
 #define matcht(parser, t) (get_curr_token(parser).type == (t))
 #define expect_with_skip(parser, type, str) expect(parser, type, str), get_next_token(parser)
@@ -21,9 +21,9 @@
 	case TOKEN_KEYWORD_FLOAT64:   \
 	case TOKEN_KEYWORD_STRING      
 
-#define TOKEN_KEYWORD_USER_TYPEDECL    \
-		 TOKEN_KEYWORD_ENUM:   \
-	case TOKEN_KEYWORD_UNION:  \
+#define TOKEN_KEYWORD_USER_TYPEDECL \
+		 TOKEN_KEYWORD_ENUM:	    \
+	case TOKEN_KEYWORD_UNION:       \
 	case TOKEN_KEYWORD_STRUCT
 
 #define TOKEN_KEYWORD_LOOP   \
@@ -32,7 +32,8 @@
 	case TOKEN_KEYWORD_WHILE
 
 #define TOKEN_KEYWORD_JUMP     \
-		 TOKEN_KEYWORD_BREAK:  \
+		 TOKEN_KEYWORD_GOTO:   \
+	case TOKEN_KEYWORD_BREAK:  \
 	case TOKEN_KEYWORD_RETURN: \
 	case TOKEN_KEYWORD_CONTINUE
 
@@ -152,6 +153,7 @@ Type* parse_type_name(Parser* parser)
 
 	Type* type = cnew_s(Type, type, 1);
 	Token token = get_curr_token(parser);
+
 	switch (token.type)
 	{
 	case TOKEN_IDNT:
@@ -179,6 +181,7 @@ Expr* parse_func_call_expr(Parser* parser)
 {
 	Expr** func_args = NULL;
 	const char* func_name = get_curr_token(parser).str_value;
+
 	expect_with_skip(parser, TOKEN_IDNT, "func name");
 	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
 	if (!matcht(parser, TOKEN_CL_PAREN))
@@ -199,6 +202,7 @@ Expr* parse_primary_expr(Parser* parser)
 {
 	Expr* expr = NULL;
 	Token token = get_curr_token(parser);
+
 	switch (token.type)
 	{
 	case TOKEN_INUM:
@@ -211,7 +215,6 @@ Expr* parse_primary_expr(Parser* parser)
 		break;
 	case TOKEN_IDNT:
 		get_next_token(parser);
-		//todo: refactor
 		if (matcht(parser, TOKEN_OP_PAREN))
 		{
 			unget_curr_token(parser);
@@ -234,6 +237,8 @@ Expr* parse_primary_expr(Parser* parser)
 		break;
 	case TOKEN_OP_PAREN:
 		return parse_paren_expr(parser);
+	case TOKEN_OP_BRACE:
+		return parse_initializer_expr(parser);
 	case TOKEN_KEYWORD_TRUE:
 	case TOKEN_KEYWORD_FALSE:
 		expr = expr_new(EXPR_CONST,
@@ -251,6 +256,7 @@ Expr* parse_postfix_xxcrement_expr(Parser* parser, Expr* expr, TokenType xxcrmt_
 {
 	Expr* unary_expr = NULL;
 	Token token = get_curr_token(parser);
+
 	switch (token.type)
 	{
 	case TOKEN_INC:
@@ -311,6 +317,7 @@ Expr* parse_postfix_expr(Parser* parser)
 
 	Expr* postfix_expr = NULL;
 	Expr* primary_expr = parse_primary_expr(parser);
+
 	while (matcht(parser, TOKEN_INC)
 		|| matcht(parser, TOKEN_DEC)
 		|| matcht(parser, TOKEN_DOT)
@@ -396,6 +403,7 @@ Expr* parse_unary_expr(Parser* parser)
 Type* try_to_get_type(Parser* parser)
 {
 	Type* type = NULL;
+
 	switch (get_curr_token(parser).type)
 	{
 	case TOKEN_OP_PAREN:
@@ -434,6 +442,7 @@ Expr* parse_cast_expr(Parser* parser)
 
 	Type* type = NULL;
 	Expr* expr = NULL;
+
 	if (!(type = try_to_get_type(parser)))
 		return parse_unary_expr(parser);
 	else
@@ -453,6 +462,7 @@ Expr* parse_sizeof_expr(Parser* parser)
 	*/
 	Type* type = NULL;
 	Expr* expr = NULL;
+
 	expect_with_skip(parser, TOKEN_KEYWORD_SIZEOF, "sizeof");
 	//todo: sizeof(Lexer) works right?
 	if (!(type = try_to_get_type(parser)))
@@ -480,6 +490,7 @@ Expr* parse_mul_arith_expr(Parser* parser)
 
 	Expr* mul_expr = NULL;
 	Expr* unary_expr = parse_cast_expr(parser);
+
 	while (matcht(parser, TOKEN_SLASH)
 		|| matcht(parser, TOKEN_MODULUS)
 		|| matcht(parser, TOKEN_ASTERISK))
@@ -511,6 +522,7 @@ Expr* parse_add_arith_expr(Parser* parser)
 
 	Expr* add_expr = NULL;
 	Expr* mul_expr = parse_mul_arith_expr(parser);
+
 	while (matcht(parser, TOKEN_PLUS)
 		|| matcht(parser, TOKEN_DASH))
 	{
@@ -539,6 +551,7 @@ Expr* parse_sft_expr(Parser* parser)
 
 	Expr* sft_expr = NULL;
 	Expr* add_expr = parse_add_arith_expr(parser);
+
 	while (matcht(parser, TOKEN_LSHIFT)
 		|| matcht(parser, TOKEN_RSHIFT))
 	{
@@ -569,6 +582,7 @@ Expr* parse_rel_expr(Parser* parser)
 
 	Expr* rel_expr = NULL;
 	Expr* sft_expr = parse_sft_expr(parser);
+
 	while (matcht(parser, TOKEN_LEFT_ANGLE)
 		|| matcht(parser, TOKEN_RIGHT_ANGLE)
 		|| matcht(parser, TOKEN_LESS_EQ_THAN)
@@ -603,6 +617,7 @@ Expr* parse_equ_expr(Parser* parser)
 
 	Expr* equ_expr = NULL;
 	Expr* rel_expr = parse_rel_expr(parser);
+
 	while (matcht(parser, TOKEN_LG_EQ)
 		|| matcht(parser, TOKEN_LG_NEQ))
 	{
@@ -630,6 +645,7 @@ Expr* parse_and_bw_expr(Parser* parser)
 
 	Expr* and_expr = NULL;
 	Expr* equ_expr = parse_equ_expr(parser);
+
 	while (matcht(parser, TOKEN_AMPERSAND))
 	{
 		get_next_token(parser);
@@ -649,6 +665,7 @@ Expr* parse_xor_bw_expr(Parser* parser)
 
 	Expr* xor_expr = NULL;
 	Expr* and_expr = parse_and_bw_expr(parser);
+
 	while (matcht(parser, TOKEN_CARET))
 	{
 		get_next_token(parser);
@@ -667,6 +684,7 @@ Expr* parse_or_bw_expr(Parser* parser)
 
 	Expr* or_expr = NULL;
 	Expr* xor_expr = parse_xor_bw_expr(parser);
+
 	while (matcht(parser, TOKEN_BAR))
 	{
 		get_next_token(parser);
@@ -685,6 +703,7 @@ Expr* parse_and_lg_expr(Parser* parser)
 
 	Expr* and_expr = NULL;
 	Expr* or_expr = parse_or_bw_expr(parser);
+
 	while (matcht(parser, TOKEN_LG_AND))
 	{
 		get_next_token(parser);
@@ -702,6 +721,7 @@ Expr* parse_or_lg_expr(Parser* parser)
 	*/
 	Expr* lg_or_expr = NULL;
 	Expr* and_expr = parse_and_lg_expr(parser);
+
 	while (matcht(parser, TOKEN_LG_OR))
 	{
 		get_next_token(parser);
@@ -720,6 +740,7 @@ Expr* parse_conditional_expr(Parser* parser)
 
 	Expr* cond_expr = NULL;
 	Expr* or_expr = parse_or_lg_expr(parser);
+
 	while (matcht(parser, TOKEN_QUESTION))
 	{
 		get_next_token(parser);
@@ -757,6 +778,7 @@ Expr* parse_assignment_expr(Parser* parser)
 
 	Expr* assign_expr = NULL;
 	Expr* cond_expr = parse_conditional_expr(parser);
+
 	while (matcht(parser, TOKEN_ASSIGN)
 		|| matcht(parser, TOKEN_ADD_ASSIGN)
 		|| matcht(parser, TOKEN_SUB_ASSIGN)
@@ -799,41 +821,58 @@ Expr* parse_assignment_expr(Parser* parser)
 			type = BINARY_BW_XOR_ASSIGN; break;
 		}
 		get_next_token(parser);
+		Expr* init;
+		if (matcht(parser, TOKEN_OP_BRACE))
+			return expr_new(EXPR_BINARY_EXPR,
+				binary_expr_new(type, (assign_expr) ? assign_expr : cond_expr, parse_initializer_expr(parser)));
 		assign_expr = expr_new(EXPR_BINARY_EXPR,
 			binary_expr_new(type, (assign_expr) ? assign_expr : cond_expr, parse_assignment_expr(parser)));
 	}
 	return (assign_expr) ? assign_expr : cond_expr;
 }
 
+Expr* parse_initializer_expr(Parser* parser)
+{
+	Expr** values =	0;
+
+	expect_with_skip(parser, TOKEN_OP_BRACE, "{");
+	while (!matcht(parser, TOKEN_CL_BRACE))
+	{
+		sbuffer_add(values, parse_expr(parser));
+		if (!matcht(parser, TOKEN_CL_BRACE))
+			expect_with_skip(parser, TOKEN_COMMA, ",");
+	}
+	expect_with_skip(parser, TOKEN_CL_BRACE, "}");
+	return expr_new(EXPR_INITIALIZER, 
+		initializer_new(values));
+}
+
 Stmt* parse_stmt(Parser* parser)
 {
 	switch (get_curr_token(parser).type)
 	{
+	case TOKEN_IDNT:
+		return parse_expr_stmt(parser);
 	case TOKEN_OP_BRACE:
 		return parse_block(parser);
+	case TOKEN_SEMICOLON:
+		return parse_empty_stmt(parser);
 	case TOKEN_KEYWORD_IF:
 		return parse_if_stmt(parser);
+	case TOKEN_KEYWORD_LET:
+		return parse_var_decl_stmt(parser);
 	case TOKEN_KEYWORD_LOOP:
 		return parse_loop_stmt(parser);
 	case TOKEN_KEYWORD_JUMP:
 		return parse_jump_stmt(parser);
 	case TOKEN_KEYWORD_FUNC:
 		return parse_func_decl_stmt(parser);
+	case TOKEN_KEYWORD_LABEL:
+		return parse_label_decl_stmt(parser);
 	case TOKEN_KEYWORD_SWITCH:
 		return parse_switch_stmt(parser);
 	case TOKEN_KEYWORD_USER_TYPEDECL:
 		return parse_type_decl_stmt(parser);
-	case TOKEN_IDNT:
-		get_next_token(parser);
-		if (matcht(parser, TOKEN_COLON))
-		{
-			unget_curr_token(parser);
-			return parse_var_decl_stmt(parser);
-		}
-		unget_curr_token(parser);
-		return parse_expr_stmt(parser);
-	case TOKEN_SEMICOLON:
-		return parse_empty_stmt(parser);
 	default:
 		report_error(frmt("Expected token that specifies statement, but met: %s",
 			token_type_tostr(get_curr_token(parser).type)), get_curr_token(parser).context);
@@ -888,9 +927,7 @@ Stmt* parse_enum_decl_stmt(Parser* parser)
 		if (matcht(parser, TOKEN_ASSIGN))
 		{
 			get_next_token(parser);
-			//todo: it is not proper free of previous node
 			expr_free(enum_idnt_value);
-			//free(enum_idnt_value);
 			enum_idnt_value =
 				parse_constant_expr(parser);
 		}
@@ -967,6 +1004,7 @@ Stmt* parse_block(Parser* parser)
 Stmt* parse_expr_stmt(Parser* parser)
 {
 	Expr* expr = parse_expr(parser);
+
 	expect_with_skip(parser, TOKEN_SEMICOLON, ";");
 	return stmt_new(STMT_EXPR, expr_stmt_new(expr));
 }
@@ -981,8 +1019,10 @@ Stmt* parse_empty_stmt(Parser* parser)
 Stmt* parse_var_decl_stmt(Parser* parser)
 {
 	Expr* var_init = NULL;
-	TypeVar* type_var = parse_type_var(parser);
+	TypeVar* type_var = NULL;
 
+	expect_with_skip(parser, TOKEN_KEYWORD_LET, "let");
+	type_var = parse_type_var(parser);
 	if (matcht(parser, TOKEN_ASSIGN))
 	{
 		get_next_token(parser);
@@ -1019,6 +1059,20 @@ Stmt* parse_func_decl_stmt(Parser* parser)
 	func_body = parse_block(parser)->block;
 	return stmt_new(STMT_FUNC_DECL, 
 		func_decl_new(func_name, func_params, func_type, func_body));
+}
+
+Stmt* parse_label_decl_stmt(Parser* parser)
+{
+	Expr* label_expr = NULL;
+
+	expect_with_skip(parser, TOKEN_KEYWORD_LABEL, "label");
+	label_expr = parse_expr(parser);
+	if (label_expr->type != EXPR_IDNT)
+		//todo: wrong error2
+		report_error(frmt("Expected identifier in label declaration, but met: %s",
+			token_type_tostr(get_curr_token(parser).type)), get_curr_token(parser).context);;
+	expect_with_skip(parser, TOKEN_COLON, ":");
+	return stmt_new(STMT_LABEL_DECL, label_decl_new(label_expr->idnt));
 }
 
 Stmt* parse_loop_stmt(Parser* parser)
@@ -1093,12 +1147,12 @@ Stmt* parse_while_loop_stmt(Parser* parser)
 
 Stmt* parse_if_stmt(Parser* parser)
 {
+	char elif_met = 0;
 	Expr* if_cond = NULL;
 	Block* if_body = NULL;
 	ElseIf** elifs = NULL;
 	Block* else_body = NULL;
 
-	char elif_met = 0;
 	expect_with_skip(parser, TOKEN_KEYWORD_IF, "if");
 	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
 	if_cond = parse_expr(parser);
@@ -1144,6 +1198,7 @@ Case* parse_case_stmt(Parser* parser)
 Block* parse_case_block(Parser* parser)
 {
 	Stmt** stmts = NULL;
+
 	while (!matcht(parser, TOKEN_KEYWORD_BREAK))
 		sbuffer_add(stmts, parse_stmt(parser));
 	expect_with_skip(parser, TOKEN_KEYWORD_BREAK, "break");
@@ -1183,9 +1238,19 @@ Stmt* parse_switch_stmt(Parser* parser)
 Stmt* parse_jump_stmt(Parser* parser)
 {
 	JumpStmtType type = -1;
-	Expr* return_expr = NULL;
+	Expr* additional_expr = NULL;
+
 	switch (get_curr_token(parser).type)
 	{
+	case TOKEN_KEYWORD_GOTO:
+		type = JUMP_GOTO;
+		expect_with_skip(parser, TOKEN_KEYWORD_GOTO, "goto");
+		additional_expr = parse_expr(parser);
+		if (additional_expr->type != EXPR_IDNT)
+			//todo: wrong error
+			report_error(frmt("Expected identifier in goto stmt, but met: %s",
+				token_type_tostr(get_curr_token(parser).type)), get_curr_token(parser).context);;
+		break;
 	case TOKEN_KEYWORD_BREAK:
 		type = JUMP_BREAK;
 		expect_with_skip(parser, TOKEN_KEYWORD_BREAK, "break");
@@ -1198,7 +1263,7 @@ Stmt* parse_jump_stmt(Parser* parser)
 		type = JUMP_RETURN;
 		expect_with_skip(parser, TOKEN_KEYWORD_RETURN, "return");
 		if (!matcht(parser, TOKEN_SEMICOLON))
-			return_expr = parse_expr(parser);
+			additional_expr = parse_expr(parser);
 		break;
 	default:
 		report_error(frmt("Expected keyword (return, break or continue), but met: %s",
@@ -1206,7 +1271,7 @@ Stmt* parse_jump_stmt(Parser* parser)
 	}
 	expect_with_skip(parser, TOKEN_SEMICOLON, ";");
 	return stmt_new(STMT_JUMP, jump_stmt_new(type, 
-		return_expr));
+		additional_expr));
 }
 
 TypeVar* parse_type_var(Parser* parser)
@@ -1214,6 +1279,7 @@ TypeVar* parse_type_var(Parser* parser)
 	Type* type = NULL;
 	const char* var = 
 		get_curr_token(parser).str_value;
+
 	expect_with_skip(parser, TOKEN_IDNT, "variable's name");
 	expect_with_skip(parser, TOKEN_COLON, ":");
 	type = parse_type_name(parser);

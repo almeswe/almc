@@ -190,6 +190,19 @@ void print_ternary_expr(TernaryExpr* expr, const char* indent)
 	print_expr(expr->rexpr, indent);
 }
 
+void print_initializer(Initializer* initializer, const char* indent)
+{
+	printf(BOLDGREEN);
+	printf("%sinitializer:\n", indent);
+	indent = frmt("%s   ", indent);
+	printf(RESET);
+	for (int i = 0; i < sbuffer_len(initializer->values); i++)
+	{
+		printf("%sitem %d:\n", indent, i+1);
+		print_expr(initializer->values[i], frmt("%s   ", indent));
+	}
+}
+
 void print_expr(Expr* expr, const char* indent)
 {
 	// |——
@@ -217,6 +230,9 @@ void print_expr(Expr* expr, const char* indent)
 			break;
 		case EXPR_TERNARY_EXPR:
 			print_ternary_expr(expr->ternary_expr, new_indent);
+			break;
+		case EXPR_INITIALIZER:
+			print_initializer(expr->initializer, new_indent);
 			break;
 		}
 	else
@@ -284,6 +300,13 @@ void print_func_decl(FuncDecl* func_decl, const char* indent)
 	printf("%sfunc-body:\n", indent);
 	printf(RESET);
 	print_block(func_decl->func_body, frmt("   %s", indent));
+}
+
+void print_label_decl(LabelDecl* label_decl, const char* indent)
+{
+	printf(BOLDCYAN);
+	printf("%slabel-decl: %s\n", indent, label_decl->label_idnt->svalue);
+	printf(RESET);
 }
 
 void print_enum_decl(EnumDecl* enum_decl, const char* indent)
@@ -478,13 +501,17 @@ void print_jump_stmt(JumpStmt* jump_stmt, const char* indent)
 	printf(indent);
 	switch (jump_stmt->type)
 	{
+	case JUMP_GOTO:
+		printf("goto-stmt:\n");
+		print_expr(jump_stmt->additional_expr, indent);
+		break;
 	case JUMP_BREAK:
 		printf("break-stmt\n");
 		break;
 	case JUMP_RETURN:
 		printf("return-stmt\n");
-		if (jump_stmt->return_expr)
-			print_expr(jump_stmt->return_expr, indent);
+		if (jump_stmt->additional_expr)
+			print_expr(jump_stmt->additional_expr, indent);
 		break;
 	case JUMP_CONTINUE:
 		printf("continue-stmt\n");
@@ -572,6 +599,9 @@ void print_stmt(Stmt* stmt, const char* indent)
 			break;
 		case STMT_FUNC_DECL:
 			print_func_decl(stmt->func_decl, new_indent);
+			break;
+		case STMT_LABEL_DECL:
+			print_label_decl(stmt->label_decl, new_indent);
 			break;
 		default:
 			assert(0);

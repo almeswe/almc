@@ -42,6 +42,8 @@ Expr* parse_conditional_expr(Parser* parser);
 Expr* parse_constant_expr(Parser* parser);
 Expr* parse_assignment_expr(Parser* parser);
 
+Expr* parse_initializer_expr(Parser* parser);
+
 Stmt* parse_stmt(Parser* parser);
 Stmt* parse_type_decl_stmt(Parser* parser);
 Stmt* parse_enum_decl_stmt(Parser* parser);
@@ -53,6 +55,7 @@ Stmt* parse_expr_stmt(Parser* parser);
 Stmt* parse_empty_stmt(Parser* parser);
 Stmt* parse_var_decl_stmt(Parser* parser);
 Stmt* parse_func_decl_stmt(Parser* parser);
+Stmt* parse_label_decl_stmt(Parser* parser);
 
 Stmt* parse_loop_stmt(Parser* parser);
 Stmt* parse_do_loop_stmt(Parser* parser);
