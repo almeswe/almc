@@ -8,7 +8,7 @@
 #define new(type)			   (type*)malloc(sizeof(type))        
 #define newc(type, count)	   (type*)malloc(sizeof(type) * (count))
 #define cnew(type, count)	   (type*)calloc(count, sizeof(type))
-#define rnew(type, count, var) (type*)realloc((type*)var, sizeof(type) * (count))
+#define rnew(type, count, var) (type*)realloc(var, sizeof(type) * (count))
 
 #define new__err(var) (printf("Memory allocation failure [variable: %s, line: %d, file: %s]", #var, __LINE__, __FILE__), exit(1))
 #define new__chk(var) var ? 0 : new__err(var)	
@@ -60,6 +60,10 @@ inline int issquote(char c)
 inline int isdquote(char c)
 {
 	return c == '\"';
+}
+inline int issharp(char c)
+{
+	return c == '#';
 }
 inline int isescape(char c)
 {

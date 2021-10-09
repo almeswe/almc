@@ -14,22 +14,23 @@
 #define matchc(lexer, c) (get_curr_char(lexer) == c)
 #define matchc_in(lexer, c1, c2) ((get_curr_char(lexer)) >= (c1) && (get_curr_char(lexer)) <= (c2))
 
-#define NUM_BUILDER_BUFFER 128
+#define STR_BUILDER_BUFFER_SIZE 512
 
-#define num_builder_create_buffer(buffer) \
-	char* buffer = newc_s(char, buffer, NUM_BUILDER_BUFFER)
+#define str_builder_create_buffer(buffer) \
+	char* buffer = newc_s(char, buffer, STR_BUILDER_BUFFER_SIZE)
 
-//todo: fix realloc warning
-#define num_builder_reduce_buffer(buffer, size) \
-	buffer = rnew_s(char, buffer, size+1);      \
+#define str_builder_reduce_buffer(temp, buffer, size) \
+	char* temp = buffer;							  \
+	if (!(buffer = rnew(char, size + 1, buffer)))     \
+		 buffer = temp;								  \
 	buffer[size] = '\0';
 
-#define num_builder_err										\
+#define str_builder_err										\
 	report_error(frmt("Number size should be less than %d", \
-		NUM_BUILDER_BUFFER), NULL)
+		STR_BUILDER_BUFFER_SIZE), NULL)
 
-#define num_builder_add(buffer, digit, index)			 \
-	((index)+1 > NUM_BUILDER_BUFFER) ? num_builder_err : \
+#define str_builder_add(buffer, digit, index)			      \
+	((index)+1 > STR_BUILDER_BUFFER_SIZE) ? str_builder_err : \
 		(buffer[index] = digit)
 
 char chars[] = {
@@ -60,7 +61,6 @@ char chars[] = {
 	'<',
 	'>'
 };
-
 char* ext_chars[] = {
 	"+=",
 	"-=",
@@ -85,7 +85,6 @@ char* ext_chars[] = {
 	"--",
 	"->",
 };
-
 char* keywords[] = {
 	"auto",
 	"break",
@@ -133,7 +132,7 @@ char* keywords[] = {
 Lexer* lexer_new(char* input, StreamType input_type)
 {
 	Lexer* l = new_s(Lexer, l);
-	if (input_type == FROM_CHAR_PTR)
+	if ((l->input = input_type) == FROM_CHAR_PTR)
 	{
 		l->stream_origin = input;
 		l->stream_size = strlen(l->stream_origin);
@@ -167,7 +166,8 @@ void lexer_free(Lexer* lexer)
 {
 	if (lexer)
 	{
-		free(lexer->stream_origin);
+		if (lexer->input != FROM_CHAR_PTR)
+			free(lexer->stream_origin);
 		free(lexer);
 	}
 }
@@ -180,22 +180,54 @@ Token** lex(Lexer* lexer)
 		char curr_char = get_curr_char(lexer);
 		if (isdigit(curr_char))
 			sbuffer_add(tokens, get_num_token(lexer));
-//		else if (issquote(curr_char))
-//			sbuffer_add(tokens, get_char_token2(lexer));
-//		else if (isdquote(curr_char))
-//			sbuffer_add(tokens, get_string_token2(lexer));
-//		else if (isidnt(curr_char))
-//			sbuffer_add(tokens, get_idnt_token2(lexer));
-//		else if (isknch(curr_char) >= 0)
-//			sbuffer_add(tokens, get_keychar_token2(lexer, isknch(curr_char)));
+		else if (issquote(curr_char))
+			sbuffer_add(tokens, get_char_token(lexer));
+		else if (isdquote(curr_char))
+			sbuffer_add(tokens, get_string_token(lexer));
+		else if (isidnt(curr_char))
+			sbuffer_add(tokens, get_idnt_token(lexer));
+		else if (isknch(curr_char) >= 0)
+			sbuffer_add(tokens, get_keychar_token(lexer, isknch(curr_char)));
 		else
-			if (!isspace(curr_char) && !isescape(curr_char))
+			if (!isspace(curr_char) && !isescape(curr_char) && !issharp(curr_char))
 				report_error(frmt("Unknown char met (code: %d): [%c]", (int)get_curr_char(lexer), get_curr_char(lexer)),
 					src_context_new(lexer->curr_file, lexer->curr_line_offset, 1, lexer->curr_line));
 		get_next_char(lexer);
 	}
-	sbuffer_add(tokens, get_eof_token(lexer, tokens));
+	sbuffer_add(tokens, get_eof_token(lexer));
 	return tokens;
+}
+
+void mult_comment(Lexer* lexer)
+{
+	while (!eos(lexer))
+	{
+		if (matchc(lexer, '*'))
+		{
+			get_next_char(lexer);
+			if (matchc(lexer, '/'))
+			{
+				get_next_char(lexer);
+				break;
+			}
+			unget_curr_char(lexer);
+		}
+	}
+}
+
+void sngl_comment(Lexer* lexer)
+{
+	get_next_char(lexer);
+	while (!eos(lexer))
+	{
+		get_next_char(lexer);
+		if (matchc(lexer, '\n'))
+		{
+			lexer->prev_line = lexer->curr_line;
+			lexer->curr_line++;
+			break;
+		}
+	}
 }
 
 int32_t get_next_char(Lexer* lexer)
@@ -216,12 +248,28 @@ int32_t get_next_char(Lexer* lexer)
 			lexer->prev_line = lexer->curr_line;
 			lexer->curr_line++;
 			break;
+		/*case '#':
+			if (!check_comment(lexer))
+				goto default_case;*/
 		default:
+		default_case:
 			lexer->curr_line_offset++;
 			break;
 		}
 		return *(++lexer->stream);
 	}
+}
+
+int check_comment(Lexer* lexer)
+{
+	if (!matchc(lexer, '#'))
+		return 0;
+	lexer->stream++;
+	if (*lexer->stream != '~')
+		sngl_comment(lexer);
+	else
+		return 0;
+	return 1;
 }
 
 int32_t get_curr_char(Lexer* lexer)
@@ -233,9 +281,7 @@ int32_t get_curr_char(Lexer* lexer)
 int32_t unget_curr_char(Lexer* lexer)
 {
 	if (bos(lexer))
-		// todo: probably not the proper way to return this char
 		return EOF;
-		//return *lexer->stream_origin;
 	else
 	{
 		int32_t ch;
@@ -278,14 +324,46 @@ int get_tokens_format(Lexer* lex)
 	return FORMAT_DEC;
 }
 
-Token* get_eof_token(Lexer* lexer, Token** tokens)
+char is_escape_sequence(Lexer* lex)
 {
-	size_t len = sbuffer_len(tokens);
-	SrcContext* prev_context = len > 1 ? tokens[len - 1]->context :
-		src_context_new(lexer->curr_file, 0, 1, 1);
-	SrcContext* new_context = src_context_new(
-		prev_context->file, prev_context->start + prev_context->size, 1, prev_context->line);
-	Token* token = token_new(TOKEN_EOF, new_context);
+	if (matchc(lex, '\\'))
+	{
+		switch (get_next_char(lex))
+		{
+		case 'a':
+			return '\a';
+		case 'b':
+			return '\b';
+		case 'f':
+			return '\f';
+		case 'n':
+			return '\n';
+		case 'r':
+			return '\r';
+		case 't':
+			return '\t';
+		case 'v':
+			return '\v';
+		case '0':
+			return '\0';
+		case '\\':
+			return '\\';
+		case '\'':
+			return '\'';
+		case '\"':
+			return '\"';
+		default:
+			unget_curr_char(lex);
+			break;
+		}
+	}
+	return -1;
+}
+
+Token* get_eof_token(Lexer* lexer)
+{
+	Token* token = token_new(TOKEN_EOF, src_context_new(
+		lexer->curr_file, lexer->curr_line_offset+1, 1, lexer->curr_line));
 	token->svalue = "EOF";
 	return token;
 }
@@ -311,17 +389,17 @@ Token* get_num_token(Lexer* lexer)
 Token* get_bin_num_token(Lexer* lexer)
 {
 	uint32_t size = 2;
-	num_builder_create_buffer(buffer);
-	num_builder_add(buffer, '0', 0);
-	num_builder_add(buffer, get_curr_char(lexer), 1);
+	str_builder_create_buffer(buffer);
+	str_builder_add(buffer, '0', 0);
+	str_builder_add(buffer, get_curr_char(lexer), 1);
 
 	while (isdigit_bin(get_next_char(lexer)))
 	{
-		num_builder_add(buffer, get_curr_char(lexer), size);
+		str_builder_add(buffer, get_curr_char(lexer), size);
 		size++;
 	}
 	unget_curr_char(lexer);
-	num_builder_reduce_buffer(buffer, size);
+	str_builder_reduce_buffer(temp, buffer, size);
 	Token* token = token_new(TOKEN_INUM,
 		src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
 	token->svalue = buffer;
@@ -331,17 +409,17 @@ Token* get_bin_num_token(Lexer* lexer)
 Token* get_oct_num_token(Lexer* lexer)
 {
 	uint32_t size = 2;
-	num_builder_create_buffer(buffer);
-	num_builder_add(buffer, '0', 0);
-	num_builder_add(buffer, get_curr_char(lexer), 1);
+	str_builder_create_buffer(buffer);
+	str_builder_add(buffer, '0', 0);
+	str_builder_add(buffer, get_curr_char(lexer), 1);
 
 	while (isdigit_oct(get_next_char(lexer)))
 	{
-		num_builder_add(buffer, get_curr_char(lexer), size);
+		str_builder_add(buffer, get_curr_char(lexer), size);
 		size++;
 	}
 	unget_curr_char(lexer);
-	num_builder_reduce_buffer(buffer, size);
+	str_builder_reduce_buffer(temp, buffer, size);
 	Token* token = token_new(TOKEN_INUM,
 		src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
 	token->svalue = buffer;
@@ -351,17 +429,17 @@ Token* get_oct_num_token(Lexer* lexer)
 Token* get_hex_num_token(Lexer* lexer)
 {
 	uint32_t size = 2;
-	num_builder_create_buffer(buffer);
-	num_builder_add(buffer, '0', 0);
-	num_builder_add(buffer, get_curr_char(lexer), 1);
+	str_builder_create_buffer(buffer);
+	str_builder_add(buffer, '0', 0);
+	str_builder_add(buffer, get_curr_char(lexer), 1);
 
 	while (isdigit_hex(get_next_char(lexer)))
 	{
-		num_builder_add(buffer, get_curr_char(lexer), size);
+		str_builder_add(buffer, get_curr_char(lexer), size);
 		size++;
 	}
 	unget_curr_char(lexer);
-	num_builder_reduce_buffer(buffer, size);
+	str_builder_reduce_buffer(temp, buffer, size);
 	Token* token = token_new(TOKEN_INUM,
 		src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
 	token->svalue = buffer;
@@ -372,8 +450,8 @@ Token* get_dec_num_token(Lexer* lexer)
 {
 	// size is 1 because i already met digit
 	uint32_t size = 1;
-	num_builder_create_buffer(buffer);
-	num_builder_add(buffer, get_curr_char(lexer), 0);
+	str_builder_create_buffer(buffer);
+	str_builder_add(buffer, get_curr_char(lexer), 0);
 
 	while (isdigit_ext(get_next_char(lexer)))
 	{
@@ -381,11 +459,11 @@ Token* get_dec_num_token(Lexer* lexer)
 			return get_dec_fnum_token(lexer, buffer, size);
 		if (matchc(lexer, 'e') || matchc(lexer, 'E'))
 			return get_dec_expnum_token(lexer, buffer, size, 0);
-		num_builder_add(buffer, get_curr_char(lexer), size);
+		str_builder_add(buffer, get_curr_char(lexer), size);
 		size++;
 	}
 	unget_curr_char(lexer);
-	num_builder_reduce_buffer(buffer, size);
+	str_builder_reduce_buffer(temp, buffer, size);
 	Token* token = token_new(TOKEN_INUM,
 		src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
 	token->svalue = buffer;
@@ -396,21 +474,21 @@ Token* get_dec_fnum_token(Lexer* lexer, char* buffer, uint32_t size)
 {
 	if (!matchc(lexer, '.'))
 		report_error(frmt("Expected dot character for float number representation!"), NULL);
-	num_builder_add(buffer, get_curr_char(lexer), size); size++;
+	str_builder_add(buffer, get_curr_char(lexer), size); size++;
 	get_next_char(lexer);
 	if (!matchc_in(lexer, '0', '9'))
 		report_error(frmt("Expected at least one digit after \'.\'!"), 
 			src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
-	num_builder_add(buffer, get_curr_char(lexer), size); size++;
+	str_builder_add(buffer, get_curr_char(lexer), size); size++;
 	while (isdigit_fext(get_next_char(lexer)))
 	{
 		if (matchc(lexer, 'e') || matchc(lexer, 'E'))
 			return get_dec_expnum_token(lexer, buffer, size, 1);
-		num_builder_add(buffer, get_curr_char(lexer), size);
+		str_builder_add(buffer, get_curr_char(lexer), size);
 		size++;
 	}
 	unget_curr_char(lexer);
-	num_builder_reduce_buffer(buffer, size);
+	str_builder_reduce_buffer(temp, buffer, size);
 	Token* token = token_new(TOKEN_FNUM,
 		src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
 	token->svalue = buffer;
@@ -422,37 +500,150 @@ Token* get_dec_expnum_token(Lexer* lexer, char* buffer, uint32_t size, char is_f
 	if (tolower(get_curr_char(lexer)) != 'e')
 		//context is null because this error in my case will never occure
 		report_error(frmt("Expected exponent sign!"), NULL); 
-	num_builder_add(buffer, get_curr_char(lexer), size); size++;
+	str_builder_add(buffer, get_curr_char(lexer), size); size++;
 	int32_t ch = get_next_char(lexer);
 	if (ch != '+' && ch != '-')
 		report_error(frmt("Unknown char for decimal exponent form. Expected \'-\' or \'+\'!"), 
 			src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
-	num_builder_add(buffer, get_curr_char(lexer), size); size++;
+	str_builder_add(buffer, get_curr_char(lexer), size); size++;
 	ch = get_next_char(lexer);
 	if (!matchc_in(lexer, '0', '9'))
 		report_error(frmt("Expected at least one digit after exponent sign!"), 
 			src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
-	num_builder_add(buffer, get_curr_char(lexer), size); size++;
+	str_builder_add(buffer, get_curr_char(lexer), size); size++;
 	while (isdigit(get_next_char(lexer)))
 	{
-		num_builder_add(buffer, get_curr_char(lexer), size);
+		str_builder_add(buffer, get_curr_char(lexer), size);
 		size++;
 	}
 	unget_curr_char(lexer);
-	num_builder_reduce_buffer(buffer, size);
+	str_builder_reduce_buffer(temp, buffer, size);
 	Token* token = token_new(is_float ? TOKEN_FNUM : TOKEN_INUM,
 		src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
 	token->svalue = buffer;
 	return token;
 }
 
+Token* get_idnt_token(Lexer* lexer)
+{
+	uint32_t size = 1;
+	str_builder_create_buffer(idnt);
+	str_builder_add(idnt, get_curr_char(lexer), 0);
+
+	while (isidnt_ext(get_next_char(lexer)))
+	{
+		str_builder_add(idnt, get_curr_char(lexer), size);
+		size++;
+	}
+	unget_curr_char(lexer);
+	str_builder_reduce_buffer(temp, idnt, size);
+	int order = iskeyword(idnt);
+	Token* token = (order >= 0) ? get_keyword_token(lexer, order) :
+		token_new(TOKEN_IDNT, src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
+	token->svalue = idnt;
+	return token;
+}
+
+Token* get_char_token(Lexer* lexer)
+{
+	char character;
+	char is_escape;
+	get_next_char(lexer);
+	character = ((is_escape = is_escape_sequence(lexer)) >= 0) ?
+		is_escape : get_curr_char(lexer);
+	get_next_char(lexer);
+	if (!matchc(lexer, '\''))
+		report_error(frmt("Expected single quote, but met (code %d): [%c]", (int)get_curr_char(lexer), get_curr_char(lexer)),
+			src_context_new(lexer->curr_file, lexer->curr_line_offset, is_escape > 0 ? 4 : 3, lexer->curr_line));
+
+	Token* token = token_new(TOKEN_CHARACTER,
+		src_context_new(lexer->curr_file, lexer->curr_line_offset, is_escape > 0 ? 4 : 3, lexer->curr_line));
+	token->cvalue = character;
+	return token;
+}
+
+Token* get_string_token(Lexer* lexer)
+{
+	char curr_char;
+	char is_escape;
+	uint32_t size = 2;
+	uint32_t index = 0;
+
+	str_builder_create_buffer(str);
+
+	while (!eos(lexer) && isstrc(get_next_char(lexer)))
+	{
+		curr_char = ((is_escape = is_escape_sequence(lexer)) >= 0) ?
+			is_escape : get_curr_char(lexer);
+		str_builder_add(str, curr_char, index);
+		index++;
+		size += (is_escape > 0) ? 2 : 1;
+	}
+	if (!matchc(lexer, '\"'))
+		report_error(frmt("Expected double quote, but met (code %d): [%c]", (int)get_curr_char(lexer), get_curr_char(lexer)),
+			src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
+	str_builder_reduce_buffer(temp, str, index);
+	Token* token = token_new(TOKEN_STRING,
+		src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
+	token->svalue = str;
+	return token;
+}
+
+Token* get_keyword_token(Lexer* lexer, int order)
+{
+	char* keyword = keywords[order];
+	Token* token = token_new(order + KEYWORD_IN_TOKEN_ENUM_OFFSET,
+		src_context_new(lexer->curr_file, lexer->curr_line_offset, strlen(keyword), lexer->curr_line));
+	token->svalue = keyword;
+	return token;
+}
+
+Token* get_keychar_token(Lexer* lexer, int order)
+{
+	// if we found any equal string in ext_chars array
+	char found = 1;
+	int32_t ret = -1;
+	int32_t type = -1;
+	uint32_t size = 2;
+	str_builder_create_buffer(str);
+	str_builder_add(str, chars[order], 0);
+
+	while (found && !eos(lexer))
+	{
+		found = 0;
+		str_builder_add(str, get_next_char(lexer), size-1);
+		str_builder_add(str, '\0', size);
+		if ((ret = isextch(str)) < 0)
+			size--;
+		if (found = (ret >= 0))
+			size++;
+		type = ret >= 0 ? ret : type;
+	}
+	unget_curr_char(lexer);
+	str_builder_reduce_buffer(temp, str, size);
+	Token* token = token_new(strlen(str) == 1 ? (order + CHARS_IN_TOKEN_ENUM_OFFSET) : (type + EXT_CHARS_IN_TOKEN_ENUM_OFFSET),
+		src_context_new(lexer->curr_file, lexer->curr_line_offset, strlen(str), lexer->curr_line));
+	token->svalue = str;
+	return token;
+}
+
 inline int isknch(const char ch)
+
 {
 	for (int i = 0; i < CHARS; i++)
 		if (ch == chars[i])
 			return i;
 	return -1;
 }
+
+inline int isextch(const char* ech)
+{
+	for (int i = 0; i < EXT_CHARS; i++)
+		if (strcmp(ech, ext_chars[i]) == 0)
+			return i;
+	return -1;
+}
+
 //returns -1 if idnt is not the, either returns the order in keywords array
 inline int iskeyword(const char* idnt)
 {

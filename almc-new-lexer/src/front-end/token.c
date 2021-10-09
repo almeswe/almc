@@ -4,7 +4,7 @@ char* tokens_str[] = {
 	"TOKEN_PLUS",
 	"TOKEN_DASH",
 	"TOKEN_ASTERISK",
-	"TOKEN_SLASH,",
+	"TOKEN_SLASH",
 	"TOKEN_MODULUS",
 	"TOKEN_BAR",
 	"TOKEN_TILDE",
@@ -106,7 +106,7 @@ char* tokens_str[] = {
 Token* token_new(TokenType type, SrcContext* context)
 {
 	Token* t = new_s(Token, t);
-	t->uvalue = 0; // union's initialization here
+	t->svalue = 0; // union's initialization here
 	t->type = type;
 	t->context = context;
 	return t;
@@ -124,12 +124,7 @@ void token_free(Token* token)
 
 char* token_tostr(Token* token)
 {
-	char* str = NULL;
-	if (token->type == TOKEN_CHARACTER ||
-		(token->type >= TOKEN_PLUS && token->type <= TOKEN_RIGHT_ANGLE))
-			str = frmt("%s: %c", token_type_tostr(token->type), token->cvalue);
-	else
-		str = frmt("%s: %s", token_type_tostr(token->type), token->svalue);
+	char* str = frmt("%s: %s", token_type_tostr(token->type), token->svalue);
 	return frmt("%s %s", str, src_context_tostr(token->context));
 }
 

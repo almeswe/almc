@@ -116,7 +116,6 @@ typedef struct Token
 	{
 		char cvalue;
 		char* svalue;
-		double fvalue;
 		uint64_t uvalue;
 	};
 } Token;
