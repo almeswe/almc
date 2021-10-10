@@ -122,6 +122,8 @@ char* keywords[] = {
 	"u16",
 	"u32",
 	"u64",
+	"let",
+	"label",
 	"void",
 	"volatile",
 	"while",
@@ -198,26 +200,44 @@ Token** lex(Lexer* lexer)
 	return tokens;
 }
 
+int check_comment(Lexer* lexer)
+{
+	if (!matchc(lexer, '#'))
+		return 0;
+	// manually skip # here
+	lexer->stream++;
+	lexer->curr_line_offset++;
+	if (*lexer->stream != '>')
+		sngl_comment(lexer);
+	else
+	{
+		//skip ~ here
+		get_next_char(lexer);
+		mult_comment(lexer);
+	}
+	return 1;
+}
+
 void mult_comment(Lexer* lexer)
 {
 	while (!eos(lexer))
 	{
-		if (matchc(lexer, '*'))
+		if (!matchc(lexer, '<'))
+			get_next_char(lexer);
+		else
 		{
 			get_next_char(lexer);
-			if (matchc(lexer, '/'))
+			if (matchc(lexer, '#'))
 			{
-				get_next_char(lexer);
+				lexer->curr_line_offset++;
 				break;
 			}
-			unget_curr_char(lexer);
 		}
 	}
 }
 
 void sngl_comment(Lexer* lexer)
 {
-	get_next_char(lexer);
 	while (!eos(lexer))
 	{
 		get_next_char(lexer);
@@ -248,9 +268,10 @@ int32_t get_next_char(Lexer* lexer)
 			lexer->prev_line = lexer->curr_line;
 			lexer->curr_line++;
 			break;
-		/*case '#':
+		case '#':
 			if (!check_comment(lexer))
-				goto default_case;*/
+				goto default_case;
+			break;
 		default:
 		default_case:
 			lexer->curr_line_offset++;
@@ -258,18 +279,6 @@ int32_t get_next_char(Lexer* lexer)
 		}
 		return *(++lexer->stream);
 	}
-}
-
-int check_comment(Lexer* lexer)
-{
-	if (!matchc(lexer, '#'))
-		return 0;
-	lexer->stream++;
-	if (*lexer->stream != '~')
-		sngl_comment(lexer);
-	else
-		return 0;
-	return 1;
 }
 
 int32_t get_curr_char(Lexer* lexer)
