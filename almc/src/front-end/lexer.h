@@ -8,7 +8,7 @@
 
 #include "..\error.h"
 #include "..\utils\common.h"
-#include "..\utils\sbuffer.h"
+#include "..\utils\data-structures\sbuffer.h"
 
 #define EXT_CHARS 22
 #define EXT_CHARS_IN_TOKEN_ENUM_OFFSET TOKEN_RIGHT_ANGLE + 1

@@ -1,10 +1,10 @@
 #ifndef ALMC_AST_H
 #define ALMC_AST_H
 
-#include "lexer.h"
-#include "..\utils\common.h"
-#include "..\utils\context.h"
-#include "..\utils\sbuffer.h"
+#include "..\lexer.h"
+#include "..\..\utils\common.h"
+#include "..\..\utils\context.h"
+#include "..\..\utils\data-structures\sbuffer.h"
 
 typedef struct Expr Expr;
 typedef struct Stmt Stmt;
@@ -13,17 +13,24 @@ typedef struct TypeMods
 {
 	char is_ptr; // 0 - not pointer type, > 0 pointer type + pointer counter
 	char is_void;
-	char is_const;
+	char is_const; //?
+	char is_array; // same as is_ptr
 	char is_static;
 	char is_register;
 	char is_volatile;
-	char is_const_ptr;
+	char is_const_ptr; //?
 	char is_predefined;
 } TypeMods;
+
+typedef struct TypeInfo
+{
+	Expr** arr_dim_sizes;
+} TypeInfo;
 
 typedef struct Type
 {
 	TypeMods mods;
+	TypeInfo info;
 	const char* repr;
 } Type;
 

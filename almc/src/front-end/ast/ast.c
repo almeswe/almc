@@ -343,7 +343,9 @@ void type_free(Type* type)
 {
 	if (type)
 	{ 
-		//free(type->repr);
+		for (int i = 0; i < sbuffer_len(type->info.arr_dim_sizes); i++)
+			expr_free(type->info.arr_dim_sizes[i]);
+		sbuffer_free(type->info.arr_dim_sizes);
 		free(type);
 	}
 }

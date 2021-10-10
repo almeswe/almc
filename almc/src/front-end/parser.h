@@ -1,8 +1,8 @@
 #ifndef ALMC_PARSER_H
 #define ALMC_PARSER_H
 
-#include "ast.h"
 #include "lexer.h"
+#include "ast\ast.h"
 
 typedef struct Parser
 {

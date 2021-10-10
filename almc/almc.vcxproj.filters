@@ -35,7 +35,7 @@
     <ClCompile Include="test\test.c">
       <Filter>Test Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\utils\sbuffer.h">
+    <ClCompile Include="src\utils\data-structures\sbuffer.h">
       <Filter>Common Files\Headers</Filter>
     </ClCompile>
     <ClCompile Include="src\utils\context.c">
@@ -44,19 +44,25 @@
     <ClCompile Include="src\error.c">
       <Filter>Common Files\Sources</Filter>
     </ClCompile>
-    <ClCompile Include="src\utils\sbuffer.c">
+    <ClCompile Include="src\utils\data-structures\sbuffer.c">
       <Filter>Common Files\Sources</Filter>
     </ClCompile>
     <ClCompile Include="src\utils\common.c">
       <Filter>Common Files\Sources</Filter>
     </ClCompile>
-    <ClCompile Include="src\front-end\ast.c">
+    <ClCompile Include="src\front-end\ast\ast.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\front-end\parser.c">
       <Filter>Common Files\Sources</Filter>
     </ClCompile>
-    <ClCompile Include="src\front-end\ast-expr-eval.h">
+    <ClCompile Include="src\front-end\ast\ast-debug\ast-expr-eval.h">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\front-end\ast\ast-debug\ast-expr-eval.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\front-end\ast\ast-debug\ast-console-printer.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -73,13 +79,19 @@
     <ClInclude Include="src\error.h">
       <Filter>Common Files\Headers</Filter>
     </ClInclude>
-    <ClInclude Include="src\front-end\ast.h">
+    <ClInclude Include="src\front-end\ast\ast.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\front-end\parser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\front-end\ast-print.h">
+    <ClInclude Include="src\front-end\ast\ast-debug\ast-console-printer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\front-end\front-end.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\data-structures\hash-table.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,6 +1,4 @@
 #include "test.h"
-#include "..\src\front-end\ast-print.h"
-#include "..\src\front-end\ast-expr-eval.h"
 
 void print_tokens(Token* const tokens)
 {
@@ -66,12 +64,12 @@ void lexer_test()
 	//sbuffer_free(tokens);
 
 	// string lexing test in file
-	lexer_test_case_init(lexer, tokens, STREAM_FILE, "C:\\Users\\HP\\source\\repos\\almc\\Debug\\test5.txt");
-	assert(sbuffer_len(tokens) == 3);
-	assert(strcmp(tokens[0].str_value, "hello world!!\r\n") == 0);
-	assert(strcmp(tokens[1].str_value, "i like \'this\' word!!\r\n") == 0);
+	//lexer_test_case_init(lexer, tokens, STREAM_FILE, "C:\\Users\\HP\\source\\repos\\almc\\Debug\\test5.txt");
+	//assert(sbuffer_len(tokens) == 3);
+	//assert(strcmp(tokens[0].str_value, "hello world!!\r\n") == 0);
+	//assert(strcmp(tokens[1].str_value, "i like \'this\' word!!\r\n") == 0);
 	//print_tokens(tokens);
-	lexer_test_case_free(lexer);
+	//lexer_test_case_free(lexer);
 
 	// string lexing test in char ptr
 	lexer_test_case_init(lexer, tokens, STREAM_CHAR_PTR, "\"hello world!\\n\" \"i like \\\'this\\\' word!\"");
@@ -114,7 +112,6 @@ void lexer_test()
 	assert(tokens[8].ivalue == ULLONG_MAX);
 	assert(tokens[9].ivalue == ULLONG_MAX);
 	assert(tokens[10].ivalue == ULLONG_MAX);
-	//todo: occurs bug (float point)
 	//assert(tokens[3].ivalue == 0.123);
 	lexer_test_case_free(lexer);
 

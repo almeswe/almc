@@ -1,28 +1,4 @@
-#ifndef ALMC_AST_CONSOLE_REPRESENTAION
-#define ALMC_AST_CONSOLE_REPRESENTAION
-
-#include "ast.h"
-
-#define RESET   "\033[0m"
-#define BLACK   "\033[30m"      
-#define RED     "\033[31m"     
-#define GREEN   "\033[32m"     
-#define YELLOW  "\033[33m"      
-#define BLUE    "\033[34m"     
-#define MAGENTA "\033[35m"      
-#define CYAN    "\033[36m"     
-#define WHITE   "\033[37m"      
-#define BOLDBLACK   "\033[1m\033[30m"      
-#define BOLDRED     "\033[1m\033[31m"      
-#define BOLDGREEN   "\033[1m\033[32m"      
-#define BOLDYELLOW  "\033[1m\033[33m"      
-#define BOLDBLUE    "\033[1m\033[34m"     
-#define BOLDMAGENTA "\033[1m\033[35m"      
-#define BOLDCYAN    "\033[1m\033[36m"     
-#define BOLDWHITE   "\033[1m\033[37m" 
-
-void print_expr(Expr* expr, const char* indent);
-void print_stmt(Stmt* stmt, const char* indent);
+#include "ast-console-printer.h"
 
 void print_ast(AstRoot* ast)
 {
@@ -34,10 +10,11 @@ void print_ast(AstRoot* ast)
 void print_type(Type* type, const char* indent)
 {
 #define print_type_mode(mode) type->mods.mode ? \
-	printf("%s%s: %d\n", frmt("%s   ", indent), #mode, type->mods.mode) : 0
+	printf("%s%s: %d\n", indent, #mode, type->mods.mode) : 0
 
 	printf(BOLDRED);
 	printf("%stype: %s\n", indent, type->repr);
+	indent = frmt("%s   ", indent);
 	printf(RESET);
 	print_type_mode(is_ptr);
 	print_type_mode(is_void);
@@ -46,6 +23,13 @@ void print_type(Type* type, const char* indent)
 	print_type_mode(is_volatile);
 	print_type_mode(is_const_ptr);
 	print_type_mode(is_predefined);
+	print_type_mode(is_array);
+	indent = frmt("%s   ", indent);
+	for (int i = 0; i < sbuffer_len(type->info.arr_dim_sizes); i++)
+	{
+		printf("%sdim %d:\n", indent, i + 1);
+		print_expr(type->info.arr_dim_sizes[i], indent);
+	}
 }
 
 void print_idnt(Idnt* idnt, const char* indent)
@@ -198,8 +182,8 @@ void print_initializer(Initializer* initializer, const char* indent)
 	printf(RESET);
 	for (int i = 0; i < sbuffer_len(initializer->values); i++)
 	{
-		printf("%sitem %d:\n", indent, i+1);
-		print_expr(initializer->values[i], frmt("%s   ", indent));
+		printf("%sitem %d:\n", indent, i + 1);
+		print_expr(initializer->values[i], indent);
 	}
 }
 
@@ -609,5 +593,3 @@ void print_stmt(Stmt* stmt, const char* indent)
 	else
 		printf("%s   no-body\n", indent);
 }
-
-#endif //ALMC_AST_CONSOLE_REPRESENTAION

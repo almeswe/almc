@@ -1,11 +1,8 @@
-#ifndef ALMC_AST_ARITH_EXPR_EVAL
-#define ALMC_AST_ARITH_EXPR_EVAL
+#include "ast-expr-eval.h"
 
-#include "ast.h"
+//todo: rewrite for new lexer
 
-int eval_expr(Expr* expr);
-
-int eval_ast(AstRoot* ast)
+int32_t eval_ast(AstRoot* ast)
 {
 	int res = 0;
 	for (uint32_t i = 0; i < sbuffer_len(ast->exprs); i++)
@@ -13,12 +10,12 @@ int eval_ast(AstRoot* ast)
 	return res;
 }
 
-int eval_const(Const* cnst)
+int32_t eval_const(Const* cnst)
 {
 	return cnst->ivalue;
 }
 
-int eval_uexpr(UnaryExpr* uexpr)
+int32_t eval_uexpr(UnaryExpr* uexpr)
 {
 	switch (uexpr->type)
 	{
@@ -35,7 +32,7 @@ int eval_uexpr(UnaryExpr* uexpr)
 	}
 }
 
-int eval_bexpr(BinaryExpr* bexpr)
+int32_t eval_bexpr(BinaryExpr* bexpr)
 {
 	switch (bexpr->type)
 	{
@@ -99,13 +96,13 @@ int eval_bexpr(BinaryExpr* bexpr)
 	return 0;
 }
 
-int eval_texpr(TernaryExpr* texpr)
+int32_t eval_texpr(TernaryExpr* texpr)
 {
 	return eval_expr(texpr->cond) ?
 		eval_expr(texpr->lexpr) : eval_expr(texpr->rexpr);
 }
 
-int eval_expr(Expr* expr)
+int32_t eval_expr(Expr* expr)
 {
 	switch (expr->type)
 	{
@@ -120,5 +117,3 @@ int eval_expr(Expr* expr)
 	}
 	return 0;
 }
-
-#endif //ALMC_AST_ARITH_EXPR_EVAL

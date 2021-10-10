@@ -4,10 +4,7 @@
 
 #include <stdio.h>
 #include <assert.h>
-#include "..\src\front-end\ast.h"
-
-#include "..\src\front-end\lexer.h"
-#include "..\src\front-end\parser.h"
+#include "..\src\front-end\front-end.h"
 
 void run_tests();
 

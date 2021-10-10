@@ -1,6 +1,7 @@
 #include "parser.h"
 
-//todo: think about how i can access struct members (alos if struct is pointer) in initializer
+//todo: think about how i can access struct members (also if struct is pointer) in initializer
+//todo: how i can save the order of abstract-declarators in type declaration? (char*[4] and char[4]* are the same types yet)
 
 #define matcht(parser, t) (get_curr_token(parser).type == (t))
 #define expect_with_skip(parser, type, str) expect(parser, type, str), get_next_token(parser)
@@ -119,6 +120,13 @@ Type* parse_abstract_declarator(Parser* parser, Type* type)
 	case TOKEN_ASTERISK:
 		type->mods.is_ptr++;
 		get_next_token(parser);
+		return parse_abstract_declarator(parser, type);
+	case TOKEN_OP_BRACKET:
+		type->mods.is_array++;
+		get_next_token(parser);
+		sbuffer_add(type->info.arr_dim_sizes,
+			parse_expr(parser));
+		expect_with_skip(parser, TOKEN_CL_BRACKET, "]");
 		return parse_abstract_declarator(parser, type);
 	default:
 		return type;
