@@ -26,9 +26,6 @@
     <ClCompile Include="src\main.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\front-end\lexer.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="test\test.h">
       <Filter>Test Files</Filter>
     </ClCompile>
@@ -47,9 +44,6 @@
     <ClCompile Include="src\utils\data-structures\sbuffer.c">
       <Filter>Common Files\Sources</Filter>
     </ClCompile>
-    <ClCompile Include="src\utils\common.c">
-      <Filter>Common Files\Sources</Filter>
-    </ClCompile>
     <ClCompile Include="src\front-end\ast\ast.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -65,14 +59,20 @@
     <ClCompile Include="src\front-end\ast\ast-debug\ast-console-printer.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\front-end\lexer\token.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\front-end\lexer\lexer.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\utils\common.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="test\test-cases\lexer-test-cases\lexer-test-cases.h">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\front-end\lexer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\utils\common.h">
-      <Filter>Common Files\Headers</Filter>
-    </ClInclude>
     <ClInclude Include="src\utils\context.h">
       <Filter>Common Files\Headers</Filter>
     </ClInclude>
@@ -91,7 +91,19 @@
     <ClInclude Include="src\front-end\front-end.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\utils\data-structures\hash-table.h">
+    <ClInclude Include="src\utils\data-structures\hashtable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\front-end\lexer\token.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\front-end\lexer\lexer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="test\test-cases\parser-test-cases\ast-expr-eval-test.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -99,5 +111,14 @@
     <Text Include="test\syntax.txt">
       <Filter>Test Files</Filter>
     </Text>
+    <Text Include="test\test-cases\lexer-test-cases\LEXEME-TEST.txt" />
+    <Text Include="test\test-cases\lexer-test-cases\TOKENS.txt" />
+    <Text Include="test\test-cases\lexer-test-cases\gen-output.txt" />
+    <Text Include="test\test-cases\lexer-test-cases\COMMENTS-TEST.txt" />
+    <Text Include="test\test-cases\lexer-test-cases\RECOGNITION-TEST.txt" />
+    <Text Include="test\test-cases\lexer-test-cases\SRC-CONTEXT-TEST.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="test\test-cases\lexer-test-cases\gen.py" />
   </ItemGroup>
 </Project>

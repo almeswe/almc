@@ -3,7 +3,9 @@
 //todo: think about how i can access struct members (also if struct is pointer) in initializer
 //todo: how i can save the order of abstract-declarators in type declaration? (char*[4] and char[4]* are the same types yet)
 
-#define matcht(parser, t) (get_curr_token(parser).type == (t))
+//todo: fix bug with converting string representation to number in different formats (binary, octal)
+
+#define matcht(parser, t) (get_curr_token(parser)->type == (t))
 #define expect_with_skip(parser, type, str) expect(parser, type, str), get_next_token(parser)
 #define token_index_fits(parser) (parser->token_index >= 0 && parser->token_index < sbuffer_len(parser->tokens))
 
@@ -38,7 +40,7 @@
 	case TOKEN_KEYWORD_RETURN: \
 	case TOKEN_KEYWORD_CONTINUE
 
-Parser* parser_new(Token* tokens)
+Parser* parser_new(Token** tokens)
 {
 	Parser* p = new_s(Parser, p);
 	p->token_index = 0;
@@ -48,12 +50,16 @@ Parser* parser_new(Token* tokens)
 
 void parser_free(Parser* parser)
 {
-	if (sbuffer_len(parser->tokens) > 0)
+	if (parser)
+	{
+		for (int i = 0; i < sbuffer_len(parser->tokens); i++)
+			token_free(parser->tokens[i]);
 		sbuffer_free(parser->tokens);
-	free(parser);
+		free(parser);
+	}
 }
 
-Token get_next_token(Parser* parser)
+Token* get_next_token(Parser* parser)
 {
 	if (!parser->tokens)
 		report_error("Cannot get next token, because parser->tokens is NULL!", NULL);
@@ -62,7 +68,7 @@ Token get_next_token(Parser* parser)
 			parser->tokens[++parser->token_index] : parser->tokens[parser->token_index];
 }
 
-Token get_curr_token(Parser* parser)
+Token* get_curr_token(Parser* parser)
 {
 	if (!parser->tokens)
 		report_error("Cannot get current token, because parser->tokens is NULL!", NULL);
@@ -81,12 +87,12 @@ void expect(Parser* parser, TokenType type, const char* token_value)
 {
 	if (!matcht(parser, type))
 	{
-		Token token = get_curr_token(parser);
+		Token* token = get_curr_token(parser);
 		report_error(frmt(
 			"Expected \'%s\', but met: %s",
 			token_value,
-			token_type_tostr(token.type)),
-			token.context
+			token_type_tostr(token->type)),
+			token->context
 		);
 	}
 }
@@ -115,7 +121,7 @@ Type* parse_abstract_declarator(Parser* parser, Type* type)
 			| {<direct-abstract-declarator>}? ( {<parameter-type-list>}? )
 	*/
 
-	switch (get_curr_token(parser).type)
+	switch (get_curr_token(parser)->type)
 	{
 	case TOKEN_ASTERISK:
 		type->mods.is_ptr++;
@@ -160,15 +166,15 @@ Type* parse_type_name(Parser* parser)
 	*/
 
 	Type* type = cnew_s(Type, type, 1);
-	Token token = get_curr_token(parser);
+	Token* token = get_curr_token(parser);
 
-	switch (token.type)
+	switch (token->type)
 	{
 	case TOKEN_IDNT:
 	case TOKEN_PREDEFINED_TYPE:
-		type->repr = token.str_value;
-		type->mods.is_predefined = (token.type != TOKEN_IDNT);
-		type->mods.is_void = (token.type == TOKEN_KEYWORD_VOID);
+		type->repr = token->svalue;
+		type->mods.is_predefined = (token->type != TOKEN_IDNT);
+		type->mods.is_void = (token->type == TOKEN_KEYWORD_VOID);
 		get_next_token(parser);
 		return parse_abstract_declarator(parser, type);
 	default:
@@ -188,7 +194,7 @@ Expr* parse_paren_expr(Parser* parser)
 Expr* parse_func_call_expr(Parser* parser)
 {
 	Expr** func_args = NULL;
-	const char* func_name = get_curr_token(parser).str_value;
+	const char* func_name = get_curr_token(parser)->svalue;
 
 	expect_with_skip(parser, TOKEN_IDNT, "func name");
 	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
@@ -209,17 +215,17 @@ Expr* parse_func_call_expr(Parser* parser)
 Expr* parse_primary_expr(Parser* parser)
 {
 	Expr* expr = NULL;
-	Token token = get_curr_token(parser);
+	Token* token = get_curr_token(parser);
 
-	switch (token.type)
+	switch (token->type)
 	{
 	case TOKEN_INUM:
 		expr = expr_new(EXPR_CONST,
-			const_new(CONST_UINT, token.ivalue, token.context));
+			const_new(CONST_UINT, atof(token->svalue), token->context));
 		break;
 	case TOKEN_FNUM:
 		expr = expr_new(EXPR_CONST,
-			const_new(CONST_FLOAT, token.fvalue, token.context));
+			const_new(CONST_FLOAT, atof(token->svalue), token->context));
 		break;
 	case TOKEN_IDNT:
 		get_next_token(parser);
@@ -232,16 +238,16 @@ Expr* parse_primary_expr(Parser* parser)
 		{
 			unget_curr_token(parser);
 			expr = expr_new(EXPR_IDNT,
-				idnt_new(token.str_value, token.context));
+				idnt_new(token->svalue, token->context));
 		}
 		break;
 	case TOKEN_STRING:
 		expr = expr_new(EXPR_STRING,
-			str_new(token.str_value, token.context));
+			str_new(token->svalue, token->context));
 		break;
 	case TOKEN_CHARACTER:
 		expr = expr_new(EXPR_CONST,
-			const_new(CONST_INT, (int64_t)token.char_value, token.context));
+			const_new(CONST_INT, (int64_t)token->cvalue, token->context));
 		break;
 	case TOKEN_OP_PAREN:
 		return parse_paren_expr(parser);
@@ -250,11 +256,11 @@ Expr* parse_primary_expr(Parser* parser)
 	case TOKEN_KEYWORD_TRUE:
 	case TOKEN_KEYWORD_FALSE:
 		expr = expr_new(EXPR_CONST,
-			const_new(CONST_INT, (int64_t)(token.type == TOKEN_KEYWORD_TRUE ? 1 : 0), token.context));
+			const_new(CONST_INT, (int64_t)(token->type == TOKEN_KEYWORD_TRUE ? 1 : 0), token->context));
 		break;
 	default:
 		report_error(frmt("Primary expression token expected, but met: %s",
-			token_type_tostr(token.type)), token.context);
+			token_type_tostr(token->type)), token->context);
 	}
 	get_next_token(parser);
 	return expr;
@@ -263,9 +269,9 @@ Expr* parse_primary_expr(Parser* parser)
 Expr* parse_postfix_xxcrement_expr(Parser* parser, Expr* expr, TokenType xxcrmt_type)
 {
 	Expr* unary_expr = NULL;
-	Token token = get_curr_token(parser);
+	Token* token = get_curr_token(parser);
 
-	switch (token.type)
+	switch (token->type)
 	{
 	case TOKEN_INC:
 	case TOKEN_DEC:
@@ -276,7 +282,7 @@ Expr* parse_postfix_xxcrement_expr(Parser* parser, Expr* expr, TokenType xxcrmt_
 		return unary_expr;
 	default:
 		report_error(frmt("Expected postfix (in/de)crement, but met: %s",
-			token_type_tostr(token.type)), token.context);
+			token_type_tostr(token->type)), token->context);
 	}
 }
 
@@ -291,7 +297,7 @@ Expr* parse_array_accessor_expr(Parser* parser, Expr* rexpr)
 
 Expr* parse_member_accessor_expr(Parser* parser, Expr* rexpr, TokenType accessor_type)
 {
-	Token token = get_curr_token(parser);
+	Token* token = get_curr_token(parser);
 	switch (accessor_type)
 	{
 	case TOKEN_DOT:
@@ -300,14 +306,14 @@ Expr* parse_member_accessor_expr(Parser* parser, Expr* rexpr, TokenType accessor
 		token = get_next_token(parser);
 		if (!matcht(parser, TOKEN_IDNT))
 			report_error(frmt("Expected identifier as acessed member, but met: %s",
-				token_type_tostr(token.type)), token.context);
+				token_type_tostr(token->type)), token->context);
 		get_next_token(parser);
 		return expr_new(EXPR_BINARY_EXPR, 
 			binary_expr_new(accessor_type == TOKEN_DOT ? BINARY_MEMBER_ACCESSOR : BINARY_PTR_MEMBER_ACCESSOR,
-				rexpr, expr_new(EXPR_IDNT, idnt_new(token.str_value, token.context))));
+				rexpr, expr_new(EXPR_IDNT, idnt_new(token->svalue, token->context))));
 	default:
 		report_error(frmt("Expected member accessor, but met: %s",
-			token_type_tostr(token.type)), token.context);
+			token_type_tostr(token->type)), token->context);
 	}
 }
 
@@ -335,21 +341,21 @@ Expr* parse_postfix_expr(Parser* parser)
 		Expr* rexpr = postfix_expr ?
 			postfix_expr : primary_expr;
 
-		switch (get_curr_token(parser).type)
+		switch (get_curr_token(parser)->type)
 		{
 		case TOKEN_INC:
 		case TOKEN_DEC:
 			postfix_expr = parse_postfix_xxcrement_expr(parser,
-				rexpr, get_curr_token(parser).type);
+				rexpr, get_curr_token(parser)->type);
 			break;
 		case TOKEN_DOT:
 		case TOKEN_ARROW:
 			postfix_expr = parse_member_accessor_expr(parser,
-				rexpr, get_curr_token(parser).type);
+				rexpr, get_curr_token(parser)->type);
 			break;
 		case TOKEN_OP_BRACKET:
 			postfix_expr = parse_array_accessor_expr(parser,
-				rexpr, get_curr_token(parser).type);
+				rexpr, get_curr_token(parser)->type);
 		}
 	}
 	return (postfix_expr) ? postfix_expr : primary_expr;
@@ -383,7 +389,7 @@ Expr* parse_unary_expr(Parser* parser)
     return expr_new(EXPR_UNARY_EXPR,   \
 		unary_expr_new(type, parse_unary_expr(parser)))
 
-	switch (get_curr_token(parser).type)
+	switch (get_curr_token(parser)->type)
 	{
 	case TOKEN_INC:
 		unary_unary_case(parser, UNARY_PREFIX_INC);
@@ -412,11 +418,11 @@ Type* try_to_get_type(Parser* parser)
 {
 	Type* type = NULL;
 
-	switch (get_curr_token(parser).type)
+	switch (get_curr_token(parser)->type)
 	{
 	case TOKEN_OP_PAREN:
 		get_next_token(parser);
-		switch (get_curr_token(parser).type)
+		switch (get_curr_token(parser)->type)
 		{
 		case TOKEN_IDNT:
 			//TODO: this method of idnt cast expr is not finished
@@ -504,7 +510,7 @@ Expr* parse_mul_arith_expr(Parser* parser)
 		|| matcht(parser, TOKEN_ASTERISK))
 	{
 		BinaryExprType type = 0;
-		switch (get_curr_token(parser).type)
+		switch (get_curr_token(parser)->type)
 		{
 		case TOKEN_SLASH:
 			type = BINARY_DIV; break;
@@ -535,7 +541,7 @@ Expr* parse_add_arith_expr(Parser* parser)
 		|| matcht(parser, TOKEN_DASH))
 	{
 		BinaryExprType type = 0;
-		switch (get_curr_token(parser).type)
+		switch (get_curr_token(parser)->type)
 		{
 		case TOKEN_PLUS:
 			type = BINARY_ADD; break;
@@ -564,7 +570,7 @@ Expr* parse_sft_expr(Parser* parser)
 		|| matcht(parser, TOKEN_RSHIFT))
 	{
 		BinaryExprType type = 0;
-		switch (get_curr_token(parser).type)
+		switch (get_curr_token(parser)->type)
 		{
 		case TOKEN_LSHIFT:
 			type = BINARY_LSHIFT; break;
@@ -597,7 +603,7 @@ Expr* parse_rel_expr(Parser* parser)
 		|| matcht(parser, TOKEN_GREATER_EQ_THAN))
 	{
 		BinaryExprType type = 0;
-		switch (get_curr_token(parser).type)
+		switch (get_curr_token(parser)->type)
 		{
 		case TOKEN_LEFT_ANGLE:
 			type = BINARY_LESS_THAN; break;
@@ -630,7 +636,7 @@ Expr* parse_equ_expr(Parser* parser)
 		|| matcht(parser, TOKEN_LG_NEQ))
 	{
 		BinaryExprType type = 0;
-		switch (get_curr_token(parser).type)
+		switch (get_curr_token(parser)->type)
 		{
 		case TOKEN_LG_EQ:
 			type = BINARY_LG_EQ; break;
@@ -801,7 +807,7 @@ Expr* parse_assignment_expr(Parser* parser)
 		|| matcht(parser, TOKEN_BW_XOR_ASSIGN))
 	{
 		BinaryExprType type = 0;
-		switch (get_curr_token(parser).type)
+		switch (get_curr_token(parser)->type)
 		{
 		case TOKEN_ASSIGN:
 			type = BINARY_ASSIGN; break;
@@ -857,7 +863,7 @@ Expr* parse_initializer_expr(Parser* parser)
 
 Stmt* parse_stmt(Parser* parser)
 {
-	switch (get_curr_token(parser).type)
+	switch (get_curr_token(parser)->type)
 	{
 	case TOKEN_IDNT:
 		return parse_expr_stmt(parser);
@@ -883,13 +889,13 @@ Stmt* parse_stmt(Parser* parser)
 		return parse_type_decl_stmt(parser);
 	default:
 		report_error(frmt("Expected token that specifies statement, but met: %s",
-			token_type_tostr(get_curr_token(parser).type)), get_curr_token(parser).context);
+			token_type_tostr(get_curr_token(parser)->type)), get_curr_token(parser)->context);
 	}
 }
 
 Stmt* parse_type_decl_stmt(Parser* parser)
 {
-	switch (get_curr_token(parser).type)
+	switch (get_curr_token(parser)->type)
 	{
 	case TOKEN_KEYWORD_ENUM:
 		return parse_enum_decl_stmt(parser);
@@ -899,7 +905,7 @@ Stmt* parse_type_decl_stmt(Parser* parser)
 		return parse_struct_decl_stmt(parser);
 	default:
 		report_error(frmt("Expected keyword (enum, struct or union), but met: %s",
-			token_type_tostr(get_curr_token(parser).type)), get_curr_token(parser).context);
+			token_type_tostr(get_curr_token(parser)->type)), get_curr_token(parser)->context);
 	}
 }
 
@@ -913,7 +919,7 @@ Stmt* parse_enum_decl_stmt(Parser* parser)
 	expect_with_skip(parser, TOKEN_KEYWORD_ENUM, "enum");
 	if (matcht(parser, TOKEN_IDNT))
 	{
-		enum_name = get_curr_token(parser).str_value;
+		enum_name = get_curr_token(parser)->svalue;
 		expect_with_skip(parser, TOKEN_IDNT, "enum name");
 	}
 	expect_with_skip(parser, TOKEN_OP_BRACE, "{");
@@ -929,8 +935,8 @@ Stmt* parse_enum_decl_stmt(Parser* parser)
 			expr_new(EXPR_BINARY_EXPR, binary_expr_new(BINARY_ADD, enum_idnt_value,
 				expr_new(EXPR_CONST, const_new(CONST_INT, 1, NULL))));
 
-		sbuffer_add(enum_idnts, idnt_new(get_curr_token(parser).str_value,
-			get_curr_token(parser).context));
+		sbuffer_add(enum_idnts, idnt_new(get_curr_token(parser)->svalue,
+			get_curr_token(parser)->context));
 		expect_with_skip(parser, TOKEN_IDNT, "enum's identifier");
 		if (matcht(parser, TOKEN_ASSIGN))
 		{
@@ -956,7 +962,7 @@ Stmt* parse_union_decl_stmt(Parser* parser)
 	expect_with_skip(parser, TOKEN_KEYWORD_UNION, "union");
 	if (matcht(parser, TOKEN_IDNT))
 	{
-		union_name = get_curr_token(parser).str_value;
+		union_name = get_curr_token(parser)->svalue;
 		expect_with_skip(parser, TOKEN_IDNT, "union name");
 	}
 	expect_with_skip(parser, TOKEN_OP_BRACE, "{");
@@ -978,7 +984,7 @@ Stmt* parse_struct_decl_stmt(Parser* parser)
 	expect_with_skip(parser, TOKEN_KEYWORD_STRUCT, "struct");
 	if (matcht(parser, TOKEN_IDNT))
 	{
-		struct_name = get_curr_token(parser).str_value;
+		struct_name = get_curr_token(parser)->svalue;
 		expect_with_skip(parser, TOKEN_IDNT, "struct name");
 	}
 	expect_with_skip(parser, TOKEN_OP_BRACE, "{");
@@ -1049,7 +1055,7 @@ Stmt* parse_func_decl_stmt(Parser* parser)
 	TypeVar** func_params = NULL;
 
 	expect_with_skip(parser, TOKEN_KEYWORD_FUNC, "fnc");
-	func_name = get_curr_token(parser).str_value;
+	func_name = get_curr_token(parser)->svalue;
 	expect_with_skip(parser, TOKEN_IDNT, "func name");
 	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
 	while (!matcht(parser, TOKEN_CL_PAREN))
@@ -1078,14 +1084,14 @@ Stmt* parse_label_decl_stmt(Parser* parser)
 	if (label_expr->type != EXPR_IDNT)
 		//todo: wrong error2
 		report_error(frmt("Expected identifier in label declaration, but met: %s",
-			token_type_tostr(get_curr_token(parser).type)), get_curr_token(parser).context);;
+			token_type_tostr(get_curr_token(parser)->type)), get_curr_token(parser)->context);;
 	expect_with_skip(parser, TOKEN_COLON, ":");
 	return stmt_new(STMT_LABEL_DECL, label_decl_new(label_expr->idnt));
 }
 
 Stmt* parse_loop_stmt(Parser* parser)
 {
-	switch (get_curr_token(parser).type)
+	switch (get_curr_token(parser)->type)
 	{
 	case TOKEN_KEYWORD_DO:
 		return parse_do_loop_stmt(parser);
@@ -1095,7 +1101,7 @@ Stmt* parse_loop_stmt(Parser* parser)
 		return parse_while_loop_stmt(parser);
 	default:
 		report_error(frmt("Expected keyword (do, while or for), but met: %s",
-			token_type_tostr(get_curr_token(parser).type)), get_curr_token(parser).context);
+			token_type_tostr(get_curr_token(parser)->type)), get_curr_token(parser)->context);
 	}
 }
 
@@ -1248,7 +1254,7 @@ Stmt* parse_jump_stmt(Parser* parser)
 	JumpStmtType type = -1;
 	Expr* additional_expr = NULL;
 
-	switch (get_curr_token(parser).type)
+	switch (get_curr_token(parser)->type)
 	{
 	case TOKEN_KEYWORD_GOTO:
 		type = JUMP_GOTO;
@@ -1257,7 +1263,7 @@ Stmt* parse_jump_stmt(Parser* parser)
 		if (additional_expr->type != EXPR_IDNT)
 			//todo: wrong error
 			report_error(frmt("Expected identifier in goto stmt, but met: %s",
-				token_type_tostr(get_curr_token(parser).type)), get_curr_token(parser).context);;
+				token_type_tostr(get_curr_token(parser)->type)), get_curr_token(parser)->context);
 		break;
 	case TOKEN_KEYWORD_BREAK:
 		type = JUMP_BREAK;
@@ -1275,7 +1281,7 @@ Stmt* parse_jump_stmt(Parser* parser)
 		break;
 	default:
 		report_error(frmt("Expected keyword (return, break or continue), but met: %s",
-			token_type_tostr(get_curr_token(parser).type)), get_curr_token(parser).context);
+			token_type_tostr(get_curr_token(parser)->type)), get_curr_token(parser)->context);
 	}
 	expect_with_skip(parser, TOKEN_SEMICOLON, ";");
 	return stmt_new(STMT_JUMP, jump_stmt_new(type, 
@@ -1286,7 +1292,7 @@ TypeVar* parse_type_var(Parser* parser)
 {
 	Type* type = NULL;
 	const char* var = 
-		get_curr_token(parser).str_value;
+		get_curr_token(parser)->svalue;
 
 	expect_with_skip(parser, TOKEN_IDNT, "variable's name");
 	expect_with_skip(parser, TOKEN_COLON, ":");

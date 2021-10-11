@@ -12,7 +12,7 @@ int32_t eval_ast(AstRoot* ast)
 
 int32_t eval_const(Const* cnst)
 {
-	return cnst->ivalue;
+	return cnst->uvalue;
 }
 
 int32_t eval_uexpr(UnaryExpr* uexpr)

@@ -22,3 +22,28 @@ void src_context_free(SrcContext* context)
 	//free(context->file);
 		free(context);
 }
+
+char* src_area_tostr(SrcArea* area)
+{
+	return frmt("starts at: line: %d, position: %s | ends at: line: %d, position: %d, file: \'%s\'",
+		area->begins->line, area->begins->start, area->ends->line, area->ends->start, area->begins->file);
+}
+
+SrcArea* src_area_new(SrcContext* begins, SrcContext* ends)
+{
+	SrcArea* a = malloc(sizeof(SrcArea));
+	a->begins = begins;
+	a->ends = ends;
+	a->file = a->begins->file;
+	return a;
+}
+
+void src_area_free(SrcArea* area)
+{
+	if (area)
+	{
+		src_context_free(area->begins);
+		src_context_free(area->ends);
+		free(area);
+	}
+}

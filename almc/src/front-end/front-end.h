@@ -1,4 +1,4 @@
-#include "lexer.h"
+#include "lexer/lexer.h"
 #include "parser.h"
 
 #include "ast\ast.h"

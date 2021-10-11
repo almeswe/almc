@@ -7,9 +7,9 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "..\token.h"
+#include "..\lexer\token.h"
 #include "..\..\..\src\error.h"
-#include "..\..\utils\sbuffer.h"
+#include "..\..\..\src\utils\data-structures\sbuffer.h"
 
 #define EXT_CHARS 22
 #define EXT_CHARS_IN_TOKEN_ENUM_OFFSET TOKEN_RIGHT_ANGLE + 1
@@ -53,7 +53,7 @@ typedef struct Lexer
 	const char* curr_file;
 } Lexer;
 
-Lexer* lexer_new(char* input, StreamType input_type);
+Lexer* lexer_new(const char* input, StreamType input_type);
 void lexer_free(Lexer* lexer);
 
 Token** lex(Lexer* lexer);

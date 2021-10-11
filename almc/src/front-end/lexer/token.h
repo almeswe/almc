@@ -1,30 +1,15 @@
-#ifndef ALMC_LEXER_H
-#define ALMC_LEXER_H
+#ifndef ALMC_LEXER_TOKEN_H
+#define ALMC_LEXER_TOKEN_H
 
-#include <stdio.h>
-#include <ctype.h>
-#include <stdint.h>
-#include <string.h>
-
-#include "..\error.h"
-#include "..\utils\common.h"
-#include "..\utils\data-structures\sbuffer.h"
-
-#define EXT_CHARS 22
-#define EXT_CHARS_IN_TOKEN_ENUM_OFFSET TOKEN_RIGHT_ANGLE + 1
-
-#define CHARS 26
-#define CHARS_IN_TOKEN_ENUM_OFFSET 0
-
-#define KEYWORDS 42
-#define KEYWORD_IN_TOKEN_ENUM_OFFSET TOKEN_IDNT + 1
+#include "..\..\utils\common.h"
+#include "..\..\utils\context.h"
 
 typedef enum TokenType
 {
 	TOKEN_PLUS,
 	TOKEN_DASH,
 	TOKEN_ASTERISK,
-	TOKEN_SLASH,	
+	TOKEN_SLASH,
 	TOKEN_MODULUS,
 	TOKEN_BAR,
 	TOKEN_TILDE,
@@ -65,13 +50,13 @@ typedef enum TokenType
 	TOKEN_LG_EQ,
 	TOKEN_LG_NEQ,
 	TOKEN_LG_AND,
-	
+
 	TOKEN_LSHIFT,
 	TOKEN_RSHIFT,
 	TOKEN_LESS_EQ_THAN,
 	TOKEN_GREATER_EQ_THAN,
 	TOKEN_INC,
-	TOKEN_DEC,	
+	TOKEN_DEC,
 	TOKEN_ARROW,
 
 	TOKEN_STRING,
@@ -125,78 +110,22 @@ typedef enum TokenType
 	TOKEN_EOF
 } TokenType;
 
-typedef enum NumericFormat
-{
-	FORMAT_DEC,
-	FORMAT_BIN,
-	FORMAT_OCT,
-	FORMAT_HEX,
-} NumericFormat;
-
 typedef struct Token
 {
-	union
-	{
-		double fvalue;
-		uint64_t ivalue;
-		char char_value;
-		const char* str_value;
-	};
 	TokenType type;
 	SrcContext* context;
-} Token;
-
-typedef enum InputStreamType
-{
-	STREAM_FILE,
-	STREAM_CHAR_PTR
-} InputStreamType;
-
-typedef struct LexerBackupData
-{
-	uint32_t prev_line;
-	uint32_t prev_line_offset;
-} LexerBackupData;
-
-typedef struct Lexer
-{
-	Token* tokens;
-
-	uint32_t curr_line;
-	uint32_t curr_line_offset;
-
-	const char* curr_file;
-	LexerBackupData backup;
-
-	InputStreamType stream_type;
 	union
 	{
-		FILE* file_stream;
-		const char* char_stream;
+		char cvalue;
+		char* svalue;
+		uint64_t uvalue;
 	};
-} Lexer;
+} Token;
 
-Lexer* lexer_new(const char* src, InputStreamType type);
 Token* token_new(TokenType type, SrcContext* context);
-void lexer_free(Lexer* lexer);
 void token_free(Token* token);
+
 char* token_tostr(Token* token);
 char* token_type_tostr(TokenType type);
 
-Token* lex(Lexer* lexer);
-
-Token* get_eof_token(Lexer* lexer);
-Token* get_num_token(Lexer* lexer);
-Token* get_bin_num_token(Lexer* lexer);
-Token* get_hex_num_token(Lexer* lexer);
-Token* get_oct_num_token(Lexer* lexer);
-Token* get_dec_num_token(Lexer* lexer);
-Token* get_dec_fnum_token(Lexer* lexer, uint64_t base_inum, uint32_t size);
-
-Token* get_idnt_token(Lexer* lexer);
-Token* get_char_token(Lexer* lexer);
-Token* get_string_token(Lexer* lexer);
-Token* get_keychar_token(Lexer* lexer, int order);
-Token* get_keyword_token(Lexer* lexer, int order);
-
-#endif //LEXER_H
+#endif

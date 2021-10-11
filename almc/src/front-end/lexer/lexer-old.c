@@ -297,7 +297,7 @@ char* token_tostr(Token* token)
 		    (token->type >= TOKEN_PLUS && token->type <= TOKEN_RIGHT_ANGLE))
 		str = frmt("%s: %c", token_type_tostr(token->type), token->char_value);
 	else
-		str = frmt("%s: %s", token_type_tostr(token->type), token->str_value);
+		str = frmt("%s: %s", token_type_tostr(token->type), token->svalue);
 	return frmt("%s %s", str, src_context_tostr(token->context));
 }
 
@@ -469,7 +469,7 @@ Token* get_eof_token(Lexer* lexer)
 	SrcContext* new_context  = src_context_new(
 		prev_context->file, prev_context->start + prev_context->size, 1, prev_context->line);
 	Token* token = token_new(TOKEN_EOF, new_context);
-	token->str_value = "EOF";
+	token->svalue = "EOF";
 	return token;
 }
 
@@ -629,7 +629,7 @@ Token* get_idnt_token(Lexer* lexer)
 	int order = iskeyword(value);
 	Token* token = (order >= 0) ? get_keyword_token(lexer, order) :
 		 token_new(TOKEN_IDNT, src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
-	token->str_value = value;
+	token->svalue = value;
 	return token;
 }
 
@@ -672,7 +672,7 @@ Token* get_string_token(Lexer* lexer)
 
 	Token* token = token_new(TOKEN_STRING,
 		src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
-	token->str_value = str;
+	token->svalue = str;
 	return token;
 }
 
@@ -711,7 +711,7 @@ Token* get_keychar_token(Lexer* lexer, int order)
 	if (schar())
 		token->char_value = str[0];
 	else
-		token->str_value = str;
+		token->svalue = str;
 	return token;
 }
 
@@ -720,7 +720,7 @@ Token* get_keyword_token(Lexer* lexer, int order)
 	const char* keyword = keywords[order];
 	Token* token = token_new(order + KEYWORD_IN_TOKEN_ENUM_OFFSET,
 		src_context_new(lexer->curr_file, lexer->curr_line_offset, strlen(keyword), lexer->curr_line));
-	token->str_value = keyword;
+	token->svalue = keyword;
 	return token;
 }
 

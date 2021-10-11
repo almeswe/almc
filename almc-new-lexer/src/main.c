@@ -11,7 +11,7 @@ void main(int argc, char** argv)
 	//Lexer* l = lexer_new("hello n world \"hello world!\" \'r\' \'\r\'", FROM_CHAR_PTR);
 	//Lexer* l = lexer_new("C:\\Users\\HP\\source\\repos\\almc\\Debug\\token-table.txt", FROM_FILE);
 	//Lexer* l = lexer_new("<= <<= >>= += \r\n== != ! &&", FROM_CHAR_PTR);
-	Lexer* l = lexer_new("C:\\Users\\HP\\source\\repos\\almc\\Debug\\test4.txt", FROM_FILE);
+	Lexer* l = lexer_new("C:\\Users\\almeswe\\source\\repos\\almc\\Debug\\test4.txt", FROM_FILE);
 	//Lexer* l = lexer_new("a a a a a a a aa a a a a a a a   a a a a a a a aa a a a a a a aa a a a  a aa a a a a", FROM_CHAR_PTR);
 	Token** tokens = lex(l);
 

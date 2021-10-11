@@ -23,28 +23,41 @@
     <ClCompile Include="src\front-end\ast\ast-debug\ast-expr-eval.c" />
     <ClCompile Include="src\front-end\ast\ast-debug\ast-expr-eval.h" />
     <ClCompile Include="src\front-end\ast\ast.c" />
+    <ClCompile Include="src\front-end\lexer\lexer.c" />
+    <ClCompile Include="src\front-end\lexer\token.c" />
     <ClCompile Include="src\utils\common.c" />
     <ClCompile Include="src\utils\context.c" />
     <ClCompile Include="src\error.c" />
-    <ClCompile Include="src\front-end\lexer.c" />
     <ClCompile Include="src\front-end\parser.c" />
     <ClCompile Include="src\utils\data-structures\sbuffer.c" />
     <ClCompile Include="src\utils\data-structures\sbuffer.h" />
     <ClCompile Include="src\main.c" />
+    <ClCompile Include="test\test-cases\lexer-test-cases\lexer-test-cases.h" />
     <ClCompile Include="test\test.c" />
     <ClCompile Include="test\test.h" />
     <Text Include="test\syntax.txt" />
+    <Text Include="test\test-cases\lexer-test-cases\COMMENTS-TEST.txt" />
+    <Text Include="test\test-cases\lexer-test-cases\gen-output.txt" />
+    <Text Include="test\test-cases\lexer-test-cases\LEXEME-TEST.txt" />
+    <Text Include="test\test-cases\lexer-test-cases\RECOGNITION-TEST.txt" />
+    <Text Include="test\test-cases\lexer-test-cases\SRC-CONTEXT-TEST.txt" />
+    <Text Include="test\test-cases\lexer-test-cases\TOKENS.txt" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\front-end\ast\ast-debug\ast-console-printer.h" />
     <ClInclude Include="src\front-end\ast\ast.h" />
     <ClInclude Include="src\front-end\front-end.h" />
+    <ClInclude Include="src\front-end\lexer\lexer.h" />
+    <ClInclude Include="src\front-end\lexer\token.h" />
     <ClInclude Include="src\utils\common.h" />
     <ClInclude Include="src\utils\context.h" />
     <ClInclude Include="src\error.h" />
-    <ClInclude Include="src\front-end\lexer.h" />
     <ClInclude Include="src\front-end\parser.h" />
-    <ClInclude Include="src\utils\data-structures\hash-table.h" />
+    <ClInclude Include="src\utils\data-structures\hashtable.h" />
+    <ClInclude Include="test\test-cases\parser-test-cases\ast-expr-eval-test.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="test\test-cases\lexer-test-cases\gen.py" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

@@ -1,7 +1,7 @@
 #ifndef ALMC_AST_H
 #define ALMC_AST_H
 
-#include "..\lexer.h"
+#include "..\lexer\lexer.h"
 #include "..\..\utils\common.h"
 #include "..\..\utils\context.h"
 #include "..\..\utils\data-structures\sbuffer.h"
