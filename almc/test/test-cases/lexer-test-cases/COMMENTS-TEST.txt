@@ -1,0 +1,21 @@
+# comment
+comment1
+
+#> comment2 <# 
+comment3 
+#> 
+
+fnc test() : void {
+    if (condition * 3) {
+        # do stuff...
+    }
+    elif (condition * 2) {
+        # do stuff x2
+    }
+    elif (condition * 2) {
+        # do stuff x3
+    }
+    else;
+}
+
+<#

@@ -6,6 +6,9 @@
 #include <assert.h>
 #include "..\src\front-end\front-end.h"
 
+#include "..\test\test-cases\lexer-test-cases\lexer-test-cases.h"
+#include "..\test\test-cases\parser-test-cases\ast-expr-eval-test.h"
+
 void run_tests();
 
 #endif
