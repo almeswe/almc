@@ -1,15 +1,5 @@
 #include "ast-expr-eval.h"
 
-//todo: rewrite for new lexer
-
-int32_t eval_ast(AstRoot* ast)
-{
-	int res = 0;
-	for (uint32_t i = 0; i < sbuffer_len(ast->exprs); i++)
-		res += eval_expr(ast->exprs[i]);
-	return res;
-}
-
 int32_t eval_const(Const* cnst)
 {
 	return cnst->uvalue;

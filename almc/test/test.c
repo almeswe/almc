@@ -54,19 +54,19 @@ void parser_stmt_manual_test()
 	{ 
 		Lexer* l = lexer_new(file, FROM_FILE);
 		Parser* p = parser_new(lex(l));
-		Stmt* root = parse_stmt(p);
-		print_stmt(root, "");
-		stmt_free(root);
+		AstRoot* root = parse(p);
+		print_ast(root, "");
+		ast_free(root);
 		lexer_free(l);
-		free(p);
+		parser_free(p);
 		int a = getchar();
 	}
 }
 
 void run_tests()
 {
-	//ast_expr_eval_run_tests();
 	lexer_run_tests();
+	ast_expr_eval_run_tests();
 	//parser_expr_manual_test();
 	parser_stmt_manual_test();
 }

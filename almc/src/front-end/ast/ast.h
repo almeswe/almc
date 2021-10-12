@@ -384,14 +384,14 @@ typedef struct Stmt
 
 typedef struct AstRoot
 {
-	Expr** exprs;
+	Stmt** stmts;
 } AstRoot;
 
 Expr* expr_new(ExprType type, void* expr_value_ptr);
 
 Str* str_new(const char* string, SrcContext* context);
 Idnt* idnt_new(const char* idnt, SrcContext* context);
-Const* const_new(ConstType type, double value, SrcContext* context);
+Const* const_new(ConstType type, const char* svalue, SrcContext* context);
 FuncCall* func_call_new(const char* func_name, Expr** func_args);
 UnaryExpr* unary_expr_new(UnaryExprType type, Expr* expr);
 BinaryExpr* binary_expr_new(BinaryExprType type, Expr* lexpr, Expr* rexpr);
@@ -425,6 +425,8 @@ Case* case_stmt_new(Expr* case_value, Block* case_body);
 SwitchStmt* switch_stmt_new(Expr* switch_cond, Case** switch_cases, Block* switch_default);
 
 JumpStmt* jump_stmt_new(JumpStmtType type, Expr* return_expr);
+
+void ast_free(AstRoot* root);
 
 void type_free(Type* type);
 

@@ -3,8 +3,8 @@
 void print_ast(AstRoot* ast)
 {
 	printf("ast-root:\n");
-	for (int i = 0; i < sbuffer_len(ast->exprs); i++)
-		print_expr(ast->exprs[i], "");
+	for (int i = 0; i < sbuffer_len(ast->stmts); i++)
+		print_stmt(ast->stmts[i], "");
 }
 
 void print_type(Type* type, const char* indent)

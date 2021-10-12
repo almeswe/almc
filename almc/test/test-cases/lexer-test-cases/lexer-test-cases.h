@@ -5,8 +5,6 @@
 #include <assert.h>
 #include "..\..\..\src\front-end\front-end.h"
 
-//todo: add relative paths
-
 inline int compare_context(SrcContext* c, uint32_t start, uint32_t size, uint32_t line)
 {
 	return (c->start == start) && 
@@ -16,8 +14,8 @@ inline int compare_context(SrcContext* c, uint32_t start, uint32_t size, uint32_
 
 inline void lexer_lexeme_test()
 {
-	char* file =
-		_strdup("C:\\Users\\almeswe\\source\\repos\\almc\\almc\\test\\test-cases\\lexer-test-cases\\LEXEME-TEST.txt");
+	const char* file
+		= "test\\test-cases\\lexer-test-cases\\LEXEME-TEST.txt";
 	Lexer* lexer = lexer_new(file, FROM_FILE);
 	Token** tokens = lex(lexer);
 	assert(tokens[0]->type == TOKEN_PLUS);
@@ -109,13 +107,12 @@ inline void lexer_lexeme_test()
 	assert(tokens[86]->type == TOKEN_KEYWORD_DO);
 	assert(tokens[87]->type == TOKEN_KEYWORD_ELSE);
 	lexer_free(lexer);
-	free(file);
 }
 
 inline void lexer_comment_test()
 {
-	char* file =
-		_strdup("C:\\Users\\almeswe\\source\\repos\\almc\\almc\\test\\test-cases\\lexer-test-cases\\COMMENTS-TEST.txt");
+	const char* file =
+		"test\\test-cases\\lexer-test-cases\\COMMENTS-TEST.txt";
 	Lexer* lexer = lexer_new(file, FROM_FILE);
 	Token** tokens = lex(lexer);
 	// comment1, comment3, eof
@@ -125,13 +122,12 @@ inline void lexer_comment_test()
 	assert(tokens[1]->type == TOKEN_IDNT);
 	assert(strcmp(tokens[1]->svalue, "comment3") == 0);
 	lexer_free(lexer);
-	free(file);
 }
 
 inline void lexer_recognition_test()
 {
-	char* file =
-		_strdup("C:\\Users\\almeswe\\source\\repos\\almc\\almc\\test\\test-cases\\lexer-test-cases\\RECOGNITION-TEST.txt");
+	const char* file =
+		"test\\test-cases\\lexer-test-cases\\RECOGNITION-TEST.txt";
 	Lexer* lexer = lexer_new(file, FROM_FILE);
 	Token** tokens = lex(lexer);
 	assert(sbuffer_len(tokens) == 31);
@@ -202,13 +198,12 @@ inline void lexer_recognition_test()
 	assert(tokens[29]->type == TOKEN_CHARACTER);
 	assert(tokens[29]->cvalue == '\v');
 	lexer_free(lexer);
-	free(file);
 }
 
 inline void lexer_src_context_test()
 {
-	char* file =
-		_strdup("C:\\Users\\almeswe\\source\\repos\\almc\\almc\\test\\test-cases\\lexer-test-cases\\SRC-CONTEXT-TEST.txt");
+	const char* file =
+		"test\\test-cases\\lexer-test-cases\\SRC-CONTEXT-TEST.txt";
 	Lexer* lexer = lexer_new(file, FROM_FILE);
 	Token** tokens = lex(lexer);
 	int a = sbuffer_len(tokens);
@@ -216,7 +211,6 @@ inline void lexer_src_context_test()
 	assert(compare_context(tokens[140]->context, 39, 6, 19)); //buffer
 	assert(compare_context(tokens[72]->context, 21, 42, 13)); //string
 	lexer_free(lexer);
-	free(file);
 }
 
 inline void lexer_run_tests()

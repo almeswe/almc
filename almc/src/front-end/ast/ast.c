@@ -46,20 +46,35 @@ Idnt* idnt_new(const char* idnt, SrcContext* context)
 	return i;
 }
 
-Const* const_new(ConstType type, double value, SrcContext* context)
+Const* const_new(ConstType type, const char* svalue, SrcContext* context)
 {
+	uint64_t value = 0;
 	Const* c = new_s(Const, c);
 	c->context = context;
 	switch (c->type = type)
 	{
 	case CONST_INT:
-		c->ivalue = (int64_t)value;
-		break;
 	case CONST_UINT:
-		c->uvalue = (uint64_t)value;
+		switch (tolower(svalue[1]))
+		{
+		case 'x':
+			c->uvalue = strtoll(
+				svalue+2, NULL, 16);
+			break;
+		case 'o':
+			c->uvalue = strtoll(
+				svalue+2, NULL, 8);
+			break;
+		case 'b':
+			c->uvalue = strtoll(
+				svalue+2, NULL, 2);
+			break;
+		default:
+			c->uvalue = atof(svalue);
+		}
 		break;
 	case CONST_FLOAT:
-		c->fvalue = value;
+		c->fvalue = atof(svalue);
 		break;
 	default:
 		assert(0);
@@ -339,6 +354,17 @@ JumpStmt* jump_stmt_new(JumpStmtType type, Expr* additional_expr)
 }
 
 //todo: still have mem leak, but not so big as before
+void ast_free(AstRoot* root)
+{
+	if (root)
+	{
+		for (int i = 0; i < sbuffer_len(root->stmts); i++)
+			stmt_free(root->stmts[i]);
+		sbuffer_free(root->stmts);
+		free(root);
+	}
+}
+
 void type_free(Type* type)
 {
 	if (type)

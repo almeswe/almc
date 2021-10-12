@@ -2,8 +2,7 @@
 
 //todo: think about how i can access struct members (also if struct is pointer) in initializer
 //todo: how i can save the order of abstract-declarators in type declaration? (char*[4] and char[4]* are the same types yet)
-
-//todo: fix bug with converting string representation to number in different formats (binary, octal)
+//todo: import stmt
 
 #define matcht(parser, t) (get_curr_token(parser)->type == (t))
 #define expect_with_skip(parser, type, str) expect(parser, type, str), get_next_token(parser)
@@ -100,8 +99,10 @@ void expect(Parser* parser, TokenType type, const char* token_value)
 AstRoot* parse(Parser* parser)
 {
 	AstRoot* ast = new_s(AstRoot, ast);
-	ast->exprs = NULL;
-	sbuffer_add(ast->exprs, parse_expr(parser));
+	ast->stmts = NULL;
+	while (!matcht(parser, TOKEN_EOF))
+		sbuffer_add(ast->stmts, parse_stmt(parser));
+	return ast;
 }
 
 Expr* parse_expr(Parser* parser)
@@ -221,11 +222,11 @@ Expr* parse_primary_expr(Parser* parser)
 	{
 	case TOKEN_INUM:
 		expr = expr_new(EXPR_CONST,
-			const_new(CONST_UINT, atof(token->svalue), token->context));
+			const_new(CONST_UINT, token->svalue, token->context));
 		break;
 	case TOKEN_FNUM:
 		expr = expr_new(EXPR_CONST,
-			const_new(CONST_FLOAT, atof(token->svalue), token->context));
+			const_new(CONST_FLOAT, token->svalue, token->context));
 		break;
 	case TOKEN_IDNT:
 		get_next_token(parser);
