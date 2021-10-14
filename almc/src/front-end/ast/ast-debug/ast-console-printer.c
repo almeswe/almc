@@ -548,6 +548,15 @@ void print_switch_stmt(SwitchStmt* switch_stmt, const char* indent)
 	}
 }
 
+void print_import_stmt(ImportStmt* import_stmt, const char* indent)
+{
+	printf(BOLDRED);
+	printf("%simport-stmt:\n", indent);
+	printf(RESET);
+	for (int i = 0; i < sbuffer_len(import_stmt->imported_ast->stmts); i++)
+		print_stmt(import_stmt->imported_ast->stmts[i], indent);
+}
+
 void print_stmt(Stmt* stmt, const char* indent)
 {
 	char* new_indent = frmt("%s   ", indent);
@@ -574,6 +583,9 @@ void print_stmt(Stmt* stmt, const char* indent)
 			break;
 		case STMT_SWITCH:
 			print_switch_stmt(stmt->switch_stmt, new_indent);
+			break;
+		case STMT_IMPORT:
+			print_import_stmt(stmt->import_stmt, new_indent);
 			break;
 		case STMT_VAR_DECL:
 			print_var_decl(stmt->var_decl, new_indent);

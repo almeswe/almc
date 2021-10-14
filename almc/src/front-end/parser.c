@@ -887,6 +887,8 @@ Stmt* parse_stmt(Parser* parser)
 		return parse_label_decl_stmt(parser);
 	case TOKEN_KEYWORD_SWITCH:
 		return parse_switch_stmt(parser);
+	case TOKEN_KEYWORD_IMPORT:
+		return parse_import_stmt(parser);
 	case TOKEN_KEYWORD_USER_TYPEDECL:
 		return parse_type_decl_stmt(parser);
 	default:
@@ -1249,6 +1251,34 @@ Stmt* parse_switch_stmt(Parser* parser)
 	expect_with_skip(parser, TOKEN_CL_BRACE, "}");
 	return stmt_new(STMT_SWITCH, 
 		switch_stmt_new(switch_cond, switch_cases, switch_default));
+}
+
+Stmt* parse_import_stmt(Parser* parser)
+{
+	//todo: there will be some more complex than one idnt
+	expect_with_skip(parser, TOKEN_KEYWORD_IMPORT, "import");
+	switch (get_curr_token(parser)->type)
+	{
+	case TOKEN_IDNT:
+	{
+		char* root = get_dir_parent(parser->file);
+		char* path = path_combine(root, frmt("%s.txt", get_curr_token(parser)->svalue));
+		if (file_exists(path))
+		{
+			get_next_token(parser);
+			Lexer* new_lexer = lexer_new(path, FROM_FILE);
+			Parser* new_parser = parser_new(path, lex(new_lexer));
+			AstRoot* ast = parse(new_parser);
+			lexer_free(new_lexer);
+			parser_free(new_parser);
+			expect_with_skip(parser, TOKEN_SEMICOLON, "import");
+			return stmt_new(STMT_IMPORT, import_stmt_new(ast));
+		}
+		assert(0);
+	}
+	default:
+		assert(!"Not implemented yet.");
+	}
 }
 
 Stmt* parse_jump_stmt(Parser* parser)

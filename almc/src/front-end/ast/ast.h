@@ -8,6 +8,7 @@
 
 typedef struct Expr Expr;
 typedef struct Stmt Stmt;
+typedef struct AstRoot AstRoot;
 
 typedef struct TypeMods
 {
@@ -347,6 +348,12 @@ typedef struct JumpStmt
 	Expr* additional_expr;
 } JumpStmt;
 
+typedef struct ImportStmt
+{
+	//structure for containing path here?
+	AstRoot* imported_ast;
+} ImportStmt;
+
 typedef enum StmtType
 {
 	STMT_IF,
@@ -356,6 +363,7 @@ typedef enum StmtType
 	STMT_BLOCK,
 	STMT_EMPTY,
 	STMT_SWITCH,
+	STMT_IMPORT,
 	STMT_VAR_DECL,
 	STMT_TYPE_DECL,
 	STMT_FUNC_DECL,
@@ -374,6 +382,7 @@ typedef struct Stmt
 		JumpStmt* jump_stmt;
 		EmptyStmt* empty_stmt;
 		SwitchStmt* switch_stmt;
+		ImportStmt* import_stmt;
 
 		VarDecl* var_decl;
 		TypeDecl* type_decl;
@@ -397,34 +406,35 @@ UnaryExpr* unary_expr_new(UnaryExprType type, Expr* expr);
 BinaryExpr* binary_expr_new(BinaryExprType type, Expr* lexpr, Expr* rexpr);
 TernaryExpr* ternary_expr_new(Expr* cond, Expr* lexpr, Expr* rexpr);
 Initializer* initializer_new(Expr** values);
+TypeVar* type_var_new(Type* type, const char* var);
 
 Stmt* stmt_new(StmtType type, void* stmt_value_ptr);
-TypeDecl* type_decl_new(TypeDeclType type, void* type_decl_value_ptr);
-EnumDecl* enum_decl_new(Idnt** enum_idnts, Expr** enum_idnt_values, const char* enum_name);
-UnionDecl* union_decl_new(TypeVar** union_mmbrs, const char* union_name);
-StructDecl* struct_decl_new(TypeVar** struct_mmbrs, const char* struct_name);
-
-EmptyStmt* empty_stmt_new();
-ExprStmt* expr_stmt_new(Expr* expr);
 
 Block* block_new(Stmt** stmts);
-TypeVar* type_var_new(Type* type, const char* var);
-VarDecl* var_decl_new(TypeVar* type_var, Expr* var_init);
-FuncDecl* func_decl_new(const char* func_name, TypeVar** func_params, Type* func_type, Block* func_body);
-LabelDecl* label_decl_new(Idnt* label_idnt);
+ElseIf* elif_stmt_new(Expr* elif_cond, Block* elif_body);
+IfStmt* if_stmt_new(Expr* if_cond, Block* if_body, ElseIf** elifs, Block* else_body);
 
 LoopStmt* loop_stmt_new(LoopStmtType type, void* loop_stmt_value_ptr);
 DoLoop* do_loop_new(Expr* do_cond, Block* do_body);
 ForLoop* for_loop_new(VarDecl* for_init, Expr* for_cond, Expr* for_step, Block* for_body);
 WhileLoop* while_loop_new(Expr* while_cond, Block* while_body);
 
-ElseIf* elif_stmt_new(Expr* elif_cond, Block* elif_body);
-IfStmt* if_stmt_new(Expr* if_cond, Block* if_body, ElseIf** elifs, Block* else_body);
+ExprStmt* expr_stmt_new(Expr* expr);
+EmptyStmt* empty_stmt_new();
+
+JumpStmt* jump_stmt_new(JumpStmtType type, Expr* return_expr);
 
 Case* case_stmt_new(Expr* case_value, Block* case_body);
 SwitchStmt* switch_stmt_new(Expr* switch_cond, Case** switch_cases, Block* switch_default);
+ImportStmt* import_stmt_new(AstRoot* imported_ast);
 
-JumpStmt* jump_stmt_new(JumpStmtType type, Expr* return_expr);
+VarDecl* var_decl_new(TypeVar* type_var, Expr* var_init);
+FuncDecl* func_decl_new(const char* func_name, TypeVar** func_params, Type* func_type, Block* func_body);
+TypeDecl* type_decl_new(TypeDeclType type, void* type_decl_value_ptr);
+EnumDecl* enum_decl_new(Idnt** enum_idnts, Expr** enum_idnt_values, const char* enum_name);
+UnionDecl* union_decl_new(TypeVar** union_mmbrs, const char* union_name);
+StructDecl* struct_decl_new(TypeVar** struct_mmbrs, const char* struct_name);
+LabelDecl* label_decl_new(Idnt* label_idnt);
 
 void ast_free(AstRoot* root);
 
@@ -465,6 +475,7 @@ void if_stmt_free(IfStmt* if_stmt);
 
 void case_stmt_free(Case* case_stmt);
 void switch_stmt_free(SwitchStmt* switch_stmt);
+void import_stmt_free(ImportStmt* import_stmt);
 
 void jump_stmt_free(JumpStmt* jump_stmt);
 

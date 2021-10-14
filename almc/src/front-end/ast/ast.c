@@ -144,6 +144,8 @@ Stmt* stmt_new(StmtType type, void* stmt_value_ptr)
 		stmt_set_value(EmptyStmt, empty_stmt);
 	case STMT_SWITCH:
 		stmt_set_value(SwitchStmt, switch_stmt);
+	case STMT_IMPORT:
+		stmt_set_value(ImportStmt, import_stmt);
 	case STMT_VAR_DECL:
 		stmt_set_value(VarDecl, var_decl);
 	case STMT_TYPE_DECL:
@@ -331,6 +333,13 @@ SwitchStmt* switch_stmt_new(Expr* switch_cond, Case** switch_cases, Block* switc
 	ss->switch_cases = switch_cases;
 	ss->switch_default = switch_default;
 	return ss;
+}
+
+ImportStmt* import_stmt_new(AstRoot* imported_ast)
+{
+	ImportStmt* is = new_s(ImportStmt, is);
+	is->imported_ast = imported_ast;
+	return is;
 }
 
 JumpStmt* jump_stmt_new(JumpStmtType type, Expr* additional_expr)
@@ -522,6 +531,9 @@ void stmt_free(Stmt* stmt)
 			break;
 		case STMT_SWITCH:
 			switch_stmt_free(stmt->switch_stmt);
+			break;
+		case STMT_IMPORT:
+			import_stmt_free(stmt->import_stmt);
 			break;
 		case STMT_VAR_DECL:
 			var_decl_free(stmt->var_decl);
@@ -771,6 +783,15 @@ void switch_stmt_free(SwitchStmt* switch_stmt)
 		sbuffer_free(switch_stmt->switch_cases);
 		block_free(switch_stmt->switch_default);
 		free(switch_stmt);
+	}
+}
+
+void import_stmt_free(ImportStmt* import_stmt)
+{
+	if (import_stmt)
+	{
+		ast_free(import_stmt->imported_ast);
+		free(import_stmt);
 	}
 }
 

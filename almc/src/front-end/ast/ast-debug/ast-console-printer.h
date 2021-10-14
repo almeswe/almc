@@ -55,6 +55,7 @@ void print_if_stmt(IfStmt* if_stmt, const char* indent);
 void print_jump_stmt(JumpStmt* jump_stmt, const char* indent);
 void print_case_stmt(Case* case_stmt, const char* indent);
 void print_switch_stmt(SwitchStmt* switch_stmt, const char* indent);
+void print_import_stmt(ImportStmt* import_stmt, const char* indent);
 void print_stmt(Stmt* stmt, const char* indent);
 
 #endif //ALMC_AST_CONSOLE_PRINTER
