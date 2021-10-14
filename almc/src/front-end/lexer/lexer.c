@@ -61,7 +61,7 @@ char chars[] = {
 	'<',
 	'>'
 };
-char* ext_chars[] = {
+char* keychars[] = {
 	"+=",
 	"-=",
 	"*=",
@@ -108,6 +108,7 @@ char* keywords[] = {
 	"i16",
 	"i32",
 	"i64",
+	"import",
 	"register",
 	"return",
 	"str",
@@ -648,7 +649,7 @@ inline int isknch(const char ch)
 inline int isextch(const char* ech)
 {
 	for (int i = 0; i < EXT_CHARS; i++)
-		if (strcmp(ech, ext_chars[i]) == 0)
+		if (strcmp(ech, keychars[i]) == 0)
 			return i;
 	return -1;
 }

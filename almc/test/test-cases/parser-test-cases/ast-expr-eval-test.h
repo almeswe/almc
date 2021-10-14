@@ -9,8 +9,8 @@ inline void ast_expr_eval_run_tests()
 {
 	// Tests for checking the ast creation for simple expressions via evaluation
 #define parser_eval_test_case_free(lexer, parser)    \
-	lexer_free(lexer);  \
-	free(parser);       \
+	lexer_free(lexer);								 \
+	parser_free(parser);							 \
 
 #define parser_eval_test_case_init(expr, str_expr)  \
 	l = lexer_new(str_expr, FROM_CHAR_PTR);			\
