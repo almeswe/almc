@@ -1,5 +1,7 @@
 #include "os.h"
 
+#define WIN_PATH_SEP '\\'
+
 char* get_drives()
 {
 	char* drives[MAX_PATH];
@@ -17,18 +19,38 @@ char* get_curr_dir()
 
 char* get_dir_parent(const char* dir)
 {
-	char* parent;
 	size_t dir_name_len = 0;
 	size_t dir_len = strlen(dir);
 	for (size_t i = dir_len - 1; i > 0; i--, dir_name_len++)
-		if (dir[i] == '\\' || dir[i] == '/')
+		if (dir[i] == WIN_PATH_SEP)
 			break;
-	if (!(parent = (char*)calloc(dir_len - dir_name_len - 1, sizeof(char))))
+	char* parent = (char*)calloc(
+		dir_len - dir_name_len - 1, sizeof(char));
+	if (!parent)
 		return NULL;
 	for (size_t i = 0; i < dir_len - dir_name_len; i++)
 		parent[i] = dir[i];
 	parent[dir_len - dir_name_len - 1] = '\0';
 	return parent;
+}
+
+char* path_combine(const char* parent, const char* child)
+{
+	size_t child_size = strlen(child);
+	size_t parent_size = strlen(parent);
+	size_t combined_size = child_size + parent_size + 2; // +2 -> 1 for separator & 1 for \0
+	char* combined = (char*)malloc((parent_size +
+		child_size + 2) * sizeof(char)); 
+	if (!combined)
+		return NULL;
+	strcpy_s(combined, combined_size, parent);
+	char ends_with_sep = 
+		parent[parent_size - 1] == WIN_PATH_SEP;
+	if (!ends_with_sep)
+		combined[parent_size] = WIN_PATH_SEP;
+	strcpy_s(combined + parent_size + !ends_with_sep,
+		 combined_size, child);
+	return combined;
 }
 
 int dir_exists(const char* dir)
