@@ -13,8 +13,8 @@ inline void ast_expr_eval_run_tests()
 	free(parser);       \
 
 #define parser_eval_test_case_init(expr, str_expr)  \
-	l = lexer_new(str_expr, FROM_CHAR_PTR);\
-	p = parser_new(lex(l));						    \
+	l = lexer_new(str_expr, FROM_CHAR_PTR);			\
+	p = parser_new(l->curr_file, lex(l));			\
 	ast = parse_expr(p);						    \
 	assert((expr) == eval_expr(ast)); 			    \
 	parser_eval_test_case_free(l, p)

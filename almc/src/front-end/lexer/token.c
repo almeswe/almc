@@ -105,7 +105,7 @@ char* tokens_str[] = {
 	"TOKEN_EOF",
 };
 
-Token* token_new(TokenType type, SrcContext* context)
+Token* token_new(TokenKind type, SrcContext* context)
 {
 	Token* t = new_s(Token, t);
 	t->svalue = 0; // union's initialization here
@@ -130,7 +130,7 @@ char* token_tostr(Token* token)
 	return frmt("%s %s", str, src_context_tostr(token->context));
 }
 
-char* token_type_tostr(TokenType type)
+char* token_type_tostr(TokenKind type)
 {
 	return (type >= 0 && type <= TOKEN_EOF) ?
 		tokens_str[type] : tokens_str[0];

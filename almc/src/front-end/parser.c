@@ -39,9 +39,10 @@
 	case TOKEN_KEYWORD_RETURN: \
 	case TOKEN_KEYWORD_CONTINUE
 
-Parser* parser_new(Token** tokens)
+Parser* parser_new(char* file, Token** tokens)
 {
 	Parser* p = new_s(Parser, p);
+	p->file = file;
 	p->token_index = 0;
 	p->tokens = tokens;
 	return p;
@@ -82,7 +83,7 @@ void unget_curr_token(Parser* parser)
 		parser->token_index--;
 }
 
-void expect(Parser* parser, TokenType type, const char* token_value)
+void expect(Parser* parser, TokenKind type, const char* token_value)
 {
 	if (!matcht(parser, type))
 	{
@@ -267,7 +268,7 @@ Expr* parse_primary_expr(Parser* parser)
 	return expr;
 }
 
-Expr* parse_postfix_xxcrement_expr(Parser* parser, Expr* expr, TokenType xxcrmt_type)
+Expr* parse_postfix_xxcrement_expr(Parser* parser, Expr* expr, TokenKind xxcrmt_type)
 {
 	Expr* unary_expr = NULL;
 	Token* token = get_curr_token(parser);
@@ -296,7 +297,7 @@ Expr* parse_array_accessor_expr(Parser* parser, Expr* rexpr)
 	return expr;
 }
 
-Expr* parse_member_accessor_expr(Parser* parser, Expr* rexpr, TokenType accessor_type)
+Expr* parse_member_accessor_expr(Parser* parser, Expr* rexpr, TokenKind accessor_type)
 {
 	Token* token = get_curr_token(parser);
 	switch (accessor_type)

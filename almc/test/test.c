@@ -40,7 +40,7 @@ void parser_expr_manual_test()
 			
 		char* str = gets(buffer);
 		Lexer* l = lexer_new(str, FROM_CHAR_PTR);
-		Parser* p = parser_new(lex(l));
+		Parser* p = parser_new(l->curr_file, lex(l));
 		Expr* root = parse_expr(p);
 		printf("result: %d\n", eval_expr(root));
 		print_expr(root, "");
@@ -53,7 +53,7 @@ void parser_stmt_manual_test()
 	while (1)
 	{ 
 		Lexer* l = lexer_new(file, FROM_FILE);
-		Parser* p = parser_new(lex(l));
+		Parser* p = parser_new(l->curr_file, lex(l));
 		AstRoot* root = parse(p);
 		print_ast(root, "");
 		ast_free(root);

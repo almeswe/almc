@@ -1,16 +1,18 @@
 #ifndef ALMC_PARSER_H
 #define ALMC_PARSER_H
 
-#include "lexer\lexer.h"
 #include "ast\ast.h"
+#include "lexer\lexer.h"
+#include "..\utils\os.h"
 
 typedef struct Parser
 {
+	char* file;
 	Token** tokens;
 	uint32_t token_index;
 } Parser;
 
-Parser* parser_new(Token** tokens);
+Parser* parser_new(char* file, Token** tokens);
 void parser_free(Parser* parser);
 
 AstRoot* parse(Parser* parser);

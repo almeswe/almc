@@ -32,6 +32,7 @@
     <ClCompile Include="src\utils\data-structures\sbuffer.c" />
     <ClCompile Include="src\utils\data-structures\sbuffer.h" />
     <ClCompile Include="src\main.c" />
+    <ClCompile Include="src\utils\os.c" />
     <ClCompile Include="test\test-cases\lexer-test-cases\lexer-test-cases.h" />
     <ClCompile Include="test\test.c" />
     <ClCompile Include="test\test.h" />
@@ -54,6 +55,7 @@
     <ClInclude Include="src\error.h" />
     <ClInclude Include="src\front-end\parser.h" />
     <ClInclude Include="src\utils\data-structures\hashtable.h" />
+    <ClInclude Include="src\utils\os.h" />
     <ClInclude Include="test\test-cases\parser-test-cases\ast-expr-eval-test.h" />
   </ItemGroup>
   <ItemGroup>

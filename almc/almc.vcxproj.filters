@@ -71,6 +71,9 @@
     <ClCompile Include="test\test-cases\lexer-test-cases\lexer-test-cases.h">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\utils\os.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\utils\context.h">
@@ -104,6 +107,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="test\test-cases\parser-test-cases\ast-expr-eval-test.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\os.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

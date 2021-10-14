@@ -1,0 +1,16 @@
+#ifndef ALMC_OS_H
+#define ALMC_OS_H
+
+#define WIN32_LEAN_AND_MEAN
+#include <stdio.h>
+#include <stdlib.h>
+#include <windows.h>
+
+char* get_drives();
+char* get_curr_dir();
+char* get_dir_parent(const char* dir);
+
+int dir_exists(const char* dir);
+int file_exists(const char* file);
+
+#endif

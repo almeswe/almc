@@ -4,7 +4,7 @@
 #include "..\..\utils\common.h"
 #include "..\..\utils\context.h"
 
-typedef enum TokenType
+typedef enum TokenKind
 {
 	TOKEN_PLUS,
 	TOKEN_DASH,
@@ -108,11 +108,11 @@ typedef enum TokenType
 	TOKEN_KEYWORD_DO,
 	TOKEN_KEYWORD_ELSE,
 	TOKEN_EOF
-} TokenType;
+} TokenKind;
 
 typedef struct Token
 {
-	TokenType type;
+	TokenKind type;
 	SrcContext* context;
 	union
 	{
@@ -122,10 +122,10 @@ typedef struct Token
 	};
 } Token;
 
-Token* token_new(TokenType type, SrcContext* context);
+Token* token_new(TokenKind type, SrcContext* context);
 void token_free(Token* token);
 
 char* token_tostr(Token* token);
-char* token_type_tostr(TokenType type);
+char* token_type_tostr(TokenKind type);
 
 #endif
