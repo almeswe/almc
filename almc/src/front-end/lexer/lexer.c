@@ -84,6 +84,10 @@ char* keychars[] = {
 	"++",
 	"--",
 	"->",
+	"..",
+	"...",
+	"./",	//additional lexemes especially for path
+	"../",
 };
 char* keywords[] = {
 	"auto",
@@ -638,7 +642,6 @@ Token* get_keychar_token(Lexer* lexer, int order)
 }
 
 inline int isknch(const char ch)
-
 {
 	for (int i = 0; i < CHARS; i++)
 		if (ch == chars[i])
