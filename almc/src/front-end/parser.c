@@ -39,6 +39,13 @@
 	case TOKEN_KEYWORD_RETURN: \
 	case TOKEN_KEYWORD_CONTINUE
 
+#define TOKEN_PATH_DESC			\
+		 TOKEN_IDNT:			\
+	case TOKEN_SLASH:			\
+	case TOKEN_STRING:			\
+	case TOKEN_NAV_CURR_DIR:	\
+	case TOKEN_NAV_PREV_DIR		\
+
 Parser* parser_new(char* file, Token** tokens)
 {
 	Parser* p = new_s(Parser, p);
@@ -1253,32 +1260,121 @@ Stmt* parse_switch_stmt(Parser* parser)
 		switch_stmt_new(switch_cond, switch_cases, switch_default));
 }
 
-Stmt* parse_import_stmt(Parser* parser)
+Stmt** parse_import_module_members(Parser* parser, AstRoot* module)
 {
-	//todo: there will be some more complex than one idnt
-	expect_with_skip(parser, TOKEN_KEYWORD_IMPORT, "import");
+	if (!matcht(parser, TOKEN_DOT))
+		return module->stmts;
+	else
+	{
+		Stmt** members = NULL;
+		expect_with_skip(parser, TOKEN_DOT, ".");
+		Token* token = get_curr_token(parser);
+		expect_with_skip(parser, TOKEN_IDNT, "member's name in imported module");
+		for (int i = 0; i < sbuffer_len(module->stmts); i++)
+		{
+			if (module->stmts[i]->type == STMT_VAR_DECL)
+				if (strcmp(module->stmts[i]->var_decl->type_var->var,
+					token->svalue) == 0)
+						sbuffer_add(members, module->stmts[i]);
+			if (module->stmts[i]->type == STMT_FUNC_DECL)
+				if (strcmp(module->stmts[i]->func_decl->func_name,
+					token->svalue) == 0)
+						sbuffer_add(members, module->stmts[i]);
+		}
+		if (!members)
+			report_error(frmt("Cannot import member: \'%s\', no such member found.",
+				token->svalue), token->context);
+		return members;
+	}
+}
+
+AstRoot* parse_import_path_desc(Parser* parser)
+{
+#define assign_new_path(new_path) \
+	prim_path_dup = prim_path;    \
+	prim_path = new_path;	      \
+	free(prim_path_dup)
+
+	char* filename = NULL;
+	char* prim_path_dup = NULL;
+	char* prim_path = get_dir_parent(parser->file);
+
+	//todo: add string path recognition
+	//todo: fix free of few strings
+
 	switch (get_curr_token(parser)->type)
 	{
 	case TOKEN_IDNT:
-	{
-		char* root = get_dir_parent(parser->file);
-		char* path = path_combine(root, frmt("%s.txt", get_curr_token(parser)->svalue));
-		if (file_exists(path))
+		import_module_name_desc:
+		filename = get_curr_token(parser)->svalue;
+		expect_with_skip(parser, TOKEN_IDNT, "module name");
+		prim_path = path_combine(prim_path, filename);
+		while (matcht(parser, TOKEN_SLASH))
 		{
-			get_next_token(parser);
-			Lexer* new_lexer = lexer_new(path, FROM_FILE);
-			Parser* new_parser = parser_new(path, lex(new_lexer));
-			AstRoot* ast = parse(new_parser);
-			lexer_free(new_lexer);
-			parser_free(new_parser);
-			expect_with_skip(parser, TOKEN_SEMICOLON, "import");
-			return stmt_new(STMT_IMPORT, import_stmt_new(ast));
+			expect_with_skip(parser, TOKEN_SLASH, "path separator");
+			filename = get_curr_token(parser)->svalue;
+			assign_new_path(path_combine(prim_path, filename));
+			expect_with_skip(parser, TOKEN_IDNT, "module name");
 		}
-		assert(0);
+		prim_path = frmt("%s%s", prim_path, ALMC_FILE_EXTENSION);
+		//assign_new_path(frmt("%s%s", prim_path, ALMC_FILE_EXTENSION));
+		break;
+
+	case TOKEN_SLASH:
+		get_next_token(parser);
+		//free(prim_path);
+		prim_path = get_root(parser->file);
+		goto import_module_name_desc;
+
+	case TOKEN_NAV_CURR_DIR:
+	case TOKEN_NAV_PREV_DIR:
+		while (matcht(parser, TOKEN_NAV_CURR_DIR) ||
+			   matcht(parser, TOKEN_NAV_PREV_DIR))
+		{
+			switch (get_curr_token(parser)->type)
+			{
+			case TOKEN_NAV_CURR_DIR:
+				break;
+			case TOKEN_NAV_PREV_DIR:
+				//assign_new_path(get_dir_parent(prim_path));
+				prim_path = get_dir_parent(prim_path);
+				break;
+			}
+			get_next_token(parser);
+		}
+		goto import_module_name_desc;
 	}
+
+	if (!file_exists(prim_path))
+		report_error(frmt("Cannot import module: \'%s\', no such module found.",
+			prim_path), get_curr_token(parser)->context);
+	Lexer* new_lexer = lexer_new(prim_path, FROM_FILE);
+	Parser* new_parser = parser_new(prim_path, lex(new_lexer));
+	AstRoot* module = parse(new_parser);
+	lexer_free(new_lexer);
+	parser_free(new_parser);
+	return module;
+}
+
+Stmt* parse_import_stmt(Parser* parser)
+{
+	//todo: there will be some more complex than one idnt
+	char* filename = NULL;
+	char* root = get_dir_parent(parser->file);
+	AstRoot* module = NULL;
+	Stmt** module_part = NULL;
+
+	expect_with_skip(parser, TOKEN_KEYWORD_IMPORT, "import");
+	switch (get_curr_token(parser)->type)
+	{
+	case TOKEN_PATH_DESC:
+		module = parse_import_path_desc(parser);
+		break;
 	default:
 		assert(!"Not implemented yet.");
 	}
+	expect_with_skip(parser, TOKEN_SEMICOLON, ";");
+	return stmt_new(STMT_IMPORT, import_stmt_new(module));
 }
 
 Stmt* parse_jump_stmt(Parser* parser)
