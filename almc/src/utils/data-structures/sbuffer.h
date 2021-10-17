@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+//todo: fix warning, when sbuffer_add for NULL var
+
 typedef struct Buffer
 {
 	uint32_t cap;
@@ -24,9 +26,7 @@ typedef struct Buffer
 #define sbuffer_add(buf, item) (sbuffer__fit(buf), (buf)[sbuffer__len(buf)++] = (item))
 #define sbuffer_pop(buf) ((buf) ? (sbuffer__len(buf) > 0 ? sbuffer__len(buf)-- : 0) : 0)
 #define sbuffer_free(buf) ((buf) ? free(sbuffer__hdr(buf)) : 0)
-#define sbuffer_rdc(buf, by) sbuffer_reduce(buf, by, sizeof(*buf));
 
 void* sbuffer__extend(void* buffer, const uint32_t typesize);
-void* sbuffer_reduce(void* buffer, const uint32_t by_size, const uint32_t typesize);
 
 #endif

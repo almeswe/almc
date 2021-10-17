@@ -11,16 +11,3 @@ void* sbuffer__extend(void* buffer, const uint32_t typesize)
 	hdr->cap = new_cap;
 	return hdr->buffer;
 }
-
-void* sbuffer_reduce(void* buffer, const uint32_t by_size, const uint32_t typesize)
-{
-	if (by_size > 0 && by_size <= sbuffer_len(buffer))
-	{
-		Buffer* new_buffer = realloc(sbuffer__hdr(buffer), offsetof(Buffer, buffer) + by_size * typesize);
-		if (!new_buffer)
-			return buffer;
- 		new_buffer->cap = sbuffer_len(new_buffer->buffer);
-		buffer = new_buffer->buffer;
-	}
-	return buffer;
-}
