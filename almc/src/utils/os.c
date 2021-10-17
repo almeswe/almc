@@ -19,6 +19,7 @@ char* get_curr_dir()
 
 char* get_root(const char* path)
 {
+	//todo: this function is really unsafe
 	char* disk = (char*)malloc(sizeof(char) * 4);
 	if (!disk)
 		return NULL;
@@ -36,11 +37,11 @@ char* get_dir_parent(const char* dir)
 	for (size_t i = dir_len - 1; i > 0; i--, dir_name_len++)
 		if (dir[i] == WIN_PATH_SEP)
 			break;
-	char* parent = (char*)calloc(
-		dir_len - dir_name_len - 1, sizeof(char));
+	char* parent = (char*)malloc(sizeof(char) * 
+		(dir_len - dir_name_len));
 	if (!parent)
 		return NULL;
-	for (size_t i = 0; i < dir_len - dir_name_len; i++)
+	for (size_t i = 0; i < dir_len - dir_name_len - 1; i++)
 		parent[i] = dir[i];
 	parent[dir_len - dir_name_len - 1] = '\0';
 	return parent;
