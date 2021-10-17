@@ -1291,41 +1291,44 @@ Stmt** parse_import_module_members(Parser* parser, AstRoot* module)
 AstRoot* parse_import_path_desc(Parser* parser)
 {
 #define assign_new_path(new_path) \
-	prim_path_dup = prim_path;    \
-	prim_path = new_path;	      \
-	free(prim_path_dup)
+	path_dup = path;			  \
+	path = new_path;			  \
+	free(path_dup)
 
 	char* filename = NULL;
-	char* prim_path_dup = NULL;
-	char* prim_path = get_dir_parent(parser->file);
-
-	//todo: add string path recognition
-	//todo: fix free of few strings
-
+	// path's duplicate, needed for free the previous assigned path, 
+	// using assign_new_path macro
+	char* path_dup = NULL;
+	char* path = get_dir_parent(parser->file);
+	
 	switch (get_curr_token(parser)->type)
 	{
 	case TOKEN_IDNT:
-		import_module_name_desc:
+		continue_building_relative_path:
 		filename = get_curr_token(parser)->svalue;
 		expect_with_skip(parser, TOKEN_IDNT, "module name");
-		prim_path = path_combine(prim_path, filename);
+		assign_new_path(path_combine(path, filename));
 		while (matcht(parser, TOKEN_SLASH))
 		{
 			expect_with_skip(parser, TOKEN_SLASH, "path separator");
 			filename = get_curr_token(parser)->svalue;
-			assign_new_path(path_combine(prim_path, filename));
+			assign_new_path(path_combine(path, filename));
 			expect_with_skip(parser, TOKEN_IDNT, "module name");
 		}
-		prim_path = frmt("%s%s", prim_path, ALMC_FILE_EXTENSION);
-		//assign_new_path(frmt("%s%s", prim_path, ALMC_FILE_EXTENSION));
+		// adding extension to file
+		assign_new_path(frmt("%s%s", path, ALMC_FILE_EXTENSION));
 		break;
-
 	case TOKEN_SLASH:
 		get_next_token(parser);
-		//free(prim_path);
-		prim_path = get_root(parser->file);
-		goto import_module_name_desc;
-
+		assign_new_path(get_root(parser->file));
+		// if we met slash, so that should be the case of 
+		// identifier building part
+		goto continue_building_relative_path;
+		break;
+	case TOKEN_STRING:
+		assign_new_path(get_curr_token(parser)->svalue);
+		expect_with_skip(parser, TOKEN_STRING, "absolute path");
+		break;
 	case TOKEN_NAV_CURR_DIR:
 	case TOKEN_NAV_PREV_DIR:
 		while (matcht(parser, TOKEN_NAV_CURR_DIR) ||
@@ -1337,42 +1340,55 @@ AstRoot* parse_import_path_desc(Parser* parser)
 				break;
 			case TOKEN_NAV_PREV_DIR:
 				//assign_new_path(get_dir_parent(prim_path));
-				prim_path = get_dir_parent(prim_path);
+				path = get_dir_parent(path);
 				break;
 			}
 			get_next_token(parser);
 		}
-		goto import_module_name_desc;
+		// it means that if we found any of them: TOKEN_NAV_CURR_DIR | TOKEN_NAV_PREV_DIR
+		// next token in import's path description should be identifier, so here we just jumping 
+		// to part that describes case of identifier
+		goto continue_building_relative_path;
+		break;
 	}
 
-	if (!file_exists(prim_path))
+	if (!file_exists(path))
 		report_error(frmt("Cannot import module: \'%s\', no such module found.",
-			prim_path), get_curr_token(parser)->context);
-	Lexer* new_lexer = lexer_new(prim_path, FROM_FILE);
-	Parser* new_parser = parser_new(prim_path, lex(new_lexer));
-	AstRoot* module = parse(new_parser);
-	lexer_free(new_lexer);
-	parser_free(new_parser);
-	return module;
+			path), get_curr_token(parser)->context);
+	else
+	{
+		Lexer* new_lexer = lexer_new(path, FROM_FILE);
+		Parser* new_parser = parser_new(path, lex(new_lexer));
+		AstRoot* module = parse(new_parser);
+		lexer_free(new_lexer);
+		parser_free(new_parser);
+		return module;
+	}
 }
 
 Stmt* parse_import_stmt(Parser* parser)
 {
-	//todo: there will be some more complex than one idnt
-	char* filename = NULL;
-	char* root = get_dir_parent(parser->file);
-	AstRoot* module = NULL;
-	Stmt** module_part = NULL;
-
+	Stmt** stmts = NULL;
+	AstRoot* module = cnew_s(AstRoot, module, 1);
+	
 	expect_with_skip(parser, TOKEN_KEYWORD_IMPORT, "import");
-	switch (get_curr_token(parser)->type)
+	do
 	{
-	case TOKEN_PATH_DESC:
-		module = parse_import_path_desc(parser);
-		break;
-	default:
-		assert(!"Not implemented yet.");
-	}
+		if (matcht(parser, TOKEN_COMMA))
+			expect_with_skip(parser, TOKEN_COMMA, ",");
+		switch (get_curr_token(parser)->type)
+		{
+		case TOKEN_PATH_DESC:
+			stmts = parse_import_path_desc(parser)->stmts;
+			for (int i = 0; i < sbuffer_len(stmts); i++)
+				sbuffer_add(module->stmts, stmts[i]);
+			break;
+		default:
+			report_error(frmt("Expected \'./\', \'../\', \'/\', relative or absolute path, but met: %s",
+				token_type_tostr(get_curr_token(parser)->type)), get_curr_token(parser)->context);
+		}
+	} while (matcht(parser, TOKEN_COMMA));
+
 	expect_with_skip(parser, TOKEN_SEMICOLON, ";");
 	return stmt_new(STMT_IMPORT, import_stmt_new(module));
 }
