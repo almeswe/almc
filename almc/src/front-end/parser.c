@@ -256,7 +256,7 @@ Expr* parse_primary_expr(Parser* parser)
 		break;
 	case TOKEN_CHARACTER:
 		expr = expr_new(EXPR_CONST,
-			const_new(CONST_INT, (int64_t)token->cvalue, token->context));
+			const_new(CONST_INT, frmt("%d", (int32_t)token->cvalue), token->context));
 		break;
 	case TOKEN_OP_PAREN:
 		return parse_paren_expr(parser);
