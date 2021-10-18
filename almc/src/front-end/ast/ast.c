@@ -55,22 +55,27 @@ Const* const_new(ConstType type, const char* svalue, SrcContext* context)
 	{
 	case CONST_INT:
 	case CONST_UINT:
-		switch (tolower(svalue[1]))
-		{
-		case 'x':
-			c->uvalue = strtoll(
-				svalue+2, NULL, 16);
-			break;
-		case 'o':
-			c->uvalue = strtoll(
-				svalue+2, NULL, 8);
-			break;
-		case 'b':
-			c->uvalue = strtoll(
-				svalue+2, NULL, 2);
-			break;
-		default:
+		if (strlen(svalue) <= 1)
 			c->uvalue = atof(svalue);
+		else
+		{
+			switch (tolower(svalue[1]))
+			{
+			case 'x':
+				c->uvalue = strtoll(
+					svalue + 2, NULL, 16);
+				break;
+			case 'o':
+				c->uvalue = strtoll(
+					svalue + 2, NULL, 8);
+				break;
+			case 'b':
+				c->uvalue = strtoll(
+					svalue + 2, NULL, 2);
+				break;
+			default:
+				c->uvalue = atof(svalue);
+			}
 		}
 		break;
 	case CONST_FLOAT:
@@ -582,10 +587,9 @@ void enum_decl_free(EnumDecl* enum_decl)
 	{
 		//free(enum_decl->enum_name);
 		for (int i = 0; i < sbuffer_len(enum_decl->enum_idnts); i++)
-		{
 			idnt_free(enum_decl->enum_idnts[i]);
+		for (int i = 0; i < sbuffer_len(enum_decl->enum_idnt_values); i++)
 			expr_free(enum_decl->enum_idnt_values[i]);
-		}
 		sbuffer_free(enum_decl->enum_idnts);
 		free(enum_decl);
 	}
