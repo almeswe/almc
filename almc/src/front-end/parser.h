@@ -75,6 +75,9 @@ Case* parse_case_stmt(Parser* parser);
 Block* parse_case_block(Parser* parser);
 Stmt* parse_switch_stmt(Parser* parser);
 Stmt* parse_import_stmt(Parser* parser);
+AstRoot* parse_import_path_desc(Parser* parser);
+Stmt* parse_from_import_stmt(Parser* parser);
+Stmt* parse_from_import_member_stmt(Parser* parser, AstRoot* import_module);
 
 TypeVar* parse_type_var(Parser* parser);
 

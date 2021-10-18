@@ -102,7 +102,7 @@ char* keywords[] = {
 	"extern",
 	"for",
 	"fnc",
-
+	"from",
 	"false",
 	"f32",
 	"f64",
