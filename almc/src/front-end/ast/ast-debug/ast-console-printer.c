@@ -262,10 +262,16 @@ void print_var_decl(VarDecl* var_decl, const char* indent)
 
 void print_func_decl(FuncDecl* func_decl, const char* indent)
 {
+#define print_func_spec(spec) func_decl->func_spec.spec ? \
+	printf("%s%s: %d\n", indent, #spec, func_decl->func_spec.spec) : 0
+
 	printf(BOLDCYAN);
 	printf("%sfunc-decl: %s\n", indent, func_decl->func_name);
 	indent = frmt("   %s", indent);
 	printf(RESET);
+	print_func_spec(is_forward);
+	print_func_spec(is_external);
+	print_func_spec(is_intrinsic);
 
 	printf(BOLDCYAN);
 	printf("%sfunc-ret-type:\n", indent);
@@ -280,10 +286,13 @@ void print_func_decl(FuncDecl* func_decl, const char* indent)
 	for (int i = 0; i < sbuffer_len(func_decl->func_params); i++)
 		print_type_var(func_decl->func_params[i], frmt("   %s", indent));
 
-	printf(BOLDCYAN);
-	printf("%sfunc-body:\n", indent);
-	printf(RESET);
-	print_block(func_decl->func_body, frmt("   %s", indent));
+	if (func_decl->func_body)
+	{
+		printf(BOLDCYAN);
+		printf("%sfunc-body:\n", indent);
+		printf(RESET);
+		print_block(func_decl->func_body, frmt("   %s", indent));
+	}
 }
 
 void print_label_decl(LabelDecl* label_decl, const char* indent)

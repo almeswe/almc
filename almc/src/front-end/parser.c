@@ -2,7 +2,7 @@
 
 //todo: think about how i can access struct members (also if struct is pointer) in initializer
 //todo: how i can save the order of abstract-declarators in type declaration? (char*[4] and char[4]* are the same types yet)
-//todo: import stmt
+//todo: add import tracking (for catching reimport error)
 
 #define matcht(parser, t) (get_curr_token(parser)->type == (t))
 #define expect_with_skip(parser, type, str) expect(parser, type, str), get_next_token(parser)
@@ -73,6 +73,7 @@ Token* get_next_token(Parser* parser)
 	else
 		return token_index_fits(parser) ?
 			parser->tokens[++parser->token_index] : parser->tokens[parser->token_index];
+	return NULL;
 }
 
 Token* get_curr_token(Parser* parser)
@@ -82,6 +83,7 @@ Token* get_curr_token(Parser* parser)
 	else
 		return token_index_fits(parser) ?
 			parser->tokens[parser->token_index] : parser->tokens[0];
+	return NULL;
 }
 
 void unget_curr_token(Parser* parser)
@@ -943,7 +945,6 @@ Stmt* parse_enum_decl_stmt(Parser* parser)
 		if (!enum_idnt_value)
 			enum_idnt_value = expr_new(EXPR_CONST, const_new(CONST_INT, "0", NULL));
 		else
-			//todo: bug with free, when i use non-constant values in enum
 			enum_idnt_value = enum_idnt_value->type == EXPR_CONST ?
 			expr_new(EXPR_CONST, const_new(CONST_INT, frmt("%d", enum_idnt_value->cnst->ivalue + 1), NULL)) :
 			expr_new(EXPR_BINARY_EXPR, binary_expr_new(BINARY_ADD, enum_idnt_value,
@@ -1061,14 +1062,37 @@ Stmt* parse_var_decl_stmt(Parser* parser)
 		var_decl_new(type_var, var_init));
 }
 
+FuncSpecifiers* parse_func_specifiers(Parser* parser)
+{
+	FuncSpecifiers* func_spec = cnew_s(FuncSpecifiers, func_spec, 1);
+	switch (get_curr_token(parser)->type)
+	{
+	case TOKEN_KEYWORD_EXTERN:
+		get_next_token(parser);
+		func_spec->is_external = 1;
+		break;
+	case TOKEN_KEYWORD_FORWARD:
+		get_next_token(parser);
+		func_spec->is_forward = 1;
+		break;
+	case TOKEN_KEYWORD_INTRINSIC:
+		get_next_token(parser);
+		func_spec->is_intrinsic = 1;
+		break;
+	}
+	return func_spec;
+}
+
 Stmt* parse_func_decl_stmt(Parser* parser)
 {
 	char* func_name = NULL;
 	Type* func_type = NULL;
 	Block* func_body = NULL;
 	TypeVar** func_params = NULL;
+	FuncSpecifiers* func_spec = NULL;
 
 	expect_with_skip(parser, TOKEN_KEYWORD_FUNC, "fnc");
+	func_spec = parse_func_specifiers(parser);
 	func_name = get_curr_token(parser)->svalue;
 	expect_with_skip(parser, TOKEN_IDNT, "func name");
 	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
@@ -1082,25 +1106,28 @@ Stmt* parse_func_decl_stmt(Parser* parser)
 	expect_with_skip(parser, TOKEN_COLON, ":");
 	func_type = parse_type_name(parser);
 	
-	if (!matcht(parser, TOKEN_OP_BRACE))
-		expect_with_skip(parser, TOKEN_OP_BRACE, "{");
-	func_body = parse_block(parser)->block;
+	// checking if function does not have any block
+	if (matcht(parser, TOKEN_SEMICOLON))
+		get_next_token(parser);
+	else
+	{
+		if (!matcht(parser, TOKEN_OP_BRACE))
+			expect_with_skip(parser, TOKEN_OP_BRACE, "{");
+		func_body = parse_block(parser)->block;
+	}
 	return stmt_new(STMT_FUNC_DECL, 
-		func_decl_new(func_name, func_params, func_type, func_body));
+		func_decl_new(func_name, func_params, func_type, func_body, *func_spec));
 }
 
 Stmt* parse_label_decl_stmt(Parser* parser)
 {
-	Expr* label_expr = NULL;
+	Idnt* label  = cnew_s(Idnt, label, 1);
 
 	expect_with_skip(parser, TOKEN_KEYWORD_LABEL, "label");
-	label_expr = parse_expr(parser);
-	if (label_expr->type != EXPR_IDNT)
-		//todo: wrong error2
-		report_error(frmt("Expected identifier in label declaration, but met: %s",
-			token_type_tostr(get_curr_token(parser)->type)), get_curr_token(parser)->context);;
+	label->svalue = get_curr_token(parser)->svalue;
+	expect_with_skip(parser, TOKEN_IDNT, "label name");
 	expect_with_skip(parser, TOKEN_COLON, ":");
-	return stmt_new(STMT_LABEL_DECL, label_decl_new(label_expr->idnt));
+	return stmt_new(STMT_LABEL_DECL, label_decl_new(label));
 }
 
 Stmt* parse_loop_stmt(Parser* parser)
@@ -1413,7 +1440,7 @@ Stmt* parse_from_import_member_stmt(Parser* parser, AstRoot* import_module)
 {
 #define compare_names(name) \
 	strcmp(member_name, import_module->stmts[i]->name) == 0
-
+	
 	Stmt* wanted = NULL;
 	Token* token = get_curr_token(parser);
 	char* member_name = token->svalue;
@@ -1448,8 +1475,6 @@ Stmt* parse_from_import_member_stmt(Parser* parser, AstRoot* import_module)
 			if (compare_names(func_decl->func_name))
 				wanted = import_module->stmts[i];
 			break;
-		default:
-			break;
 		}
 	}
 	if (!wanted)
@@ -1462,17 +1487,16 @@ Stmt* parse_jump_stmt(Parser* parser)
 {
 	JumpStmtType type = -1;
 	Expr* additional_expr = NULL;
+	Idnt* goto_label = cnew_s(Idnt, goto_label, 1);
 
 	switch (get_curr_token(parser)->type)
 	{
 	case TOKEN_KEYWORD_GOTO:
 		type = JUMP_GOTO;
 		expect_with_skip(parser, TOKEN_KEYWORD_GOTO, "goto");
-		additional_expr = parse_expr(parser);
-		if (additional_expr->type != EXPR_IDNT)
-			//todo: wrong error
-			report_error(frmt("Expected identifier in goto stmt, but met: %s",
-				token_type_tostr(get_curr_token(parser)->type)), get_curr_token(parser)->context);
+		goto_label->svalue = get_curr_token(parser)->svalue;
+		expect_with_skip(parser, TOKEN_IDNT, "goto label");
+		additional_expr = expr_new(EXPR_IDNT, goto_label);
 		break;
 	case TOKEN_KEYWORD_BREAK:
 		type = JUMP_BREAK;

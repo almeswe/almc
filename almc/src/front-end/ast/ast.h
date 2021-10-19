@@ -48,6 +48,7 @@ typedef enum UnaryExprType
 	UNARY_PREFIX_INC,
 	UNARY_PREFIX_DEC,
 
+	//todo: create cast like: cast(type) not (type)
 	UNARY_CAST,
 	UNARY_SIZEOF,
 
@@ -212,12 +213,20 @@ typedef struct VarDecl
 	TypeVar* type_var;
 } VarDecl;
 
+typedef struct FuncSpecifiers
+{
+	char is_forward;
+	char is_external;
+	char is_intrinsic;
+} FuncSpecifiers;
+
 typedef struct FuncDecl
 {
 	Type* func_type;
 	Block* func_body;
 	TypeVar** func_params;
 	const char* func_name;
+	FuncSpecifiers func_spec;
 } FuncDecl;
 
 typedef struct LabelDecl
@@ -429,7 +438,7 @@ SwitchStmt* switch_stmt_new(Expr* switch_cond, Case** switch_cases, Block* switc
 ImportStmt* import_stmt_new(AstRoot* imported_ast);
 
 VarDecl* var_decl_new(TypeVar* type_var, Expr* var_init);
-FuncDecl* func_decl_new(const char* func_name, TypeVar** func_params, Type* func_type, Block* func_body);
+FuncDecl* func_decl_new(const char* func_name, TypeVar** func_params, Type* func_type, Block* func_body, FuncSpecifiers func_spec);
 TypeDecl* type_decl_new(TypeDeclType type, void* type_decl_value_ptr);
 EnumDecl* enum_decl_new(Idnt** enum_idnts, Expr** enum_idnt_values, const char* enum_name);
 UnionDecl* union_decl_new(TypeVar** union_mmbrs, const char* union_name);

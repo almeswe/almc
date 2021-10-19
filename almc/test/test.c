@@ -1,6 +1,6 @@
 #include "test.h"
 
-/*void sb_test()
+void sb_test()
 {
 	int n = 1024;
 	int* buf = NULL;
@@ -17,20 +17,7 @@
 	assert(n - 2 == sbuffer_len(buf));
 
 	sbuffer_free(buf);
-
-	int n_src = 9;
-	char* str = NULL;
-	char* src = "insert me";
-
-	for (int i = 0; i < n_src; i++)
-		sbuffer_add(str, src[i]);
-
-	assert(sbuffer_cap(str) != sbuffer_len(str));
-	sbuffer_rdc(str, sbuffer_len(str));
-	assert(sbuffer_cap(str) == sbuffer_len(str));
-
-	sbuffer_free(str);
-}*/
+}
 
 void parser_expr_manual_test()
 {
@@ -65,6 +52,7 @@ void parser_stmt_manual_test()
 
 void run_tests()
 {
+	sb_test();
 	lexer_run_tests();
 	ast_expr_eval_run_tests();
 	//parser_expr_manual_test();

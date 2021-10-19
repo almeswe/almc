@@ -74,7 +74,7 @@ Const* const_new(ConstType type, const char* svalue, SrcContext* context)
 					svalue + 2, NULL, 2);
 				break;
 			default:
-				c->uvalue = atof(svalue);
+				c->uvalue = (uint64_t)atof(svalue);
 			}
 		}
 		break;
@@ -174,9 +174,9 @@ TypeDecl* type_decl_new(TypeDeclType type, void* type_decl_value_ptr)
 	case TYPE_DECL_ENUM:
 		type_decl_set_value(EnumDecl, enum_decl);
 	case TYPE_DECL_UNION:
-		type_decl_set_value(UnionDecl, enum_decl);
+		type_decl_set_value(UnionDecl, union_decl);
 	case TYPE_DECL_STRUCT:
-		type_decl_set_value(StructDecl, enum_decl);
+		type_decl_set_value(StructDecl, struct_decl);
 	default:
 		assert(0);
 	}
@@ -244,13 +244,14 @@ VarDecl* var_decl_new(TypeVar* type_var, Expr* var_init)
 	return vd;
 }
 
-FuncDecl* func_decl_new(const char* func_name, TypeVar** func_params, Type* func_type, Block* func_body)
+FuncDecl* func_decl_new(const char* func_name, TypeVar** func_params, Type* func_type, Block* func_body, FuncSpecifiers func_spec)
 {
 	FuncDecl* fd = new_s(FuncDecl, fd);
 	fd->func_name = func_name;
 	fd->func_type = func_type;
 	fd->func_body = func_body;
 	fd->func_params = func_params;
+	fd->func_spec = func_spec;
 	return fd;
 }
 
@@ -372,7 +373,7 @@ void ast_free(AstRoot* root)
 {
 	if (root)
 	{
-		for (int i = 0; i < sbuffer_len(root->stmts); i++)
+		for (uint32_t i = 0; i < sbuffer_len(root->stmts); i++)
 			stmt_free(root->stmts[i]);
 		sbuffer_free(root->stmts);
 		free(root);
@@ -383,7 +384,7 @@ void type_free(Type* type)
 {
 	if (type)
 	{ 
-		for (int i = 0; i < sbuffer_len(type->info.arr_dim_sizes); i++)
+		for (uint32_t i = 0; i < sbuffer_len(type->info.arr_dim_sizes); i++)
 			expr_free(type->info.arr_dim_sizes[i]);
 		sbuffer_free(type->info.arr_dim_sizes);
 		free(type);
@@ -460,7 +461,7 @@ void func_call_free(FuncCall* func_call)
 {
 	if (func_call)
 	{
-		for (int i = 0; i < sbuffer_len(func_call->func_args); i++)
+		for (uint32_t i = 0; i < sbuffer_len(func_call->func_args); i++)
 			expr_free(func_call->func_args[i]);
 		sbuffer_free(func_call->func_args);
 		//free(func_call->func_name);
@@ -503,7 +504,7 @@ void initializer_free(Initializer* initializer)
 {
 	if (initializer)
 	{
-		for (int i = 0; i < sbuffer_len(initializer->values); i++)
+		for (uint32_t i = 0; i < sbuffer_len(initializer->values); i++)
 			expr_free(initializer->values[i]);
 		sbuffer_free(initializer->values);
 		free(initializer);
@@ -585,11 +586,12 @@ void enum_decl_free(EnumDecl* enum_decl)
 {
 	if (enum_decl)
 	{
-		//free(enum_decl->enum_name);
-		for (int i = 0; i < sbuffer_len(enum_decl->enum_idnts); i++)
+		for (uint32_t i = 0; i < sbuffer_len(enum_decl->enum_idnts); i++)
 			idnt_free(enum_decl->enum_idnts[i]);
-		for (int i = 0; i < sbuffer_len(enum_decl->enum_idnt_values); i++)
-			expr_free(enum_decl->enum_idnt_values[i]);
+		//freeing only the last element, because each next element is consists of every previous
+		if (sbuffer_len(enum_decl->enum_idnt_values) > 0)
+			expr_free(enum_decl->enum_idnt_values
+				[sbuffer_len(enum_decl->enum_idnt_values)-1]);
 		sbuffer_free(enum_decl->enum_idnts);
 		free(enum_decl);
 	}
@@ -600,7 +602,7 @@ void union_decl_free(UnionDecl* union_decl)
 	if (union_decl)
 	{
 		//free(union_decl->union_name);
-		for (int i = 0; i < sbuffer_len(union_decl->union_mmbrs); i++)
+		for (uint32_t i = 0; i < sbuffer_len(union_decl->union_mmbrs); i++)
 			type_var_free(union_decl->union_mmbrs[i]);
 		sbuffer_free(union_decl->union_mmbrs);
 		free(union_decl);
@@ -612,7 +614,7 @@ void struct_decl_free(StructDecl* struct_decl)
 	if (struct_decl)
 	{
 		//free(struct_decl->struct_name);
-		for (int i = 0; i < sbuffer_len(struct_decl->struct_mmbrs); i++)
+		for (uint32_t i = 0; i < sbuffer_len(struct_decl->struct_mmbrs); i++)
 			type_var_free(struct_decl->struct_mmbrs[i]);
 		sbuffer_free(struct_decl->struct_mmbrs);
 		free(struct_decl);
@@ -638,7 +640,7 @@ void block_free(Block* block)
 {
 	if (block)
 	{
-		for (int i = 0; i < sbuffer_len(block->stmts); i++)
+		for (uint32_t i = 0; i < sbuffer_len(block->stmts); i++)
 			stmt_free(block->stmts[i]);
 		sbuffer_free(block->stmts);
 		free(block);
@@ -671,7 +673,7 @@ void func_decl_free(FuncDecl* func_decl)
 	{
 		type_free(func_decl->func_type);
 		block_free(func_decl->func_body);
-		for (int i = 0; i < sbuffer_len(func_decl->func_params); i++)
+		for (uint32_t i = 0; i < sbuffer_len(func_decl->func_params); i++)
 			type_var_free(func_decl->func_params[i]);
 		sbuffer_free(func_decl->func_params);
 		//free(func_decl->func_name);
@@ -759,7 +761,7 @@ void if_stmt_free(IfStmt* if_stmt)
 	{
 		expr_free(if_stmt->if_cond);
 		block_free(if_stmt->if_body);
-		for (int i = 0; i < sbuffer_len(if_stmt->elifs); i++)
+		for (uint32_t i = 0; i < sbuffer_len(if_stmt->elifs); i++)
 			elif_stmt_free(if_stmt->elifs[i]);
 		sbuffer_free(if_stmt->elifs);
 		block_free(if_stmt->else_body);
@@ -782,7 +784,7 @@ void switch_stmt_free(SwitchStmt* switch_stmt)
 	if (switch_stmt)
 	{
 		expr_free(switch_stmt->switch_cond);
-		for (int i = 0; i < sbuffer_len(switch_stmt->switch_cases); i++)
+		for (uint32_t i = 0; i < sbuffer_len(switch_stmt->switch_cases); i++)
 			case_stmt_free(switch_stmt->switch_cases[i]);
 		sbuffer_free(switch_stmt->switch_cases);
 		block_free(switch_stmt->switch_default);
