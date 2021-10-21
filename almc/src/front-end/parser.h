@@ -74,8 +74,12 @@ Stmt* parse_jump_stmt(Parser* parser);
 Case* parse_case_stmt(Parser* parser);
 Block* parse_case_block(Parser* parser);
 Stmt* parse_switch_stmt(Parser* parser);
+
+void clear_imported_modules();
+char is_module_imported(const char* module);
+AstRoot* parse_module(const char* module_path);
 Stmt* parse_import_stmt(Parser* parser);
-AstRoot* parse_import_path_desc(Parser* parser);
+char* parse_import_path_desc(Parser* parser);
 Stmt* parse_from_import_stmt(Parser* parser);
 Stmt* parse_from_import_member_stmt(Parser* parser, AstRoot* import_module);
 

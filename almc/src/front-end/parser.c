@@ -46,6 +46,8 @@
 	case TOKEN_NAV_CURR_DIR:	\
 	case TOKEN_NAV_PREV_DIR		\
 
+static char** imported_modules = NULL;
+
 Parser* parser_new(char* file, Token** tokens)
 {
 	Parser* p = new_s(Parser, p);
@@ -1290,9 +1292,69 @@ Stmt* parse_switch_stmt(Parser* parser)
 		switch_stmt_new(switch_cond, switch_cases, switch_default));
 }
 
+void clear_imported_modules()
+{
+	sbuffer_free(imported_modules);
+	imported_modules = NULL;
+}
+
+char is_module_imported(const char* module)
+{
+	for (int i = 0; i < sbuffer_len(imported_modules); i++)
+		if (strcmp(module, imported_modules[i]) == 0)
+			return 1;
+	return 0;
+}
+
+AstRoot* parse_module(const char* module_path)
+{
+	Lexer* lexer = lexer_new(module_path, FROM_FILE);
+	Parser* parser = parser_new(module_path, lex(lexer));
+	AstRoot* module = parse(parser);
+	lexer_free(lexer);
+	parser_free(parser);
+	return module;
+}
+
+char is_stmt_for_import(Stmt* stmt)
+{
+	switch (stmt->type)
+	{
+	case STMT_TYPE_DECL:
+	case STMT_VAR_DECL:
+	case STMT_FUNC_DECL:
+		return 1;
+	}
+	return 0;
+}
+
+char* get_stmt_for_import_name(Stmt* stmt)
+{
+	switch (stmt->type)
+	{
+	case STMT_TYPE_DECL:
+		switch (stmt->type_decl->type)
+		{
+		case TYPE_DECL_ENUM:
+			return stmt->type_decl->enum_decl->enum_name;
+		case TYPE_DECL_UNION:
+			return stmt->type_decl->union_decl->union_name;
+		case TYPE_DECL_STRUCT:
+			return stmt->type_decl->struct_decl->struct_name;
+		}
+		break;
+	case STMT_VAR_DECL:
+		return stmt->var_decl->type_var->var;
+	case STMT_FUNC_DECL:
+		return stmt->func_decl->func_name;
+	}
+	return NULL;
+}
+
 Stmt* parse_import_stmt(Parser* parser)
 {
-	Stmt** stmts = NULL;
+	char* module_path = NULL;
+	AstRoot* imported_module = NULL;
 	AstRoot* module = cnew_s(AstRoot, module, 1);
 	
 	expect_with_skip(parser, TOKEN_KEYWORD_IMPORT, "import");
@@ -1303,9 +1365,31 @@ Stmt* parse_import_stmt(Parser* parser)
 		switch (get_curr_token(parser)->type)
 		{
 		case TOKEN_PATH_DESC:
-			stmts = parse_import_path_desc(parser)->stmts;
-			for (int i = 0; i < sbuffer_len(stmts); i++)
-				sbuffer_add(module->stmts, stmts[i]);
+			module_path = parse_import_path_desc(parser);
+			imported_module = parse_module(module_path);
+			for (int i = 0; i < sbuffer_len(imported_module->stmts); i++)
+			{
+				// todo: issue with statements, 
+				// that will be imported in any case (is_stmt_for_import function return 0)
+				if (!is_stmt_for_import(imported_module->stmts[i]))
+					sbuffer_add(module->stmts, imported_module->stmts[i]);
+				else
+				{
+					char* module_path_with_member = frmt("%s?%s",
+						module_path, get_stmt_for_import_name(imported_module->stmts[i]));
+					if (is_module_imported(module_path_with_member))
+					{
+						free(module_path_with_member);
+						stmt_free(imported_module->stmts[i]);
+					}
+					else
+					{
+						sbuffer_add(module->stmts, imported_module->stmts[i]);
+						sbuffer_add(imported_modules, module_path_with_member);
+					}
+				}
+			}
+			free(imported_module);
 			break;
 		default:
 			report_error(frmt("Expected \'./\', \'../\', \'/\', relative or absolute path, but met: %s",
@@ -1317,7 +1401,7 @@ Stmt* parse_import_stmt(Parser* parser)
 	return stmt_new(STMT_IMPORT, import_stmt_new(module));
 }
 
-AstRoot* parse_import_path_desc(Parser* parser)
+char* parse_import_path_desc(Parser* parser)
 {
 #define assign_new_path(new_path) \
 	path_dup = path;			  \
@@ -1381,102 +1465,77 @@ AstRoot* parse_import_path_desc(Parser* parser)
 		break;
 	}
 
-	if (!file_exists(path))
+	if (strcmp(path, parser->file) == 0)
+		report_error(frmt("Cannot import module: \'%s\', attempt to import module from itself.",
+			path), get_curr_token(parser)->context);
+	else if (file_exists(path))
+		return path;
+	else
 		report_error(frmt("Cannot import module: \'%s\', no such module found.",
 			path), get_curr_token(parser)->context);
-	else
-	{
-		Lexer* new_lexer = lexer_new(path, FROM_FILE);
-		Parser* new_parser = parser_new(path, lex(new_lexer));
-		AstRoot* module = parse(new_parser);
-		lexer_free(new_lexer);
-		parser_free(new_parser);
-		return module;
-	}
+#undef assign_new_path
 }
 
 Stmt* parse_from_import_stmt(Parser* parser)
 {
-	char* member_name = NULL;      // member that user want to extract from imported module
-	AstRoot* from_module = NULL;   // created AstRoot instance from statements above
+	char* module_path = NULL;
+	AstRoot* from_module = NULL;   // module that will represent extracted statements from module
 	AstRoot* import_module = NULL; // whole module imported via import
 
 	expect_with_skip(parser, TOKEN_KEYWORD_FROM, "from");
-	import_module = parse_import_path_desc(parser);
+	module_path = parse_import_path_desc(parser);
+	import_module = parse_module(module_path);
 	expect_with_skip(parser, TOKEN_KEYWORD_IMPORT, "import");
 	from_module = cnew_s(AstRoot, from_module, 1);
-	if (matcht(parser, TOKEN_ASTERISK))
+	do
 	{
-		from_module = import_module;
-		expect_with_skip(parser, TOKEN_ASTERISK, "*");
-	}
-	else
-	{
-		do
+		if (matcht(parser, TOKEN_COMMA))
+			expect_with_skip(parser, TOKEN_COMMA, ",");
+		// concatenating module_path with name of member (separated by '?')
+		char* module_path_with_member = frmt("%s?%s", 
+			module_path, get_curr_token(parser)->svalue);
+		if (is_module_imported(module_path_with_member))
 		{
-			if (matcht(parser, TOKEN_COMMA))
-				expect_with_skip(parser, TOKEN_COMMA, ",");
-			sbuffer_add(from_module->stmts, parse_from_import_member_stmt(parser, import_module));
-		} while (matcht(parser, TOKEN_COMMA));
-		
-		// finding and releasing all non-used in from-module members
-		for (int i = 0; i < sbuffer_len(import_module->stmts); i++)
-		{
-			char in_use = 0;
-			for (int j = 0; j < sbuffer_len(from_module->stmts); j++)
-				if (from_module->stmts[j] == import_module->stmts[i])
-					in_use = 1;
-			if (!in_use)
-				stmt_free(import_module->stmts[i]);
+			// if this member already imported, free this new string, and skip member name token
+			free(module_path_with_member);
+			expect_with_skip(parser, TOKEN_IDNT, "member name");
 		}
-		sbuffer_free(import_module->stmts);
-		free(import_module);
+		else
+		{
+			// otherwise add to imported modules, and get this member from module
+			sbuffer_add(imported_modules, module_path_with_member);
+			sbuffer_add(from_module->stmts, parse_from_import_member_stmt(parser, import_module));
+		}
+	} while (matcht(parser, TOKEN_COMMA));
+		
+	// finding and releasing all non-used in from-module members
+	for (int i = 0; i < sbuffer_len(import_module->stmts); i++)
+	{
+		char in_use = 0;
+		for (int j = 0; j < sbuffer_len(from_module->stmts); j++)
+			if (from_module->stmts[j] == import_module->stmts[i])
+				in_use = 1;
+		if (!in_use)
+			stmt_free(import_module->stmts[i]);
 	}
+	sbuffer_free(import_module->stmts);
+	free(import_module);
+
 	expect_with_skip(parser, TOKEN_SEMICOLON, ";");
 	return stmt_new(STMT_IMPORT, import_stmt_new(from_module));
 }
 
 Stmt* parse_from_import_member_stmt(Parser* parser, AstRoot* import_module)
 {
-#define compare_names(name) \
-	strcmp(member_name, import_module->stmts[i]->name) == 0
-	
 	Stmt* wanted = NULL;
 	Token* token = get_curr_token(parser);
 	char* member_name = token->svalue;
 
 	expect_with_skip(parser, TOKEN_IDNT, "member name");
 	for (int i = 0; i < sbuffer_len(import_module->stmts); i++)
-	{
-		switch (import_module->stmts[i]->type)
-		{
-		case STMT_TYPE_DECL:
-			switch (import_module->stmts[i]->type_decl->type)
-			{
-			case TYPE_DECL_ENUM:
-				if (compare_names(type_decl->enum_decl->enum_name))
-					wanted = import_module->stmts[i];
-				break;
-			case TYPE_DECL_UNION:
-				if (compare_names(type_decl->union_decl->union_name))
-					wanted = import_module->stmts[i];
-				break;
-			case TYPE_DECL_STRUCT:
-				if (compare_names(type_decl->struct_decl->struct_name))
-					wanted = import_module->stmts[i];
-				break;
-			}
-			break;
-		case STMT_VAR_DECL:
-			if (compare_names(var_decl->type_var->var))
+		if (is_stmt_for_import(import_module->stmts[i]))
+			if (strcmp(get_stmt_for_import_name(import_module->stmts[i]), member_name) == 0)
 				wanted = import_module->stmts[i];
-			break;
-		case STMT_FUNC_DECL:
-			if (compare_names(func_decl->func_name))
-				wanted = import_module->stmts[i];
-			break;
-		}
-	}
 	if (!wanted)
 		report_error(frmt("Cannot import member \'%s\', no such member found in module.",
 			member_name), token->context);

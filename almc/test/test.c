@@ -46,6 +46,7 @@ void parser_stmt_manual_test()
 		ast_free(root);
 		lexer_free(l);
 		parser_free(p);
+		clear_imported_modules();
 		int a = getchar();
 	}
 }
