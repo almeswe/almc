@@ -12,7 +12,7 @@ void report_warning(const char* message, SrcContext* context)
 void report_error(const char* message, SrcContext* context)
 {
 	//todo: DEBUG macro does not exist
-#ifndef DEBUG
+#ifndef ALMC_DEBUG
 	printf("ERROR: %s,", message);
 	if (context)
 		printf(" %s\n", src_context_tostr(context));

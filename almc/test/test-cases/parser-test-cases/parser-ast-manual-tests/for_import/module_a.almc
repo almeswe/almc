@@ -1,0 +1,4 @@
+fnc test_func() : i32 {
+	for(;;);
+	return 1;
+}

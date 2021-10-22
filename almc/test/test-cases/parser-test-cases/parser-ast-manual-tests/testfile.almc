@@ -1,0 +1,5 @@
+import for_import/module_a;
+
+fnc main(args: char**, argc: i32) : void {
+	return;
+}

@@ -1,0 +1,6 @@
+# test with collision type (import x) -> (from x)
+
+import ../b;
+
+from ../b import a_var;
+from ../b import a_union;

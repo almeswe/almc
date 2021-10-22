@@ -1,0 +1,4 @@
+# test with collision in different files
+
+import ../b;
+import c;

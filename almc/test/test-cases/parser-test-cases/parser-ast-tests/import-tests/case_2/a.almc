@@ -1,0 +1,3 @@
+# simple from-stmt test
+
+from ../b import a_var, a_union;

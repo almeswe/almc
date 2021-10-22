@@ -1,0 +1,3 @@
+# simple import of all contents from b
+
+import ../b;

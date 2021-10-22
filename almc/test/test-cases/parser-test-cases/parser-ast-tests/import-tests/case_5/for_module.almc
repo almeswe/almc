@@ -1,0 +1,7 @@
+fnc a() : void {
+	return;
+}
+
+fnc b() : i32 {
+	return 1+2;
+}

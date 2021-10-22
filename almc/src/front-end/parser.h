@@ -5,7 +5,7 @@
 #include "lexer\lexer.h"
 #include "..\utils\os.h"
 
-#define ALMC_FILE_EXTENSION ".txt"
+#define ALMC_FILE_EXTENSION ".almc"
 
 typedef struct Parser
 {

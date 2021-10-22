@@ -74,6 +74,9 @@
     <ClCompile Include="src\utils\os.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\utils\data-structures\ht.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\utils\context.h">
@@ -112,6 +115,15 @@
     <ClInclude Include="src\utils\os.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\utils\data-structures\ht.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\import-stmt-tests.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\parser-manual-test.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="test\syntax.txt">
@@ -126,5 +138,19 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="test\test-cases\lexer-test-cases\gen.py" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_1\a.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\b.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_2\a.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_3\a.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_4\a.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_5\a.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_5\for_member.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_5\for_module.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_6\a.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_6\c.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_7\a.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_7\folder\c.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\testfile.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\for_import\module_a.almc" />
   </ItemGroup>
 </Project>

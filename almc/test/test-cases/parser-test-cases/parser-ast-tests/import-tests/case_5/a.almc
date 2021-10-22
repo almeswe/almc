@@ -1,0 +1,7 @@
+# test case with members\modules collision
+
+import for_module;
+import for_module;
+
+from for_member import member;
+from for_member import member;

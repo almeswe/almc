@@ -1,0 +1,19 @@
+let a_var: i32 = 10;
+
+fnc a_func() : void {
+	return;
+}
+
+enum a_enum {
+	a, b, c
+}
+
+struct a_struct {
+	a: i16;
+	b: i32;
+}
+
+union a_union {
+	c: i64;
+	d: u8;
+}

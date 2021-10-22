@@ -1,0 +1,3 @@
+fnc folder_c_func() : void {
+	return;
+}

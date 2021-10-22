@@ -1,0 +1,6 @@
+# test with collision type (from x) -> (import x)
+
+from ../b import a_var;
+from ../b import a_struct;
+
+import ../b;

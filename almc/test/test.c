@@ -34,28 +34,12 @@ void parser_expr_manual_test()
 	}
 }
 
-void parser_stmt_manual_test()
-{
-	const char* file = "C:\\Users\\almeswe\\source\\repos\\almc\\Debug\\stmt-test.txt";
-	while (1)
-	{ 
-		Lexer* l = lexer_new(file, FROM_FILE);
-		Parser* p = parser_new(l->curr_file, lex(l));
-		AstRoot* root = parse(p);
-		print_ast(root, "");
-		ast_free(root);
-		lexer_free(l);
-		parser_free(p);
-		clear_imported_modules();
-		int a = getchar();
-	}
-}
-
 void run_tests()
 {
 	sb_test();
 	lexer_run_tests();
+	test_import_all_cases();
 	ast_expr_eval_run_tests();
 	//parser_expr_manual_test();
-	parser_stmt_manual_test();
+	ast_manual_test();
 }
