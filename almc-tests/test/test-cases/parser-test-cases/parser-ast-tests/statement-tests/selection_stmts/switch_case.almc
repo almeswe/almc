@@ -1,0 +1,30 @@
+switch(a) {
+	
+}
+
+switch(a) {
+	default:
+		break;
+}
+
+switch(a) {
+	case 1:
+	case 2:
+		break;
+}
+
+switch(a) {
+	case 1:
+		break;
+	case 2:
+		break;
+}
+
+switch(a) {
+	case 1:
+		break;
+	case 2:
+		break;
+	default:
+		break;
+}

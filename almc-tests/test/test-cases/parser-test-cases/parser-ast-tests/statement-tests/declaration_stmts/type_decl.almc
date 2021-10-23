@@ -1,0 +1,53 @@
+struct a {
+
+}
+
+struct {
+	noname: char*;
+}
+
+struct a {
+	a_m: i32;
+	b_m: i16;
+}
+
+enum a_e {
+	
+}
+
+enum {
+	NO_NAME = 0xff
+}
+
+enum a {
+	f,
+	s,
+	t
+}
+
+enum b {
+	f = 0xf,
+	s,
+	t = 1,
+	g
+}
+
+enum c {
+	f = 1024 * 2,
+	s,
+	t = 0xf,
+	g
+}
+
+union a {
+
+}
+
+union {
+	no_name: i32;
+}
+
+union b_u {
+	a: i32;
+	c: i16;
+}

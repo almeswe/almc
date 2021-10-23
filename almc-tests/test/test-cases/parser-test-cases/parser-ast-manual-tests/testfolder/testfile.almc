@@ -1,0 +1,9 @@
+#import for_import/module_a;
+
+from ../b import a_struct;
+
+fnc main(args: char**, argc: i32) : void {
+	return;
+}
+
+let a: char** = 0xff;

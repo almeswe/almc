@@ -1,0 +1,13 @@
+for (let a: i32 = 0; a < 6; a++) {
+	break;
+}
+
+for (; a < 6; a++) {
+	break;
+}
+
+for (; ; a++) {
+	break;
+}
+
+for (;;);

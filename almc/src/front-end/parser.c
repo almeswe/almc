@@ -1452,8 +1452,7 @@ char* parse_import_path_desc(Parser* parser)
 			case TOKEN_NAV_CURR_DIR:
 				break;
 			case TOKEN_NAV_PREV_DIR:
-				//assign_new_path(get_dir_parent(prim_path));
-				path = get_dir_parent(path);
+				assign_new_path(get_dir_parent(path));
 				break;
 			}
 			get_next_token(parser);

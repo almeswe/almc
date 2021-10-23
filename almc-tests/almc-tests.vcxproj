@@ -18,41 +18,11 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="src\front-end\ast\ast-debug\ast-console-printer.c" />
-    <ClCompile Include="src\front-end\ast\ast-debug\ast-expr-eval.c" />
-    <ClCompile Include="src\front-end\ast\ast-debug\ast-expr-eval.h" />
-    <ClCompile Include="src\front-end\ast\ast.c" />
-    <ClCompile Include="src\front-end\lexer\lexer.c" />
-    <ClCompile Include="src\front-end\lexer\token.c" />
-    <ClCompile Include="src\utils\common.c" />
-    <ClCompile Include="src\utils\context.c" />
-    <ClCompile Include="src\error.c" />
-    <ClCompile Include="src\front-end\parser.c" />
-    <ClCompile Include="src\utils\data-structures\sbuffer.c" />
-    <ClCompile Include="src\utils\data-structures\sbuffer.h" />
-    <ClCompile Include="src\main.c" />
-    <ClCompile Include="src\utils\os.c" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="src\front-end\ast\ast-debug\ast-console-printer.h" />
-    <ClInclude Include="src\front-end\ast\ast.h" />
-    <ClInclude Include="src\front-end\front-end.h" />
-    <ClInclude Include="src\front-end\lexer\lexer.h" />
-    <ClInclude Include="src\front-end\lexer\token.h" />
-    <ClInclude Include="src\utils\common.h" />
-    <ClInclude Include="src\utils\context.h" />
-    <ClInclude Include="src\error.h" />
-    <ClInclude Include="src\front-end\parser.h" />
-    <ClInclude Include="src\utils\data-structures\hashtable.h" />
-    <ClInclude Include="src\utils\data-structures\ht.h" />
-    <ClInclude Include="src\utils\os.h" />
-  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{7267317d-5ceb-4961-a11b-ed94008c0a6e}</ProjectGuid>
-    <RootNamespace>almc</RootNamespace>
+    <ProjectGuid>{0b5a8f54-1586-4785-b3b2-efe87dd2fe0e}</ProjectGuid>
+    <RootNamespace>almctests</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -118,7 +88,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)almc\src</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -169,6 +139,58 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
+  <ItemGroup>
+    <Text Include="test\syntax.txt" />
+    <Text Include="test\test-cases\lexer-test-cases\COMMENTS-TEST.txt" />
+    <Text Include="test\test-cases\lexer-test-cases\gen-output.txt" />
+    <Text Include="test\test-cases\lexer-test-cases\LEXEME-TEST.txt" />
+    <Text Include="test\test-cases\lexer-test-cases\RECOGNITION-TEST.txt" />
+    <Text Include="test\test-cases\lexer-test-cases\SRC-CONTEXT-TEST.txt" />
+    <Text Include="test\test-cases\lexer-test-cases\TOKENS.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="test\test-cases\lexer-test-cases\gen.py" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\b.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\testfolder\for_import\module_a.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\testfolder\testfile.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\b.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_1\a.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_2\a.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_3\a.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_4\a.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_5\a.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_5\for_member.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_5\for_module.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_6\a.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_6\c.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_7\a.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_7\folder\c.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\declaration_stmts\func_decl.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\declaration_stmts\type_decl.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\declaration_stmts\var_decl.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\jump_stmts.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\loop_stmts\do_while_loop.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\loop_stmts\for_loop.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\loop_stmts\while_loop.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\selection_stmts\if_else.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\selection_stmts\switch_case.almc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="test\test-cases\lexer-test-cases\lexer-test-cases.h" />
+    <ClInclude Include="test\test-cases\parser-test-cases\ast-expr-eval-test.h" />
+    <ClInclude Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\parser-manual-test.h" />
+    <ClInclude Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\import-stmt-tests.h" />
+    <ClInclude Include="test\test.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.c" />
+    <ClCompile Include="test\test.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\almc\almc.vcxproj">
+      <Project>{7267317d-5ceb-4961-a11b-ed94008c0a6e}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
