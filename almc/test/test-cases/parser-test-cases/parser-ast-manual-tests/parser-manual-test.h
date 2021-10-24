@@ -7,6 +7,7 @@ inline void ast_manual_test()
 		"test\\test-cases\\parser-test-cases\\parser-ast-manual-tests\\testfolder\\testfile.almc";
 	while (1)
 	{
+		system("cls");
 		Lexer* l = lexer_new(file, FROM_FILE);
 		Parser* p = parser_new(_strdup(l->curr_file), lex(l));
 		AstRoot* root = parse(p);

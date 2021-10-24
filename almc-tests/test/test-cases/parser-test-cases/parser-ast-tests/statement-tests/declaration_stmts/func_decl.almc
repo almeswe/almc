@@ -1,4 +1,0 @@
-fnc a_1();
-fnc a_2(a: i32, b: i16);
-fnc forward a_3();
-fnc intrinsic a_4();

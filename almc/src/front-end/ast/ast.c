@@ -25,7 +25,7 @@ Expr* expr_new(ExprType type, void* expr_value_ptr)
 	case EXPR_INITIALIZER:
 		expr_set_value(Initializer, initializer);
 	default:
-		assert(0);
+		report_error("Unexpected expr type.", NULL);
 	}
 	return e;
 }
@@ -79,10 +79,8 @@ Const* const_new(ConstType type, const char* svalue, SrcContext* context)
 		}
 		break;
 	case CONST_FLOAT:
-		c->fvalue = atof(svalue);
+		c->fvalue = strtod(svalue, NULL);
 		break;
-	default:
-		assert(0);
 	}
 	return c;
 }
@@ -160,7 +158,7 @@ Stmt* stmt_new(StmtType type, void* stmt_value_ptr)
 	case STMT_LABEL_DECL:
 		stmt_set_value(LabelDecl, label_decl);
 	default:
-		assert(0);
+		report_error("Unexpected stmt type.", NULL);
 	}
 	return s;
 }
@@ -178,7 +176,7 @@ TypeDecl* type_decl_new(TypeDeclType type, void* type_decl_value_ptr)
 	case TYPE_DECL_STRUCT:
 		type_decl_set_value(StructDecl, struct_decl);
 	default:
-		assert(0);
+		report_error("Unexpected type-decl type.", NULL);
 	}
 	return td;
 }
@@ -275,7 +273,7 @@ LoopStmt* loop_stmt_new(LoopStmtType type, void* loop_stmt_value_ptr)
 	case LOOP_WHILE:
 		loop_stmt_set_value(WhileLoop, while_loop);
 	default:
-		assert(0);
+		report_error("Unexpected loop-stmt type.", NULL);
 	}
 	return lp;
 }
@@ -363,7 +361,7 @@ JumpStmt* jump_stmt_new(JumpStmtType type, Expr* additional_expr)
 			= additional_expr;
 		break;
 	default:
-		assert(0);
+		report_error("Unexpected jump-stmt type.", NULL);
 	}
 	return js;
 }
@@ -422,7 +420,7 @@ void expr_free(Expr* expr)
 			initializer_free(expr->initializer);
 			break;
 		default:
-			assert(0);
+			report_error("Unexpected expr type.", NULL);
 		}
 		free(expr);
 	}
@@ -554,7 +552,7 @@ void stmt_free(Stmt* stmt)
 			label_decl_free(stmt->label_decl);
 			break;
 		default:
-			assert(0);
+			report_error("Unexpected stmt type.", NULL);
 		}
 		free(stmt);
 	}
@@ -576,7 +574,7 @@ void type_decl_free(TypeDecl* type_decl)
 			struct_decl_free(type_decl->struct_decl);
 			break;
 		default:
-			assert(0);
+			report_error("Unexpected typedecl type.", NULL);
 		}
 		free(type_decl);
 	}
@@ -706,7 +704,7 @@ void loop_stmt_free(LoopStmt* loop_stmt)
 			while_loop_free(loop_stmt->while_loop);
 			break;
 		default:
-			assert(0);
+			report_error("Unexpected loop-stmt type.", NULL);
 		}
 		free(loop_stmt);
 	}
@@ -815,7 +813,7 @@ void jump_stmt_free(JumpStmt* jump_stmt)
 			expr_free(jump_stmt->additional_expr);
 			break;
 		default:
-			assert(0);
+			report_error("Unexpected jump-stmt type.", NULL);
 		}
 		free(jump_stmt);
 	}

@@ -1,8 +1,8 @@
 #ifndef ALMC_LEXER_TOKEN_H
 #define ALMC_LEXER_TOKEN_H
 
-#include "..\..\utils\common.h"
-#include "..\..\utils\context.h"
+#include "..\utils\common.h"
+#include "..\utils\context.h"
 
 typedef enum TokenKind
 {

@@ -191,7 +191,8 @@ Type* parse_type_name(Parser* parser)
 		get_next_token(parser);
 		return parse_abstract_declarator(parser, type);
 	default:
-		assert(0);
+		report_error(frmt("Type expected, but met: %s",
+			token_type_tostr(token->type)), token->context);
 	}
 	return 0;
 }

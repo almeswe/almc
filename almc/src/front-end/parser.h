@@ -1,8 +1,9 @@
 #ifndef ALMC_PARSER_H
 #define ALMC_PARSER_H
 
+#include "lexer.h"
 #include "ast\ast.h"
-#include "lexer\lexer.h"
+
 #include "..\utils\os.h"
 
 #define ALMC_FILE_EXTENSION ".almc"

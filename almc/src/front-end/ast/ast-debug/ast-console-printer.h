@@ -1,6 +1,7 @@
 #ifndef ALMC_AST_CONSOLE_PRINTER
 #define ALMC_AST_CONSOLE_PRINTER
 
+#include <assert.h>
 #include "..\ast.h"
 
 #define RESET   "\033[0m"

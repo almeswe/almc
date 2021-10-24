@@ -3,7 +3,7 @@ struct a {
 }
 
 struct {
-	noname: char*;
+	noname: i32*;
 }
 
 struct a {

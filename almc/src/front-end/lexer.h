@@ -7,9 +7,12 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "..\lexer\token.h"
-#include "..\..\..\src\error.h"
-#include "..\..\..\src\utils\data-structures\sbuffer.h"
+#include ".\token.h"
+#include "..\error.h"
+
+#include "..\utils\common.h"
+#include "..\utils\context.h"
+#include "..\utils\data-structures\sbuffer.h"
 
 #define EXT_CHARS 26
 #define EXT_CHARS_IN_TOKEN_ENUM_OFFSET TOKEN_RIGHT_ANGLE + 1
