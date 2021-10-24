@@ -959,7 +959,7 @@ Stmt* parse_enum_decl_stmt(Parser* parser)
 		if (matcht(parser, TOKEN_ASSIGN))
 		{
 			get_next_token(parser);
-			expr_free(enum_idnt_value);
+			//expr_free(enum_idnt_value);
 			enum_idnt_value =
 				parse_constant_expr(parser);
 		}
