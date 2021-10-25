@@ -1,6 +1,6 @@
 #include "..\test\test.h"
 
-#include "back-end/x86 asm/gen.h"
+#include "back-end/x86 asm/expr-gen.h"
 
 int test()
 {
@@ -14,14 +14,16 @@ int test()
 		Parser* parser = parser_new(path_copy, lex(lexer));
 		Expr* expr = parse_expr(parser);
 		//print_expr(expr, "");
-		init_reserved_registers();
-		gen_expr(expr);
+		//init_reserved_registers();
+		ExprGenerator* expr_gen = expr_gen_new();
+		gen_expr(expr_gen, expr);
+		expr_gen_free(expr_gen);
 	}
 }
 
 int main(int argc, char** argv)
 {
-	//test();
+	test();
 	run_tests();
 	return 0;
 }

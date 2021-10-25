@@ -74,7 +74,13 @@
     <ClCompile Include="src\back-end\x86 asm\gen.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\back-end\x86 asm\registers.h">
+    <ClCompile Include="src\back-end\x86 asm\regtable.h">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\back-end\x86 asm\regtable.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\back-end\x86 asm\expr-gen.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -134,6 +140,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\back-end\x86 asm\expr-gen.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\back-end\x86 asm\instructions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
