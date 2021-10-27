@@ -83,6 +83,12 @@
     <ClCompile Include="src\back-end\x86 asm\expr-gen.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\back-end\x86 asm\types.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\back-end\x86 asm\stack-frame.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\utils\context.h">
@@ -143,6 +149,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\back-end\x86 asm\instructions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\back-end\masm32\x87\instructions_x87.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\back-end\x86 asm\types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\back-end\x86 asm\stack-frame.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

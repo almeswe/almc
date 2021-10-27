@@ -1,10 +1,16 @@
+
+#ifndef ALMC_BACK_END_STMT_GENERATOR
+#define ALMC_BACK_END_STMT_GENERATOR
+
 #include <stdio.h>
 #include <assert.h>
-
+#include "expr-gen.h"
+#include "stack-frame.h"
+#include "instructions.h"
 #include "..\..\utils\common.h"
-#include "../../front-end/ast/ast.h"
+#include "..\..\front-end\ast\ast.h"
 
-/*void gen_const(Const* cnst, char* to_reg);
-void gen_unary_expr(Expr* expr);
-void gen_binary_expr(BinaryExpr* expr);
-void gen_expr(Expr* expr);*/
+void gen_var_decl(VarDecl* var_decl, StackFrame* frame);
+void gen_func_decl(FuncDecl* func_decl);
+
+#endif

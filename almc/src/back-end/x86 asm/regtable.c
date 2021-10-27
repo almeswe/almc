@@ -10,12 +10,14 @@ const char* registers_str[7] = {
 	"esi"
 };
 
-void init_regtable(RegisterTable* regtable)
+RegisterTable* regtable_new()
 {
+	RegisterTable* regtable = new_s(RegisterTable, regtable);
 	for (int i = 0; i < ESI; i++)
 		regtable->reg_table[i] = REGISTER_FREE;
 	//regtable->reg_table[EDX] = REGISTER_RESERVED;
 	regtable->ret_reg = -1;
+	return regtable;
 }
 
 const char* get_register_str(int reg)

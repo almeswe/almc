@@ -1,6 +1,6 @@
 #include "..\test\test.h"
 
-#include "back-end/x86 asm/expr-gen.h"
+#include "back-end/x86 asm/gen.h"
 
 int test()
 {
@@ -12,12 +12,12 @@ int test()
 			buffer, FROM_CHAR_PTR);
 		char* path_copy = _strdup(lexer->curr_file);
 		Parser* parser = parser_new(path_copy, lex(lexer));
-		Expr* expr = parse_expr(parser);
+		Stmt* stmt = parse_var_decl_stmt(parser);
+		
+		StackFrame* frame = create_new_stack_frame(NULL);
+		gen_var_decl(stmt->var_decl, frame);
 		//print_expr(expr, "");
 		//init_reserved_registers();
-		ExprGenerator* expr_gen = expr_gen_new();
-		gen_expr(expr_gen, expr);
-		expr_gen_free(expr_gen);
 	}
 }
 

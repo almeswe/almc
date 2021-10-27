@@ -4,6 +4,13 @@
 #include "regtable.h"
 #include "..\..\front-end\ast\ast.h"
 
+// TOPICS 
+/*
+
+https://www.plantation-productions.com/Webster/www.artofasm.com/Windows/HTML/RealArithmetica3.html
+	
+*/
+
 typedef enum x86_ExprGeneratorResult
 {
 	EXPR_GEN_RES_QWORD,
@@ -14,11 +21,11 @@ typedef enum x86_ExprGeneratorResult
 
 typedef struct x86_ExprGenerator
 {
-	RegisterTable regtable;
+	RegisterTable* regtable;
 	ExprGeneratorResult result;
 } ExprGenerator;
 
-ExprGenerator* expr_gen_new();
+ExprGenerator* expr_gen_new(RegisterTable* regtable);
 void expr_gen_free(ExprGenerator* expr_gen);
 
 void gen_expr(ExprGenerator* expr_gen, Expr* expr);

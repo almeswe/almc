@@ -16,11 +16,32 @@
 #define MOV(to, from) \
 	OUT(frmt("mov  %s, %s", to, from))
 
+#define OR32(to, from) \
+	OUT(frmt("or   %s, %s", to, from))
+
+#define XOR32(to, from) \
+	OUT(frmt("xor  %s, %s", to, from))
+
+#define AND32(to, from) \
+	OUT(frmt("and  %s, %s", to, from))
+
+#define	NOT32(to, from) \
+	OUT(frmt("not  %s, %s", to, from))
+
+#define NEG32(to) \
+	OUT(frmt("neg  %s", to));
+
+#define NOT32(to) \
+	OUT(frmt("not  %s", to));
+
+#define INC32(to) \
+	OUT(frmt("inc  %s", to));
+
+#define DEC32(to) \
+	OUT(frmt("dec  %s", to));
+
 #define ADD(to, from) \
 	OUT(frmt("add  %s, %s", to, from))
-
-#define XOR(to, from) \
-	OUT(frmt("xor  %s, %s", to, from))
 
 #define SUB(to, from) \
 	OUT(frmt("sub  %s, %s", to, from))
@@ -29,7 +50,13 @@
 	OUT(frmt("mul  %s", from))
 
 #define MOD32(to, from)             \
-	XOR("edx", "edx");				\
+	XOR32("edx", "edx");			\
 	OUT(frmt("div  %s", from))     			
+
+#define SHL32(to, by) \
+	OUT(frmt("shl  %s, %s", to, by))     			
+
+#define SHR32(to, by) \
+	OUT(frmt("shr  %s, %s", to, by))     			
 
 #endif 

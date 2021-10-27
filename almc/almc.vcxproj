@@ -23,6 +23,8 @@
     <ClCompile Include="src\back-end\x86 asm\gen.c" />
     <ClCompile Include="src\back-end\x86 asm\regtable.h" />
     <ClCompile Include="src\back-end\x86 asm\regtable.c" />
+    <ClCompile Include="src\back-end\x86 asm\stack-frame.c" />
+    <ClCompile Include="src\back-end\x86 asm\types.c" />
     <ClCompile Include="src\front-end\ast\ast-debug\ast-console-printer.c" />
     <ClCompile Include="src\front-end\ast\ast-debug\ast-expr-eval.c" />
     <ClCompile Include="src\front-end\ast\ast-debug\ast-expr-eval.h" />
@@ -44,6 +46,9 @@
     <ClInclude Include="src\back-end\x86 asm\expr-gen.h" />
     <ClInclude Include="src\back-end\x86 asm\gen.h" />
     <ClInclude Include="src\back-end\x86 asm\instructions.h" />
+    <ClInclude Include="src\back-end\masm32\x87\instructions_x87.h" />
+    <ClInclude Include="src\back-end\x86 asm\stack-frame.h" />
+    <ClInclude Include="src\back-end\x86 asm\types.h" />
     <ClInclude Include="src\front-end\ast\ast-debug\ast-console-printer.h" />
     <ClInclude Include="src\front-end\ast\ast.h" />
     <ClInclude Include="src\front-end\front-end.h" />

@@ -29,7 +29,7 @@ typedef struct x86_RegisterTable
 	int reg_table[6];
 } RegisterTable;
 
-void init_regtable(RegisterTable* regtable);
+RegisterTable* regtable_new();
 
 const char* get_register_str(int reg);
 int get_unreserved_register(RegisterTable* table);
