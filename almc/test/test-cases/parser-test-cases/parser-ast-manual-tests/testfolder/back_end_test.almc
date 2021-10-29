@@ -1,0 +1,11 @@
+#>fnc sum(a: i32, b: i32) : i32
+{
+	return a+b;
+}<#
+
+fnc main(a: i32, b: i32) : i32 
+{
+	let c: i32 = a;
+	c >>= b ^ b;
+	# return 1;
+}

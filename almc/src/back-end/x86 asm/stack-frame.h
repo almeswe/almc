@@ -2,7 +2,7 @@
 #define ALMC_BACK_END_STACK_FRAME
 
 #include "types.h"
-#include "expr-gen.h"
+#include "regtable.h"
 #include "..\..\front-end\ast\ast.h"
 
 typedef struct x86_StackFrame
@@ -11,14 +11,20 @@ typedef struct x86_StackFrame
 	TypeVar** arguments; // function arguments which were passed in this function
 	
 	RegisterTable* regtable;
-	ExprGenerator* expr_gen;
 
 	int* local_offsets;    // offset for each local variable in this stack frame
 	int* argument_offsets; // offset for each function argument in this stack frame
+
+	char* func_name;
+
+	uint64_t label_counter;
 } StackFrame;
 
-StackFrame* create_new_stack_frame(TypeVar** arguments);
+StackFrame* stack_frame_new(FuncDecl* func);
 int get_local_by_name(const char* name, StackFrame* frame);
 int get_argument_by_name(const char* name, StackFrame* frame);
+
+void add_local(VarDecl* local, StackFrame* frame);
+void add_argument(TypeVar* argument, StackFrame* frame);
 
 #endif

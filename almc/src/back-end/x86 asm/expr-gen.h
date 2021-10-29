@@ -2,6 +2,8 @@
 #define ALMC_BACK_END_EXPR_GENERATOR
 
 #include "regtable.h"
+#include "stack-frame.h"
+#include "instructions.h"
 #include "..\..\front-end\ast\ast.h"
 
 // TOPICS 
@@ -32,5 +34,10 @@ void gen_expr(ExprGenerator* expr_gen, Expr* expr);
 void gen_primary_expr(ExprGenerator* expr_gen, Expr* prim_expr, int reg);
 void gen_unary_expr(ExprGenerator* expr_gen, UnaryExpr* unary_expr);
 void gen_binary_expr(ExprGenerator* expr_gen, BinaryExpr* binary_expr);
+
+void gen_expr2(Expr* expr, StackFrame* frame);
+void gen_primary_expr2(Expr* prim_expr, int reg, StackFrame* frame);
+void gen_unary_expr2(UnaryExpr* unary_expr, StackFrame* frame);
+void gen_binary_expr2(BinaryExpr* binary_expr, StackFrame* frame);
 
 #endif 

@@ -52,7 +52,7 @@ int reserve_register(RegisterTable* table, int reg)
 			table->reg_table[reg] = REGISTER_RESERVED;
 			break;
 		case REGISTER_RESERVED:
-			PUSH(get_register_str(reg));
+			PUSH32(get_register_str(reg));
 			table->reg_table[reg] = REGISTER_NEEDS_RESTORE;
 			break;
 		case REGISTER_NEEDS_RESTORE:
@@ -74,7 +74,7 @@ int unreserve_register(RegisterTable* table, int reg)
 			table->reg_table[reg] = REGISTER_FREE;
 			break;
 		case REGISTER_NEEDS_RESTORE:
-			POP(get_register_str(reg));
+			POP32(get_register_str(reg));
 			table->reg_table[reg] = REGISTER_RESERVED;
 			break;
 		}

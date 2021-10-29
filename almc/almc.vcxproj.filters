@@ -196,5 +196,6 @@
     <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\selection_stmts\if_else.almc" />
     <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\selection_stmts\switch_case.almc" />
     <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\jump_stmts.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\testfolder\back_end_test.almc" />
   </ItemGroup>
 </Project>

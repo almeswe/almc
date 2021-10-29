@@ -7,13 +7,13 @@
 #define OUT(code) \
 	printf("\t %s \n", code)
 
-#define PUSH(op)   \
+#define PUSH32(op)   \
 	OUT(frmt("push %s", op))
 
-#define POP(to_op) \
+#define POP32(to_op) \
 	OUT(frmt("pop  %s", to_op))
 
-#define MOV(to, from) \
+#define MOV32(to, from) \
 	OUT(frmt("mov  %s, %s", to, from))
 
 #define OR32(to, from) \
@@ -40,10 +40,10 @@
 #define DEC32(to) \
 	OUT(frmt("dec  %s", to));
 
-#define ADD(to, from) \
+#define ADD32(to, from) \
 	OUT(frmt("add  %s, %s", to, from))
 
-#define SUB(to, from) \
+#define SUB32(to, from) \
 	OUT(frmt("sub  %s, %s", to, from))
 
 #define MUL32(to, from)             \

@@ -42,27 +42,56 @@ void expr_gen_free(ExprGenerator* expr_gen)
 	}
 }
 
-void gen_expr(ExprGenerator* expr_gen, Expr* expr)
+#define IS_PRIMARY_EXPR(expr)      \
+	((expr->type == EXPR_CONST) || \
+	 (expr->type == EXPR_IDNT))
+
+void gen_expr2(Expr* expr, StackFrame* frame)
 {
 	switch (expr->type)
 	{
 	case EXPR_IDNT:
 	case EXPR_CONST:
-		reserve_register(expr_gen->regtable, EAX);
-		gen_primary_expr(expr_gen, expr, EAX);
+		reserve_register(frame->regtable, EAX);
+		gen_primary_expr2(expr, EAX, frame);
 		break;
 	case EXPR_UNARY_EXPR:
-		gen_unary_expr(expr_gen, expr->unary_expr);
+		gen_unary_expr2(expr->unary_expr, frame);
 		break;
 	case EXPR_BINARY_EXPR:
-		gen_binary_expr(expr_gen, expr->binary_expr);
+		gen_binary_expr2(expr->binary_expr, frame);
 		break;
 	default:
 		assert(0);
 	}
 }
 
-void gen_primary_expr(ExprGenerator* expr_gen, Expr* prim_expr, int reg)
+
+char* gen_idnt_addr(Idnt* idnt, StackFrame* frame)
+{
+	int index, size, prefix;
+
+	if ((index = get_local_by_name(idnt->svalue, frame)) >= 0)
+	{
+		VarDecl* var_decl = frame->locals[index];
+		size = get_type_size(var_decl->type_var->type);
+		prefix = get_type_prefix(var_decl->type_var->type);
+		return frmt("%s PTR [ebp-%d]", get_predefined_type_str(prefix),
+			frame->local_offsets[index]);
+	}
+	else if ((index = get_argument_by_name(idnt->svalue, frame)) >= 0)
+	{
+		TypeVar* type_var = frame->arguments[index];
+		size = get_type_size(type_var->type);
+		prefix = get_type_prefix(type_var->type);
+		return frmt("%s PTR [ebp+%d]", get_predefined_type_str(prefix),
+			frame->argument_offsets[index]);
+	}
+	else
+		assert(0);
+}
+
+void gen_primary_expr2(Expr* prim_expr, int reg, StackFrame* frame)
 {
 	assert(reg >= EAX && reg <= ESI);
 	const char* to = get_register_str(reg);
@@ -73,36 +102,29 @@ void gen_primary_expr(ExprGenerator* expr_gen, Expr* prim_expr, int reg)
 		{
 		case CONST_INT:
 		case CONST_UINT:
-			MOV(to, frmt("%d", prim_expr->cnst->ivalue));
+			MOV32(to, frmt("%d", prim_expr->cnst->ivalue));
 			break;
 		default:
 			break;
 		}
 		break;
 	case EXPR_IDNT:
-		MOV(to, prim_expr->idnt->svalue);
+		MOV32(to, gen_idnt_addr(prim_expr->idnt, frame));
 		break;
 	default:
 		assert(0);
-		//case EXPR_STRING:
-		//	break;
 	}
 }
-
-#define IS_PRIMARY_EXPR(expr)      \
-	((expr->type == EXPR_CONST) || \
-	 (expr->type == EXPR_IDNT))
-
-void gen_unary_expr(ExprGenerator* expr_gen, UnaryExpr* unary_expr)
+void gen_unary_expr2(UnaryExpr* unary_expr, StackFrame* frame)
 {
 	const char* target = get_register_str(EAX);
 
 	if (!IS_PRIMARY_EXPR(unary_expr->expr))
-		gen_expr(expr_gen, unary_expr->expr);
+		gen_expr2(unary_expr->expr, frame);
 	else
 	{
-		reserve_register(expr_gen->regtable, EAX);
-		gen_primary_expr(expr_gen, unary_expr->expr, EAX);
+		reserve_register(frame->regtable, EAX);
+		gen_primary_expr2(unary_expr->expr, EAX, frame);
 	}
 
 	switch (unary_expr->type)
@@ -117,91 +139,132 @@ void gen_unary_expr(ExprGenerator* expr_gen, UnaryExpr* unary_expr)
 		break;
 	}
 }
-
-void gen_binary_expr(ExprGenerator* expr_gen, BinaryExpr* binary_expr)
+void gen_binary_expr2(BinaryExpr* binary_expr, StackFrame* frame)
 {
-#define RESERVE_TEMP_REG  \
-	temp_reg = get_unreserved_register(expr_gen->regtable)
+	#define RESERVE_TEMP_REG  \
+		temp_reg = get_unreserved_register(frame->regtable)
+
+	#define GEN_ASSIGN_EXPR(action)               \
+		to = gen_idnt_addr(                   \
+			binary_expr->lexpr->idnt, frame); \
+		action; 							  \
+		free(to)
 
 	int temp_reg;
 
 	if (!IS_PRIMARY_EXPR(binary_expr->lexpr) &&
 		IS_PRIMARY_EXPR(binary_expr->rexpr))
 	{
-		gen_expr(expr_gen, binary_expr->lexpr);
+		gen_expr2(binary_expr->lexpr, frame);
 		RESERVE_TEMP_REG;
-		gen_primary_expr(expr_gen, binary_expr->rexpr, temp_reg);
+		gen_primary_expr2(binary_expr->rexpr, temp_reg, frame);
 	}
 	else if (IS_PRIMARY_EXPR(binary_expr->lexpr) &&
 		IS_PRIMARY_EXPR(binary_expr->rexpr))
 	{
-		reserve_register(expr_gen->regtable, EAX);
-		gen_primary_expr(expr_gen, binary_expr->lexpr, EAX);
+		reserve_register(frame->regtable, EAX);
+		gen_primary_expr2(binary_expr->lexpr, EAX, frame);
 		RESERVE_TEMP_REG;
-		gen_primary_expr(expr_gen, binary_expr->rexpr, temp_reg);
+		gen_primary_expr2(binary_expr->rexpr, temp_reg, frame);
 	}
 	else if (IS_PRIMARY_EXPR(binary_expr->lexpr) &&
 		!IS_PRIMARY_EXPR(binary_expr->rexpr))
 	{
-		gen_expr(expr_gen, binary_expr->rexpr);
+		gen_expr2(binary_expr->rexpr, frame);
 		RESERVE_TEMP_REG;
-		gen_primary_expr(expr_gen, binary_expr->lexpr, temp_reg);
+		gen_primary_expr2(binary_expr->lexpr, temp_reg, frame);
 		// 1+(2-(3+(4-5)))
 		// ((1+2*3-4)-(5+6*7))*5
 		// (1+2-3*(4-5+6-(7*8+9-(10-11+12*13))))
 	}
 	else
 	{
-		gen_expr(expr_gen, binary_expr->lexpr);
-		PUSH(get_register_str(EAX));
-		unreserve_register(expr_gen->regtable , EAX);
-		gen_expr(expr_gen, binary_expr->rexpr);
+		gen_expr2(binary_expr->lexpr, frame);
+		PUSH32(get_register_str(EAX));
+		unreserve_register(frame->regtable, EAX);
+		gen_expr2(binary_expr->rexpr, frame);
 		RESERVE_TEMP_REG;
-		MOV(get_register_str(temp_reg), get_register_str(EAX));
-		POP(get_register_str(EAX));
+		MOV32(get_register_str(temp_reg), get_register_str(EAX));
+		POP32(get_register_str(EAX));
 	}
 
-	const char* to = get_register_str(EAX);
-	const char* from = get_register_str(temp_reg);
-
+	char* to = get_register_str(EAX);
+	char* from = get_register_str(temp_reg);
+	
 	switch (binary_expr->type)
 	{
+	case BINARY_ASSIGN:
+		MOV32(to, from);
+		break;
 	case BINARY_ADD:
-		ADD(to, from); 
+		ADD32(to, from);
+		break;
+	case BINARY_ADD_ASSIGN:
+		GEN_ASSIGN_EXPR(ADD32(to, from));
 		break;
 	case BINARY_SUB:
-		SUB(to, from); 
+		SUB32(to, from);
+		break;
+	case BINARY_SUB_ASSIGN:
+		GEN_ASSIGN_EXPR(SUB32(to, from));
 		break;
 	case BINARY_MOD:
-		reserve_register(expr_gen->regtable, EDX);
+		reserve_register(frame->regtable, EDX);
 		MOD32(to, from);
-		MOV(to, get_register_str(EDX));
-		unreserve_register(expr_gen->regtable, EDX);
+		MOV32(to, get_register_str(EDX));
+		unreserve_register(frame->regtable, EDX);
+		break;
+	case BINARY_MOD_ASSIGN:
+		reserve_register(frame->regtable, EDX);
+		GEN_ASSIGN_EXPR(MOD32(to, from));
+		MOV32(to, get_register_str(EDX));
+		unreserve_register(frame->regtable, EDX);
 		break;
 	case BINARY_MULT:
-		reserve_register(expr_gen->regtable, EDX);
-		MUL32(to, from); 
-		unreserve_register(expr_gen->regtable, EDX);
+		reserve_register(frame->regtable, EDX);
+		MUL32(to, from);
+		unreserve_register(frame->regtable, EDX);
+		break;
+	case BINARY_MUL_ASSIGN:
+		reserve_register(frame->regtable, EDX);
+		GEN_ASSIGN_EXPR(MUL32(to, from));
+		unreserve_register(frame->regtable, EDX);
 		break;
 	case BINARY_LSHIFT:
 		SHL32(to, from);
 		break;
+	case BINARY_LSHIFT_ASSIGN:
+		GEN_ASSIGN_EXPR(SHL32(to, from));
+		break;
 	case BINARY_RSHIFT:
 		SHR32(to, from);
 		break;
+	case BINARY_RSHIFT_ASSIGN:
+		GEN_ASSIGN_EXPR(SHR32(to, from));
+		break;
 	case BINARY_BW_OR:
-		OR32(to, from); 
+		OR32(to, from);
+		break;
+	case BINARY_BW_OR_ASSIGN:
+		GEN_ASSIGN_EXPR(OR32(to, from));
 		break;
 	case BINARY_BW_AND:
-		AND32(to, from); 
+		AND32(to, from);
+		break;
+	case BINARY_BW_AND_ASSIGN:
+		GEN_ASSIGN_EXPR(AND32(to, from));
 		break;
 	case BINARY_BW_XOR:
-		XOR32(to, from); 
+		XOR32(to, from);
+		break;
+	case BINARY_BW_XOR_ASSIGN:
+		GEN_ASSIGN_EXPR(XOR32(to, from));
 		break;
 	default:
 		assert(0);
 	}
-	unreserve_register(expr_gen->regtable, temp_reg);
+	unreserve_register(frame->regtable, temp_reg);
 
+#undef GEN_ASSIGN_EXPR
 #undef RESERVE_TEMP_REG
 }

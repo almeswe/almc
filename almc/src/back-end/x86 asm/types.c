@@ -11,6 +11,8 @@ static const char* predefined_types_prefixes[] = {
 
 int get_type_prefix(Type* type)
 {
+	if (type->mods.is_ptr)
+		return DWORD;
 	if (!type->mods.is_predefined)
 		assert(0);
 	else
