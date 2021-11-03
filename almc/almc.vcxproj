@@ -30,6 +30,8 @@
     <ClCompile Include="src\front-end\ast\ast-debug\ast-expr-eval.h" />
     <ClCompile Include="src\front-end\ast\ast.c" />
     <ClCompile Include="src\front-end\lexer.c" />
+    <ClCompile Include="src\front-end\semantics\table.c" />
+    <ClCompile Include="src\front-end\semantics\visitor.c" />
     <ClCompile Include="src\front-end\token.c" />
     <ClCompile Include="src\utils\common.c" />
     <ClCompile Include="src\utils\context.c" />
@@ -47,12 +49,14 @@
     <ClInclude Include="src\back-end\x86 asm\gen.h" />
     <ClInclude Include="src\back-end\x86 asm\instructions.h" />
     <ClInclude Include="src\back-end\masm32\x87\instructions_x87.h" />
+    <ClInclude Include="src\back-end\x86 asm\program.h" />
     <ClInclude Include="src\back-end\x86 asm\stack-frame.h" />
     <ClInclude Include="src\back-end\x86 asm\types.h" />
     <ClInclude Include="src\front-end\ast\ast-debug\ast-console-printer.h" />
     <ClInclude Include="src\front-end\ast\ast.h" />
     <ClInclude Include="src\front-end\front-end.h" />
     <ClInclude Include="src\front-end\lexer.h" />
+    <ClInclude Include="src\front-end\semantics\table.h" />
     <ClInclude Include="src\front-end\token.h" />
     <ClInclude Include="src\utils\common.h" />
     <ClInclude Include="src\utils\context.h" />
@@ -77,6 +81,7 @@
     <Text Include="test\test-cases\lexer-test-cases\TOKENS.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="src\front-end\semantics\visitor.h" />
     <None Include="test\test-cases\lexer-test-cases\gen.py" />
     <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\b.almc" />
     <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\testfolder\back_end_test.almc" />

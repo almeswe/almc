@@ -89,6 +89,12 @@
     <ClCompile Include="src\back-end\x86 asm\stack-frame.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\front-end\semantics\table.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\front-end\semantics\visitor.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\utils\context.h">
@@ -160,6 +166,12 @@
     <ClInclude Include="src\back-end\x86 asm\stack-frame.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\back-end\x86 asm\program.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\front-end\semantics\table.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="test\test-cases\lexer-test-cases\COMMENTS-TEST.txt" />
@@ -197,5 +209,6 @@
     <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\selection_stmts\switch_case.almc" />
     <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\jump_stmts.almc" />
     <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\testfolder\back_end_test.almc" />
+    <None Include="src\front-end\semantics\visitor.h" />
   </ItemGroup>
 </Project>
