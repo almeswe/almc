@@ -19,6 +19,8 @@ Table* table_new(Table* parent)
 	table->parent = parent;
 	table->childs = NULL;
 
+	table->initialized_variables_in_scope = NULL;
+
 	return table;
 }
 
@@ -36,37 +38,49 @@ void table_free(Table* table)
 		for (size_t i = 0; i < sbuffer_len(table->childs); i++)
 			table_free(table->childs[i]);
 		sbuffer_free(table->childs);
+		for (size_t i = 0; i < sbuffer_len(table->initialized_variables_in_scope); i++)
+			free(table->initialized_variables_in_scope[i]);
+		sbuffer_free(table->initialized_variables_in_scope);
 		free(table);
 	}
 }
 
 int is_function_declared(const char* func_name, Table* table)
 {
-	for (Table* parent = table; parent != NULL; parent = table->parent)
+	for (Table* parent = table; parent != NULL; parent = parent->parent)
 		is_declared_in_collection(func_name, func_name, parent->functions);
 }
 
 int is_variable_declared(const char* var_name, Table* table)
 {
-	for (Table* parent = table; parent != NULL; parent = table->parent)
+	for (Table* parent = table; parent != NULL; parent = parent->parent)
 		is_declared_in_collection(var_name, type_var->var, parent->variables);
+}
+
+int is_variable_initialized(const char* var_name, Table* table)
+{
+	for (Table* parent = table; parent != NULL; parent = parent->parent)
+		for (size_t i = 0; i < sbuffer_len(parent->initialized_variables_in_scope); i++)
+			if (strcmp(parent->initialized_variables_in_scope[i], var_name) == 0)
+				return 1;
+	return 0;
 }
 
 int is_enum_declared(const char* enum_name, Table* table)
 {
-	for (Table* parent = table; parent != NULL; parent = table->parent)
+	for (Table* parent = table; parent != NULL; parent = parent->parent)
 		is_declared_in_collection(enum_name, enum_name, parent->enums);
 }
 
 int is_struct_declared(const char* struct_name, Table* table)
 {
-	for (Table* parent = table; parent != NULL; parent = table->parent)
+	for (Table* parent = table; parent != NULL; parent = parent->parent)
 		is_declared_in_collection(struct_name, struct_name, parent->structs);
 }
 
 int is_union_declared(const char* union_name, Table* table)
 {
-	for (Table* parent = table; parent != NULL; parent = table->parent)
+	for (Table* parent = table; parent != NULL; parent = parent->parent)
 		is_declared_in_collection(union_name, union_name, parent->unions);
 }
 
@@ -80,6 +94,11 @@ void add_variable(VarDecl* var_decl, Table* table)
 {
 	if (!is_variable_declared(var_decl->type_var->var, table))
 		sbuffer_add(table->variables, var_decl);
+}
+
+void add_initialized_variable(char* var_name, Table* table)
+{
+	sbuffer_add(table->initialized_variables_in_scope, var_name);
 }
 
 void add_enum(EnumDecl* enum_decl, Table* table)

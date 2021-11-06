@@ -7,5 +7,6 @@
 	#include "ast\ast-debug\ast-console-printer.h"
 //#endif
 
+#include "semantics/type-checker.h"
 #include "semantics/table.h"
 #include "semantics/visitor.h"

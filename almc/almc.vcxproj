@@ -31,6 +31,7 @@
     <ClCompile Include="src\front-end\ast\ast.c" />
     <ClCompile Include="src\front-end\lexer.c" />
     <ClCompile Include="src\front-end\semantics\table.c" />
+    <ClCompile Include="src\front-end\semantics\type-checker.c" />
     <ClCompile Include="src\front-end\semantics\visitor.c" />
     <ClCompile Include="src\front-end\token.c" />
     <ClCompile Include="src\utils\common.c" />
@@ -57,6 +58,7 @@
     <ClInclude Include="src\front-end\front-end.h" />
     <ClInclude Include="src\front-end\lexer.h" />
     <ClInclude Include="src\front-end\semantics\table.h" />
+    <ClInclude Include="src\front-end\semantics\type-checker.h" />
     <ClInclude Include="src\front-end\token.h" />
     <ClInclude Include="src\utils\common.h" />
     <ClInclude Include="src\utils\context.h" />
