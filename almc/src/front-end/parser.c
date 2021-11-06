@@ -2,7 +2,8 @@
 
 //todo: think about how i can access struct members (also if struct is pointer) in initializer
 //todo: how i can save the order of abstract-declarators in type declaration? (char*[4] and char[4]* are the same types yet)
-//todo: add import tracking (for catching reimport error)
+//todo: add contexts for expr and stmt
+//todo: add parent to each node of tree
 
 #define matcht(parser, t) (get_curr_token(parser)->type == (t))
 #define expect_with_skip(parser, type, str) expect(parser, type, str), get_next_token(parser)
@@ -235,7 +236,7 @@ Expr* parse_primary_expr(Parser* parser)
 	{
 	case TOKEN_INUM:
 		expr = expr_new(EXPR_CONST,
-			const_new(CONST_UINT, token->svalue, token->context));
+			const_new(CONST_INT, token->svalue, token->context));
 		break;
 	case TOKEN_FNUM:
 		expr = expr_new(EXPR_CONST,
@@ -370,6 +371,7 @@ Expr* parse_postfix_expr(Parser* parser)
 		case TOKEN_OP_BRACKET:
 			postfix_expr = parse_array_accessor_expr(parser,
 				rexpr, get_curr_token(parser)->type);
+			break;
 		}
 	}
 	return (postfix_expr) ? postfix_expr : primary_expr;
