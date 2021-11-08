@@ -41,4 +41,10 @@ void add_enum(EnumDecl* enum_decl, Table* table);
 void add_struct(StructDecl* struct_decl, Table* table);
 void add_union(UnionDecl* union_decl, Table* table);
 
+VarDecl* get_variable(const char* var_name, Table* table);
+FuncDecl* get_function(const char* var_name, Table* table);
+EnumDecl* get_enum(const char* enum_name, Table* table);
+UnionDecl* get_union(const char* union_name, Table* table);
+StructDecl* get_struct(const char* struct_name, Table* table);
+
 #endif

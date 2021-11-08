@@ -1,10 +1,16 @@
 #include "table.h"
 
 #define is_declared_in_collection(member, member_in_collection, collection)   \
-		for (size_t i = 0; i < sbuffer_len(collection); i++)				  \
-			if (strcmp(collection[i]->member_in_collection, member) == 0)     \
-				return 1;													  \
-		return 0;
+	for (size_t i = 0; i < sbuffer_len(collection); i++)				      \
+		if (strcmp(collection[i]->member_in_collection, member) == 0)         \
+			return 1;													      \
+	return 0;
+
+#define get_from_collection(member, member_in_collection, collection)   \
+	for (size_t i = 0; i < sbuffer_len(collection); i++)                \
+		if (strcmp(collection[i]->member_in_collection, member) == 0)   \
+			return collection[i];						                \
+	return NULL;
 
 Table* table_new(Table* parent)
 {
@@ -117,4 +123,34 @@ void add_union(UnionDecl* union_decl, Table* table)
 {
 	if (!is_union_declared(union_decl->union_name, table))
 		sbuffer_add(table->unions, union_decl);
+}
+
+VarDecl* get_variable(const char* var_name, Table* table)
+{
+	for (Table* parent = table; parent != NULL; parent = parent->parent)
+		get_from_collection(var_name, type_var->var, parent->variables);
+}
+
+FuncDecl* get_function(const char* func_name, Table* table)
+{
+	for (Table* parent = table; parent != NULL; parent = parent->parent)
+		get_from_collection(func_name, func_name, parent->functions);
+}
+
+EnumDecl* get_enum(const char* enum_name, Table* table)
+{
+	for (Table* parent = table; parent != NULL; parent = parent->parent)
+		get_from_collection(enum_name, enum_name, parent->enums);
+}
+
+UnionDecl* get_union(const char* union_name, Table* table)
+{
+	for (Table* parent = table; parent != NULL; parent = parent->parent)
+		get_from_collection(union_name, union_name, parent->unions);
+}
+
+StructDecl* get_struct(const char* struct_name, Table* table)
+{
+	for (Table* parent = table; parent != NULL; parent = parent->parent)
+		get_from_collection(struct_name, struct_name, parent->structs);
 }
