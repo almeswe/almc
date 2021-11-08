@@ -141,13 +141,13 @@ Type* parse_abstract_declarator(Parser* parser, Type* type)
 		type->mods.is_ptr++;
 		get_next_token(parser);
 		return parse_abstract_declarator(parser, type);
-	case TOKEN_OP_BRACKET:
+	/*case TOKEN_OP_BRACKET:
 		type->mods.is_array++;
 		get_next_token(parser);
 		sbuffer_add(type->info.arr_dim_sizes,
 			parse_expr(parser));
 		expect_with_skip(parser, TOKEN_CL_BRACKET, "]");
-		return parse_abstract_declarator(parser, type);
+		return parse_abstract_declarator(parser, type);*/
 	default:
 		return type;
 	}
@@ -494,7 +494,6 @@ Expr* parse_sizeof_expr(Parser* parser)
 	Expr* expr = NULL;
 
 	expect_with_skip(parser, TOKEN_KEYWORD_SIZEOF, "sizeof");
-	//todo: sizeof(Lexer) works right?
 	if (!(type = try_to_get_type(parser)))
 	{
 		return expr_new(EXPR_UNARY_EXPR,
