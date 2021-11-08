@@ -68,7 +68,7 @@
 #define IS_F32(type) (strcmp(type->repr, "f32") == 0)
 #define IS_F64(type) (strcmp(type->repr, "f64") == 0)
 
-#define IS_VOID(type) (strcmp(type->repr, "void") == 0)
+#define IS_VOID(type) (type->mods.is_void)
 
 Type* get_string_type(Str* str);
 Type* get_const_type(Const* cnst);
