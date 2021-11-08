@@ -23,8 +23,8 @@
 #define F32 0x9
 #define F64 0xA
 
-#define STR  -1
-#define VOID -1
+#define STR  -0x1
+#define VOID -0x2
 //----------------------------------------
 
 #define IS_POINTER_TYPE(type) \
@@ -70,16 +70,20 @@
 
 #define IS_VOID(type) (strcmp(type->repr, "void") == 0)
 
-Type* get_expr_type(Expr* expr);
 Type* get_string_type(Str* str);
 Type* get_const_type(Const* cnst);
-Type* get_unary_expr_type(UnaryExpr* unary_expr);
-Type* get_binary_expr_type(BinaryExpr* binary_expr);
-Type* get_ternary_expr_type(TernaryExpr* ternary_expr);
+Type* get_idnt_type(Idnt* idnt, Table* table);
+
+Type* get_expr_type(Expr* expr, Table* table);
+Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table);
+Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table);
+Type* get_ternary_expr_type(TernaryExpr* ternary_expr, Table* table);
 
 uint32_t get_type_priority(Type* type);
 
 Type* cast_implicitly(Type* to, Type* type);
 uint32_t can_cast_implicitly(Type* to, Type* type);
+
+char* get_member_name(Expr* expr);
 
 #endif

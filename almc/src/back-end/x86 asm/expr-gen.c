@@ -61,6 +61,9 @@ void gen_expr2(Expr* expr, StackFrame* frame)
 	case EXPR_BINARY_EXPR:
 		gen_binary_expr2(expr->binary_expr, frame);
 		break;
+	case EXPR_FUNC_CALL:
+		gen_func_call(expr->func_call, frame);
+		break;
 	default:
 		assert(0);
 	}
@@ -144,10 +147,11 @@ void gen_binary_expr2(BinaryExpr* binary_expr, StackFrame* frame)
 	#define RESERVE_TEMP_REG  \
 		temp_reg = get_unreserved_register(frame->regtable)
 
-	#define GEN_ASSIGN_EXPR(action)               \
+	#define GEN_ASSIGN_EXPR(action)           \
+		action;                               \
 		to = gen_idnt_addr(                   \
 			binary_expr->lexpr->idnt, frame); \
-		action; 							  \
+		MOV32(to, get_register_str(EAX));     \
 		free(to)
 
 	int temp_reg;
@@ -194,7 +198,7 @@ void gen_binary_expr2(BinaryExpr* binary_expr, StackFrame* frame)
 	switch (binary_expr->type)
 	{
 	case BINARY_ASSIGN:
-		MOV32(to, from);
+		GEN_ASSIGN_EXPR(MOV32(to, from));
 		break;
 	case BINARY_ADD:
 		ADD32(to, from);
@@ -267,4 +271,15 @@ void gen_binary_expr2(BinaryExpr* binary_expr, StackFrame* frame)
 
 #undef GEN_ASSIGN_EXPR
 #undef RESERVE_TEMP_REG
+}
+
+void gen_func_call(FuncCall* func_call, StackFrame* frame)
+{
+	for (int i = sbuffer_len(func_call->func_args) - 1; i >= 0; i--)
+	{
+		gen_expr2(func_call->func_args[i], frame);
+		unreserve_register(frame->regtable, EAX);
+		PUSH32(get_register_str(EAX));
+	}
+	OUT(frmt("call %s", func_call->func_name));
 }

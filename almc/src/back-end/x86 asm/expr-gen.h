@@ -30,14 +30,10 @@ typedef struct x86_ExprGenerator
 ExprGenerator* expr_gen_new(RegisterTable* regtable);
 void expr_gen_free(ExprGenerator* expr_gen);
 
-void gen_expr(ExprGenerator* expr_gen, Expr* expr);
-void gen_primary_expr(ExprGenerator* expr_gen, Expr* prim_expr, int reg);
-void gen_unary_expr(ExprGenerator* expr_gen, UnaryExpr* unary_expr);
-void gen_binary_expr(ExprGenerator* expr_gen, BinaryExpr* binary_expr);
-
 void gen_expr2(Expr* expr, StackFrame* frame);
 void gen_primary_expr2(Expr* prim_expr, int reg, StackFrame* frame);
 void gen_unary_expr2(UnaryExpr* unary_expr, StackFrame* frame);
 void gen_binary_expr2(BinaryExpr* binary_expr, StackFrame* frame);
+void gen_func_call(FuncCall* func_call, StackFrame* frame);
 
 #endif 

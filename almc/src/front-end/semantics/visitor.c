@@ -1,5 +1,4 @@
 #include "visitor.h"
-#include "assert.h"
 
 Visitor* visitor_new()
 {
@@ -29,7 +28,7 @@ void visit_stmt(Stmt* stmt, Table* table)
 	switch (stmt->type)
 	{
 	case STMT_EXPR:
-		visit_expr(stmt->expr_stmt->expr, table);
+		//visit_expr(stmt->expr_stmt->expr, table);
 		break;
 	case STMT_BLOCK:
 		visit_block(stmt->block, table_new(table));

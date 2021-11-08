@@ -6,7 +6,8 @@
 #include "expr-gen.h"
 #include "..\..\utils\common.h"
 
-void gen_var_decl(VarDecl* var_decl, StackFrame* frame);
-void gen_func_decl(FuncDecl* func_decl);
+void gen_var_decl_stmt(VarDecl* var_decl, StackFrame* frame);
+void gen_func_decl_stmt(FuncDecl* func_decl);
+void gen_stmt(Stmt* stmt, StackFrame* frame);
 
 #endif

@@ -26,53 +26,49 @@ int type_test()
 {
 	while (1)
 	{
+		Type* type = cnew_s(Type, type, 1);
+		type->mods.is_predefined = 1;
+		type->mods.is_ptr = 2;
+		type->repr = "i32";
+
+		Type* type1 = cnew_s(Type, type, 1);
+		type1->mods.is_ptr = 1;
+		type1->repr = "StructType";
+
+		TypeVar** type_vars = NULL;
+		sbuffer_add(type_vars, type_var_new(type, "mmbr"));
+
+		StructDecl* struct_decl = struct_decl_new(
+			type_vars, "StructType");
+
+		VarDecl* var_decl = var_decl_new(type_var_new(
+			type1, "a"), NULL);
+
 		char buffer[50];
 		char* input = gets(buffer);
 		Lexer* lexer = lexer_new(
 			input, FROM_CHAR_PTR);
 		Parser* parser = parser_new(NULL, lex(lexer));
 		Expr* expr = parse_expr(parser);
+		
+		Visitor* visitor = visitor_new();
+		add_variable(var_decl, visitor->global);
+		add_struct(struct_decl, visitor->global);
 
-		print_type(get_expr_type(expr), "");
+		print_type(get_expr_type(expr, visitor->global), "");
 
 		lexer_free(lexer);
 		parser_free(parser);
+		visitor_free(visitor);
 		expr_free(expr);
+		var_decl_free(var_decl);
 		clear_imported_modules();
 	}
-}
-
-int cast_test()
-{
-	char* types[] = {
-		"u8",
-		"i8",
-		"chr",
-		"u16",
-		"i16",
-		"u32",
-		"i32",
-		"u64",
-		"i64",
-		"f32",
-		"f64"
-	};
-	Type* type = cnew_s(Type, type, 1);
-	Type* type1 = cnew_s(Type, type1, 1);
-
-	for (int i = 0; i < 11; i++)
-		for (int j = 0; j < 11; j++)
-		{
-			type->repr = types[i];
-			type1->repr = types[j];
-			printf("Cast %s to %s is %d\n", type1->repr, type->repr, can_cast_implicitly(type, type1));
-		}
 }
 
 int main(int argc, char** argv)
 {
 	//test();
-	//cast_test();
 	type_test();
 	run_tests();
 	return 0;

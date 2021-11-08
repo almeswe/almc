@@ -1,6 +1,26 @@
 #include "gen.h"
 
-void gen_var_decl(VarDecl* var_decl, StackFrame* frame)
+void gen_jump_stmt(JumpStmt* jump_stmt, StackFrame* frame)
+{
+	switch (jump_stmt->type)
+	{
+	case JUMP_RETURN:
+		if (jump_stmt->additional_expr)
+			gen_expr2(jump_stmt->additional_expr, frame);
+		MOV32(get_register_str(ESP), get_register_str(EBP));
+		POP32(get_register_str(EBP));
+		OUT("ret");
+		break;
+	case JUMP_GOTO:
+		OUT(frmt("jmp  %s", 
+			jump_stmt->additional_expr->idnt->svalue));
+		break;
+	default:
+		assert(0);
+	}
+}
+
+void gen_var_decl_stmt(VarDecl* var_decl, StackFrame* frame)
 {
 	add_local(var_decl, frame);
 	int size = get_type_size(
@@ -28,8 +48,14 @@ void gen_stmt(Stmt* stmt, StackFrame* frame)
 	case STMT_EXPR:
 		gen_expr2(stmt->expr_stmt->expr, frame);
 		break;
+	case STMT_JUMP:
+		gen_jump_stmt(stmt->jump_stmt, frame);
+		break;
 	case STMT_VAR_DECL:
-		gen_var_decl(stmt->var_decl, frame);
+		gen_var_decl_stmt(stmt->var_decl, frame);
+		break;
+	case STMT_FUNC_DECL:
+		gen_func_decl_stmt(stmt->func_decl);
 		break;
 	default:
 		assert(0);
@@ -42,9 +68,9 @@ void gen_block(Block* block, StackFrame* frame)
 		gen_stmt(block->stmts[i], frame);
 }
 
-void gen_func_decl(FuncDecl* func_decl)
+void gen_func_decl_stmt(FuncDecl* func_decl)
 {
-	OUT(frmt("%s proc", func_decl->func_name));
+	printf(frmt("%s proc\n", func_decl->func_name));
 
 	// header
 	PUSH32(get_register_str(ESP));
@@ -56,8 +82,11 @@ void gen_func_decl(FuncDecl* func_decl)
 	//todo: free stack frame
 	
 	// footer
-	MOV32(get_register_str(ESP), get_register_str(EBP));
-	POP32(get_register_str(EBP));
-
-	OUT(frmt("%s endp", func_decl->func_name));
+	if (frame->return_stmt_mentioned)
+	{
+		MOV32(get_register_str(ESP), get_register_str(EBP));
+		POP32(get_register_str(EBP));
+		OUT("ret");
+	}
+	printf(frmt("%s endp\n", func_decl->func_name));
 }
