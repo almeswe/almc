@@ -29,6 +29,7 @@ typedef struct Type
 {
 	TypeMods mods;
 	TypeInfo info;
+	SrcArea* area;
 	const char* repr;
 } Type;
 
@@ -57,6 +58,7 @@ typedef struct UnaryExpr
 {
 	Expr* expr;
 	Type* cast_type;
+	SrcArea* area;
 	UnaryExprType type;
 } UnaryExpr;
 
@@ -108,6 +110,7 @@ typedef struct BinaryExpr
 {
 	Expr* lexpr;
 	Expr* rexpr;
+	SrcArea* area;
 	BinaryExprType type;
 } BinaryExpr;
 
@@ -116,6 +119,7 @@ typedef struct TernaryExpr
 	Expr* cond;
 	Expr* lexpr;
 	Expr* rexpr;
+	SrcArea* area;
 } TernaryExpr;
 
 typedef struct Str
@@ -152,12 +156,14 @@ typedef struct Const
 typedef struct FuncCall
 {
 	Expr** func_args;
+	SrcArea* area;
 	const char* func_name;
 } FuncCall;
 
 typedef struct Initializer
 {
 	Expr** values;
+	SrcArea* area;
 } Initializer;
 
 typedef enum ExprType

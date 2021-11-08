@@ -9,6 +9,14 @@
 #define expect_with_skip(parser, type, str) expect(parser, type, str), get_next_token(parser)
 #define token_index_fits(parser) (parser->token_index >= 0 && parser->token_index < sbuffer_len(parser->tokens))
 
+#define context_starts(parser, var_name) \
+	SrcContext* var_name = get_curr_token(parser)->context
+
+#define context_ends(parser, starts, node) \
+	new__chk(node);                        \
+	node->area = src_area_new(starts,      \
+		get_curr_token(parser)->context)
+
 #define TOKEN_PREDEFINED_TYPE     \
 	     TOKEN_KEYWORD_VOID:	  \
 	case TOKEN_KEYWORD_CHAR:      \
@@ -179,6 +187,7 @@ Type* parse_type_name(Parser* parser)
 				   | idnt
 	*/
 
+	context_starts(parser, context);
 	Type* type = cnew_s(Type, type, 1);
 	Token* token = get_curr_token(parser);
 
@@ -190,7 +199,9 @@ Type* parse_type_name(Parser* parser)
 		type->mods.is_predefined = (token->type != TOKEN_IDNT);
 		type->mods.is_void = (token->type == TOKEN_KEYWORD_VOID);
 		get_next_token(parser);
-		return parse_abstract_declarator(parser, type);
+		type = parse_abstract_declarator(parser, type);
+		context_ends(parser, context, type);
+		return type;
 	default:
 		report_error(frmt("Type expected, but met: %s",
 			token_type_tostr(token->type)), token->context);
@@ -209,8 +220,10 @@ Expr* parse_paren_expr(Parser* parser)
 Expr* parse_func_call_expr(Parser* parser)
 {
 	Expr** func_args = NULL;
-	const char* func_name = get_curr_token(parser)->svalue;
+	const char* func_name = 
+		get_curr_token(parser)->svalue;
 
+	context_starts(parser, context);
 	expect_with_skip(parser, TOKEN_IDNT, "func name");
 	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
 	if (!matcht(parser, TOKEN_CL_PAREN))
@@ -223,8 +236,27 @@ Expr* parse_func_call_expr(Parser* parser)
 		} while (matcht(parser, TOKEN_COMMA));
 	}
 	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
-	return expr_new(EXPR_FUNC_CALL,
+	Expr* expr = expr_new(EXPR_FUNC_CALL,
 		func_call_new(func_name, func_args));
+	context_ends(parser, context, expr->func_call);
+	return expr;
+}
+
+Expr* parse_idnt_ambigulty(Parser* parser)
+{
+	get_next_token(parser);
+	if (matcht(parser, TOKEN_OP_PAREN))
+	{
+		unget_curr_token(parser);
+		return parse_func_call_expr(parser);
+	}
+	else
+	{
+		unget_curr_token(parser);
+		return expr_new(EXPR_IDNT,
+			idnt_new(get_curr_token(parser)->svalue,
+				get_curr_token(parser)->context));
+	}
 }
 
 Expr* parse_primary_expr(Parser* parser)
@@ -243,18 +275,7 @@ Expr* parse_primary_expr(Parser* parser)
 			const_new(CONST_FLOAT, token->svalue, token->context));
 		break;
 	case TOKEN_IDNT:
-		get_next_token(parser);
-		if (matcht(parser, TOKEN_OP_PAREN))
-		{
-			unget_curr_token(parser);
-			return parse_func_call_expr(parser);
-		}
-		else
-		{
-			unget_curr_token(parser);
-			expr = expr_new(EXPR_IDNT,
-				idnt_new(token->svalue, token->context));
-		}
+		expr = parse_idnt_ambigulty(parser);
 		break;
 	case TOKEN_STRING:
 		expr = expr_new(EXPR_STRING,
@@ -271,7 +292,7 @@ Expr* parse_primary_expr(Parser* parser)
 	case TOKEN_KEYWORD_TRUE:
 	case TOKEN_KEYWORD_FALSE:
 		expr = expr_new(EXPR_CONST,
-			const_new(CONST_INT, (int64_t)(token->type == TOKEN_KEYWORD_TRUE ? 1 : 0), token->context));
+			const_new(CONST_INT, (int64_t)(token->type == TOKEN_KEYWORD_TRUE ? "1" : "0"), token->context));
 		break;
 	default:
 		report_error(frmt("Primary expression token expected, but met: %s",
@@ -283,18 +304,20 @@ Expr* parse_primary_expr(Parser* parser)
 
 Expr* parse_postfix_xxcrement_expr(Parser* parser, Expr* expr, TokenKind xxcrmt_type)
 {
-	Expr* unary_expr = NULL;
+	Expr* uexpr = NULL;
+	context_starts(parser, context);
 	Token* token = get_curr_token(parser);
 
 	switch (token->type)
 	{
 	case TOKEN_INC:
 	case TOKEN_DEC:
-		unary_expr = expr_new(EXPR_UNARY_EXPR,
-			unary_expr_new(xxcrmt_type == TOKEN_INC ? UNARY_POSTFIX_INC : UNARY_POSTFIX_DEC, 
-				expr));
+		uexpr = expr_new(EXPR_UNARY_EXPR,
+			unary_expr_new(xxcrmt_type == TOKEN_INC ? 
+				UNARY_POSTFIX_INC : UNARY_POSTFIX_DEC, expr));
 		get_next_token(parser);
-		return unary_expr;
+		context_ends(parser, context, uexpr->unary_expr);
+		return uexpr;
 	default:
 		report_error(frmt("Expected postfix (in/de)crement, but met: %s",
 			token_type_tostr(token->type)), token->context);
@@ -303,16 +326,21 @@ Expr* parse_postfix_xxcrement_expr(Parser* parser, Expr* expr, TokenKind xxcrmt_
 
 Expr* parse_array_accessor_expr(Parser* parser, Expr* rexpr)
 {
+	context_starts(parser, context);
 	expect_with_skip(parser, TOKEN_OP_BRACKET, "[");
 	Expr* expr = expr_new(EXPR_BINARY_EXPR,
 		binary_expr_new(BINARY_ARR_MEMBER_ACCESSOR, rexpr, parse_expr(parser)));
 	expect_with_skip(parser, TOKEN_CL_BRACKET, "]");
+	context_ends(parser, context, expr->binary_expr);
 	return expr;
 }
 
 Expr* parse_member_accessor_expr(Parser* parser, Expr* rexpr, TokenKind accessor_type)
 {
+	Expr* member_accessor = NULL;
+	context_starts(parser, context);
 	Token* token = get_curr_token(parser);
+
 	switch (accessor_type)
 	{
 	case TOKEN_DOT:
@@ -323,9 +351,11 @@ Expr* parse_member_accessor_expr(Parser* parser, Expr* rexpr, TokenKind accessor
 			report_error(frmt("Expected identifier as acessed member, but met: %s",
 				token_type_tostr(token->type)), token->context);
 		get_next_token(parser);
-		return expr_new(EXPR_BINARY_EXPR, 
+		member_accessor = expr_new(EXPR_BINARY_EXPR, 
 			binary_expr_new(accessor_type == TOKEN_DOT ? BINARY_MEMBER_ACCESSOR : BINARY_PTR_MEMBER_ACCESSOR,
 				rexpr, expr_new(EXPR_IDNT, idnt_new(token->svalue, token->context))));
+		context_ends(parser, context, member_accessor->binary_expr);
+		return member_accessor;
 	default:
 		report_error(frmt("Expected member accessor, but met: %s",
 			token_type_tostr(token->type)), token->context);
@@ -395,15 +425,20 @@ Expr* parse_unary_expr(Parser* parser)
 
 	*/
 
-#define unary_cast_case(parser, type)  \
-	get_next_token(parser);			   \
-    return expr_new(EXPR_UNARY_EXPR,   \
-		unary_expr_new(type, parse_cast_expr(parser)))
+	Expr* expr = NULL;
+	context_starts(parser, context);
 
-#define unary_unary_case(parser, type) \
-	get_next_token(parser);			   \
-    return expr_new(EXPR_UNARY_EXPR,   \
-		unary_expr_new(type, parse_unary_expr(parser)))
+#define unary_cast_case(parser, type)                   \
+	get_next_token(parser);			                    \
+    expr = expr_new(EXPR_UNARY_EXPR,                    \
+		unary_expr_new(type, parse_cast_expr(parser))); \
+	context_ends(parser, context, expr->unary_expr)
+
+#define unary_unary_case(parser, type)                   \
+	get_next_token(parser);			                     \
+    expr = expr_new(EXPR_UNARY_EXPR,                     \
+		unary_expr_new(type, parse_unary_expr(parser))); \
+	context_ends(parser, context, expr->unary_expr)
 
 	switch (get_curr_token(parser)->type)
 	{
@@ -477,9 +512,11 @@ Expr* parse_cast_expr(Parser* parser)
 		return parse_unary_expr(parser);
 	else
 	{
+		context_starts(parser, context);
 		expr = expr_new(EXPR_UNARY_EXPR,
 			unary_expr_new(UNARY_CAST, parse_cast_expr(parser)));
 		expr->unary_expr->cast_type = type;
+		context_ends(parser, context, expr->unary_expr);
 		return expr;
 	}
 }
@@ -492,20 +529,20 @@ Expr* parse_sizeof_expr(Parser* parser)
 	*/
 	Type* type = NULL;
 	Expr* expr = NULL;
+	context_starts(parser, context);
 
 	expect_with_skip(parser, TOKEN_KEYWORD_SIZEOF, "sizeof");
 	if (!(type = try_to_get_type(parser)))
-	{
-		return expr_new(EXPR_UNARY_EXPR,
+		expr = expr_new(EXPR_UNARY_EXPR,
 			unary_expr_new(UNARY_SIZEOF, parse_unary_expr(parser)));
-	}
 	else
 	{
 		expr = expr_new(EXPR_UNARY_EXPR,
 			unary_expr_new(UNARY_SIZEOF, NULL));
 		expr->unary_expr->cast_type = type;
-		return expr;
 	}
+	context_ends(parser, context, expr->unary_expr);
+	return expr;
 }
 
 Expr* parse_mul_arith_expr(Parser* parser)
@@ -518,6 +555,7 @@ Expr* parse_mul_arith_expr(Parser* parser)
 	*/
 
 	Expr* mul_expr = NULL;
+	context_starts(parser, context);
 	Expr* unary_expr = parse_cast_expr(parser);
 
 	while (matcht(parser, TOKEN_SLASH)
@@ -537,6 +575,7 @@ Expr* parse_mul_arith_expr(Parser* parser)
 		get_next_token(parser);
 		mul_expr = expr_new(EXPR_BINARY_EXPR,
 			binary_expr_new(type, (mul_expr) ? mul_expr : unary_expr, parse_cast_expr(parser)));
+		context_ends(parser, context, mul_expr->binary_expr);
 	}
 	return (mul_expr) ? mul_expr : unary_expr;
 }
@@ -550,6 +589,7 @@ Expr* parse_add_arith_expr(Parser* parser)
 	*/
 
 	Expr* add_expr = NULL;
+	context_starts(parser, context);
 	Expr* mul_expr = parse_mul_arith_expr(parser);
 
 	while (matcht(parser, TOKEN_PLUS)
@@ -566,6 +606,7 @@ Expr* parse_add_arith_expr(Parser* parser)
 		get_next_token(parser);
 		add_expr = expr_new(EXPR_BINARY_EXPR,
 			binary_expr_new(type, (add_expr) ? add_expr : mul_expr, parse_mul_arith_expr(parser)));
+		context_ends(parser, context, add_expr->binary_expr);
 	}
 	return (add_expr) ? add_expr : mul_expr;
 }
@@ -579,6 +620,7 @@ Expr* parse_sft_expr(Parser* parser)
 	*/
 
 	Expr* sft_expr = NULL;
+	context_starts(parser, context);
 	Expr* add_expr = parse_add_arith_expr(parser);
 
 	while (matcht(parser, TOKEN_LSHIFT)
@@ -595,6 +637,7 @@ Expr* parse_sft_expr(Parser* parser)
 		get_next_token(parser);
 		sft_expr = expr_new(EXPR_BINARY_EXPR,
 			binary_expr_new(type, (sft_expr) ? sft_expr : add_expr, parse_add_arith_expr(parser)));
+		context_ends(parser, context, sft_expr->binary_expr);
 	}
 	return (sft_expr) ? sft_expr : add_expr;
 }
@@ -610,6 +653,7 @@ Expr* parse_rel_expr(Parser* parser)
 	*/
 
 	Expr* rel_expr = NULL;
+	context_starts(parser, context);
 	Expr* sft_expr = parse_sft_expr(parser);
 
 	while (matcht(parser, TOKEN_LEFT_ANGLE)
@@ -632,6 +676,7 @@ Expr* parse_rel_expr(Parser* parser)
 		get_next_token(parser);
 		rel_expr = expr_new(EXPR_BINARY_EXPR,
 			binary_expr_new(type, (rel_expr) ? rel_expr : sft_expr, parse_sft_expr(parser)));
+		context_ends(parser, context, rel_expr->binary_expr);
 	}
 	return (rel_expr) ? rel_expr : sft_expr;
 }
@@ -645,6 +690,7 @@ Expr* parse_equ_expr(Parser* parser)
 	*/
 
 	Expr* equ_expr = NULL;
+	context_starts(parser, context);
 	Expr* rel_expr = parse_rel_expr(parser);
 
 	while (matcht(parser, TOKEN_LG_EQ)
@@ -661,6 +707,7 @@ Expr* parse_equ_expr(Parser* parser)
 		get_next_token(parser);
 		equ_expr = expr_new(EXPR_BINARY_EXPR,
 			binary_expr_new(type, (equ_expr) ? equ_expr : rel_expr, parse_rel_expr(parser)));
+		context_ends(parser, context, equ_expr->binary_expr);
 	}
 	return (equ_expr) ? equ_expr : rel_expr;
 }
@@ -673,6 +720,7 @@ Expr* parse_and_bw_expr(Parser* parser)
 	*/
 
 	Expr* and_expr = NULL;
+	context_starts(parser, context);
 	Expr* equ_expr = parse_equ_expr(parser);
 
 	while (matcht(parser, TOKEN_AMPERSAND))
@@ -680,6 +728,7 @@ Expr* parse_and_bw_expr(Parser* parser)
 		get_next_token(parser);
 		and_expr = expr_new(EXPR_BINARY_EXPR,
 			binary_expr_new(BINARY_BW_AND, (and_expr) ? and_expr : equ_expr, parse_equ_expr(parser)));
+		context_ends(parser, context, and_expr->binary_expr);
 	}
 	return (and_expr) ? and_expr : equ_expr;
 }
@@ -693,6 +742,7 @@ Expr* parse_xor_bw_expr(Parser* parser)
 	*/
 
 	Expr* xor_expr = NULL;
+	context_starts(parser, context);
 	Expr* and_expr = parse_and_bw_expr(parser);
 
 	while (matcht(parser, TOKEN_CARET))
@@ -700,6 +750,7 @@ Expr* parse_xor_bw_expr(Parser* parser)
 		get_next_token(parser);
 		xor_expr = expr_new(EXPR_BINARY_EXPR,
 			binary_expr_new(BINARY_BW_XOR, (xor_expr) ? xor_expr : and_expr, parse_and_bw_expr(parser)));
+		context_ends(parser, context, xor_expr->binary_expr);
 	}
 	return (xor_expr) ? xor_expr : and_expr;
 }
@@ -712,6 +763,7 @@ Expr* parse_or_bw_expr(Parser* parser)
 	*/
 
 	Expr* or_expr = NULL;
+	context_starts(parser, context);
 	Expr* xor_expr = parse_xor_bw_expr(parser);
 
 	while (matcht(parser, TOKEN_BAR))
@@ -719,6 +771,7 @@ Expr* parse_or_bw_expr(Parser* parser)
 		get_next_token(parser);
 		or_expr = expr_new(EXPR_BINARY_EXPR,
 			binary_expr_new(BINARY_BW_OR, (or_expr) ? or_expr : xor_expr, parse_xor_bw_expr(parser)));
+		context_ends(parser, context, or_expr->binary_expr);
 	}
 	return (or_expr) ? or_expr : xor_expr;
 }
@@ -731,6 +784,7 @@ Expr* parse_and_lg_expr(Parser* parser)
 	*/
 
 	Expr* and_expr = NULL;
+	context_starts(parser, context);
 	Expr* or_expr = parse_or_bw_expr(parser);
 
 	while (matcht(parser, TOKEN_LG_AND))
@@ -738,6 +792,7 @@ Expr* parse_and_lg_expr(Parser* parser)
 		get_next_token(parser);
 		and_expr = expr_new(EXPR_BINARY_EXPR,
 			binary_expr_new(BINARY_LG_AND, (and_expr) ? and_expr : or_expr, parse_or_bw_expr(parser)));
+		context_ends(parser, context, and_expr->binary_expr);
 	}
 	return (and_expr) ? and_expr : or_expr;
 }
@@ -749,6 +804,7 @@ Expr* parse_or_lg_expr(Parser* parser)
                           | <logical-or-expression> || <logical-and-expression>
 	*/
 	Expr* lg_or_expr = NULL;
+	context_starts(parser, context);
 	Expr* and_expr = parse_and_lg_expr(parser);
 
 	while (matcht(parser, TOKEN_LG_OR))
@@ -756,6 +812,7 @@ Expr* parse_or_lg_expr(Parser* parser)
 		get_next_token(parser);
 		lg_or_expr = expr_new(EXPR_BINARY_EXPR,
 			binary_expr_new(BINARY_LG_OR, (lg_or_expr) ? lg_or_expr : and_expr, parse_and_lg_expr(parser)));
+		context_ends(parser, context, lg_or_expr->binary_expr);
 	}
 	return (lg_or_expr) ? lg_or_expr : and_expr;
 }
@@ -768,6 +825,7 @@ Expr* parse_conditional_expr(Parser* parser)
 	*/
 
 	Expr* cond_expr = NULL;
+	context_starts(parser, context);
 	Expr* or_expr = parse_or_lg_expr(parser);
 
 	while (matcht(parser, TOKEN_QUESTION))
@@ -777,6 +835,7 @@ Expr* parse_conditional_expr(Parser* parser)
 		expect_with_skip(parser, TOKEN_COLON, ":");
 		cond_expr = expr_new(EXPR_TERNARY_EXPR,
 			ternary_expr_new((cond_expr) ? cond_expr : or_expr, lexpr, parse_conditional_expr(parser)));
+		context_ends(parser, context, cond_expr->ternary_expr);
 	}
 	return (cond_expr) ? cond_expr : or_expr;
 }
@@ -806,6 +865,7 @@ Expr* parse_assignment_expr(Parser* parser)
 	*/
 
 	Expr* assign_expr = NULL;
+	context_starts(parser, context);
 	Expr* cond_expr = parse_conditional_expr(parser);
 
 	while (matcht(parser, TOKEN_ASSIGN)
@@ -856,14 +916,16 @@ Expr* parse_assignment_expr(Parser* parser)
 				binary_expr_new(type, (assign_expr) ? assign_expr : cond_expr, parse_initializer_expr(parser)));
 		assign_expr = expr_new(EXPR_BINARY_EXPR,
 			binary_expr_new(type, (assign_expr) ? assign_expr : cond_expr, parse_assignment_expr(parser)));
+		context_ends(parser, context, assign_expr->binary_expr);
 	}
 	return (assign_expr) ? assign_expr : cond_expr;
 }
 
 Expr* parse_initializer_expr(Parser* parser)
 {
-	Expr** values =	0;
+	Expr** values =	NULL;
 
+	context_starts(parser, context);
 	expect_with_skip(parser, TOKEN_OP_BRACE, "{");
 	while (!matcht(parser, TOKEN_CL_BRACE))
 	{
@@ -872,8 +934,10 @@ Expr* parse_initializer_expr(Parser* parser)
 			expect_with_skip(parser, TOKEN_COMMA, ",");
 	}
 	expect_with_skip(parser, TOKEN_CL_BRACE, "}");
-	return expr_new(EXPR_INITIALIZER, 
+	Expr* expr = expr_new(EXPR_INITIALIZER, 
 		initializer_new(values));
+	context_ends(parser, context, expr->initializer);
+	return expr;
 }
 
 Stmt* parse_stmt(Parser* parser)

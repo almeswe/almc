@@ -25,7 +25,7 @@ void src_context_free(SrcContext* context)
 
 char* src_area_tostr(SrcArea* area)
 {
-	return frmt("starts at: line: %d, position: %s | ends at: line: %d, position: %d, file: \'%s\'",
+	return frmt("starts at: line: %d, position: %d | ends at: line: %d, position: %d, file: \'%s\'",
 		area->begins->line, area->begins->start, area->ends->line, area->ends->start, area->begins->file);
 }
 
