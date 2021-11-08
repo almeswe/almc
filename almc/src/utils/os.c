@@ -19,7 +19,6 @@ char* get_curr_dir()
 
 char* get_root(const char* path)
 {
-	//todo: this function is really unsafe
 	char* disk = (char*)malloc(sizeof(char) * 4);
 	if (!disk)
 		return NULL;
