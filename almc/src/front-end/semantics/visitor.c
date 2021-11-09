@@ -132,7 +132,7 @@ void visit_idnt(Idnt* idnt, Table* table)
 
 void visit_unary_expr(Expr* expr, Table* table)
 {
-	switch (expr->unary_expr->type)
+	switch (expr->unary_expr->kind)
 	{
 	case UNARY_DEREFERENCE:
 		if (!is_addressable_value(expr))
@@ -157,7 +157,7 @@ void visit_binary_expr(Expr* expr, Table* table)
 {
 	//todo: add type determinated logic for shifts, bitwises etc.
 
-	switch (expr->binary_expr->type)
+	switch (expr->binary_expr->kind)
 	{
 	case BINARY_ADD:
 	case BINARY_SUB:
@@ -369,13 +369,13 @@ int is_addressable_value(Expr* expr)
 	case EXPR_IDNT:
 		return 1;
 	case EXPR_UNARY_EXPR:
-		switch (expr->unary_expr->type)
+		switch (expr->unary_expr->kind)
 		{
 		case UNARY_PREFIX_INC:
 		case UNARY_PREFIX_DEC:
 		case UNARY_POSTFIX_INC:
 		case UNARY_POSTFIX_DEC:
-			return expr->unary_expr->type == EXPR_IDNT;
+			return expr->unary_expr->kind == EXPR_IDNT;
 
 		case UNARY_DEREFERENCE:
 			switch (expr->unary_expr->expr->type)
@@ -397,7 +397,7 @@ int is_addressable_value(Expr* expr)
 		}
 		break;
 	case EXPR_BINARY_EXPR:
-		switch (expr->binary_expr->type)
+		switch (expr->binary_expr->kind)
 		{
 		case BINARY_MEMBER_ACCESSOR:
 		case BINARY_PTR_MEMBER_ACCESSOR:

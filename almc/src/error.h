@@ -8,7 +8,10 @@
 
 #include "utils\context.h"
 
+char** create_spell_lines(SrcContext* context);
+
 void report_error(const char* message, SrcContext* context);
+void report_error2(const char* message, SrcArea* area);
 void report_warning(const char* message, SrcContext* context);
 
 #endif //ALMC_ERROR_H

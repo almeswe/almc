@@ -7,7 +7,7 @@ int32_t eval_const(Const* cnst)
 
 int32_t eval_uexpr(UnaryExpr* uexpr)
 {
-	switch (uexpr->type)
+	switch (uexpr->kind)
 	{
 	case UNARY_PLUS:
 		return eval_expr(uexpr->expr);
@@ -24,7 +24,7 @@ int32_t eval_uexpr(UnaryExpr* uexpr)
 
 int32_t eval_bexpr(BinaryExpr* bexpr)
 {
-	switch (bexpr->type)
+	switch (bexpr->kind)
 	{
 	case BINARY_ADD:
 		return (eval_expr(bexpr->lexpr)

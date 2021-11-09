@@ -42,8 +42,8 @@ void src_area_free(SrcArea* area)
 {
 	if (area)
 	{
-		src_context_free(area->begins);
-		src_context_free(area->ends);
+		//src_context_free(area->begins);
+		//src_context_free(area->ends);
 		free(area);
 	}
 }

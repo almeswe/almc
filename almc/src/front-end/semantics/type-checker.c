@@ -2,24 +2,43 @@
 
 #define type_dup(type, type_name)            \
 	Type* type_name = cnew_s(Type, type, 1); \
+	new__chk(type_name);					 \
 	type_name->mods = type->mods;            \
-	type_name->info = type->info;            \
-	type_name->repr = _strdup(type->repr);
+	type_name->repr = _strdup(type->repr)
+
+#define type_dup_no_alloc(type, type_name) \
+	type_name = cnew_s(Type, type, 1);     \
+	new__chk(type_name);				   \
+	type_name->mods = type->mods;          \
+	type_name->repr = _strdup(type->repr)
 
 Type* get_expr_type(Expr* expr, Table* table)
 {
+#define set_and_return_type(type, to_node) \
+	type_dup_no_alloc(type, type_new);     \
+	to_node->type = type_new;              \
+	return type_new
+
+	Type* type = NULL;
+	Type* type_new = NULL;
+
 	switch (expr->type)
 	{
 	case EXPR_IDNT:
-		return get_idnt_type(expr->idnt, table);
+		type = get_idnt_type(expr->idnt, table);
+		set_and_return_type(type, expr->idnt);
 	case EXPR_CONST:
-		return get_const_type(expr->cnst);
+		type = get_const_type(expr->cnst);
+		set_and_return_type(type, expr->cnst);
 	case EXPR_STRING:
-		return get_string_type(expr->str);
+		type = get_string_type(expr->str);
+		set_and_return_type(type, expr->str);
 	case EXPR_UNARY_EXPR:
-		return get_unary_expr_type(expr->unary_expr, table);
+		type = get_unary_expr_type(expr->unary_expr, table);
+		set_and_return_type(type, expr->unary_expr);
 	case EXPR_BINARY_EXPR:
-		return get_binary_expr_type(expr->unary_expr, table);
+		type = get_binary_expr_type(expr->unary_expr, table);
+		set_and_return_type(type, expr->binary_expr);
 	default:
 		assert(0);
 	}
@@ -30,7 +49,7 @@ Type* get_const_type(Const* cnst)
 	Type* type = cnew_s(Type, type, 1);
 	type->mods.is_predefined = 1;
 
-	switch (cnst->type)
+	switch (cnst->kind)
 	{
 	case CONST_INT:
 		type->repr = cnst->ivalue <= INT32_MAX &&
@@ -66,7 +85,10 @@ Type* get_string_type(Str* str)
 Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 {
 	Type* type = get_expr_type(unary_expr->expr, table);
-	switch (unary_expr->type)
+	type_dup(type, new_type);
+	unary_expr->type = (type = new_type);
+
+	switch (unary_expr->kind)
 	{
 	//-----------------------------
 	// operators that can be applied with numeric types & pointers
@@ -75,7 +97,8 @@ Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 	case UNARY_LG_NOT:
 		if (IS_NUMERIC_TYPE(type) || IS_POINTER_TYPE(type))
 			return type;
-		report_error("Cannot use this operator with this operand type.", NULL);
+		report_error2("Cannot use this operator with this operand type.",
+			unary_expr->area);
 	//-----------------------------
 
 	//-----------------------------
@@ -87,7 +110,8 @@ Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 	case UNARY_POSTFIX_DEC:
 		if (IS_INTEGRAL_TYPE(type) || IS_POINTER_TYPE(type))
 			return type;
-		report_error("Cannot use this operator with this operand type.", NULL);
+		report_error2("Cannot use this operator with this operand type.",
+			unary_expr->area);
 	//-----------------------------
 
 	//-----------------------------
@@ -97,8 +121,8 @@ Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 		return type;
 	case UNARY_DEREFERENCE:
 		if (!IS_POINTER_TYPE(type))
-			report_error(frmt("Cannot dereference value type of [%s].",
-				type->repr), NULL);
+			report_error2(frmt("Cannot dereference value type of [%s].",
+				type->repr), unary_expr->area);
 		type->mods.is_ptr -= 1;
 		return type;
 	//-----------------------------
@@ -128,7 +152,7 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 	// variable needed for containing possible value of struct or union (see accessor's part)
 	void* type_decl_stmt = NULL; 
 
-	switch (binary_expr->type)
+	switch (binary_expr->kind)
 	{
 	//-----------------------------
 	// assign operators need only one check for implicit cast (to left assignable type) 
@@ -144,7 +168,8 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 		if ((IS_NUMERIC_TYPE(ltype) || IS_POINTER_TYPE(ltype)) &&
 			(IS_NUMERIC_TYPE(rtype) || IS_POINTER_TYPE(rtype)))
 				return cast_implicitly(ltype, rtype);
-		report_error("Cannot use this operator with this operand types.", NULL);
+		report_error2("Cannot use this operator with this operand types.", 
+			binary_expr->area);
 
 	// assign operators that needs integral or pointer type
 	case BINARY_MOD_ASSIGN:
@@ -156,7 +181,8 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 		if ((IS_INTEGRAL_TYPE(ltype) || IS_POINTER_TYPE(ltype)) && 
 		    (IS_INTEGRAL_TYPE(rtype) || IS_POINTER_TYPE(rtype)))
 				return cast_implicitly(ltype, rtype);
-		report_error("Cannot use this operator with this operand types.", NULL);
+		report_error2("Cannot use this operator with this operand types.", 
+			binary_expr->area);
 	//-----------------------------
 
 
@@ -168,7 +194,8 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 	case BINARY_ADD_ASSIGN:
 		return can_cast_implicitly(rtype, ltype) ?
 			cast_implicitly(rtype, ltype) : cast_implicitly(ltype, rtype);
-		report_error("Cannot use this operator with this operand types.", NULL);
+		report_error2("Cannot use this operator with this operand types.",
+			binary_expr->area);
 	//-----------------------------
 
 	//-----------------------------
@@ -184,7 +211,8 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 			(IS_NUMERIC_TYPE(rtype) || IS_POINTER_TYPE(rtype)))
 				return can_cast_implicitly(rtype, ltype) ? 
 					cast_implicitly(rtype, ltype) : cast_implicitly(ltype, rtype);
-		report_error("Cannot use this operator with this operand types.", NULL);
+		report_error2("Cannot use this operator with this operand types.", 
+			binary_expr->area);
 	//-----------------------------
 	
 	//-----------------------------
@@ -199,33 +227,34 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 			(IS_INTEGRAL_TYPE(rtype) || IS_POINTER_TYPE(rtype)))
 				return can_cast_implicitly(rtype, ltype) ?
 					cast_implicitly(rtype, ltype) : cast_implicitly(ltype, rtype);
-		report_error("Cannot use this operator with this operand types.", NULL);
+		report_error2("Cannot use this operator with this operand types.",
+			binary_expr->area);
 	//-----------------------------
 
 	//------------------------------
 	// accessors
 	case BINARY_ARR_MEMBER_ACCESSOR:
 		if (!IS_POINTER_TYPE(ltype))			
-			report_error(frmt("Cannot access array element value type of [%s], pointer type expected.",
-				ltype->repr), NULL);
+			report_error2(frmt("Cannot access array element value type of [%s], pointer type expected.",
+				ltype->repr), binary_expr->area);
 		// index of an array should be an integral type
 		if (!IS_INTEGRAL_TYPE(rtype))
-			report_error(frmt("Index should be value of integral type. Type [%s] met.",
-				rtype->repr), NULL);
+			report_error2(frmt("Index should be value of integral type. Type [%s] met.",
+				rtype->repr), binary_expr->area);
 		ltype->mods.is_ptr -= 1;
 		return ltype;
 
 	case BINARY_PTR_MEMBER_ACCESSOR:
 		if (!IS_POINTER_TYPE(ltype))
-			report_error(frmt("Cannot access member of non-pointer type [%s].",
-				ltype->repr), NULL);
+			report_error2(frmt("Cannot access member of non-pointer type [%s].",
+				ltype->repr), binary_expr->area);
 		// logic of pointer and common member accessor are the same except this primary condition
 		goto find_matching_member_type;
 
 	case BINARY_MEMBER_ACCESSOR:
 		if (IS_POINTER_TYPE(ltype))
-			report_error(frmt("Cannot access member of pointer type [%s].",
-				ltype->repr), NULL);
+			report_error2(frmt("Cannot access member of pointer type [%s].",
+				ltype->repr), binary_expr->area);
 		//~~~~~~~~~~~~~~~~~~~~~~~
 		find_matching_member_type:
 		//~~~~~~~~~~~~~~~~~~~~~~~
@@ -233,8 +262,8 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 		// condition for both common and pointer accessors
 		// checks if the left expression's type is not predefined simple type
 		if (ltype->mods.is_predefined)
-			report_error(frmt("Cannot access member of non user defined type [%s].",
-				ltype->repr), NULL);
+			report_error2(frmt("Cannot access member of non user defined type [%s].",
+				ltype->repr), binary_expr->area);
 
 		// iterating through all struct and through all struct's members, trying to find matching
 		if (type_decl_stmt = get_struct(ltype->repr, table))
@@ -248,8 +277,8 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 				if (strcmp(((UnionDecl*)type_decl_stmt)->union_mmbrs[i]->var, get_member_name(binary_expr->rexpr)) == 0)
 					return ((UnionDecl*)type_decl_stmt)->union_mmbrs[i]->type;
 
-		report_error(frmt("Cannot find any member with name [%s] in type [%s].",
-			binary_expr->rexpr->idnt->svalue, ltype->repr), NULL);
+		report_error2(frmt("Cannot find any member with name [%s] in type [%s].",
+			binary_expr->rexpr->idnt->svalue, ltype->repr), binary_expr->area);
 		break;
 		//------------------------------
 
@@ -307,8 +336,8 @@ Type* cast_implicitly(Type* to, Type* type)
 			to : type;
 	}
 	else
-		report_error(frmt("Cannot implicitly cast type %s to %s",
-			to->repr, type->repr), NULL);
+		report_error2(frmt("Cannot implicitly cast type %s to %s",
+			to->repr, type->repr), to->area);
 }
 
 uint32_t can_cast_implicitly(Type* to, Type* type)
@@ -391,30 +420,32 @@ char* get_member_name(Expr* expr)
 	case EXPR_IDNT:
 		return expr->idnt->svalue;
 	case EXPR_UNARY_EXPR:
-		switch (expr->unary_expr->type)
+		switch (expr->unary_expr->kind)
 		{
 		case UNARY_POSTFIX_DEC:
 		case UNARY_POSTFIX_INC:
 			return get_member_name(expr->unary_expr->expr);
 		default:
-			report_error("Cannot get member name.", NULL);
+			report_error2("Cannot get member name from unary expression.", 
+				expr->unary_expr->area);
 			break;
 		}
 		break;
 	case EXPR_BINARY_EXPR:
-		switch (expr->binary_expr->type)
+		switch (expr->binary_expr->kind)
 		{
 		case BINARY_MEMBER_ACCESSOR:
 		case BINARY_PTR_MEMBER_ACCESSOR:
 		case BINARY_ARR_MEMBER_ACCESSOR:
 			return get_member_name(expr->binary_expr->lexpr);
 		default:
-			report_error("Cannot get member name.", NULL);
+			report_error2("Cannot get member name from binary expression.", 
+				expr->binary_expr->area);
 			break;
 		}
 		break;
 	default:
-		report_error("Cannot get member name.", NULL);
+		report_error("Cannot get member name from expression.", NULL);
 		break;
 	}
 }

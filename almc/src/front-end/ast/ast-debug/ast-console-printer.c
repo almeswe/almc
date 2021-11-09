@@ -14,6 +14,7 @@ void print_type(Type* type, const char* indent)
 
 	printf(BOLDRED);
 	printf("%stype: %s\n", indent, type->repr);
+	//printf("%s%s\n", indent, src_area_tostr(type->area));
 	indent = frmt("%s   ", indent);
 	printf(RESET);
 	print_type_mode(is_ptr);
@@ -49,7 +50,7 @@ void print_str(Str* str, const char* indent)
 void print_const(Const* cnst, const char* indent)
 {
 	printf(BOLDWHITE);
-	switch (cnst->type)
+	switch (cnst->kind)
 	{
 	case CONST_INT:
 		printf("%sint-const: %lld\n", indent, cnst->ivalue);
@@ -99,7 +100,8 @@ void print_unary_expr(UnaryExpr* expr, const char* indent)
 		"unary-postfix-inc: ++",
 		"unary-postfix-dec: --",
 	};
-	switch (expr->type)
+
+	switch (expr->kind)
 	{
 	case UNARY_CAST:
 	case UNARY_SIZEOF:
@@ -346,7 +348,7 @@ void print_type_decl(TypeDecl* type_decl, const char* indent)
 		print_struct_decl(type_decl->struct_decl, indent);
 		break;
 	default:
-		assert(0);
+		report_error("Unexpcted type declaration type.", NULL);
 	}
 }
 

@@ -1,7 +1,5 @@
 #include "ast.h"
 
-//todo: replace assert(0) by report_error
-
 Expr* expr_new(ExprType type, void* expr_value_ptr)
 {
 	#define expr_set_value(type, field) e->field = (type*)expr_value_ptr; break
@@ -35,6 +33,7 @@ Str* str_new(const char* string, SrcContext* context)
 	Str* s = new_s(Str, s);
 	s->svalue = string;
 	s->context = context;
+	s->type = NULL;
 	return s;
 }
 
@@ -43,15 +42,18 @@ Idnt* idnt_new(const char* idnt, SrcContext* context)
 	Idnt* i = new_s(Idnt, i);
 	i->svalue = idnt;
 	i->context = context;
+	i->type = NULL;
 	return i;
 }
 
-Const* const_new(ConstType type, const char* svalue, SrcContext* context)
+Const* const_new(ConstKind type, const char* svalue, SrcContext* context)
 {
 	uint64_t value = 0;
 	Const* c = new_s(Const, c);
+	c->type = NULL;
 	c->context = context;
-	switch (c->type = type)
+
+	switch (c->kind = type)
 	{
 	case CONST_INT:
 	case CONST_UINT:
@@ -90,24 +92,30 @@ FuncCall* func_call_new(const char* func_name, Expr** func_args)
 	FuncCall* fc = new_s(FuncCall, fc);
 	fc->func_args = func_args;
 	fc->func_name = func_name;
+	fc->type = NULL;
+	fc->area = NULL;
 	return fc;
 }
 
-UnaryExpr* unary_expr_new(UnaryExprType type, Expr* expr)
+UnaryExpr* unary_expr_new(UnaryExprKind type, Expr* expr)
 {
 	UnaryExpr* ue = new_s(UnaryExpr, ue);
-	ue->type = type;
+	ue->kind = type;
 	ue->expr = expr;
+	ue->type = NULL;
+	ue->area = NULL;
 	ue->cast_type = NULL;
 	return ue;
 }
 
-BinaryExpr* binary_expr_new(BinaryExprType type, Expr* lexpr, Expr* rexpr)
+BinaryExpr* binary_expr_new(BinaryExprKind type, Expr* lexpr, Expr* rexpr)
 {
 	BinaryExpr* be = new_s(BinaryExpr, be);
-	be->type = type;
+	be->kind = type;
 	be->lexpr = lexpr;
 	be->rexpr = rexpr;
+	be->type = NULL;
+	be->area = NULL;
 	return be;
 }
 
@@ -117,12 +125,16 @@ TernaryExpr* ternary_expr_new(Expr* cond, Expr* lexpr, Expr* rexpr)
 	te->cond = cond;
 	te->lexpr = lexpr;
 	te->rexpr = rexpr;
+	te->type = NULL;
+	te->area = NULL;
 	return te;
 }
 
 Initializer* initializer_new(Expr** values)
 {
 	Initializer* si = new_s(Initializer, si);
+	si->area = NULL;
+	si->type = NULL;
 	si->values = values;
 	return si;
 }
@@ -231,6 +243,7 @@ TypeVar* type_var_new(Type* type, const char* var)
 	TypeVar* tv = new_s(TypeVar, tv);
 	tv->var = var;
 	tv->type = type;
+	tv->area = NULL;
 	return tv;
 }
 
@@ -385,6 +398,7 @@ void type_free(Type* type)
 		for (uint32_t i = 0; i < sbuffer_len(type->info.arr_dim_sizes); i++)
 			expr_free(type->info.arr_dim_sizes[i]);
 		sbuffer_free(type->info.arr_dim_sizes);
+		free(type->area);
 		free(type);
 	}
 }
@@ -430,8 +444,7 @@ void str_free(Str* str)
 {
 	if (str)
 	{
-		//free(str->svalue);
-		src_context_free(str->context);
+		type_free(str->type);
 		free(str);
 	}
 }
@@ -440,8 +453,8 @@ void idnt_free(Idnt* idnt)
 {
 	if (idnt)
 	{
-		//free(idnt->svalue);
-		src_context_free(idnt->context);
+		//todo: probably no need to free type, because in common case type will be freed by var_decl_free function
+		type_free(idnt->type);
 		free(idnt);
 	}
 }
@@ -450,7 +463,7 @@ void const_free(Const* cnst)
 {
 	if (cnst)
 	{
-		src_context_free(cnst->context);
+		type_free(cnst->type);
 		free(cnst);
 	}
 }
@@ -462,7 +475,8 @@ void func_call_free(FuncCall* func_call)
 		for (uint32_t i = 0; i < sbuffer_len(func_call->func_args); i++)
 			expr_free(func_call->func_args[i]);
 		sbuffer_free(func_call->func_args);
-		//free(func_call->func_name);
+		type_free(func_call->type);
+		free(func_call->area);
 		free(func_call);
 	}
 }
@@ -473,6 +487,8 @@ void unary_expr_free(UnaryExpr* unary_expr)
 	{
 		expr_free(unary_expr->expr);
 		type_free(unary_expr->cast_type);
+		type_free(unary_expr->type);
+		free(unary_expr->area);
 		free(unary_expr);
 	}
 }
@@ -483,6 +499,8 @@ void binary_expr_free(BinaryExpr* binary_expr)
 	{
 		expr_free(binary_expr->lexpr);
 		expr_free(binary_expr->rexpr);
+		type_free(binary_expr->type);
+		free(binary_expr->area);
 		free(binary_expr);
 	}
 }
@@ -494,6 +512,8 @@ void ternary_expr_free(TernaryExpr* ternary_expr)
 		expr_free(ternary_expr->cond);
 		expr_free(ternary_expr->lexpr);
 		expr_free(ternary_expr->rexpr);
+		type_free(ternary_expr->type);
+		free(ternary_expr->area);
 		free(ternary_expr);
 	}
 }
@@ -505,6 +525,8 @@ void initializer_free(Initializer* initializer)
 		for (uint32_t i = 0; i < sbuffer_len(initializer->values); i++)
 			expr_free(initializer->values[i]);
 		sbuffer_free(initializer->values);
+		type_free(initializer->type);
+		free(initializer->area);
 		free(initializer);
 	}
 }
@@ -650,7 +672,7 @@ void type_var_free(TypeVar* type_var)
 	if (type_var)
 	{
 		type_free(type_var->type);
-		//free(type_var->var);
+		free(type_var->area);
 		free(type_var);
 	}
 }
@@ -674,7 +696,6 @@ void func_decl_free(FuncDecl* func_decl)
 		for (uint32_t i = 0; i < sbuffer_len(func_decl->func_params); i++)
 			type_var_free(func_decl->func_params[i]);
 		sbuffer_free(func_decl->func_params);
-		//free(func_decl->func_name);
 		free(func_decl);
 	}
 }
@@ -704,7 +725,7 @@ void loop_stmt_free(LoopStmt* loop_stmt)
 			while_loop_free(loop_stmt->while_loop);
 			break;
 		default:
-			report_error("Unexpected loop-stmt type.", NULL);
+			report_error("Unexpected loop statement type.", NULL);
 		}
 		free(loop_stmt);
 	}

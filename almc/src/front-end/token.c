@@ -126,8 +126,7 @@ void token_free(Token* token)
 {
 	if (token)
 	{
-		//todo: should i free context?
-		//src_context_free(token->context);
+		src_context_free(token->context);
 		free(token);
 	}
 }

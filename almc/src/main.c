@@ -55,7 +55,9 @@ int type_test()
 		add_variable(var_decl, visitor->global);
 		add_struct(struct_decl, visitor->global);
 
-		print_type(get_expr_type(expr, visitor->global), "");
+		get_expr_type(expr, visitor->global);
+
+		print_expr(expr, "");
 
 		lexer_free(lexer);
 		parser_free(parser);

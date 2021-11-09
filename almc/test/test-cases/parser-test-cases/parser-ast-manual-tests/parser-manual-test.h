@@ -13,8 +13,8 @@ inline void ast_manual_test()
 		AstRoot* root = parse(p);
 		print_ast(root);
 		lexer_free(l);
-		parser_free(p);
 		ast_free(root);
+		parser_free(p);
 		clear_imported_modules();
 		int a = getchar();
 	}

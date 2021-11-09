@@ -33,7 +33,7 @@ typedef struct Type
 	const char* repr;
 } Type;
 
-typedef enum UnaryExprType
+typedef enum UnaryExprKind
 {
 	UNARY_PLUS,
 	UNARY_MINUS,
@@ -52,17 +52,18 @@ typedef enum UnaryExprType
 
 	UNARY_POSTFIX_INC,
 	UNARY_POSTFIX_DEC,
-} UnaryExprType;
+} UnaryExprKind;
 
 typedef struct UnaryExpr
 {
+	Type* type;
 	Expr* expr;
 	Type* cast_type;
 	SrcArea* area;
-	UnaryExprType type;
+	UnaryExprKind kind;
 } UnaryExpr;
 
-typedef enum BinaryExprType
+typedef enum BinaryExprKind
 {
 	BINARY_ADD,
 	BINARY_SUB,
@@ -104,18 +105,20 @@ typedef enum BinaryExprType
 	BINARY_MEMBER_ACCESSOR,
 	BINARY_PTR_MEMBER_ACCESSOR,
 	BINARY_ARR_MEMBER_ACCESSOR,
-} BinaryExprType;
+} BinaryExprKind;
 
 typedef struct BinaryExpr
 {
+	Type* type;
 	Expr* lexpr;
 	Expr* rexpr;
 	SrcArea* area;
-	BinaryExprType type;
+	BinaryExprKind kind;
 } BinaryExpr;
 
 typedef struct TernaryExpr
 {
+	Type* type;
 	Expr* cond;
 	Expr* lexpr;
 	Expr* rexpr;
@@ -124,26 +127,29 @@ typedef struct TernaryExpr
 
 typedef struct Str
 {
+	Type* type;
 	const char* svalue;
 	SrcContext* context;
 } Str;
 
 typedef struct Idnt
 {
+	Type* type;
 	const char* svalue;
 	SrcContext* context;
 } Idnt;
 
-typedef enum ConstType
+typedef enum ConstKind
 {
 	CONST_INT,
 	CONST_UINT,
 	CONST_FLOAT,
-} ConstType;
+} ConstKind;
 
 typedef struct Const
 {
-	ConstType type;
+	Type* type;
+	ConstKind kind;
 	union
 	{
 		double fvalue;
@@ -155,6 +161,7 @@ typedef struct Const
 
 typedef struct FuncCall
 {
+	Type* type;
 	Expr** func_args;
 	SrcArea* area;
 	const char* func_name;
@@ -162,6 +169,7 @@ typedef struct FuncCall
 
 typedef struct Initializer
 {
+	Type* type;
 	Expr** values;
 	SrcArea* area;
 } Initializer;
@@ -207,6 +215,7 @@ typedef struct ExprStmt
 typedef struct TypeVar
 {
 	Type* type;
+	SrcArea* area;
 	const char* var;
 } TypeVar;
 
@@ -412,10 +421,10 @@ Expr* expr_new(ExprType type, void* expr_value_ptr);
 
 Str* str_new(const char* string, SrcContext* context);
 Idnt* idnt_new(const char* idnt, SrcContext* context);
-Const* const_new(ConstType type, const char* svalue, SrcContext* context);
+Const* const_new(ConstKind type, const char* svalue, SrcContext* context);
 FuncCall* func_call_new(const char* func_name, Expr** func_args);
-UnaryExpr* unary_expr_new(UnaryExprType type, Expr* expr);
-BinaryExpr* binary_expr_new(BinaryExprType type, Expr* lexpr, Expr* rexpr);
+UnaryExpr* unary_expr_new(UnaryExprKind type, Expr* expr);
+BinaryExpr* binary_expr_new(BinaryExprKind type, Expr* lexpr, Expr* rexpr);
 TernaryExpr* ternary_expr_new(Expr* cond, Expr* lexpr, Expr* rexpr);
 Initializer* initializer_new(Expr** values);
 TypeVar* type_var_new(Type* type, const char* var);

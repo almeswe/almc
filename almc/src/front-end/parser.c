@@ -2,7 +2,7 @@
 
 //todo: think about how i can access struct members (also if struct is pointer) in initializer
 //todo: how i can save the order of abstract-declarators in type declaration? (char*[4] and char[4]* are the same types yet)
-//todo: add contexts for expr and stmt
+//todo: add contexts for expr and (compeleted)
 //todo: add parent to each node of tree
 
 #define matcht(parser, t) (get_curr_token(parser)->type == (t))
@@ -14,8 +14,10 @@
 
 #define context_ends(parser, starts, node) \
 	new__chk(node);                        \
+	unget_curr_token(parser);              \
 	node->area = src_area_new(starts,      \
-		get_curr_token(parser)->context)
+		get_curr_token(parser)->context);  \
+	get_next_token(parser)					
 
 #define TOKEN_PREDEFINED_TYPE     \
 	     TOKEN_KEYWORD_VOID:	  \
@@ -432,13 +434,15 @@ Expr* parse_unary_expr(Parser* parser)
 	get_next_token(parser);			                    \
     expr = expr_new(EXPR_UNARY_EXPR,                    \
 		unary_expr_new(type, parse_cast_expr(parser))); \
-	context_ends(parser, context, expr->unary_expr)
+	context_ends(parser, context, expr->unary_expr);    \
+	return expr
 
 #define unary_unary_case(parser, type)                   \
 	get_next_token(parser);			                     \
     expr = expr_new(EXPR_UNARY_EXPR,                     \
 		unary_expr_new(type, parse_unary_expr(parser))); \
-	context_ends(parser, context, expr->unary_expr)
+	context_ends(parser, context, expr->unary_expr);     \
+	return expr
 
 	switch (get_curr_token(parser)->type)
 	{
@@ -562,7 +566,7 @@ Expr* parse_mul_arith_expr(Parser* parser)
 		|| matcht(parser, TOKEN_MODULUS)
 		|| matcht(parser, TOKEN_ASTERISK))
 	{
-		BinaryExprType type = 0;
+		BinaryExprKind type = 0;
 		switch (get_curr_token(parser)->type)
 		{
 		case TOKEN_SLASH:
@@ -595,7 +599,7 @@ Expr* parse_add_arith_expr(Parser* parser)
 	while (matcht(parser, TOKEN_PLUS)
 		|| matcht(parser, TOKEN_DASH))
 	{
-		BinaryExprType type = 0;
+		BinaryExprKind type = 0;
 		switch (get_curr_token(parser)->type)
 		{
 		case TOKEN_PLUS:
@@ -626,7 +630,7 @@ Expr* parse_sft_expr(Parser* parser)
 	while (matcht(parser, TOKEN_LSHIFT)
 		|| matcht(parser, TOKEN_RSHIFT))
 	{
-		BinaryExprType type = 0;
+		BinaryExprKind type = 0;
 		switch (get_curr_token(parser)->type)
 		{
 		case TOKEN_LSHIFT:
@@ -661,7 +665,7 @@ Expr* parse_rel_expr(Parser* parser)
 		|| matcht(parser, TOKEN_LESS_EQ_THAN)
 		|| matcht(parser, TOKEN_GREATER_EQ_THAN))
 	{
-		BinaryExprType type = 0;
+		BinaryExprKind type = 0;
 		switch (get_curr_token(parser)->type)
 		{
 		case TOKEN_LEFT_ANGLE:
@@ -696,7 +700,7 @@ Expr* parse_equ_expr(Parser* parser)
 	while (matcht(parser, TOKEN_LG_EQ)
 		|| matcht(parser, TOKEN_LG_NEQ))
 	{
-		BinaryExprType type = 0;
+		BinaryExprKind type = 0;
 		switch (get_curr_token(parser)->type)
 		{
 		case TOKEN_LG_EQ:
@@ -881,7 +885,7 @@ Expr* parse_assignment_expr(Parser* parser)
 		|| matcht(parser, TOKEN_BW_AND_ASSIGN)
 		|| matcht(parser, TOKEN_BW_XOR_ASSIGN))
 	{
-		BinaryExprType type = 0;
+		BinaryExprKind type = 0;
 		switch (get_curr_token(parser)->type)
 		{
 		case TOKEN_ASSIGN:
@@ -1650,9 +1654,13 @@ TypeVar* parse_type_var(Parser* parser)
 	Type* type = NULL;
 	const char* var = 
 		get_curr_token(parser)->svalue;
+	TypeVar* type_var = NULL;
 
+	context_starts(parser, context);
 	expect_with_skip(parser, TOKEN_IDNT, "variable's name");
 	expect_with_skip(parser, TOKEN_COLON, ":");
 	type = parse_type_name(parser);
-	return type_var_new(type, var);
+	type_var = type_var_new(type, var);
+	context_ends(parser, context, type_var);
+	return type_var;
 }
