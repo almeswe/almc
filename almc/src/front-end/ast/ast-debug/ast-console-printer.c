@@ -105,12 +105,20 @@ void print_unary_expr(UnaryExpr* expr, const char* indent)
 	{
 	case UNARY_CAST:
 	case UNARY_SIZEOF:
-		printf("%s%s\n", indent, unary_expr_type_str[expr->type]);
+		if (expr->type)
+			printf("%s%s %s\n", indent, unary_expr_type_str[expr->kind],
+				expr->type->repr);
+		else
+			printf("%s%s\n", indent, unary_expr_type_str[expr->kind]);
 		if (expr->cast_type)
 			print_type(expr->cast_type, frmt("%s   ", indent));
 		break;
 	default:
-		printf("%s%s\n", indent, unary_expr_type_str[expr->type]);
+		if (expr->type)
+			printf("%s%s %s\n", indent, unary_expr_type_str[expr->kind],
+				expr->type->repr);
+		else
+			printf("%s%s\n", indent, unary_expr_type_str[expr->kind]);
 	}
 	printf(RESET);
 	print_expr(expr->expr, indent);
@@ -160,7 +168,11 @@ void print_binary_expr(BinaryExpr* expr, const char* indent)
 		"binary-ptr-mmbr-accsr: ->",
 		"binary-arr-mmbr-accsr: []"
 	};
-	printf("%s%s\n", indent, binary_expr_type_str[expr->type]);
+	if (expr->type)
+		printf("%s%s %s\n", indent, binary_expr_type_str[expr->kind],
+			expr->type->repr);
+	else
+		printf("%s%s\n", indent, binary_expr_type_str[expr->kind]);
 	printf(RESET);
 	print_expr(expr->lexpr, indent);
 	print_expr(expr->rexpr, indent);
@@ -194,7 +206,7 @@ void print_expr(Expr* expr, const char* indent)
 	// |——
 	char* new_indent = frmt("%s   ", indent);
 	if (expr)
-		switch (expr->type)
+		switch (expr->kind)
 		{
 		case EXPR_IDNT:
 			print_idnt(expr->idnt, new_indent);
