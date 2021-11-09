@@ -28,18 +28,21 @@
 //----------------------------------------
 
 #define IS_POINTER_TYPE(type) \
-	type->mods.is_ptr
+	(type && type->mods.is_ptr)
 
-#define IS_REAL_TYPE(type) \
-   (strcmp(type->repr, "f32")  == 0 || \
-	strcmp(type->repr, "f64")  == 0)
+#define IS_REAL_TYPE(type)             \
+   (type && (						   \
+    strcmp(type->repr, "f32")  == 0 || \
+	strcmp(type->repr, "f64")  == 0))
 
-#define IS_STRING_TYPE(type) \
-   ((strcmp(type->repr, "chr")  == 0 && \
-	 type->mods.is_ptr == 1) || strcmp(type->repr, "str") == 0 )
+#define IS_STRING_TYPE(type)									  \
+    (type && (													  \
+    (strcmp(type->repr, "chr") == 0 && type->mods.is_ptr == 1) || \
+     strcmp(type->repr, "str") == 0))
 
-#define IS_INTEGRAL_TYPE(type)  \
-   (strcmp(type->repr, "i8")  == 0 || \
+#define IS_INTEGRAL_TYPE(type)        \
+   (type && (					      \
+    strcmp(type->repr, "i8")  == 0 || \
 	strcmp(type->repr, "i16") == 0 || \
 	strcmp(type->repr, "i32") == 0 || \
 	strcmp(type->repr, "i64") == 0 || \
@@ -47,28 +50,28 @@
 	strcmp(type->repr, "u16") == 0 || \
 	strcmp(type->repr, "u32") == 0 || \
 	strcmp(type->repr, "u64") == 0 || \
-	strcmp(type->repr, "chr") == 0 )
+	strcmp(type->repr, "chr") == 0 ))
 
 #define IS_NUMERIC_TYPE(type) \
 	(IS_REAL_TYPE(type) || IS_INTEGRAL_TYPE(type))
 
-#define IS_CHAR(type) (strcmp(type->repr, "chr") == 0)
-#define IS_STRING(type) (strcmp(type->repr, "str") == 0)
+#define IS_CHAR(type) (type && strcmp(type->repr, "chr") == 0)
+#define IS_STRING(type) (type && strcmp(type->repr, "str") == 0)
 
-#define IS_I8(type) (strcmp(type->repr, "i8") == 0)
-#define IS_I16(type) (strcmp(type->repr, "i16") == 0)
-#define IS_I32(type) (strcmp(type->repr, "i32") == 0)
-#define IS_I64(type) (strcmp(type->repr, "i64") == 0)
+#define IS_I8(type)  (type && strcmp(type->repr, "i8") == 0)
+#define IS_I16(type) (type && strcmp(type->repr, "i16") == 0)
+#define IS_I32(type) (type && strcmp(type->repr, "i32") == 0)
+#define IS_I64(type) (type && strcmp(type->repr, "i64") == 0)
 
-#define IS_U8(type) (strcmp(type->repr, "u8") == 0)
-#define IS_U16(type) (strcmp(type->repr, "u16") == 0)
-#define IS_U32(type) (strcmp(type->repr, "u32") == 0)
-#define IS_U64(type) (strcmp(type->repr, "u64") == 0)
+#define IS_U8(type)  (type && strcmp(type->repr, "u8") == 0)
+#define IS_U16(type) (type && strcmp(type->repr, "u16") == 0)
+#define IS_U32(type) (type && strcmp(type->repr, "u32") == 0)
+#define IS_U64(type) (type && strcmp(type->repr, "u64") == 0)
 
-#define IS_F32(type) (strcmp(type->repr, "f32") == 0)
-#define IS_F64(type) (strcmp(type->repr, "f64") == 0)
+#define IS_F32(type) (type && strcmp(type->repr, "f32") == 0)
+#define IS_F64(type) (type && strcmp(type->repr, "f64") == 0)
 
-#define IS_VOID(type) (type->mods.is_void)
+#define IS_VOID(type) (type && type->mods.is_void)
 
 Type* get_string_type(Str* str);
 Type* get_const_type(Const* cnst);

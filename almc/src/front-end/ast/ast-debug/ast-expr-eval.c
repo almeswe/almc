@@ -94,7 +94,7 @@ int32_t eval_texpr(TernaryExpr* texpr)
 
 int32_t eval_expr(Expr* expr)
 {
-	switch (expr->type)
+	switch (expr->kind)
 	{
 	case EXPR_CONST:
 		return eval_const(expr->cnst);

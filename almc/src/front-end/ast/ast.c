@@ -1,10 +1,10 @@
 #include "ast.h"
 
-Expr* expr_new(ExprType type, void* expr_value_ptr)
+Expr* expr_new(ExprKind type, void* expr_value_ptr)
 {
 	#define expr_set_value(type, field) e->field = (type*)expr_value_ptr; break
 	Expr* e = new_s(Expr, e);
-	switch (e->type = type)
+	switch (e->kind = type)
 	{
 	case EXPR_IDNT:
 		expr_set_value(Idnt, idnt);
@@ -407,7 +407,7 @@ void expr_free(Expr* expr)
 {
 	if (expr)
 	{
-		switch (expr->type)
+		switch (expr->kind)
 		{
 		case EXPR_IDNT:
 			idnt_free(expr->idnt);

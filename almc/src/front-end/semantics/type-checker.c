@@ -1,20 +1,19 @@
 #include "type-checker.h"
 
-#define type_dup(type, type_name)            \
-	Type* type_name = cnew_s(Type, type, 1); \
-	new__chk(type_name);					 \
-	type_name->mods = type->mods;            \
+#define type_dup(type, type_name)                 \
+	Type* type_name = cnew_s(Type, type_name, 1); \
+	type_name->mods = type->mods;                 \
 	type_name->repr = _strdup(type->repr)
 
-#define type_dup_no_alloc(type, type_name) \
-	type_name = cnew_s(Type, type, 1);     \
-	new__chk(type_name);				   \
-	type_name->mods = type->mods;          \
+#define type_dup_no_alloc(type, type_name)   \
+	type_name = cnew_s(Type, type_name, 1);  \
+	type_name->mods = type->mods;            \
 	type_name->repr = _strdup(type->repr)
 
 Type* get_expr_type(Expr* expr, Table* table)
 {
 #define set_and_return_type(type, to_node) \
+	if (!type) return NULL;                \
 	type_dup_no_alloc(type, type_new);     \
 	to_node->type = type_new;              \
 	return type_new
@@ -22,7 +21,10 @@ Type* get_expr_type(Expr* expr, Table* table)
 	Type* type = NULL;
 	Type* type_new = NULL;
 
-	switch (expr->type)
+	if (!expr)
+		return NULL;
+
+	switch (expr->kind)
 	{
 	case EXPR_IDNT:
 		type = get_idnt_type(expr->idnt, table);
@@ -39,9 +41,14 @@ Type* get_expr_type(Expr* expr, Table* table)
 	case EXPR_BINARY_EXPR:
 		type = get_binary_expr_type(expr->unary_expr, table);
 		set_and_return_type(type, expr->binary_expr);
+	case EXPR_TERNARY_EXPR:
+		type = get_ternary_expr_type(expr->ternary_expr, table);
+		set_and_return_type(type, expr->ternary_expr);
 	default:
-		assert(0);
+		report_error(frmt("Unknown expression kind met: %d",
+			expr->kind), NULL);
 	}
+	return NULL;
 }
 
 Type* get_const_type(Const* cnst)
@@ -85,8 +92,9 @@ Type* get_string_type(Str* str)
 Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 {
 	Type* type = get_expr_type(unary_expr->expr, table);
-	type_dup(type, new_type);
-	unary_expr->type = (type = new_type);
+
+	// this type needed to handle sizeof(idnt) ambiguity
+	Type* szof_type = NULL;
 
 	switch (unary_expr->kind)
 	{
@@ -130,14 +138,29 @@ Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 	case UNARY_CAST:
 		return unary_expr->cast_type;
 	case UNARY_SIZEOF:
-		// todo: checking if variable in sizeof is type name (not local/global variable)
-		if (unary_expr->expr->type == EXPR_IDNT)
-		{
-		}
-		// todo: create i32 type variable
-		break;
+		// handling type of expr of sizeof
+		if (unary_expr->expr && type)
+			if (!IS_NUMERIC_TYPE(type))
+				report_error2(frmt("sizeof accepts only numeric type of expession, met [%s].",
+					type->repr), unary_expr->area);
+
+		// if sizeof has idnt in expr, its can be simple varable or user-type, need to check it
+		if (unary_expr->expr && unary_expr->expr->kind == EXPR_IDNT)
+			if (get_struct(unary_expr->expr->idnt->svalue, table) ||
+				get_union(unary_expr->expr->idnt->svalue, table))
+					szof_type = cnew_s(Type, szof_type, 1), 
+						szof_type->repr = unary_expr->expr->idnt->svalue, 
+							unary_expr->cast_type = szof_type;
+		// this case appears when sizeof(type)
+		// in this case expression in null -> expression type is null
+		// need to allocate it
+		if (!type)
+			type = cnew_s(Type, type, 1);
+		type->repr = "u32";
+		return type;
 	default:
-		assert(0);
+		report_error(frmt("Unknown unary expression kind met: %d",
+			unary_expr->type), NULL);
 	}
 	return type;
 }
@@ -283,8 +306,34 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 		//------------------------------
 
 	default:
-		assert(0);
+		report_error(frmt("Unknown binary expression kind met: %d",
+			binary_expr->type), NULL);
 	}
+	// useless, only to avoid warning
+	return ltype;
+}
+
+Type* get_ternary_expr_type(TernaryExpr* ternary_expr, Table* table)
+{
+	Type* ltype = get_expr_type(ternary_expr->lexpr, table);
+	Type* rtype = get_expr_type(ternary_expr->rexpr, table);
+	Type* ctype = get_expr_type(ternary_expr->cond, table);
+
+	// todo: need to set area to error
+	if (!IS_NUMERIC_TYPE(ctype) && !IS_POINTER_TYPE(ctype))
+		if (!ctype)
+			report_error("Cannot determine the type of condition in ternary expression.", NULL);
+		else 
+			report_error(frmt("Expected numeric or pointer type in condition of ternary expression, type met: [%s]", ctype->repr), NULL);
+
+	// todo: need to set area to error
+	if (can_cast_implicitly(ltype, rtype))
+		return cast_implicitly(ltype, rtype);
+	else if (can_cast_implicitly(rtype, ltype))
+		return cast_implicitly(rtype, ltype);
+	else
+		report_error("Left and right expressions in ternary expression should be the same or implicitly equal", NULL);
+	return NULL;
 }
 
 uint32_t get_type_priority(Type* type)
@@ -415,7 +464,7 @@ char* get_member_name(Expr* expr)
 	// function is needed espesially for recognizing the member's name in accessor expression
 	// i mean that we are not fully knew that member will be represented as Idnt
 	// it can be ...->a[i], ...->a++/--, ...->a.a-> ...
-	switch (expr->type)
+	switch (expr->kind)
 	{
 	case EXPR_IDNT:
 		return expr->idnt->svalue;
@@ -448,4 +497,5 @@ char* get_member_name(Expr* expr)
 		report_error("Cannot get member name from expression.", NULL);
 		break;
 	}
+	return NULL;
 }

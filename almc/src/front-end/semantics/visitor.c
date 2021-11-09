@@ -100,7 +100,7 @@ void visit_scope(Stmt** stmts, Table* table)
 
 void visit_expr(Expr* expr, Table* table)
 {
-	switch (expr->type)
+	switch (expr->kind)
 	{
 	case EXPR_CONST:
 	case EXPR_STRING:
@@ -345,7 +345,7 @@ void visit_func_decl(FuncDecl* func_decl, Table* table)
 
 int expr_contains_var(Expr* expr)
 {
-	switch (expr->type)
+	switch (expr->kind)
 	{
 	case EXPR_IDNT:
 		return 1;
@@ -364,7 +364,7 @@ int is_addressable_value(Expr* expr)
 {
 	if (!expr)
 		return 0;
-	switch (expr->type)
+	switch (expr->kind)
 	{	
 	case EXPR_IDNT:
 		return 1;
@@ -378,7 +378,7 @@ int is_addressable_value(Expr* expr)
 			return expr->unary_expr->kind == EXPR_IDNT;
 
 		case UNARY_DEREFERENCE:
-			switch (expr->unary_expr->expr->type)
+			switch (expr->unary_expr->expr->kind)
 			{
 			case EXPR_IDNT:
 				return 1;

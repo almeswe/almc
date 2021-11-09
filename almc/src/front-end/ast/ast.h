@@ -174,7 +174,7 @@ typedef struct Initializer
 	SrcArea* area;
 } Initializer;
 
-typedef enum ExprType
+typedef enum ExprKind
 {
 	EXPR_IDNT,
 	EXPR_CONST,
@@ -184,11 +184,11 @@ typedef enum ExprType
 	EXPR_BINARY_EXPR,
 	EXPR_TERNARY_EXPR,
 	EXPR_INITIALIZER,
-} ExprType;
+} ExprKind;
 
 typedef struct Expr
 {
-	ExprType type;
+	ExprKind kind;
 	union
 	{
 		Str* str;
@@ -417,7 +417,7 @@ typedef struct AstRoot
 	Stmt** stmts;
 } AstRoot;
 
-Expr* expr_new(ExprType type, void* expr_value_ptr);
+Expr* expr_new(ExprKind type, void* expr_value_ptr);
 
 Str* str_new(const char* string, SrcContext* context);
 Idnt* idnt_new(const char* idnt, SrcContext* context);

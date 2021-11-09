@@ -1017,7 +1017,7 @@ Stmt* parse_enum_decl_stmt(Parser* parser)
 		if (!enum_idnt_value)
 			enum_idnt_value = expr_new(EXPR_CONST, const_new(CONST_INT, "0", NULL));
 		else
-			enum_idnt_value = enum_idnt_value->type == EXPR_CONST ?
+			enum_idnt_value = enum_idnt_value->kind == EXPR_CONST ?
 			expr_new(EXPR_CONST, const_new(CONST_INT, frmt("%d", enum_idnt_value->cnst->ivalue + 1), NULL)) :
 			expr_new(EXPR_BINARY_EXPR, binary_expr_new(BINARY_ADD, enum_idnt_value,
 				expr_new(EXPR_CONST, const_new(CONST_INT, "1", NULL))));
