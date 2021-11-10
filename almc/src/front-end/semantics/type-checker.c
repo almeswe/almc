@@ -94,6 +94,8 @@ Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 
 	// this type needed to handle sizeof(idnt) ambiguity
 	Type* szof_type = NULL;
+	// this type needed to handle dereference, address exprs etc.
+	Type* type_new = NULL;
 
 	switch (unary_expr->kind)
 	{
@@ -124,43 +126,61 @@ Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 	//-----------------------------
 	// addresible cases
 	case UNARY_ADDRESS:
-		type->mods.is_ptr += 1;
-		return type;
+		if (!type)
+			report_error2("Cannot determine the type of unary expression while taking an address.",
+				unary_expr->area);
+		else
+		{
+			// setting the new type based on extracted type, with is_ptr changed
+			type_dup_no_alloc(type, type_new);
+			type_new->mods.is_ptr += 1;
+			return type_new;
+		}
 	case UNARY_DEREFERENCE:
+		if (!type)
+			report_error2("Cannot determine the type of unary expression while dereferencing it.",
+				unary_expr->area);
 		if (!IS_POINTER_TYPE(type))
-			report_error2(frmt("Cannot dereference value type of [%s].",
+			report_error2(frmt("Cannot dereference value of type [%s].",
 				type_tostr_plain(type)), unary_expr->area);
-		type->mods.is_ptr -= 1;
-		return type;
+		else
+		{
+			type_dup_no_alloc(type, type_new);
+			type_new->mods.is_ptr -= 1;
+			return type_new;
+		}
 	//-----------------------------
 
 	case UNARY_CAST:
 		return unary_expr->cast_type;
 	case UNARY_SIZEOF:
-		// handling type of expr of sizeof
-		if (unary_expr->expr && type)
-			if (!IS_NUMERIC_TYPE(type))
-				report_error2(frmt("sizeof accepts only numeric type of expession, met [%s].",
-					type_tostr_plain(type)), unary_expr->area);
+		if (!unary_expr->cast_type)
+		{
+			// handling type of expr of sizeof
+			if (unary_expr->expr && type)
+				if (!IS_NUMERIC_TYPE(type) && !IS_POINTER_TYPE(type))
+					report_error2(frmt("sizeof accepts only numeric or pointer type of expession, met [%s].",
+						type_tostr_plain(type)), unary_expr->area);
 
-		// if sizeof has idnt in expr, its can be simple varable or user-type, need to check it
-		if (unary_expr->expr && unary_expr->expr->kind == EXPR_IDNT)
-			if (get_struct(unary_expr->expr->idnt->svalue, table) ||
-				get_union(unary_expr->expr->idnt->svalue, table))
+			// if sizeof has idnt in expr, its can be simple variable or user-type, need to check it
+			if (unary_expr->expr && unary_expr->expr->kind == EXPR_IDNT)
+				if (get_struct(unary_expr->expr->idnt->svalue, table) ||
+					get_union(unary_expr->expr->idnt->svalue, table))
 				{
 					szof_type = cnew_s(Type, szof_type, 1);
 					szof_type->repr = unary_expr->expr->idnt->svalue;
 					unary_expr->cast_type = szof_type;
 				}
+		}
+
 		// this case appears when sizeof(type)
 		// in this case expression in null -> expression type is null
 		// need to allocate it
-		if (!type)
-			type = cnew_s(Type, type, 1);
-		type->repr = "u32";
-		return type;
+		type_new = cnew_s(Type, type_new, 1);
+		type_new->repr = "u32";
+		return type_new;
 	default:
-		report_error(frmt("Unknown unary expression kind met: %d",
+		report_error(frmt("Unknown unary expression kind met: %d.",
 			unary_expr->type), NULL);
 	}
 	return type;
@@ -173,6 +193,9 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 	Type* rtype = get_expr_type(
 		binary_expr->rexpr, table);
 
+	// type needed to handle the array member accessor expression
+	Type* type_new = NULL;
+
 	// variable needed for containing possible value of struct or union (see accessor's part)
 	void* type_decl_stmt = NULL; 
 
@@ -183,7 +206,8 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 
 	// in case of common assign, any type can be
 	case BINARY_ASSIGN:
-		return cast_implicitly(ltype, rtype);
+	case BINARY_ADD_ASSIGN:
+		return cast_implicitly_when_assign(ltype, rtype);
 
 	// assign operators that needs numeric or pointer types
 	case BINARY_SUB_ASSIGN:
@@ -191,7 +215,7 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 	case BINARY_MUL_ASSIGN:
 		if ((IS_NUMERIC_TYPE(ltype) || IS_POINTER_TYPE(ltype)) &&
 			(IS_NUMERIC_TYPE(rtype) || IS_POINTER_TYPE(rtype)))
-				return cast_implicitly(ltype, rtype);
+				return cast_implicitly_when_assign(ltype, rtype);
 		report_error2("Cannot use this operator with this operand types.", 
 			binary_expr->area);
 
@@ -204,7 +228,7 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 	case BINARY_RSHIFT_ASSIGN:
 		if ((IS_INTEGRAL_TYPE(ltype) || IS_POINTER_TYPE(ltype)) && 
 		    (IS_INTEGRAL_TYPE(rtype) || IS_POINTER_TYPE(rtype)))
-				return cast_implicitly(ltype, rtype);
+				return cast_implicitly_when_assign(ltype, rtype);
 		report_error2("Cannot use this operator with this operand types.", 
 			binary_expr->area);
 	//-----------------------------
@@ -215,7 +239,6 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 	case BINARY_ADD:
 	case BINARY_LG_EQ:
 	case BINARY_LG_NEQ:
-	case BINARY_ADD_ASSIGN:
 		return can_cast_implicitly(rtype, ltype) ?
 			cast_implicitly(rtype, ltype) : cast_implicitly(ltype, rtype);
 		report_error2("Cannot use this operator with this operand types.",
@@ -259,14 +282,15 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 	// accessors
 	case BINARY_ARR_MEMBER_ACCESSOR:
 		if (!IS_POINTER_TYPE(ltype))			
-			report_error2(frmt("Cannot access array element value type of [%s], pointer type expected.",
+			report_error2(frmt("Cannot access array element value of type [%s], pointer type expected.",
 				type_tostr_plain(ltype)), binary_expr->area);
 		// index of an array should be an integral type
 		if (!IS_INTEGRAL_TYPE(rtype))
 			report_error2(frmt("Index should be value of integral type. Type [%s] met.",
 				type_tostr_plain(rtype)), binary_expr->area);
-		ltype->mods.is_ptr -= 1;
-		return ltype;
+		type_dup_no_alloc(ltype, type_new);
+		type_new->mods.is_ptr -= 1;
+		return type_new;
 
 	case BINARY_PTR_MEMBER_ACCESSOR:
 		if (!IS_POINTER_TYPE(ltype))
@@ -286,7 +310,7 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 		// condition for both common and pointer accessors
 		// checks if the left expression's type is not predefined simple type
 		if (ltype->mods.is_predefined)
-			report_error2(frmt("Cannot access member of non user defined type [%s].",
+			report_error2(frmt("Cannot access member of non-user defined type [%s].",
 				type_tostr_plain(ltype)), binary_expr->area);
 
 		// iterating through all struct and through all struct's members, trying to find matching
@@ -426,6 +450,15 @@ Type* cast_implicitly(Type* to, Type* type)
 			type_tostr_plain(to), type_tostr_plain(type)), to->area);
 }
 
+Type* cast_implicitly_when_assign(Type* to, Type* type)
+{
+	if (can_cast_implicitly(to, type))
+		return to;
+	else
+		report_error2(frmt("Cannot implicitly cast type %s to %s",
+			type_tostr_plain(to), type_tostr_plain(type)), to->area);
+}
+
 uint32_t can_cast_implicitly(Type* to, Type* type)
 {
 	if (to->mods.is_void || type->mods.is_void)
@@ -445,12 +478,12 @@ uint32_t can_cast_implicitly(Type* to, Type* type)
 		!IS_POINTER_TYPE(to) && !IS_POINTER_TYPE(type))
 			return 1;
 
-	// case of pointer && integral (not pointer)
-	if (to->mods.is_ptr && IS_INTEGRAL_TYPE(type) && !IS_POINTER_TYPE(type))
+	// case of pointer && integral (not pointer), and not greater than 32 bits
+	if (to->mods.is_ptr && IS_INTEGRAL_TYPE(type) && (get_type_priority(type) <= I32) && !IS_POINTER_TYPE(type))
 		return 1;
 
-	// case of integral (not pointer) && pointer
-	if (type->mods.is_ptr && IS_INTEGRAL_TYPE(to) && !IS_POINTER_TYPE(to))
+	// case of integral (not pointer) && pointer, and greater equal than 32 bits
+	if (type->mods.is_ptr && IS_INTEGRAL_TYPE(to) && (get_type_priority(to) >= U32) && !IS_POINTER_TYPE(to))
 		return 1;
 
 	// types that can be casted to i8, u8, chr

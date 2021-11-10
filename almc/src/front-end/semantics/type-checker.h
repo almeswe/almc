@@ -85,6 +85,7 @@ Type* get_ternary_expr_type(TernaryExpr* ternary_expr, Table* table);
 uint32_t get_type_priority(Type* type);
 
 Type* cast_implicitly(Type* to, Type* type);
+Type* cast_implicitly_when_assign(Type* to, Type* type);
 uint32_t can_cast_implicitly(Type* to, Type* type);
 
 char* get_member_name(Expr* expr);
