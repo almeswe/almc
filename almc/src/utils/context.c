@@ -19,14 +19,15 @@ SrcContext* src_context_new(const char* file, uint32_t start, uint32_t size, uin
 void src_context_free(SrcContext* context)
 {
 	if (context)
-	//free(context->file);
 		free(context);
 }
 
 char* src_area_tostr(SrcArea* area)
 {
+	if (!area->ends)
+		return src_context_tostr(area->begins);
 	return frmt("starts at: line: %d, position: %d | ends at: line: %d, position: %d, file: \'%s\'",
-		area->begins->line, area->begins->start, area->ends->line, area->ends->start, area->begins->file);
+		area->begins->line, area->begins->start, area->ends->line, area->ends->start + area->ends->size-1, area->begins->file);
 }
 
 SrcArea* src_area_new(SrcContext* begins, SrcContext* ends)

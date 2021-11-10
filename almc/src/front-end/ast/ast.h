@@ -457,6 +457,8 @@ UnionDecl* union_decl_new(TypeVar** union_mmbrs, const char* union_name);
 StructDecl* struct_decl_new(TypeVar** struct_mmbrs, const char* struct_name);
 LabelDecl* label_decl_new(Idnt* label_idnt);
 
+char* type_tostr_plain(Type* type);
+
 void ast_free(AstRoot* root);
 
 void type_free(Type* type);

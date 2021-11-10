@@ -84,7 +84,6 @@ Type* get_string_type(Str* str)
 {
 	Type* type = cnew_s(Type, type, 1);
 	type->mods.is_predefined = 1;
-	type->mods.is_ptr = 1;
 	type->repr = "str";
 	return type;
 }
@@ -130,7 +129,7 @@ Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 	case UNARY_DEREFERENCE:
 		if (!IS_POINTER_TYPE(type))
 			report_error2(frmt("Cannot dereference value type of [%s].",
-				type->repr), unary_expr->area);
+				type_tostr_plain(type)), unary_expr->area);
 		type->mods.is_ptr -= 1;
 		return type;
 	//-----------------------------
@@ -142,15 +141,17 @@ Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 		if (unary_expr->expr && type)
 			if (!IS_NUMERIC_TYPE(type))
 				report_error2(frmt("sizeof accepts only numeric type of expession, met [%s].",
-					type->repr), unary_expr->area);
+					type_tostr_plain(type)), unary_expr->area);
 
 		// if sizeof has idnt in expr, its can be simple varable or user-type, need to check it
 		if (unary_expr->expr && unary_expr->expr->kind == EXPR_IDNT)
 			if (get_struct(unary_expr->expr->idnt->svalue, table) ||
 				get_union(unary_expr->expr->idnt->svalue, table))
-					szof_type = cnew_s(Type, szof_type, 1), 
-						szof_type->repr = unary_expr->expr->idnt->svalue, 
-							unary_expr->cast_type = szof_type;
+				{
+					szof_type = cnew_s(Type, szof_type, 1);
+					szof_type->repr = unary_expr->expr->idnt->svalue;
+					unary_expr->cast_type = szof_type;
+				}
 		// this case appears when sizeof(type)
 		// in this case expression in null -> expression type is null
 		// need to allocate it
@@ -259,25 +260,25 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 	case BINARY_ARR_MEMBER_ACCESSOR:
 		if (!IS_POINTER_TYPE(ltype))			
 			report_error2(frmt("Cannot access array element value type of [%s], pointer type expected.",
-				ltype->repr), binary_expr->area);
+				type_tostr_plain(ltype)), binary_expr->area);
 		// index of an array should be an integral type
 		if (!IS_INTEGRAL_TYPE(rtype))
 			report_error2(frmt("Index should be value of integral type. Type [%s] met.",
-				rtype->repr), binary_expr->area);
+				type_tostr_plain(rtype)), binary_expr->area);
 		ltype->mods.is_ptr -= 1;
 		return ltype;
 
 	case BINARY_PTR_MEMBER_ACCESSOR:
 		if (!IS_POINTER_TYPE(ltype))
 			report_error2(frmt("Cannot access member of non-pointer type [%s].",
-				ltype->repr), binary_expr->area);
+				type_tostr_plain(ltype)), binary_expr->area);
 		// logic of pointer and common member accessor are the same except this primary condition
 		goto find_matching_member_type;
 
 	case BINARY_MEMBER_ACCESSOR:
 		if (IS_POINTER_TYPE(ltype))
 			report_error2(frmt("Cannot access member of pointer type [%s].",
-				ltype->repr), binary_expr->area);
+				type_tostr_plain(ltype)), binary_expr->area);
 		//~~~~~~~~~~~~~~~~~~~~~~~
 		find_matching_member_type:
 		//~~~~~~~~~~~~~~~~~~~~~~~
@@ -286,7 +287,7 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 		// checks if the left expression's type is not predefined simple type
 		if (ltype->mods.is_predefined)
 			report_error2(frmt("Cannot access member of non user defined type [%s].",
-				ltype->repr), binary_expr->area);
+				type_tostr_plain(ltype)), binary_expr->area);
 
 		// iterating through all struct and through all struct's members, trying to find matching
 		if (type_decl_stmt = get_struct(ltype->repr, table))
@@ -301,7 +302,7 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 					return ((UnionDecl*)type_decl_stmt)->union_mmbrs[i]->type;
 
 		report_error2(frmt("Cannot find any member with name [%s] in type [%s].",
-			binary_expr->rexpr->idnt->svalue, ltype->repr), binary_expr->area);
+			binary_expr->rexpr->idnt->svalue, type_tostr_plain(ltype)), binary_expr->area);
 		break;
 		//------------------------------
 
@@ -313,26 +314,53 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 	return ltype;
 }
 
+SrcArea* get_expr_area(Expr* expr)
+{
+	switch (expr->kind)
+	{
+	case EXPR_IDNT:
+		return src_area_new(expr->idnt->context, NULL);
+	case EXPR_CONST:
+		return src_area_new(expr->cnst->context, NULL);
+	case EXPR_STRING:
+		return src_area_new(expr->str->context, NULL);
+	case EXPR_FUNC_CALL:
+		return expr->func_call->area;
+	case EXPR_INITIALIZER:
+		return expr->initializer->area;
+	case EXPR_UNARY_EXPR:
+		return expr->unary_expr->area;
+	case EXPR_BINARY_EXPR:
+		return expr->binary_expr->area;
+	case EXPR_TERNARY_EXPR:
+		return expr->ternary_expr->area;
+	default:
+		report_error("Unknown expression kind for selecting any context.", NULL);
+	}
+	return NULL;
+}
+
 Type* get_ternary_expr_type(TernaryExpr* ternary_expr, Table* table)
 {
 	Type* ltype = get_expr_type(ternary_expr->lexpr, table);
 	Type* rtype = get_expr_type(ternary_expr->rexpr, table);
 	Type* ctype = get_expr_type(ternary_expr->cond, table);
 
-	// todo: need to set area to error
 	if (!IS_NUMERIC_TYPE(ctype) && !IS_POINTER_TYPE(ctype))
 		if (!ctype)
-			report_error("Cannot determine the type of condition in ternary expression.", NULL);
+			report_error2("Cannot determine the type of condition in ternary expression.", 
+				get_expr_area(ternary_expr->cond));
 		else 
-			report_error(frmt("Expected numeric or pointer type in condition of ternary expression, type met: [%s]", ctype->repr), NULL);
+			report_error2(frmt("Expected numeric or pointer type in condition of ternary expression, type met: [%s]",
+				type_tostr_plain(ctype)), get_expr_area(ternary_expr->cond));
 
-	// todo: need to set area to error
 	if (can_cast_implicitly(ltype, rtype))
 		return cast_implicitly(ltype, rtype);
 	else if (can_cast_implicitly(rtype, ltype))
 		return cast_implicitly(rtype, ltype);
 	else
-		report_error("Left and right expressions in ternary expression should be the same or implicitly equal", NULL);
+		report_error2("Left and right expressions in ternary expression should be the same or implicitly equal", 
+			ternary_expr->area);
 	return NULL;
 }
 
@@ -369,24 +397,33 @@ uint32_t get_type_priority(Type* type)
 
 Type* cast_implicitly(Type* to, Type* type)
 {
+	//-------------------------------
+	// creating i32 type needed for certain cases
+	Type* i32_type = cnew_s(Type, i32_type, 1);
+	i32_type->mods.is_predefined = 1;
+	i32_type->repr = "i32";
+	//-------------------------------
+
 	if (can_cast_implicitly(to, type))
 	{
 		if (IS_POINTER_TYPE(to) && IS_POINTER_TYPE(type))
-			return to;
+			return i32_type;
 		if (IS_POINTER_TYPE(to) && (get_type_priority(type) >= U32))
-			return type;
+			return type_free(i32_type), type;
 		if (IS_POINTER_TYPE(to) && (get_type_priority(type) < U32))
-			return to;
+			return i32_type;
 		if ((get_type_priority(to) >= U32) && IS_POINTER_TYPE(type))
-			return to;
+			return type_free(i32_type), to;
 		if ((get_type_priority(to) < U32) && IS_POINTER_TYPE(type))
-			return type;
+			return i32_type;
+
+		type_free(i32_type);
 		return get_type_priority(to) >= get_type_priority(type) ?
 			to : type;
 	}
 	else
 		report_error2(frmt("Cannot implicitly cast type %s to %s",
-			to->repr, type->repr), to->area);
+			type_tostr_plain(to), type_tostr_plain(type)), to->area);
 }
 
 uint32_t can_cast_implicitly(Type* to, Type* type)
@@ -399,14 +436,14 @@ uint32_t can_cast_implicitly(Type* to, Type* type)
 		(!IS_STRING(to) && IS_STRING(type)))
 			return 0;
 
+	// case of two pointers of same rank
+	if (to->mods.is_ptr && (to->mods.is_ptr == type->mods.is_ptr))
+		return 1;
+
 	// case when types are equal
 	if (strcmp(to->repr, type->repr) == 0 &&
 		!IS_POINTER_TYPE(to) && !IS_POINTER_TYPE(type))
 			return 1;
-
-	// case of two pointers of same rank
-	if (to->mods.is_ptr && (to->mods.is_ptr == type->mods.is_ptr))
-		return 1;
 
 	// case of pointer && integral (not pointer)
 	if (to->mods.is_ptr && IS_INTEGRAL_TYPE(type) && !IS_POINTER_TYPE(type))

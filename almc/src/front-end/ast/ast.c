@@ -379,6 +379,14 @@ JumpStmt* jump_stmt_new(JumpStmtType type, Expr* additional_expr)
 	return js;
 }
 
+char* type_tostr_plain(Type* type)
+{
+	char* str = type->repr;
+	for (size_t i = 0; i < type->mods.is_ptr; i++)
+		str = frmt("%s*", str);
+	return str;
+}
+
 //todo: still have mem leak, but not so big as before
 void ast_free(AstRoot* root)
 {

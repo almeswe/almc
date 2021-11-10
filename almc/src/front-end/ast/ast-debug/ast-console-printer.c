@@ -106,8 +106,8 @@ void print_unary_expr(UnaryExpr* expr, const char* indent)
 	case UNARY_CAST:
 	case UNARY_SIZEOF:
 		if (expr->type)
-			printf("%s%s %s\n", indent, unary_expr_type_str[expr->kind],
-				expr->type->repr);
+			printf("%s%s (%s)\n", indent, unary_expr_type_str[expr->kind],
+				type_tostr_plain(expr->type));
 		else
 			printf("%s%s\n", indent, unary_expr_type_str[expr->kind]);
 		if (expr->cast_type)
@@ -115,8 +115,8 @@ void print_unary_expr(UnaryExpr* expr, const char* indent)
 		break;
 	default:
 		if (expr->type)
-			printf("%s%s %s\n", indent, unary_expr_type_str[expr->kind],
-				expr->type->repr);
+			printf("%s%s (%s)\n", indent, unary_expr_type_str[expr->kind],
+				type_tostr_plain(expr->type));
 		else
 			printf("%s%s\n", indent, unary_expr_type_str[expr->kind]);
 	}
@@ -169,8 +169,8 @@ void print_binary_expr(BinaryExpr* expr, const char* indent)
 		"binary-arr-mmbr-accsr: []"
 	};
 	if (expr->type)
-		printf("%s%s %s\n", indent, binary_expr_type_str[expr->kind],
-			expr->type->repr);
+		printf("%s%s (%s)\n", indent, binary_expr_type_str[expr->kind],
+			type_tostr_plain(expr->type));
 	else
 		printf("%s%s\n", indent, binary_expr_type_str[expr->kind]);
 	printf(RESET);
