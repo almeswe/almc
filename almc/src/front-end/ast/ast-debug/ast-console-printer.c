@@ -36,14 +36,22 @@ void print_type(Type* type, const char* indent)
 void print_idnt(Idnt* idnt, const char* indent)
 {
 	printf(BOLDWHITE);
-	printf("%sidnt: %s\n", indent, idnt->svalue);
+	if (idnt->type)
+		printf("%sidnt: %s (%s)\n", indent, idnt->svalue,
+			type_tostr_plain(idnt->type));
+	else
+		printf("%sidnt: %s\n", indent, idnt->svalue);
 	printf(RESET);
 }
 
 void print_str(Str* str, const char* indent)
 {
 	printf(WHITE);
-	printf("%sstr: \"%s\"\n", indent, str->svalue);
+	if (str->type)
+		printf("%sstr: \"%s\" (%s)\n", indent, str->svalue,
+			type_tostr_plain(str->type));
+	else
+		printf("%sstr: \"%s\"\n", indent, str->svalue);
 	printf(RESET);
 }
 
@@ -53,15 +61,19 @@ void print_const(Const* cnst, const char* indent)
 	switch (cnst->kind)
 	{
 	case CONST_INT:
-		printf("%sint-const: %lld\n", indent, cnst->ivalue);
+		printf("%sint-const: %lld", indent, cnst->ivalue);
 		break;
 	case CONST_UINT:
-		printf("%suint-const: %I64u\n", indent, cnst->uvalue);
+		printf("%suint-const: %I64u", indent, cnst->uvalue);
 		break;
 	case CONST_FLOAT:
-		printf("%sfloat-const: %f\n", indent, cnst->fvalue);
+		printf("%sfloat-const: %f", indent, cnst->fvalue);
 		break;
 	}
+	if (cnst->type)
+		printf(" (%s)\n", type_tostr_plain(cnst->type));
+	else
+		printf("\n");
 	printf(RESET);
 }
 
@@ -181,7 +193,11 @@ void print_binary_expr(BinaryExpr* expr, const char* indent)
 void print_ternary_expr(TernaryExpr* expr, const char* indent)
 {
 	printf(BOLDGREEN);
-	printf("%sternary:\n", indent);
+	if (expr->type)
+		printf("%sternary: (%s)\n", indent, 
+			type_tostr_plain(expr->type));
+	else
+		printf("%sternary: \n", indent);
 	printf(RESET);
 	print_expr(expr->cond, indent);
 	print_expr(expr->lexpr, indent);
