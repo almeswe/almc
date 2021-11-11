@@ -384,21 +384,47 @@ Token* get_eof_token(Lexer* lexer)
 	return token;
 }
 
+Token* get_num_token_endian(Lexer* lexer, Token* num_token)
+{
+	if (num_token->type == TOKEN_FLOAT_CONST)
+		return num_token;
+	switch (tolower(get_next_char(lexer)))
+	{
+	case 'i':
+		num_token->type = TOKEN_INT_CONST;
+		break;
+	case 'u':
+		num_token->type = TOKEN_UINT_CONST;
+		break;
+	case 'f':
+		num_token->type = TOKEN_FLOAT_CONST;
+		break;
+	default:
+		return unget_curr_char(lexer), num_token;
+	}
+	return get_next_char(lexer), num_token;
+}
+
 Token* get_num_token(Lexer* lexer)
 {
 	int format = get_tokens_format(lexer);
 	switch (format)
 	{
 	case FORMAT_BIN:
-		return get_bin_num_token(lexer);
+		return get_num_token_endian(lexer, 
+			get_bin_num_token(lexer));
 	case FORMAT_OCT:
-		return get_oct_num_token(lexer);
+		return get_num_token_endian(lexer, 
+			get_oct_num_token(lexer));
 	case FORMAT_HEX:
-		return get_hex_num_token(lexer);
+		return get_num_token_endian(lexer, 
+			get_hex_num_token(lexer));
 	case FORMAT_DEC:
-		return get_dec_num_token(lexer);
+		return get_num_token_endian(lexer,
+			get_dec_num_token(lexer));
+	default:
+		report_error(frmt("Unknown format for number met: %d", format), NULL);
 	}
-	report_error(frmt("Unknown format for number met (code: %d).", format), NULL);
 	return NULL;
 }
 
@@ -416,7 +442,7 @@ Token* get_bin_num_token(Lexer* lexer)
 	}
 	unget_curr_char(lexer);
 	str_builder_reduce_buffer(temp, buffer, size);
-	Token* token = token_new(TOKEN_INUM,
+	Token* token = token_new(TOKEN_INT_CONST,
 		src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
 	token->svalue = buffer;
 	return token;
@@ -436,7 +462,7 @@ Token* get_oct_num_token(Lexer* lexer)
 	}
 	unget_curr_char(lexer);
 	str_builder_reduce_buffer(temp, buffer, size);
-	Token* token = token_new(TOKEN_INUM,
+	Token* token = token_new(TOKEN_INT_CONST,
 		src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
 	token->svalue = buffer;
 	return token;
@@ -456,7 +482,7 @@ Token* get_hex_num_token(Lexer* lexer)
 	}
 	unget_curr_char(lexer);
 	str_builder_reduce_buffer(temp, buffer, size);
-	Token* token = token_new(TOKEN_INUM,
+	Token* token = token_new(TOKEN_INT_CONST,
 		src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
 	token->svalue = buffer;
 	return token;
@@ -480,7 +506,7 @@ Token* get_dec_num_token(Lexer* lexer)
 	}
 	unget_curr_char(lexer);
 	str_builder_reduce_buffer(temp, buffer, size);
-	Token* token = token_new(TOKEN_INUM,
+	Token* token = token_new(TOKEN_INT_CONST,
 		src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
 	token->svalue = buffer;
 	return token;
@@ -505,7 +531,7 @@ Token* get_dec_fnum_token(Lexer* lexer, char* buffer, uint32_t size)
 	}
 	unget_curr_char(lexer);
 	str_builder_reduce_buffer(temp, buffer, size);
-	Token* token = token_new(TOKEN_FNUM,
+	Token* token = token_new(TOKEN_FLOAT_CONST,
 		src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
 	token->svalue = buffer;
 	return token;
@@ -534,7 +560,7 @@ Token* get_dec_expnum_token(Lexer* lexer, char* buffer, uint32_t size, char is_f
 	}
 	unget_curr_char(lexer);
 	str_builder_reduce_buffer(temp, buffer, size);
-	Token* token = token_new(is_float ? TOKEN_FNUM : TOKEN_INUM,
+	Token* token = token_new(is_float ? TOKEN_FLOAT_CONST : TOKEN_INT_CONST,
 		src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
 	token->svalue = buffer;
 	return token;

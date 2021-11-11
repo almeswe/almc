@@ -265,14 +265,17 @@ Expr* parse_primary_expr(Parser* parser)
 {
 	Expr* expr = NULL;
 	Token* token = get_curr_token(parser);
-
 	switch (token->type)
 	{
-	case TOKEN_INUM:
+	case TOKEN_INT_CONST:
 		expr = expr_new(EXPR_CONST,
 			const_new(CONST_INT, token->svalue, token->context));
 		break;
-	case TOKEN_FNUM:
+	case TOKEN_UINT_CONST:
+		expr = expr_new(EXPR_CONST,
+			const_new(CONST_UINT, token->svalue, token->context));
+		break;
+	case TOKEN_FLOAT_CONST:
 		expr = expr_new(EXPR_CONST,
 			const_new(CONST_FLOAT, token->svalue, token->context));
 		break;
@@ -285,7 +288,7 @@ Expr* parse_primary_expr(Parser* parser)
 		break;
 	case TOKEN_CHARACTER:
 		expr = expr_new(EXPR_CONST,
-			const_new(CONST_INT, frmt("%d", (int32_t)token->cvalue), token->context));
+			const_new(CONST_UINT, frmt("%u", (uint32_t)token->cvalue), token->context));
 		break;
 	case TOKEN_OP_PAREN:
 		return parse_paren_expr(parser);

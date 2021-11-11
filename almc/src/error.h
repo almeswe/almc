@@ -13,5 +13,6 @@ char** create_spell_lines(SrcContext* context);
 void report_error(const char* message, SrcContext* context);
 void report_error2(const char* message, SrcArea* area);
 void report_warning(const char* message, SrcContext* context);
+void report_warning2(const char* message, SrcArea* area);
 
 #endif //ALMC_ERROR_H

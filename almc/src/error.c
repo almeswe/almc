@@ -16,6 +16,20 @@ void report_warning(const char* message, SrcContext* context)
 		printf("\n");
 }
 
+void report_warning2(const char* message, SrcArea* area)
+{
+	printf("WARNING: %s,", message);
+	if (area)
+	{
+		printf(" %s\n", src_area_tostr(area));
+		char** lines = create_spell_lines(area->begins);
+		if (lines)
+			printf("%s\n", lines[0]), printf("%s\n", lines[1]);
+	}
+	else
+		printf("\n");
+}
+
 void report_error(const char* message, SrcContext* context)
 {
 	//todo: DEBUG macro does not exist

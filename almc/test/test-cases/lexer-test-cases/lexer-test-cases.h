@@ -135,43 +135,43 @@ inline void lexer_recognition_test()
 	Lexer* lexer = lexer_new(file, FROM_FILE);
 	Token** tokens = lex(lexer);
 	assert(sbuffer_len(tokens) == 31);
-	assert(tokens[0]->type == TOKEN_INUM);
+	assert(tokens[0]->type == TOKEN_INT_CONST);
 	assert(strcmp(tokens[0]->svalue, "1E+5") == 0);
-	assert(tokens[1]->type == TOKEN_INUM);
+	assert(tokens[1]->type == TOKEN_INT_CONST);
 	assert(strcmp(tokens[1]->svalue, "123e-5") == 0);
-	assert(tokens[2]->type == TOKEN_FNUM);
+	assert(tokens[2]->type == TOKEN_FLOAT_CONST);
 	assert(strcmp(tokens[2]->svalue, "1.123e-1") == 0);
-	assert(tokens[3]->type == TOKEN_FNUM);
+	assert(tokens[3]->type == TOKEN_FLOAT_CONST);
 	assert(strcmp(tokens[3]->svalue, "1.33E+3") == 0);
 
-	assert(tokens[4]->type == TOKEN_INUM);
+	assert(tokens[4]->type == TOKEN_INT_CONST);
 	assert(strcmp(tokens[4]->svalue, "255") == 0);
-	assert(tokens[5]->type == TOKEN_INUM);
+	assert(tokens[5]->type == TOKEN_INT_CONST);
 	assert(strcmp(tokens[5]->svalue, "0") == 0);
-	assert(tokens[6]->type == TOKEN_FNUM);
+	assert(tokens[6]->type == TOKEN_FLOAT_CONST);
 	assert(strcmp(tokens[6]->svalue, "1.11") == 0);
-	assert(tokens[7]->type == TOKEN_FNUM);
+	assert(tokens[7]->type == TOKEN_FLOAT_CONST);
 	assert(strcmp(tokens[7]->svalue, "0.00333") == 0);
 
-	assert(tokens[8]->type == TOKEN_INUM);
+	assert(tokens[8]->type == TOKEN_INT_CONST);
 	assert(strcmp(tokens[8]->svalue, "0xff") == 0);
-	assert(tokens[9]->type == TOKEN_INUM);
+	assert(tokens[9]->type == TOKEN_INT_CONST);
 	assert(strcmp(tokens[9]->svalue, "0XFF") == 0);
-	assert(tokens[10]->type == TOKEN_INUM);
+	assert(tokens[10]->type == TOKEN_INT_CONST);
 	assert(strcmp(tokens[10]->svalue, "0x123") == 0);
 
-	assert(tokens[11]->type == TOKEN_INUM);
+	assert(tokens[11]->type == TOKEN_INT_CONST);
 	assert(strcmp(tokens[11]->svalue, "0b0011") == 0);
-	assert(tokens[12]->type == TOKEN_INUM);
+	assert(tokens[12]->type == TOKEN_INT_CONST);
 	assert(strcmp(tokens[12]->svalue, "0B0111") == 0);
-	assert(tokens[13]->type == TOKEN_INUM);
+	assert(tokens[13]->type == TOKEN_INT_CONST);
 	assert(strcmp(tokens[13]->svalue, "0b00001") == 0);
 
-	assert(tokens[14]->type == TOKEN_INUM);
+	assert(tokens[14]->type == TOKEN_INT_CONST);
 	assert(strcmp(tokens[14]->svalue, "0o123") == 0);
-	assert(tokens[15]->type == TOKEN_INUM);
+	assert(tokens[15]->type == TOKEN_INT_CONST);
 	assert(strcmp(tokens[15]->svalue, "0O333") == 0);
-	assert(tokens[16]->type == TOKEN_INUM);
+	assert(tokens[16]->type == TOKEN_INT_CONST);
 	assert(strcmp(tokens[16]->svalue, "0o222") == 0);
 
 	assert(tokens[17]->type == TOKEN_STRING);

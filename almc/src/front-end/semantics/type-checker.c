@@ -53,18 +53,33 @@ Type* get_expr_type(Expr* expr, Table* table)
 
 Type* get_const_type(Const* cnst)
 {
+#define IN_BOUNDS_OF(ubound, bbound, value) \
+	(((value) <= (ubound)) && ((value) >= (bbound)))
+
 	Type* type = cnew_s(Type, type, 1);
 	type->mods.is_predefined = 1;
 
 	switch (cnst->kind)
 	{
 	case CONST_INT:
-		type->repr = cnst->ivalue <= INT32_MAX &&
-			cnst->ivalue >= INT32_MIN ? "i32" : "i64";
+		if (IN_BOUNDS_OF(INT8_MAX, INT8_MIN, cnst->ivalue))
+			type->repr = "i8";
+		else if (IN_BOUNDS_OF(INT16_MAX, INT16_MIN, cnst->ivalue))
+			type->repr = "i16";
+		else if (IN_BOUNDS_OF(INT32_MAX, INT32_MIN, cnst->ivalue))
+			type->repr = "i32";
+		else
+			type->repr = "i64";
 		break;
 	case CONST_UINT:
-		type->repr = cnst->ivalue <= UINT32_MAX ?
-			"u32" : "u64";
+		if (IN_BOUNDS_OF(UINT8_MAX, 0, cnst->uvalue))
+			type->repr = "u8";
+		else if (IN_BOUNDS_OF(UINT16_MAX, 0, cnst->uvalue))
+			type->repr = "u16";
+		else if (IN_BOUNDS_OF(UINT32_MAX, 0, cnst->uvalue))
+			type->repr = "u32";
+		else
+			type->repr = "u64";
 		break;
 	case CONST_FLOAT:
 		type->repr = (int64_t)cnst->fvalue <= INT32_MAX &&
@@ -141,7 +156,7 @@ Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 			report_error2("Cannot determine the type of unary expression while dereferencing it.",
 				unary_expr->area);
 		if (!IS_POINTER_TYPE(type))
-			report_error2(frmt("Cannot dereference value of type [%s].",
+			report_error2(frmt("Cannot dereference value of type %s.",
 				type_tostr_plain(type)), unary_expr->area);
 		else
 		{
@@ -152,14 +167,16 @@ Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 	//-----------------------------
 
 	case UNARY_CAST:
-		return unary_expr->cast_type;
+		if (unary_expr->expr->kind == EXPR_CONST)
+			cast_explicitly_when_const(unary_expr->cast_type, type);
+		return cast_explicitly(unary_expr->cast_type, type);
 	case UNARY_SIZEOF:
 		if (!unary_expr->cast_type)
 		{
 			// handling type of expr of sizeof
 			if (unary_expr->expr && type)
 				if (!IS_NUMERIC_TYPE(type) && !IS_POINTER_TYPE(type))
-					report_error2(frmt("sizeof accepts only numeric or pointer type of expession, met [%s].",
+					report_error2(frmt("sizeof accepts only numeric or pointer type of expession, met %s.",
 						type_tostr_plain(type)), unary_expr->area);
 
 			// if sizeof has idnt in expr, its can be simple variable or user-type, need to check it
@@ -282,11 +299,11 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 	// accessors
 	case BINARY_ARR_MEMBER_ACCESSOR:
 		if (!IS_POINTER_TYPE(ltype))			
-			report_error2(frmt("Cannot access array element value of type [%s], pointer type expected.",
+			report_error2(frmt("Cannot access array element value of type %s, pointer type expected.",
 				type_tostr_plain(ltype)), binary_expr->area);
 		// index of an array should be an integral type
 		if (!IS_INTEGRAL_TYPE(rtype))
-			report_error2(frmt("Index should be value of integral type. Type [%s] met.",
+			report_error2(frmt("Index should be value of integral type. Type %s met.",
 				type_tostr_plain(rtype)), binary_expr->area);
 		type_dup_no_alloc(ltype, type_new);
 		type_new->mods.is_ptr -= 1;
@@ -294,14 +311,14 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 
 	case BINARY_PTR_MEMBER_ACCESSOR:
 		if (!IS_POINTER_TYPE(ltype))
-			report_error2(frmt("Cannot access member of non-pointer type [%s].",
+			report_error2(frmt("Cannot access member of non-pointer type %s.",
 				type_tostr_plain(ltype)), binary_expr->area);
 		// logic of pointer and common member accessor are the same except this primary condition
 		goto find_matching_member_type;
 
 	case BINARY_MEMBER_ACCESSOR:
 		if (IS_POINTER_TYPE(ltype))
-			report_error2(frmt("Cannot access member of pointer type [%s].",
+			report_error2(frmt("Cannot access member of pointer type %s.",
 				type_tostr_plain(ltype)), binary_expr->area);
 		//~~~~~~~~~~~~~~~~~~~~~~~
 		find_matching_member_type:
@@ -310,7 +327,7 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 		// condition for both common and pointer accessors
 		// checks if the left expression's type is not predefined simple type
 		if (ltype->mods.is_predefined)
-			report_error2(frmt("Cannot access member of non-user defined type [%s].",
+			report_error2(frmt("Cannot access member of non-user defined type %s.",
 				type_tostr_plain(ltype)), binary_expr->area);
 
 		// iterating through all struct and through all struct's members, trying to find matching
@@ -325,7 +342,7 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 				if (strcmp(((UnionDecl*)type_decl_stmt)->union_mmbrs[i]->var, get_member_name(binary_expr->rexpr)) == 0)
 					return ((UnionDecl*)type_decl_stmt)->union_mmbrs[i]->type;
 
-		report_error2(frmt("Cannot find any member with name [%s] in type [%s].",
+		report_error2(frmt("Cannot find any member with name %s in type %s.",
 			binary_expr->rexpr->idnt->svalue, type_tostr_plain(ltype)), binary_expr->area);
 		break;
 		//------------------------------
@@ -375,7 +392,7 @@ Type* get_ternary_expr_type(TernaryExpr* ternary_expr, Table* table)
 			report_error2("Cannot determine the type of condition in ternary expression.", 
 				get_expr_area(ternary_expr->cond));
 		else 
-			report_error2(frmt("Expected numeric or pointer type in condition of ternary expression, type met: [%s]",
+			report_error2(frmt("Expected numeric or pointer type in condition of ternary expression, type met: %s",
 				type_tostr_plain(ctype)), get_expr_area(ternary_expr->cond));
 
 	if (can_cast_implicitly(ltype, rtype))
@@ -386,6 +403,29 @@ Type* get_ternary_expr_type(TernaryExpr* ternary_expr, Table* table)
 		report_error2("Left and right expressions in ternary expression should be the same or implicitly equal", 
 			ternary_expr->area);
 	return NULL;
+}
+
+uint32_t get_type_size_in_bytes(Type* type)
+{
+	if (type->mods.is_ptr)
+		return 4;
+
+	if (type->mods.is_predefined)
+	{
+		if (IS_U8(type) || IS_I8(type) || IS_CHAR(type))
+			return 1;
+		else if (IS_U16(type) || IS_I16(type))
+			return 2;
+		else if (IS_U32(type) || IS_I32(type) || IS_F32(type))
+			return 4;
+		else if (IS_U64(type) || IS_I64(type) || IS_F64(type))
+			return 8;
+		else
+			report_error("Cannot get size of %s type", type_tostr_plain(type));
+	}
+	else
+		//todo: add type size for user types
+		assert(0);
 }
 
 uint32_t get_type_priority(Type* type)
@@ -412,11 +452,45 @@ uint32_t get_type_priority(Type* type)
 		return F32;
 	if (IS_F64(type))
 		return F64;
-	if (IS_STRING(type))
+	if (IS_STRING_TYPE(type))
 		return STR;
 	if (IS_VOID(type))
 		return VOID;
 	return -0xA;
+}
+
+Type* cast_explicitly(Type* to, Type* type)
+{
+	if (!to || !type)
+		report_error2("Cannot determine at least one type when trying to convert explicitly.", NULL);
+	else
+	{
+		if (to->mods.is_void && !IS_POINTER_TYPE(to))
+			report_error2("Explicit conversion to void is not allowed.", to->area);
+		if (IS_STRING_TYPE(type) && !IS_STRING_TYPE(to) && !IS_CHAR_POINTER_TYPE(to))
+			report_error2(frmt("Cannot explicitly convert type %s to %s.",
+				type_tostr_plain(type), type_tostr_plain(to)), to->area);
+		if (IS_INTEGRAL_TYPE(to) && IS_REAL_TYPE(type))
+			report_warning2("Converting real type to integral type may occur data losses.",
+				to->area);
+	}
+	return to;
+}
+
+Type* cast_explicitly_when_const(Type* to, Type* const_type)
+{
+	if (!to || !const_type)
+		report_error2("Cannot determine at least one type when trying to convert explicitly.", NULL);
+	else
+	{
+		if (to->mods.is_void && !IS_POINTER_TYPE(to))
+			report_error2("Explicit conversion to void is not allowed.", to->area);
+		if (to->mods.is_predefined && const_type->mods.is_predefined)
+			if (get_type_size_in_bytes(to) < get_type_size_in_bytes(const_type))
+				report_error2(frmt("Cannot explicitly convert constant value of type %s to %s.",
+					type_tostr_plain(to), type_tostr_plain(const_type)), to->area);
+		return cast_explicitly(to, const_type);
+	}
 }
 
 Type* cast_implicitly(Type* to, Type* type)
@@ -446,7 +520,7 @@ Type* cast_implicitly(Type* to, Type* type)
 			to : type;
 	}
 	else
-		report_error2(frmt("Cannot implicitly cast type %s to %s",
+		report_error2(frmt("Cannot implicitly convert type %s to %s",
 			type_tostr_plain(to), type_tostr_plain(type)), to->area);
 }
 
@@ -455,7 +529,7 @@ Type* cast_implicitly_when_assign(Type* to, Type* type)
 	if (can_cast_implicitly(to, type))
 		return to;
 	else
-		report_error2(frmt("Cannot implicitly cast type %s to %s",
+		report_error2(frmt("Cannot implicitly convert type %s to %s",
 			type_tostr_plain(to), type_tostr_plain(type)), to->area);
 }
 
@@ -465,8 +539,8 @@ uint32_t can_cast_implicitly(Type* to, Type* type)
 		return 0;
 
 	// if one type is string, except second type
-	if ((IS_STRING(to) && !IS_STRING(type)) ||
-		(!IS_STRING(to) && IS_STRING(type)))
+	if ((IS_STRING_TYPE(to) && !IS_STRING_TYPE(type)) ||
+		(!IS_STRING_TYPE(to) && IS_STRING_TYPE(type)))
 			return 0;
 
 	// case of two pointers of same rank
@@ -486,30 +560,56 @@ uint32_t can_cast_implicitly(Type* to, Type* type)
 	if (type->mods.is_ptr && IS_INTEGRAL_TYPE(to) && (get_type_priority(to) >= U32) && !IS_POINTER_TYPE(to))
 		return 1;
 
-	// types that can be casted to i8, u8, chr
-	if ((IS_U8(to)   || IS_I8(to)   || IS_CHAR(to)) &&
-	    (IS_U8(type) || IS_I8(type) || IS_CHAR(type)))
+	// types that can be casted to u8 and char
+	if ((IS_U8(to)   || IS_CHAR(to)) &&
+	    (IS_U8(type) || IS_CHAR(type)))
 			return 1;
 
-	// types that can be casted to i16, u16
-	else if ((IS_U16(to) || IS_I16(to))   &&
-	    (IS_I8(type)  || IS_CHAR(type) || IS_U8(type) ||
-	     IS_I16(type) || IS_U16(type)))
+	// types that can be casted to i8
+	if (IS_I8(to) &&
+	    IS_I8(type))
 			return 1;
 
-	// types that can be casted to i32, u32
-	else if ((IS_U32(to) || IS_I32(to))   &&
+	// types that can be casted to u16
+	else if (IS_U16(to) &&
+		(IS_I8(type) || IS_CHAR(type) || IS_U8(type) ||
+	     IS_U16(type)))
+			return 1;
+
+	// types that can be casted to i16
+	else if (IS_I16(to) &&
+		(IS_I8(type) || IS_CHAR(type) || IS_U8(type) ||
+		 IS_I16(type)))
+			return 1;
+
+	// types that can be casted to u32
+	else if (IS_U32(to) &&
 		(IS_I8(type)  || IS_CHAR(type) || IS_U8(type) ||
 		 IS_I16(type) || IS_U16(type)  ||
-		 IS_I32(type) || IS_U32(type)))
+		 IS_U32(type)))
 			return 1;
 
-	// types that can be casted to i64, u64
-	else if ((IS_U64(to) || IS_I64(to))   &&
+	// types that can be casted to i32
+	else if (IS_I32(to) &&
+		(IS_I8(type) || IS_CHAR(type) || IS_U8(type) ||
+		 IS_I16(type) || IS_U16(type) ||
+		 IS_I32(type)))
+			return 1;
+
+	// types that can be casted to u64
+	else if (IS_U64(to) &&
 		(IS_I8(type)  || IS_CHAR(type) || IS_U8(type) ||
 		 IS_I16(type) || IS_U16(type)  ||
 		 IS_I32(type) || IS_U32(type)  ||
-		 IS_I64(type) || IS_U64(type)))
+		 IS_U64(type)))
+			return 1;
+
+	// types that can be casted to i64
+	else if (IS_I64(to) &&
+		(IS_I8(type) || IS_CHAR(type) || IS_U8(type) ||
+		 IS_I16(type) || IS_U16(type) ||
+		 IS_I32(type) || IS_U32(type) ||
+		 IS_I64(type)))
 			return 1;
 
 	// types that can be casted to f32

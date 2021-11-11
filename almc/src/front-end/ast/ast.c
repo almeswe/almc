@@ -48,7 +48,6 @@ Idnt* idnt_new(const char* idnt, SrcContext* context)
 
 Const* const_new(ConstKind type, const char* svalue, SrcContext* context)
 {
-	uint64_t value = 0;
 	Const* c = new_s(Const, c);
 	c->type = NULL;
 	c->context = context;
@@ -56,6 +55,26 @@ Const* const_new(ConstKind type, const char* svalue, SrcContext* context)
 	switch (c->kind = type)
 	{
 	case CONST_INT:
+		if (strlen(svalue) <= 1)
+			c->ivalue = atof(svalue);
+		else
+		{
+			switch (tolower(svalue[1]))
+			{
+			case 'x':
+				c->ivalue = strtoll(
+					svalue + 2, NULL, 16);break;
+			case 'o':
+				c->ivalue = strtoll(
+					svalue + 2, NULL, 8); break;
+			case 'b':
+				c->ivalue = strtoll(
+					svalue + 2, NULL, 2); break;
+			default:
+				c->ivalue = (int64_t)atof(svalue);
+			}
+		}
+		break;
 	case CONST_UINT:
 		if (strlen(svalue) <= 1)
 			c->uvalue = atof(svalue);
@@ -64,17 +83,14 @@ Const* const_new(ConstKind type, const char* svalue, SrcContext* context)
 			switch (tolower(svalue[1]))
 			{
 			case 'x':
-				c->uvalue = strtoll(
-					svalue + 2, NULL, 16);
-				break;
+				c->uvalue = (uint16_t)strtoull(
+					svalue + 2, NULL, 16);break;
 			case 'o':
-				c->uvalue = strtoll(
-					svalue + 2, NULL, 8);
-				break;
+				c->uvalue = strtoull(
+					svalue + 2, NULL, 8); break;
 			case 'b':
-				c->uvalue = strtoll(
-					svalue + 2, NULL, 2);
-				break;
+				c->uvalue = strtoull(
+					svalue + 2, NULL, 2); break;
 			default:
 				c->uvalue = (uint64_t)atof(svalue);
 			}
