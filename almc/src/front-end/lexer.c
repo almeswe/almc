@@ -402,7 +402,8 @@ Token* get_num_token_endian(Lexer* lexer, Token* num_token)
 	default:
 		return unget_curr_char(lexer), num_token;
 	}
-	return get_next_char(lexer), num_token;
+	//return get_next_char(lexer), num_token;
+	return num_token;
 }
 
 Token* get_num_token(Lexer* lexer)

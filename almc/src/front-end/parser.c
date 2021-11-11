@@ -2,7 +2,6 @@
 
 //todo: think about how i can access struct members (also if struct is pointer) in initializer
 //todo: how i can save the order of abstract-declarators in type declaration? (char*[4] and char[4]* are the same types yet)
-//todo: add contexts for expr and (compeleted)
 //todo: add parent to each node of tree
 
 #define matcht(parser, t) (get_curr_token(parser)->type == (t))
@@ -281,6 +280,8 @@ Expr* parse_primary_expr(Parser* parser)
 		break;
 	case TOKEN_IDNT:
 		expr = parse_idnt_ambigulty(parser);
+		if (expr->kind == EXPR_FUNC_CALL)
+			return expr;
 		break;
 	case TOKEN_STRING:
 		expr = expr_new(EXPR_STRING,
