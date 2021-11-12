@@ -46,7 +46,6 @@ typedef enum UnaryExprKind
 	UNARY_PREFIX_INC,
 	UNARY_PREFIX_DEC,
 
-	//todo: create cast like: cast(type) not (type)
 	UNARY_CAST,
 	UNARY_SIZEOF,
 
@@ -71,6 +70,7 @@ typedef enum BinaryExprKind
 	BINARY_MOD,
 	BINARY_MULT,
 
+	BINARY_COMMA,
 	BINARY_LSHIFT,
 	BINARY_RSHIFT,
 

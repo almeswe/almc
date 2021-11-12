@@ -345,7 +345,14 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 		report_error2(frmt("Cannot find any member with name %s in type %s.",
 			binary_expr->rexpr->idnt->svalue, type_tostr_plain(ltype)), binary_expr->area);
 		break;
-		//------------------------------
+	//------------------------------
+
+	//------------------------------
+	// comma expr, just return right expr's type for any size of comma expr (specific parser property)
+	case BINARY_COMMA:
+		return rtype;
+	//------------------------------
+
 
 	default:
 		report_error(frmt("Unknown binary expression kind met: %d",

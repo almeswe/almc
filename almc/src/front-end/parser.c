@@ -129,7 +129,7 @@ AstRoot* parse(Parser* parser)
 
 Expr* parse_expr(Parser* parser)
 {
-	return parse_assignment_expr(parser);
+	return parse_comma_expr(parser);
 }
 
 Type* parse_abstract_declarator(Parser* parser, Type* type)
@@ -233,7 +233,8 @@ Expr* parse_func_call_expr(Parser* parser)
 		{
 			if (sbuffer_len(func_args) && matcht(parser, TOKEN_COMMA))
 				get_next_token(parser);
-			sbuffer_add(func_args, parse_expr(parser));
+			// assignment expression here needed to avoid recognition of ',' as operator (its separator actually)
+			sbuffer_add(func_args, parse_assignment_expr(parser));
 		} while (matcht(parser, TOKEN_COMMA));
 	}
 	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
@@ -929,6 +930,23 @@ Expr* parse_assignment_expr(Parser* parser)
 	return (assign_expr) ? assign_expr : cond_expr;
 }
 
+Expr* parse_comma_expr(Parser* parser)
+{
+	Expr* comma_expr = NULL;
+	context_starts(parser, context);
+	Expr* assign_expr = parse_assignment_expr(parser);
+
+	while (matcht(parser, TOKEN_COMMA))
+	{
+		get_next_token(parser);
+		comma_expr = expr_new(EXPR_BINARY_EXPR,
+			binary_expr_new(BINARY_COMMA, comma_expr ? comma_expr : assign_expr, parse_assignment_expr(parser)));
+		context_ends(parser, context, comma_expr->binary_expr);
+	}
+
+	return comma_expr ? comma_expr : assign_expr;
+}
+
 Expr* parse_initializer_expr(Parser* parser)
 {
 	Expr** values =	NULL;
@@ -937,7 +955,8 @@ Expr* parse_initializer_expr(Parser* parser)
 	expect_with_skip(parser, TOKEN_OP_BRACE, "{");
 	while (!matcht(parser, TOKEN_CL_BRACE))
 	{
-		sbuffer_add(values, parse_expr(parser));
+		// same thing why i put parse_assignment_expr, but not parse_expr (same with parse_func_call_expr)
+		sbuffer_add(values, parse_assignment_expr(parser));
 		if (!matcht(parser, TOKEN_CL_BRACE))
 			expect_with_skip(parser, TOKEN_COMMA, ",");
 	}

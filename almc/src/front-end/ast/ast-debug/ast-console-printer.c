@@ -146,6 +146,7 @@ void print_binary_expr(BinaryExpr* expr, const char* indent)
 		"binary-mod: %",
 		"binary-mult: *",
 
+		"binary-comma: ,",
 		"binary-shl: <<",
 		"binary-shr: >>",
 

@@ -46,6 +46,7 @@ Expr* parse_or_lg_expr(Parser* parser);
 Expr* parse_conditional_expr(Parser* parser);
 Expr* parse_constant_expr(Parser* parser);
 Expr* parse_assignment_expr(Parser* parser);
+Expr* parse_comma_expr(Parser* parser);
 
 Expr* parse_initializer_expr(Parser* parser);
 
