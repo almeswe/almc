@@ -10,7 +10,7 @@ StackFrame* stack_frame_new(FuncDecl* func)
 	frame->regtable = regtable_new();
 	frame->label_counter = 0;
 	frame->func_name = func->func_name;
-	frame->return_stmt_mentioned = 0;
+	//frame->return_stmt_mentioned = 0;
 	//frame->expr_gen = expr_gen_new(frame->regtable);
 	for (size_t i = 0; i < sbuffer_len(func->func_params); i++)
 		add_argument(func->func_params[i], frame);

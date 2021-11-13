@@ -159,7 +159,7 @@ Stmt* stmt_new(StmtType type, void* stmt_value_ptr)
 {
 	#define stmt_set_value(type, field) s->field = (type*)stmt_value_ptr; break
 	Stmt* s = new_s(Stmt, s);
-	switch (s->type = type)
+	switch (s->kind = type)
 	{
 	case STMT_IF:
 		stmt_set_value(IfStmt, if_stmt);
@@ -191,11 +191,11 @@ Stmt* stmt_new(StmtType type, void* stmt_value_ptr)
 	return s;
 }
 
-TypeDecl* type_decl_new(TypeDeclType type, void* type_decl_value_ptr)
+TypeDecl* type_decl_new(TypeDeclKind type, void* type_decl_value_ptr)
 {
 	#define type_decl_set_value(type, field) td->field = (type*)type_decl_value_ptr; break
 	TypeDecl* td = new_s(TypeDecl, td);
-	switch (td->type = type)
+	switch (td->kind = type)
 	{
 	case TYPE_DECL_ENUM:
 		type_decl_set_value(EnumDecl, enum_decl);
@@ -289,11 +289,11 @@ LabelDecl* label_decl_new(Idnt* label_idnt)
 	return ld;
 }
 
-LoopStmt* loop_stmt_new(LoopStmtType type, void* loop_stmt_value_ptr)
+LoopStmt* loop_stmt_new(LoopStmtKind type, void* loop_stmt_value_ptr)
 {
 	#define loop_stmt_set_value(type, field) lp->field = (type*)loop_stmt_value_ptr; break
 	LoopStmt* lp = new_s(LoopStmt, lp);
-	switch (lp->type = type)
+	switch (lp->kind = type)
 	{
 	case LOOP_DO:
 		loop_stmt_set_value(DoLoop, do_loop);
@@ -375,10 +375,10 @@ ImportStmt* import_stmt_new(AstRoot* imported_ast)
 	return is;
 }
 
-JumpStmt* jump_stmt_new(JumpStmtType type, Expr* additional_expr)
+JumpStmt* jump_stmt_new(JumpStmtKind type, Expr* additional_expr)
 {
 	JumpStmt* js = new_s(JumpStmt, js);
-	switch (js->type = type)
+	switch (js->kind = type)
 	{
 	case JUMP_BREAK:
 	case JUMP_CONTINUE:
@@ -559,7 +559,7 @@ void stmt_free(Stmt* stmt)
 {
 	if (stmt)
 	{
-		switch (stmt->type)
+		switch (stmt->kind)
 		{
 		case STMT_IF:
 			if_stmt_free(stmt->if_stmt);
@@ -608,7 +608,7 @@ void type_decl_free(TypeDecl* type_decl)
 {
 	if (type_decl)
 	{
-		switch (type_decl->type)
+		switch (type_decl->kind)
 		{
 		case TYPE_DECL_ENUM:
 			enum_decl_free(type_decl->enum_decl);
@@ -737,7 +737,7 @@ void loop_stmt_free(LoopStmt* loop_stmt)
 {
 	if (loop_stmt)
 	{
-		switch (loop_stmt->type)
+		switch (loop_stmt->kind)
 		{
 		case LOOP_DO:
 			do_loop_free(loop_stmt->do_loop);
@@ -848,7 +848,7 @@ void jump_stmt_free(JumpStmt* jump_stmt)
 {
 	if (jump_stmt)
 	{
-		switch (jump_stmt->type)
+		switch (jump_stmt->kind)
 		{
 		case JUMP_BREAK:
 		case JUMP_CONTINUE:

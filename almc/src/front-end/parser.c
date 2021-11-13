@@ -1411,7 +1411,7 @@ AstRoot* parse_module(const char* module_path)
 
 char is_stmt_for_import(Stmt* stmt)
 {
-	switch (stmt->type)
+	switch (stmt->kind)
 	{
 	case STMT_TYPE_DECL:
 	case STMT_VAR_DECL:
@@ -1423,10 +1423,10 @@ char is_stmt_for_import(Stmt* stmt)
 
 char* get_stmt_for_import_name(Stmt* stmt)
 {
-	switch (stmt->type)
+	switch (stmt->kind)
 	{
 	case STMT_TYPE_DECL:
-		switch (stmt->type_decl->type)
+		switch (stmt->type_decl->kind)
 		{
 		case TYPE_DECL_ENUM:
 			return stmt->type_decl->enum_decl->enum_name;
@@ -1636,7 +1636,7 @@ Stmt* parse_from_import_member_stmt(Parser* parser, AstRoot* import_module)
 
 Stmt* parse_jump_stmt(Parser* parser)
 {
-	JumpStmtType type = -1;
+	JumpStmtKind type = -1;
 	Expr* additional_expr = NULL;
 	Idnt* goto_label = cnew_s(Idnt, goto_label, 1);
 

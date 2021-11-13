@@ -9,15 +9,15 @@ inline void test_case1()
 	Parser* parser = parser_new(path_copy, lex(lexer));
 	AstRoot* ast = parse(parser);
 
-	assert(ast->stmts[0]->type == STMT_IMPORT);
-	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[0]->type == STMT_VAR_DECL);
-	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[1]->type == STMT_FUNC_DECL);
-	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[2]->type == STMT_TYPE_DECL && 
-		   ast->stmts[0]->import_stmt->imported_ast->stmts[2]->type_decl->type == TYPE_DECL_ENUM);
-	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[3]->type == STMT_TYPE_DECL && 
-		   ast->stmts[0]->import_stmt->imported_ast->stmts[3]->type_decl->type == TYPE_DECL_STRUCT);
-	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[4]->type == STMT_TYPE_DECL && 
-		   ast->stmts[0]->import_stmt->imported_ast->stmts[4]->type_decl->type == TYPE_DECL_UNION);
+	assert(ast->stmts[0]->kind == STMT_IMPORT);
+	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[0]->kind == STMT_VAR_DECL);
+	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[1]->kind == STMT_FUNC_DECL);
+	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[2]->kind == STMT_TYPE_DECL && 
+		   ast->stmts[0]->import_stmt->imported_ast->stmts[2]->type_decl->kind == TYPE_DECL_ENUM);
+	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[3]->kind == STMT_TYPE_DECL && 
+		   ast->stmts[0]->import_stmt->imported_ast->stmts[3]->type_decl->kind == TYPE_DECL_STRUCT);
+	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[4]->kind == STMT_TYPE_DECL && 
+		   ast->stmts[0]->import_stmt->imported_ast->stmts[4]->type_decl->kind == TYPE_DECL_UNION);
 	free(path_copy);
 	lexer_free(lexer);
 	parser_free(parser);
@@ -32,10 +32,10 @@ inline void test_case2()
 	Parser* parser = parser_new(path_copy, lex(lexer));
 	AstRoot* ast = parse(parser);
 
-	assert(ast->stmts[0]->type == STMT_IMPORT);
-	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[0]->type == STMT_VAR_DECL);
-	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[1]->type == STMT_TYPE_DECL &&
-		   ast->stmts[0]->import_stmt->imported_ast->stmts[1]->type_decl->type == TYPE_DECL_UNION);
+	assert(ast->stmts[0]->kind == STMT_IMPORT);
+	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[0]->kind == STMT_VAR_DECL);
+	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[1]->kind == STMT_TYPE_DECL &&
+		   ast->stmts[0]->import_stmt->imported_ast->stmts[1]->type_decl->kind == TYPE_DECL_UNION);
 
 	free(path_copy);
 	lexer_free(lexer);
@@ -52,21 +52,21 @@ inline void test_case3()
 	AstRoot* ast = parse(parser);
 
 	// first from-stmt
-	assert(ast->stmts[0]->type == STMT_IMPORT);
-	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[0]->type == STMT_VAR_DECL);
+	assert(ast->stmts[0]->kind == STMT_IMPORT);
+	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[0]->kind == STMT_VAR_DECL);
 	
 	// second from-stmt
-	assert(ast->stmts[1]->type == STMT_IMPORT);
-	assert(ast->stmts[1]->import_stmt->imported_ast->stmts[0]->type == STMT_TYPE_DECL &&
-		ast->stmts[1]->import_stmt->imported_ast->stmts[0]->type_decl->type == TYPE_DECL_STRUCT);
+	assert(ast->stmts[1]->kind == STMT_IMPORT);
+	assert(ast->stmts[1]->import_stmt->imported_ast->stmts[0]->kind == STMT_TYPE_DECL &&
+		ast->stmts[1]->import_stmt->imported_ast->stmts[0]->type_decl->kind == TYPE_DECL_STRUCT);
 
 	// import stmt
-	assert(ast->stmts[2]->type == STMT_IMPORT);
-	assert(ast->stmts[2]->import_stmt->imported_ast->stmts[0]->type == STMT_FUNC_DECL);
-	assert(ast->stmts[2]->import_stmt->imported_ast->stmts[1]->type == STMT_TYPE_DECL &&
-		ast->stmts[2]->import_stmt->imported_ast->stmts[1]->type_decl->type == TYPE_DECL_ENUM);
-	assert(ast->stmts[2]->import_stmt->imported_ast->stmts[2]->type == STMT_TYPE_DECL &&
-		ast->stmts[2]->import_stmt->imported_ast->stmts[2]->type_decl->type == TYPE_DECL_UNION);
+	assert(ast->stmts[2]->kind == STMT_IMPORT);
+	assert(ast->stmts[2]->import_stmt->imported_ast->stmts[0]->kind == STMT_FUNC_DECL);
+	assert(ast->stmts[2]->import_stmt->imported_ast->stmts[1]->kind == STMT_TYPE_DECL &&
+		ast->stmts[2]->import_stmt->imported_ast->stmts[1]->type_decl->kind == TYPE_DECL_ENUM);
+	assert(ast->stmts[2]->import_stmt->imported_ast->stmts[2]->kind == STMT_TYPE_DECL &&
+		ast->stmts[2]->import_stmt->imported_ast->stmts[2]->type_decl->kind == TYPE_DECL_UNION);
 
 	free(path_copy);
 	lexer_free(lexer);
@@ -83,22 +83,22 @@ inline void test_case4()
 	AstRoot* ast = parse(parser);
 
 	// import stmt
-	assert(ast->stmts[0]->type == STMT_IMPORT);
-	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[0]->type == STMT_VAR_DECL);
-	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[1]->type == STMT_FUNC_DECL);
-	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[2]->type == STMT_TYPE_DECL &&
-		ast->stmts[0]->import_stmt->imported_ast->stmts[2]->type_decl->type == TYPE_DECL_ENUM);
-	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[3]->type == STMT_TYPE_DECL &&
-		ast->stmts[0]->import_stmt->imported_ast->stmts[3]->type_decl->type == TYPE_DECL_STRUCT);
-	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[4]->type == STMT_TYPE_DECL &&
-		ast->stmts[0]->import_stmt->imported_ast->stmts[4]->type_decl->type == TYPE_DECL_UNION);
+	assert(ast->stmts[0]->kind == STMT_IMPORT);
+	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[0]->kind == STMT_VAR_DECL);
+	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[1]->kind == STMT_FUNC_DECL);
+	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[2]->kind == STMT_TYPE_DECL &&
+		ast->stmts[0]->import_stmt->imported_ast->stmts[2]->type_decl->kind == TYPE_DECL_ENUM);
+	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[3]->kind == STMT_TYPE_DECL &&
+		ast->stmts[0]->import_stmt->imported_ast->stmts[3]->type_decl->kind == TYPE_DECL_STRUCT);
+	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[4]->kind == STMT_TYPE_DECL &&
+		ast->stmts[0]->import_stmt->imported_ast->stmts[4]->type_decl->kind == TYPE_DECL_UNION);
 	
 	// from-stmt
-	assert(ast->stmts[1]->type == STMT_IMPORT);
+	assert(ast->stmts[1]->kind == STMT_IMPORT);
 	assert(!ast->stmts[1]->import_stmt->imported_ast->stmts);
 
 	// from-stmt
-	assert(ast->stmts[2]->type == STMT_IMPORT);
+	assert(ast->stmts[2]->kind == STMT_IMPORT);
 	assert(!ast->stmts[2]->import_stmt->imported_ast->stmts);
 
 	free(path_copy);
@@ -116,20 +116,20 @@ inline void test_case5()
 	AstRoot* ast = parse(parser);
 
 	// import stmt
-	assert(ast->stmts[0]->type == STMT_IMPORT);
-	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[0]->type == STMT_FUNC_DECL);
-	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[1]->type == STMT_FUNC_DECL);
+	assert(ast->stmts[0]->kind == STMT_IMPORT);
+	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[0]->kind == STMT_FUNC_DECL);
+	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[1]->kind == STMT_FUNC_DECL);
 
 	// import-stmt
-	assert(ast->stmts[1]->type == STMT_IMPORT);
+	assert(ast->stmts[1]->kind == STMT_IMPORT);
 	assert(!ast->stmts[1]->import_stmt->imported_ast->stmts);
 
 	// from-stmt
-	assert(ast->stmts[2]->type == STMT_IMPORT);
-	assert(ast->stmts[2]->import_stmt->imported_ast->stmts[0]->type == STMT_VAR_DECL);
+	assert(ast->stmts[2]->kind == STMT_IMPORT);
+	assert(ast->stmts[2]->import_stmt->imported_ast->stmts[0]->kind == STMT_VAR_DECL);
 
 	// from-stmt
-	assert(ast->stmts[3]->type == STMT_IMPORT);
+	assert(ast->stmts[3]->kind == STMT_IMPORT);
 	assert(!ast->stmts[3]->import_stmt->imported_ast->stmts);
 
 	free(path_copy);
@@ -147,21 +147,21 @@ inline void test_case6()
 	AstRoot* ast = parse(parser);
 
 	// import stmt
-	assert(ast->stmts[0]->type == STMT_IMPORT);
-	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[0]->type == STMT_VAR_DECL);
-	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[1]->type == STMT_FUNC_DECL);
-	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[2]->type == STMT_TYPE_DECL &&
-		ast->stmts[0]->import_stmt->imported_ast->stmts[2]->type_decl->type == TYPE_DECL_ENUM);
-	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[3]->type == STMT_TYPE_DECL &&
-		ast->stmts[0]->import_stmt->imported_ast->stmts[3]->type_decl->type == TYPE_DECL_STRUCT);
-	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[4]->type == STMT_TYPE_DECL &&
-		ast->stmts[0]->import_stmt->imported_ast->stmts[4]->type_decl->type == TYPE_DECL_UNION);
+	assert(ast->stmts[0]->kind == STMT_IMPORT);
+	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[0]->kind == STMT_VAR_DECL);
+	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[1]->kind == STMT_FUNC_DECL);
+	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[2]->kind == STMT_TYPE_DECL &&
+		ast->stmts[0]->import_stmt->imported_ast->stmts[2]->type_decl->kind == TYPE_DECL_ENUM);
+	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[3]->kind == STMT_TYPE_DECL &&
+		ast->stmts[0]->import_stmt->imported_ast->stmts[3]->type_decl->kind == TYPE_DECL_STRUCT);
+	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[4]->kind == STMT_TYPE_DECL &&
+		ast->stmts[0]->import_stmt->imported_ast->stmts[4]->type_decl->kind == TYPE_DECL_UNION);
 
 	// import-stmt
-	assert(ast->stmts[1]->type == STMT_IMPORT);	
-	assert(ast->stmts[1]->import_stmt->imported_ast->stmts[0]->type == STMT_IMPORT);
+	assert(ast->stmts[1]->kind == STMT_IMPORT);	
+	assert(ast->stmts[1]->import_stmt->imported_ast->stmts[0]->kind == STMT_IMPORT);
 	assert(!ast->stmts[1]->import_stmt->imported_ast->stmts[0]->import_stmt->imported_ast->stmts);
-	assert(ast->stmts[1]->import_stmt->imported_ast->stmts[1]->type == STMT_FUNC_DECL);
+	assert(ast->stmts[1]->import_stmt->imported_ast->stmts[1]->kind == STMT_FUNC_DECL);
 
 	free(path_copy);
 	lexer_free(lexer);
@@ -178,8 +178,8 @@ inline void test_case7()
 	AstRoot* ast = parse(parser);
 
 	// import stmt
-	assert(ast->stmts[0]->type == STMT_IMPORT);
-	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[0]->type == STMT_FUNC_DECL);
+	assert(ast->stmts[0]->kind == STMT_IMPORT);
+	assert(ast->stmts[0]->import_stmt->imported_ast->stmts[0]->kind == STMT_FUNC_DECL);
 
 	free(path_copy);
 	lexer_free(lexer);

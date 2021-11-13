@@ -25,10 +25,10 @@ void visit(AstRoot* ast, Visitor* visitor)
 
 void visit_stmt(Stmt* stmt, Table* table)
 {
-	switch (stmt->type)
+	switch (stmt->kind)
 	{
 	case STMT_EXPR:
-		//visit_expr(stmt->expr_stmt->expr, table);
+		visit_expr(stmt->expr_stmt->expr, table);
 		break;
 	case STMT_BLOCK:
 		visit_block(stmt->block, table_new(table));
@@ -43,7 +43,7 @@ void visit_stmt(Stmt* stmt, Table* table)
 		visit_func_decl(stmt->func_decl, table);
 		break;
 	default:
-		assert(0);
+		report_error("Unknown statement kind to visit.", NULL);
 	}
 }
 
@@ -53,7 +53,7 @@ void visit_type(Type* type, Table* table)
 		if (!is_struct_declared(type->repr, table) &&
 			!is_union_declared(type->repr, table) &&
 			!is_enum_declared(type->repr, table))
-				report_error(frmt("Undefined type [%s] met.",
+				report_error(frmt("Undefined type %s met.",
 					type->repr), NULL);
 	if (type->mods.is_array && type->mods.is_ptr)
 		assert(0);
@@ -63,26 +63,26 @@ void visit_scope(Stmt** stmts, Table* table)
 {
 	for (size_t i = 0; i < sbuffer_len(stmts); i++)
 	{
-		switch (stmts[i]->type)
+		switch (stmts[i]->kind)
 		{
 		case STMT_TYPE_DECL:
-			switch (stmts[i]->type_decl->type)
+			switch (stmts[i]->type_decl->kind)
 			{
 			case TYPE_DECL_ENUM:
 				if (is_enum_declared(stmts[i]->type_decl->enum_decl->enum_name, table))
-					report_error(frmt("Enum type [%s] is already declared.",
+					report_error(frmt("Enum type %s is already declared.",
 						stmts[i]->type_decl->enum_decl->enum_name), NULL);
 				add_enum(stmts[i]->type_decl->enum_decl, table);
 				break;
 			case TYPE_DECL_UNION:
 				if (is_union_declared(stmts[i]->type_decl->union_decl->union_name, table))
-					report_error(frmt("Union type [%s] is already declared.",
+					report_error(frmt("Union type %s is already declared.",
 						stmts[i]->type_decl->union_decl->union_name), NULL);
 				add_union(stmts[i]->type_decl->union_decl, table);
 				break;
 			case TYPE_DECL_STRUCT:
 				if (is_struct_declared(stmts[i]->type_decl->struct_decl->struct_name, table))
-					report_error(frmt("Struct type [%s] is already declared.",
+					report_error(frmt("Struct type %s is already declared.",
 						stmts[i]->type_decl->struct_decl->struct_name), NULL);
 				add_struct(stmts[i]->type_decl->struct_decl, table);
 				break;
@@ -90,9 +90,9 @@ void visit_scope(Stmt** stmts, Table* table)
 			break;
 		case STMT_FUNC_DECL:
 			if (is_function_declared(stmts[i]->func_decl->func_name, table))
-				report_error(frmt("Function [%s] is already declared.",
+				report_error(frmt("Function %s is already declared.",
 					stmts[i]->func_decl->func_name), NULL);
-			add_function(stmts[i]->func_decl->func_name, table);
+			add_function(stmts[i]->func_decl, table);
 			break;
 		}
 	}
@@ -122,12 +122,11 @@ void visit_expr(Expr* expr, Table* table)
 void visit_idnt(Idnt* idnt, Table* table)
 {
 	if (!is_variable_declared(idnt->svalue, table))
-		report_error(frmt("Variable [%s] is not declared.",
+		report_error(frmt("Variable %s is not declared.",
 			idnt->svalue), idnt->context);
 	if (!is_variable_initialized(idnt->svalue, table))
-		report_error(frmt("Variable [%s] is not initialized in current scope.",
+		report_error(frmt("Variable %s is not initialized in current scope.",
 			idnt->svalue), idnt->context);
-	//assert(0);
 }
 
 void visit_unary_expr(Expr* expr, Table* table)
@@ -136,7 +135,8 @@ void visit_unary_expr(Expr* expr, Table* table)
 	{
 	case UNARY_DEREFERENCE:
 		if (!is_addressable_value(expr))
-			report_error(frmt("Expression is not addressible value, cannot dereference it."), NULL);
+			report_error2(frmt("Expression is not addressible value, cannot dereference it."), 
+				expr->unary_expr->area);
 		visit_expr(expr->unary_expr->expr, table);
 		break;
 	default:
@@ -147,7 +147,8 @@ void visit_unary_expr(Expr* expr, Table* table)
 void visit_arr_member_accessor_expr(BinaryExpr* binary_expr, Table* table)
 {
 	if (!is_addressable_value(binary_expr->lexpr, table))
-		report_error(frmt("Expression is not addressible value, cannot access it like array."), NULL);
+		report_error2(frmt("Expression is not addressible value, cannot access it like array."), 
+			binary_expr->area);
 	visit_expr(binary_expr->lexpr, table);
 	visit_expr(binary_expr->rexpr, table);
 	// todo: check for array type
@@ -195,20 +196,30 @@ void visit_binary_expr(Expr* expr, Table* table)
 
 void visit_var_decl(VarDecl* var_decl, Table* table)
 {
-	//todo: add type check
 	if (is_variable_declared(var_decl->type_var->var, table))
-		report_error(frmt("Variable [%s] is already declared.",
-			var_decl->type_var->var), NULL);
+		report_error2(frmt("Variable %s is already declared.",
+			var_decl->type_var->var), var_decl->type_var->area);
 	else
 	{
 		add_variable(var_decl, table);
 		if (var_decl->type_var->type->mods.is_void && 
 			!var_decl->type_var->type->mods.is_ptr)
-			report_error(frmt("Cannot declare variable with void type."), NULL);
+				report_error2(frmt("Cannot declare variable with void type."), 
+					var_decl->type_var->area);
 		visit_type(var_decl->type_var->type, table);
 		if (var_decl->var_init)
-			visit_expr(var_decl->var_init, table), 
+		{
+			visit_expr(var_decl->var_init, table),
 				add_initialized_variable(var_decl->type_var->var, table);
+			// check type of created variable with type of initializing expression
+			if (!can_cast_implicitly(var_decl->type_var->type,
+				get_expr_type(var_decl->var_init, table)))
+					report_error2("Initializing expression has not equal type with declaring variable.",
+						get_expr_area(var_decl->var_init));
+			Type* type_new = cast_implicitly(var_decl->type_var->type, 
+				get_expr_type(var_decl->var_init, table));
+			var_decl->type_var->type = type_new;
+		}
 	}
 }
 
@@ -223,14 +234,14 @@ void visit_enum(EnumDecl* enum_decl, Table* table)
 					for (size_t z = 0; z < sbuffer_len(parent->enums[j]->enum_idnts); z++)			// each member in iterating enum
 						if (strcmp(parent->enums[j]->enum_idnts[z]->svalue,
 								   enum_decl->enum_idnts[i]->svalue) == 0)
-							report_error(frmt("Enum member [%s] is already declared in [%s] enum.",
+							report_error(frmt("Enum member %s is already declared in %s enum.",
 								enum_decl->enum_idnts[i]->svalue, parent->enums[j]->enum_name), 
 									enum_decl->enum_idnts[i]->context);
 
 		// now checking for any duplicated names in current enum
 		for (size_t g = i + 1; g < sbuffer_len(enum_decl->enum_idnts); g++)
 			if (strcmp(enum_decl->enum_idnts[i]->svalue, enum_decl->enum_idnts[g]->svalue) == 0)
-				report_error(frmt("Member [%s] is already declared in [%s] enum declaration.",
+				report_error(frmt("Member %s is already declared in %s enum declaration.",
 					enum_decl->enum_idnts[i]->svalue, enum_decl->enum_name), enum_decl->enum_idnts[i]->context);
 		//todo: check for initizers (only consts)
 	}
@@ -243,11 +254,13 @@ void visit_union(UnionDecl* union_decl, Table* table)
 		// checking for self included type (and not pointer)
 		if (strcmp(union_decl->union_name, union_decl->union_mmbrs[i]->type->repr) == 0)
 			if (!union_decl->union_mmbrs[i]->type->mods.is_ptr)
-				report_error(frmt("Member [%s] has type [%s] which is self included, and not pointer.",
-					union_decl->union_mmbrs[i]->var, union_decl->union_name), NULL);
+				report_error(frmt("Member %s has type %s which is self included, and not pointer.",
+					union_decl->union_mmbrs[i]->var, union_decl->union_name), 
+						union_decl->union_mmbrs[i]->area);
 		if (union_decl->union_mmbrs[i]->type->mods.is_void &&
 			!union_decl->union_mmbrs[i]->type->mods.is_ptr)
-			report_error(frmt("Cannot declare union member with void type."), NULL);
+				report_error(frmt("Cannot declare union member with void type."), 
+					union_decl->union_mmbrs[i]->area);
 		visit_type(union_decl->union_mmbrs[i]->type, table);
 	}
 
@@ -256,7 +269,7 @@ void visit_union(UnionDecl* union_decl, Table* table)
 		for (size_t j = i + 1; j < sbuffer_len(union_decl->union_mmbrs); j++)
 			if (strcmp(union_decl->union_mmbrs[i]->var, union_decl->union_mmbrs[j]->var) == 0)
 				report_error(frmt("Member [%s] is already declared in [%s] union declaration.",
-					union_decl->union_mmbrs[i]->var, union_decl->union_name), NULL);
+					union_decl->union_mmbrs[i]->var, union_decl->union_name), union_decl->union_mmbrs[i]->area);
 }
 
 void visit_struct(StructDecl* struct_decl, Table* table)
@@ -267,11 +280,13 @@ void visit_struct(StructDecl* struct_decl, Table* table)
 		// checking for self included type (and not pointer)
 		if (strcmp(struct_decl->struct_name, struct_decl->struct_mmbrs[i]->type->repr) == 0)
 			if (!struct_decl->struct_mmbrs[i]->type->mods.is_ptr)
-				report_error(frmt("Member [%s] has type [%s] which is self included, and not pointer.",
-					struct_decl->struct_mmbrs[i]->var, struct_decl->struct_name), NULL);
+				report_error(frmt("Member %s has type %s which is self included, and not pointer.",
+					struct_decl->struct_mmbrs[i]->var, struct_decl->struct_name), 
+						struct_decl->struct_mmbrs[i]->area);
 		if (struct_decl->struct_mmbrs[i]->type->mods.is_void &&
 			!struct_decl->struct_mmbrs[i]->type->mods.is_ptr)
-			report_error(frmt("Cannot declare struct member with void type."), NULL);
+				report_error(frmt("Cannot declare struct member with void type."), 
+					struct_decl->struct_mmbrs[i]->area);
 		visit_type(struct_decl->struct_mmbrs[i]->type, table);
 	}
 
@@ -279,14 +294,15 @@ void visit_struct(StructDecl* struct_decl, Table* table)
 	for (size_t i = 0; i < sbuffer_len(struct_decl->struct_mmbrs); i++)
 		for (size_t j = i+1; j < sbuffer_len(struct_decl->struct_mmbrs); j++)
 			if (strcmp(struct_decl->struct_mmbrs[i]->var, struct_decl->struct_mmbrs[j]->var) == 0)
-				report_error(frmt("Member [%s] is already declared in [%s] struct declaration.",
-					struct_decl->struct_mmbrs[i]->var, struct_decl->struct_name), NULL);
+				report_error(frmt("Member %s is already declared in %s struct declaration.",
+					struct_decl->struct_mmbrs[i]->var, struct_decl->struct_name), 
+						struct_decl->struct_mmbrs[i]->area);
 }
 
 void visit_type_decl(TypeDecl* type_decl, Table* table)
 {
 	Table* local = table_new(NULL);
-	switch (type_decl->type)
+	switch (type_decl->kind)
 	{
 	case TYPE_DECL_ENUM:
 		visit_enum(type_decl->enum_decl, table);
@@ -326,14 +342,14 @@ void visit_func_decl(FuncDecl* func_decl, Table* table)
 		for (size_t j = i+1; j < sbuffer_len(func_decl->func_params); j++)
 			if (strcmp(func_decl->func_params[i]->var,
 				func_decl->func_params[j]->var) == 0)
-					report_error(frmt("Function parameter [%s] is already specified in [%s] function parameter list.",
-						func_decl->func_params[i]->var, func_decl->func_name), NULL);
+					report_error2(frmt("Function parameter %s is already specified in %s function parameter list.",
+						func_decl->func_params[i]->var, func_decl->func_name), func_decl->func_params[i]->area);
 
 		// checking for void type
 		if (func_decl->func_params[i]->type->mods.is_void &&
 			func_decl->func_params[i]->type->mods.is_ptr)
-				report_error(frmt("Function parameter [%s] cannot has type void.",
-					func_decl->func_params[i]->var), NULL);
+				report_error2(frmt("Function parameter %s cannot has type void.",
+					func_decl->func_params[i]->var), func_decl->func_params[i]->area);
 		visit_type(func_decl->func_params[i]->type, table);
 	}
 

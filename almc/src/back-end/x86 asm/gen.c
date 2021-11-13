@@ -2,7 +2,7 @@
 
 void gen_jump_stmt(JumpStmt* jump_stmt, StackFrame* frame)
 {
-	switch (jump_stmt->type)
+	switch (jump_stmt->kind)
 	{
 	case JUMP_RETURN:
 		if (jump_stmt->additional_expr)
@@ -43,7 +43,7 @@ void gen_var_decl_stmt(VarDecl* var_decl, StackFrame* frame)
 
 void gen_stmt(Stmt* stmt, StackFrame* frame)
 {
-	switch (stmt->type)
+	switch (stmt->kind)
 	{
 	case STMT_EXPR:
 		gen_expr2(stmt->expr_stmt->expr, frame);
@@ -82,11 +82,11 @@ void gen_func_decl_stmt(FuncDecl* func_decl)
 	//todo: free stack frame
 	
 	// footer
-	if (frame->return_stmt_mentioned)
-	{
+	//if (frame->return_stmt_mentioned)
+	//{
 		MOV32(get_register_str(ESP), get_register_str(EBP));
 		POP32(get_register_str(EBP));
 		OUT("ret");
-	}
+	//}
 	printf(frmt("%s endp\n", func_decl->func_name));
 }

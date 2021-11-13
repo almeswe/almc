@@ -43,12 +43,12 @@ void expr_gen_free(ExprGenerator* expr_gen)
 }
 
 #define IS_PRIMARY_EXPR(expr)      \
-	((expr->type == EXPR_CONST) || \
-	 (expr->type == EXPR_IDNT))
+	((expr->kind == EXPR_CONST) || \
+	 (expr->kind == EXPR_IDNT))
 
 void gen_expr2(Expr* expr, StackFrame* frame)
 {
-	switch (expr->type)
+	switch (expr->kind)
 	{
 	case EXPR_IDNT:
 	case EXPR_CONST:
@@ -98,10 +98,10 @@ void gen_primary_expr2(Expr* prim_expr, int reg, StackFrame* frame)
 {
 	assert(reg >= EAX && reg <= ESI);
 	const char* to = get_register_str(reg);
-	switch (prim_expr->type)
+	switch (prim_expr->kind)
 	{
 	case EXPR_CONST:
-		switch (prim_expr->cnst->type)
+		switch (prim_expr->cnst->kind)
 		{
 		case CONST_INT:
 		case CONST_UINT:
@@ -130,7 +130,7 @@ void gen_unary_expr2(UnaryExpr* unary_expr, StackFrame* frame)
 		gen_primary_expr2(unary_expr->expr, EAX, frame);
 	}
 
-	switch (unary_expr->type)
+	switch (unary_expr->kind)
 	{
 	case UNARY_PLUS:
 		break;
@@ -195,7 +195,7 @@ void gen_binary_expr2(BinaryExpr* binary_expr, StackFrame* frame)
 	char* to = get_register_str(EAX);
 	char* from = get_register_str(temp_reg);
 	
-	switch (binary_expr->type)
+	switch (binary_expr->kind)
 	{
 	case BINARY_ASSIGN:
 		GEN_ASSIGN_EXPR(MOV32(to, from));

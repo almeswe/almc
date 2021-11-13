@@ -362,32 +362,6 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 	return ltype;
 }
 
-SrcArea* get_expr_area(Expr* expr)
-{
-	switch (expr->kind)
-	{
-	case EXPR_IDNT:
-		return src_area_new(expr->idnt->context, NULL);
-	case EXPR_CONST:
-		return src_area_new(expr->cnst->context, NULL);
-	case EXPR_STRING:
-		return src_area_new(expr->str->context, NULL);
-	case EXPR_FUNC_CALL:
-		return expr->func_call->area;
-	case EXPR_INITIALIZER:
-		return expr->initializer->area;
-	case EXPR_UNARY_EXPR:
-		return expr->unary_expr->area;
-	case EXPR_BINARY_EXPR:
-		return expr->binary_expr->area;
-	case EXPR_TERNARY_EXPR:
-		return expr->ternary_expr->area;
-	default:
-		report_error("Unknown expression kind for selecting any context.", NULL);
-	}
-	return NULL;
-}
-
 Type* get_ternary_expr_type(TernaryExpr* ternary_expr, Table* table)
 {
 	Type* ltype = get_expr_type(ternary_expr->lexpr, table);
@@ -512,15 +486,15 @@ Type* cast_implicitly(Type* to, Type* type)
 	if (can_cast_implicitly(to, type))
 	{
 		if (IS_POINTER_TYPE(to) && IS_POINTER_TYPE(type))
-			return i32_type;
+			return type_free(i32_type), to;
 		if (IS_POINTER_TYPE(to) && (get_type_priority(type) >= U32))
 			return type_free(i32_type), type;
 		if (IS_POINTER_TYPE(to) && (get_type_priority(type) < U32))
-			return i32_type;
+			return type_free(i32_type), to;
 		if ((get_type_priority(to) >= U32) && IS_POINTER_TYPE(type))
 			return type_free(i32_type), to;
 		if ((get_type_priority(to) < U32) && IS_POINTER_TYPE(type))
-			return i32_type;
+			return type;
 
 		type_free(i32_type);
 		return get_type_priority(to) >= get_type_priority(type) ?
@@ -634,6 +608,32 @@ uint32_t can_cast_implicitly(Type* to, Type* type)
 		IS_I64(type) || IS_U64(type)  || IS_F32(type)))
 			return 1;
 	return 0;
+}
+
+SrcArea* get_expr_area(Expr* expr)
+{
+	switch (expr->kind)
+	{
+	case EXPR_IDNT:
+		return src_area_new(expr->idnt->context, NULL);
+	case EXPR_CONST:
+		return src_area_new(expr->cnst->context, NULL);
+	case EXPR_STRING:
+		return src_area_new(expr->str->context, NULL);
+	case EXPR_FUNC_CALL:
+		return expr->func_call->area;
+	case EXPR_INITIALIZER:
+		return expr->initializer->area;
+	case EXPR_UNARY_EXPR:
+		return expr->unary_expr->area;
+	case EXPR_BINARY_EXPR:
+		return expr->binary_expr->area;
+	case EXPR_TERNARY_EXPR:
+		return expr->ternary_expr->area;
+	default:
+		report_error("Unknown expression kind for selecting any context.", NULL);
+	}
+	return NULL;
 }
 
 char* get_member_name(Expr* expr)

@@ -2,6 +2,7 @@
 #define ALMC_FRONT_END_VISITOR_H
 
 #include "table.h"
+#include "type-checker.h"
 #include "assert.h"
 
 typedef struct Visitor

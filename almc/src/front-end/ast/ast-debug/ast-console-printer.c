@@ -257,7 +257,11 @@ void print_expr(Expr* expr, const char* indent)
 void print_type_var(TypeVar* type_var, const char* indent)
 {
 	printf(CYAN);
-	printf("%stype-var: %s\n", indent, type_var->var);
+	if (type_var->type)
+		printf("%stype-var: %s (%s)\n", indent, type_var->var,
+			type_tostr_plain(type_var->type));
+	else
+		printf("%stype-var: %s\n", indent, type_var->var);
 	printf(RESET);
 	print_type(type_var->type, frmt("   %s", indent));
 }
@@ -365,7 +369,7 @@ void print_struct_decl(StructDecl* struct_decl, const char* indent)
 
 void print_type_decl(TypeDecl* type_decl, const char* indent)
 {
-	switch (type_decl->type)
+	switch (type_decl->kind)
 	{
 	case TYPE_DECL_ENUM:
 		print_enum_decl(type_decl->enum_decl, indent);
@@ -445,7 +449,7 @@ void print_while_loop(WhileLoop* while_loop, const char* indent)
 
 void print_loop_stmt(LoopStmt* loop_stmt, const char* indent)
 {
-	switch (loop_stmt->type)
+	switch (loop_stmt->kind)
 	{
 	case LOOP_DO:
 		print_do_loop(loop_stmt->do_loop, indent);
@@ -523,7 +527,7 @@ void print_jump_stmt(JumpStmt* jump_stmt, const char* indent)
 {
 	printf(MAGENTA);
 	printf(indent);
-	switch (jump_stmt->type)
+	switch (jump_stmt->kind)
 	{
 	case JUMP_GOTO:
 		printf("goto-stmt:\n");
@@ -601,7 +605,7 @@ void print_stmt(Stmt* stmt, const char* indent)
 {
 	char* new_indent = frmt("%s   ", indent);
 	if (stmt)
-		switch (stmt->type)
+		switch (stmt->kind)
 		{
 		case STMT_IF:
 			print_if_stmt(stmt->if_stmt, new_indent);
