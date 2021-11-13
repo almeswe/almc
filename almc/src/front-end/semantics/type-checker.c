@@ -89,10 +89,9 @@ Type* get_const_type(Const* cnst)
 	return type;
 }
 
-Type* get_idnt_type(Idnt* idnt, Table* table)
+Type* get_idnt_type(Idnt* idnt)
 {
-	VarDecl* var = get_variable(idnt->svalue, table);
-	return var ? var->type_var->type : NULL;
+	return idnt->type;
 }
 
 Type* get_string_type(Str* str)
@@ -500,13 +499,13 @@ Type* cast_implicitly(Type* to, Type* type, SrcArea* area)
 			type_tostr_plain(to), type_tostr_plain(type)), area);
 }
 
-Type* cast_implicitly_when_assign(Type* to, Type* type)
+Type* cast_implicitly_when_assign(Type* to, Type* type, SrcArea* area)
 {
 	if (can_cast_implicitly(to, type))
 		return to;
 	else
 		report_error2(frmt("Cannot implicitly convert type %s to %s",
-			type_tostr_plain(to), type_tostr_plain(type)), to->area);
+			type_tostr_plain(to), type_tostr_plain(type)), area);
 }
 
 uint32_t can_cast_implicitly(Type* to, Type* type)

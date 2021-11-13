@@ -1,5 +1,11 @@
 #include "visitor.h"
 
+#define IS_USER_TYPE_ALREADY_DECLARED(typedec, typestr) \
+	if (is_##typedec##_declared(stmts[i]->type_decl->##typedec##_decl->##typedec##_name, table)) \
+		report_error(frmt("%s type %s is already declared.",						             \
+			typestr, stmts[i]->type_decl->##typedec##_decl->##typedec##_name), NULL);		     \
+	add_##typedec##(stmts[i]->type_decl->##typedec##_decl, table);							     \
+
 Visitor* visitor_new()
 {
 	Visitor* visitor = new_s(Visitor, visitor);
@@ -53,10 +59,18 @@ void visit_type(Type* type, Table* table)
 		if (!is_struct_declared(type->repr, table) &&
 			!is_union_declared(type->repr, table) &&
 			!is_enum_declared(type->repr, table))
-				report_error(frmt("Undefined type %s met.",
-					type->repr), NULL);
+				report_error2(frmt("Undefined type %s met.",
+					type->repr), type->area);
 	if (type->mods.is_array && type->mods.is_ptr)
 		assert(0);
+}
+
+void visit_non_void_type(Type* type, Table* table)
+{
+	if (type->mods.is_void && !type->mods.is_ptr)
+		report_error2("Void type is not allowed in this context.",
+			type->area);
+	visit_type(type, table);
 }
 
 void visit_scope(Stmt** stmts, Table* table)
@@ -69,22 +83,13 @@ void visit_scope(Stmt** stmts, Table* table)
 			switch (stmts[i]->type_decl->kind)
 			{
 			case TYPE_DECL_ENUM:
-				if (is_enum_declared(stmts[i]->type_decl->enum_decl->enum_name, table))
-					report_error(frmt("Enum type %s is already declared.",
-						stmts[i]->type_decl->enum_decl->enum_name), NULL);
-				add_enum(stmts[i]->type_decl->enum_decl, table);
+				IS_USER_TYPE_ALREADY_DECLARED(enum, "Enum");
 				break;
 			case TYPE_DECL_UNION:
-				if (is_union_declared(stmts[i]->type_decl->union_decl->union_name, table))
-					report_error(frmt("Union type %s is already declared.",
-						stmts[i]->type_decl->union_decl->union_name), NULL);
-				add_union(stmts[i]->type_decl->union_decl, table);
+				IS_USER_TYPE_ALREADY_DECLARED(union, "Union");
 				break;
 			case TYPE_DECL_STRUCT:
-				if (is_struct_declared(stmts[i]->type_decl->struct_decl->struct_name, table))
-					report_error(frmt("Struct type %s is already declared.",
-						stmts[i]->type_decl->struct_decl->struct_name), NULL);
-				add_struct(stmts[i]->type_decl->struct_decl, table);
+				IS_USER_TYPE_ALREADY_DECLARED(struct, "Struct");
 				break;
 			}
 			break;
@@ -121,12 +126,20 @@ void visit_expr(Expr* expr, Table* table)
 
 void visit_idnt(Idnt* idnt, Table* table)
 {
-	if (!is_variable_declared(idnt->svalue, table))
-		report_error(frmt("Variable %s is not declared.",
-			idnt->svalue), idnt->context);
-	if (!is_variable_initialized(idnt->svalue, table))
-		report_error(frmt("Variable %s is not initialized in current scope.",
-			idnt->svalue), idnt->context);
+	// checking if identifier is parameter, then just set its type to idnt
+	if (is_function_param_passed(idnt->svalue, table))
+		idnt->type = get_function_param(idnt->svalue, table)->type;
+	else
+	{
+		// rather check if declared and initialized
+		if (!is_variable_declared(idnt->svalue, table))
+			report_error(frmt("Variable %s is not declared.",
+				idnt->svalue), idnt->context);
+		if (!is_variable_initialized(idnt->svalue, table))
+			report_error(frmt("Variable %s is not initialized in current scope.",
+				idnt->svalue), idnt->context);
+		idnt->type = get_variable(idnt->svalue, table)->type_var->type;
+	}
 }
 
 void visit_unary_expr(Expr* expr, Table* table)
@@ -199,18 +212,18 @@ void visit_var_decl(VarDecl* var_decl, Table* table)
 	if (is_variable_declared(var_decl->type_var->var, table))
 		report_error2(frmt("Variable %s is already declared.",
 			var_decl->type_var->var), var_decl->type_var->area);
+	else if (is_function_param_passed(var_decl->type_var->var, table))
+		report_error2(frmt("%s is already declared as function's parameter.",
+			var_decl->type_var->var), var_decl->type_var->area);
 	else
 	{
 		add_variable(var_decl, table);
-		if (var_decl->type_var->type->mods.is_void && 
-			!var_decl->type_var->type->mods.is_ptr)
-				report_error2(frmt("Cannot declare variable with void type."), 
-					var_decl->type_var->area);
-		visit_type(var_decl->type_var->type, table);
+		visit_non_void_type(var_decl->type_var->type, table);
 		if (var_decl->var_init)
 		{
-			visit_expr(var_decl->var_init, table),
-				add_initialized_variable(var_decl->type_var->var, table);
+			visit_expr(var_decl->var_init, table);
+			add_initialized_variable(var_decl->type_var->var, table);
+
 			// check type of created variable with type of initializing expression
 			Type* init_expr_type = get_expr_type(var_decl->var_init, table);
 			if (!can_cast_implicitly(var_decl->type_var->type, init_expr_type))
@@ -255,11 +268,7 @@ void visit_union(UnionDecl* union_decl, Table* table)
 				report_error(frmt("Member %s has type %s which is self included, and not pointer.",
 					union_decl->union_mmbrs[i]->var, union_decl->union_name), 
 						union_decl->union_mmbrs[i]->area);
-		if (union_decl->union_mmbrs[i]->type->mods.is_void &&
-			!union_decl->union_mmbrs[i]->type->mods.is_ptr)
-				report_error(frmt("Cannot declare union member with void type."), 
-					union_decl->union_mmbrs[i]->area);
-		visit_type(union_decl->union_mmbrs[i]->type, table);
+		visit_non_void_type(union_decl->union_mmbrs[i]->type, table);
 	}
 
 	// checking here for duplicated members
@@ -281,11 +290,7 @@ void visit_struct(StructDecl* struct_decl, Table* table)
 				report_error(frmt("Member %s has type %s which is self included, and not pointer.",
 					struct_decl->struct_mmbrs[i]->var, struct_decl->struct_name), 
 						struct_decl->struct_mmbrs[i]->area);
-		if (struct_decl->struct_mmbrs[i]->type->mods.is_void &&
-			!struct_decl->struct_mmbrs[i]->type->mods.is_ptr)
-				report_error(frmt("Cannot declare struct member with void type."), 
-					struct_decl->struct_mmbrs[i]->area);
-		visit_type(struct_decl->struct_mmbrs[i]->type, table);
+		visit_non_void_type(struct_decl->struct_mmbrs[i]->type, table);
 	}
 
 	// checking here for duplicated members
@@ -327,7 +332,7 @@ void visit_func_decl(FuncDecl* func_decl, Table* table)
 	if (func_decl->func_spec.is_external &&
 		func_decl->func_spec.is_forward &&
 		func_decl->func_spec.is_intrinsic)
-		assert(0);
+			assert(0);
 
 	if (func_decl->func_body)
 		visit_scope(func_decl->func_body->stmts, local);
@@ -337,19 +342,17 @@ void visit_func_decl(FuncDecl* func_decl, Table* table)
 	for (size_t i = 0; i < sbuffer_len(func_decl->func_params); i++)
 	{
 		// checking for duplicated parameter specification
-		for (size_t j = i+1; j < sbuffer_len(func_decl->func_params); j++)
-			if (strcmp(func_decl->func_params[i]->var,
-				func_decl->func_params[j]->var) == 0)
-					report_error2(frmt("Function parameter %s is already specified in %s function parameter list.",
-						func_decl->func_params[i]->var, func_decl->func_name), func_decl->func_params[i]->area);
+		if (is_function_param_passed(func_decl->func_params[i]->var, local))
+			report_error2(frmt("Function parameter %s is already specified in %s function parameter list.",
+				func_decl->func_params[i]->var, func_decl->func_name), func_decl->func_params[i]->area);
+		add_function_param(func_decl->func_params[i], local);
 
 		// checking for void type
-		if (func_decl->func_params[i]->type->mods.is_void &&
-			func_decl->func_params[i]->type->mods.is_ptr)
-				report_error2(frmt("Function parameter %s cannot has type void.",
-					func_decl->func_params[i]->var), func_decl->func_params[i]->area);
-		visit_type(func_decl->func_params[i]->type, table);
+		visit_non_void_type(func_decl->func_params[i]->type, table);
 	}
+
+	//todo: add all parameters to variable table
+	//for (size_t i = 0; i < sbuffer_len(func_decl->func_params); i++);
 
 	//checking function's return type
 	visit_type(func_decl->func_type, table);

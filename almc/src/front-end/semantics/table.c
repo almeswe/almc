@@ -17,6 +17,7 @@ Table* table_new(Table* parent)
 	Table* table = new_s(Table, table);
 	table->functions = NULL;
 	table->variables = NULL;
+	table->parameters = NULL;
 
 	table->enums = NULL;
 	table->unions = NULL;
@@ -36,6 +37,7 @@ void table_free(Table* table)
 	{
 		sbuffer_free(table->functions);
 		sbuffer_free(table->variables);
+		sbuffer_free(table->parameters);
 
 		sbuffer_free(table->enums);
 		sbuffer_free(table->unions);
@@ -61,6 +63,12 @@ int is_variable_declared(const char* var_name, Table* table)
 {
 	for (Table* parent = table; parent != NULL; parent = parent->parent)
 		is_declared_in_collection(var_name, type_var->var, parent->variables);
+}
+
+int is_function_param_passed(const char* param_name, Table* table)
+{
+	for (Table* parent = table; parent != NULL; parent = parent->parent)
+		is_declared_in_collection(param_name, var, parent->parameters);
 }
 
 int is_variable_initialized(const char* var_name, Table* table)
@@ -102,6 +110,12 @@ void add_variable(VarDecl* var_decl, Table* table)
 		sbuffer_add(table->variables, var_decl);
 }
 
+void add_function_param(TypeVar* type_var, Table* table)
+{
+	if (!is_function_param_passed(type_var->var, table))
+		sbuffer_add(table->parameters, type_var);
+}
+
 void add_initialized_variable(char* var_name, Table* table)
 {
 	sbuffer_add(table->initialized_variables_in_scope, var_name);
@@ -135,6 +149,12 @@ FuncDecl* get_function(const char* func_name, Table* table)
 {
 	for (Table* parent = table; parent != NULL; parent = parent->parent)
 		get_from_collection(func_name, func_name, parent->functions);
+}
+
+TypeVar* get_function_param(const char* param_name, Table* table)
+{
+	for (Table* parent = table; parent != NULL; parent = parent->parent)
+		get_from_collection(param_name, var, parent->parameters);
 }
 
 EnumDecl* get_enum(const char* enum_name, Table* table)
