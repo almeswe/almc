@@ -1,21 +1,25 @@
 #ifndef ALMC_GLOBAL_MANUAL_AST_TEST
 #define ALMC_GLOBAL_MANUAL_AST_TEST
 
-inline void ast_manual_test()
+inline void manual_test()
 {
 	const char* file = 
 		"test\\test-cases\\parser-test-cases\\parser-ast-manual-tests\\testfolder\\testfile.almc";
 	while (1)
 	{
 		system("cls");
-		Lexer* l = lexer_new(file, FROM_FILE);
-		Parser* p = parser_new(_strdup(l->curr_file), lex(l));
-		AstRoot* root = parse(p);
-		print_ast(root);
-		lexer_free(l);
-		ast_free(root);
-		parser_free(p);
+		Lexer* lexer = lexer_new(file, FROM_FILE);
+		Parser* parser = parser_new(_strdup(lexer->curr_file), lex(lexer));
+		AstRoot* ast = parse(parser);
+		Visitor* visitor = visitor_new();
+
+		visit(ast, visitor);
+		print_ast(ast);
+		lexer_free(lexer);
+		ast_free(ast);
+		parser_free(parser);
 		clear_imported_modules();
+		visitor_free(visitor);
 		int a = getchar();
 	}
 }

@@ -212,13 +212,11 @@ void visit_var_decl(VarDecl* var_decl, Table* table)
 			visit_expr(var_decl->var_init, table),
 				add_initialized_variable(var_decl->type_var->var, table);
 			// check type of created variable with type of initializing expression
-			if (!can_cast_implicitly(var_decl->type_var->type,
-				get_expr_type(var_decl->var_init, table)))
-					report_error2("Initializing expression has not equal type with declaring variable.",
+			Type* init_expr_type = get_expr_type(var_decl->var_init, table);
+			if (!can_cast_implicitly(var_decl->type_var->type, init_expr_type))
+				report_error2(frmt("Expression-initializer has incompatible type %s with type of variable %s.",
+					type_tostr_plain(init_expr_type), type_tostr_plain(var_decl->type_var->type)), 
 						get_expr_area(var_decl->var_init));
-			Type* type_new = cast_implicitly(var_decl->type_var->type, 
-				get_expr_type(var_decl->var_init, table));
-			var_decl->type_var->type = type_new;
 		}
 	}
 }

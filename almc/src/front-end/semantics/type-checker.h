@@ -88,11 +88,11 @@ Type* get_ternary_expr_type(TernaryExpr* ternary_expr, Table* table);
 uint32_t get_type_size_in_bytes(Type* type);
 uint32_t get_type_priority(Type* type);
 
-Type* cast_explicitly(Type* to, Type* type);
-Type* cast_explicitly_when_const(Type* to, Type* const_type);
+Type* cast_explicitly(Type* to, Type* type, SrcArea* area);
+Type* cast_explicitly_when_const(Type* to, Type* const_type, SrcArea* area);
 
-Type* cast_implicitly(Type* to, Type* type);
-Type* cast_implicitly_when_assign(Type* to, Type* type);
+Type* cast_implicitly(Type* to, Type* type, SrcArea* area);
+Type* cast_implicitly_when_assign(Type* to, Type* type, SrcArea* area);
 
 uint32_t can_cast_implicitly(Type* to, Type* type);
 

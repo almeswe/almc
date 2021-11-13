@@ -168,8 +168,8 @@ Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 
 	case UNARY_CAST:
 		if (unary_expr->expr->kind == EXPR_CONST)
-			cast_explicitly_when_const(unary_expr->cast_type, type);
-		return cast_explicitly(unary_expr->cast_type, type);
+			cast_explicitly_when_const(unary_expr->cast_type, type, unary_expr->area);
+		return cast_explicitly(unary_expr->cast_type, type, unary_expr->area);
 	case UNARY_SIZEOF:
 		if (!unary_expr->cast_type)
 		{
@@ -224,7 +224,7 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 	// in case of common assign, any type can be
 	case BINARY_ASSIGN:
 	case BINARY_ADD_ASSIGN:
-		return cast_implicitly_when_assign(ltype, rtype);
+		return cast_implicitly_when_assign(ltype, rtype, binary_expr->area);
 
 	// assign operators that needs numeric or pointer types
 	case BINARY_SUB_ASSIGN:
@@ -232,7 +232,7 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 	case BINARY_MUL_ASSIGN:
 		if ((IS_NUMERIC_TYPE(ltype) || IS_POINTER_TYPE(ltype)) &&
 			(IS_NUMERIC_TYPE(rtype) || IS_POINTER_TYPE(rtype)))
-				return cast_implicitly_when_assign(ltype, rtype);
+				return cast_implicitly_when_assign(ltype, rtype, binary_expr->area);
 		report_error2("Cannot use this operator with this operand types.", 
 			binary_expr->area);
 
@@ -245,7 +245,7 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 	case BINARY_RSHIFT_ASSIGN:
 		if ((IS_INTEGRAL_TYPE(ltype) || IS_POINTER_TYPE(ltype)) && 
 		    (IS_INTEGRAL_TYPE(rtype) || IS_POINTER_TYPE(rtype)))
-				return cast_implicitly_when_assign(ltype, rtype);
+				return cast_implicitly_when_assign(ltype, rtype, binary_expr->area);
 		report_error2("Cannot use this operator with this operand types.", 
 			binary_expr->area);
 	//-----------------------------
@@ -257,7 +257,8 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 	case BINARY_LG_EQ:
 	case BINARY_LG_NEQ:
 		return can_cast_implicitly(rtype, ltype) ?
-			cast_implicitly(rtype, ltype) : cast_implicitly(ltype, rtype);
+			cast_implicitly(rtype, ltype, binary_expr->area) : 
+				cast_implicitly(ltype, rtype, binary_expr->area);
 		report_error2("Cannot use this operator with this operand types.",
 			binary_expr->area);
 	//-----------------------------
@@ -274,7 +275,8 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 		if ((IS_NUMERIC_TYPE(ltype) || IS_POINTER_TYPE(ltype)) &&
 			(IS_NUMERIC_TYPE(rtype) || IS_POINTER_TYPE(rtype)))
 				return can_cast_implicitly(rtype, ltype) ? 
-					cast_implicitly(rtype, ltype) : cast_implicitly(ltype, rtype);
+					cast_implicitly(rtype, ltype, binary_expr->area) : 
+						cast_implicitly(ltype, rtype, binary_expr->area);
 		report_error2("Cannot use this operator with this operand types.", 
 			binary_expr->area);
 	//-----------------------------
@@ -290,7 +292,8 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 		if ((IS_INTEGRAL_TYPE(ltype) || IS_POINTER_TYPE(ltype)) &&
 			(IS_INTEGRAL_TYPE(rtype) || IS_POINTER_TYPE(rtype)))
 				return can_cast_implicitly(rtype, ltype) ?
-					cast_implicitly(rtype, ltype) : cast_implicitly(ltype, rtype);
+					cast_implicitly(rtype, ltype, binary_expr->area) :
+						cast_implicitly(ltype, rtype, binary_expr->area);
 		report_error2("Cannot use this operator with this operand types.",
 			binary_expr->area);
 	//-----------------------------
@@ -377,9 +380,9 @@ Type* get_ternary_expr_type(TernaryExpr* ternary_expr, Table* table)
 				type_tostr_plain(ctype)), get_expr_area(ternary_expr->cond));
 
 	if (can_cast_implicitly(ltype, rtype))
-		return cast_implicitly(ltype, rtype);
+		return cast_implicitly(ltype, rtype, ternary_expr->area);
 	else if (can_cast_implicitly(rtype, ltype))
-		return cast_implicitly(rtype, ltype);
+		return cast_implicitly(rtype, ltype, ternary_expr->area);
 	else
 		report_error2("Left and right expressions in ternary expression should be the same or implicitly equal", 
 			ternary_expr->area);
@@ -474,35 +477,27 @@ Type* cast_explicitly_when_const(Type* to, Type* const_type)
 	}
 }
 
-Type* cast_implicitly(Type* to, Type* type)
+Type* cast_implicitly(Type* to, Type* type, SrcArea* area)
 {
-	//-------------------------------
-	// creating i32 type needed for certain cases
-	Type* i32_type = cnew_s(Type, i32_type, 1);
-	i32_type->mods.is_predefined = 1;
-	i32_type->repr = "i32";
-	//-------------------------------
-
 	if (can_cast_implicitly(to, type))
 	{
 		if (IS_POINTER_TYPE(to) && IS_POINTER_TYPE(type))
-			return type_free(i32_type), to;
-		if (IS_POINTER_TYPE(to) && (get_type_priority(type) >= U32))
-			return type_free(i32_type), type;
+			return to;
+		if (IS_POINTER_TYPE(to) && (get_type_priority(type) >= I32))
+			return type;
 		if (IS_POINTER_TYPE(to) && (get_type_priority(type) < U32))
-			return type_free(i32_type), to;
-		if ((get_type_priority(to) >= U32) && IS_POINTER_TYPE(type))
-			return type_free(i32_type), to;
+			return to;
+		if ((get_type_priority(to) >= I32) && IS_POINTER_TYPE(type))
+			return to;
 		if ((get_type_priority(to) < U32) && IS_POINTER_TYPE(type))
 			return type;
-
-		type_free(i32_type);
+		
 		return get_type_priority(to) >= get_type_priority(type) ?
 			to : type;
 	}
 	else
 		report_error2(frmt("Cannot implicitly convert type %s to %s",
-			type_tostr_plain(to), type_tostr_plain(type)), to->area);
+			type_tostr_plain(to), type_tostr_plain(type)), area);
 }
 
 Type* cast_implicitly_when_assign(Type* to, Type* type)

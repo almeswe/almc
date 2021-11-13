@@ -4,7 +4,7 @@
 
 void report_warning(const char* message, SrcContext* context)
 {
-	printf("WARNING: %s,", message);
+	printf("WARNING: %s", message);
 	if (context)
 	{
 		printf(" %s\n", src_context_tostr(context));
@@ -18,7 +18,7 @@ void report_warning(const char* message, SrcContext* context)
 
 void report_warning2(const char* message, SrcArea* area)
 {
-	printf("WARNING: %s,", message);
+	printf("WARNING: %s", message);
 	if (area)
 	{
 		printf(" %s\n", src_area_tostr(area));
@@ -34,7 +34,7 @@ void report_error(const char* message, SrcContext* context)
 {
 	//todo: DEBUG macro does not exist
 #ifndef ALMC_DEBUG
-	printf("ERROR: %s,", message);
+	printf("ERROR: %s", message);
 	if (context)
 	{
 		printf(" %s\n", src_context_tostr(context));
@@ -56,7 +56,7 @@ void report_error(const char* message, SrcContext* context)
 void report_error2(const char* message, SrcArea* area)
 {
 #ifndef ALMC_DEBUG
-	printf("ERROR: %s,", message);
+	printf("ERROR: %s", message);
 	if (area)
 	{
 		printf(" %s\n", src_area_tostr(area));

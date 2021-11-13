@@ -83,7 +83,7 @@ Const* const_new(ConstKind type, const char* svalue, SrcContext* context)
 			switch (tolower(svalue[1]))
 			{
 			case 'x':
-				c->uvalue = (uint16_t)strtoull(
+				c->uvalue = strtoull(
 					svalue + 2, NULL, 16);break;
 			case 'o':
 				c->uvalue = strtoull(
