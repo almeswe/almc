@@ -81,7 +81,11 @@ void print_func_call(FuncCall* func_call, const char* indent)
 {
 	printf(GREEN);
 	size_t len = sbuffer_len(func_call->func_args);
-	printf("%sfunc-call: %s(args: %d)\n", indent,
+	if (func_call->type)
+		printf("%sfunc-call: %s(args: %d) %s\n", indent,
+			func_call->func_name, len, type_tostr_plain(func_call->type));
+	else
+		printf("%sfunc-call: %s(args: %d)\n", indent,
 		func_call->func_name, len);
 	printf(RESET);
 	if (len)

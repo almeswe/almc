@@ -22,9 +22,10 @@ void visit_scope(Stmt** stmts, Table* table);
 void visit_block(Block* block, Table* table);
 
 void visit_expr(Expr* expr, Table* table);
-void visit_idnt(Idnt* idnt, Table* table); 
-void visit_unary_expr(Expr* expr, Table* table);
-void visit_binary_expr(Expr* expr, Table* table);
+void visit_idnt(Idnt* idnt, Table* table);
+void visit_func_call(FuncCall* func_call, Table* table);
+void visit_unary_expr(UnaryExpr* unary_expr, Table* table);
+void visit_binary_expr(BinaryExpr* binary_expr, Table* table);
 
 void visit_var_decl(VarDecl* var_decl, Table* table);
 void visit_type_decl(TypeDecl* type_decl, Table* table);

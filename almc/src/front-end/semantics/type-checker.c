@@ -27,7 +27,7 @@ Type* get_expr_type(Expr* expr, Table* table)
 	switch (expr->kind)
 	{
 	case EXPR_IDNT:
-		type = get_idnt_type(expr->idnt, table);
+		type = get_idnt_type(expr->idnt, table, table);
 		set_and_return_type(type, expr->idnt);
 	case EXPR_CONST:
 		type = get_const_type(expr->cnst);
@@ -35,6 +35,9 @@ Type* get_expr_type(Expr* expr, Table* table)
 	case EXPR_STRING:
 		type = get_string_type(expr->str);
 		set_and_return_type(type, expr->str);
+	case EXPR_FUNC_CALL:
+		type = get_func_call_type(expr->func_call, table);
+		set_and_return_type(type, expr->func_call);
 	case EXPR_UNARY_EXPR:
 		type = get_unary_expr_type(expr->unary_expr, table);
 		set_and_return_type(type, expr->unary_expr);
@@ -86,12 +89,17 @@ Type* get_const_type(Const* cnst)
 			(int64_t)cnst->fvalue >= INT32_MIN ? "f32" : "f64";
 		break;
 	}
-	return type;
+	return cnst->type = type;
 }
 
-Type* get_idnt_type(Idnt* idnt)
+Type* get_idnt_type(Idnt* idnt, Table* table)
 {
-	return idnt->type;
+	if (!is_variable_declared(idnt->svalue, table) &&
+		!is_function_param_passed(idnt->svalue, table))
+			return NULL;
+	return idnt->type = is_function_param_passed(idnt->svalue, table) ? 
+		get_function_param(idnt->svalue, table)->type : 
+			get_variable(idnt->svalue, table)->type_var->type;
 }
 
 Type* get_string_type(Str* str)
@@ -99,7 +107,17 @@ Type* get_string_type(Str* str)
 	Type* type = cnew_s(Type, type, 1);
 	type->mods.is_predefined = 1;
 	type->repr = "str";
-	return type;
+	return str->type = type;
+}
+
+Type* get_func_call_type(FuncCall* func_call, Table* table)
+{
+	// also checking type of each function's argument with type of passed value
+	FuncDecl* origin = get_function(func_call->func_name, table);
+	for (size_t i = 0; i < sbuffer_len(origin->func_params); i++)
+		cast_implicitly(origin->func_params[i]->type, get_expr_type(func_call->func_args[i], table),
+			get_expr_area(func_call->func_args[i]));
+	return func_call->type = origin->func_type;
 }
 
 Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)

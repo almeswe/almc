@@ -49,7 +49,7 @@ void visit_stmt(Stmt* stmt, Table* table)
 		visit_func_decl(stmt->func_decl, table);
 		break;
 	default:
-		report_error("Unknown statement kind to visit.", NULL);
+		report_error("Unknown statement kind to visit in visit_stmt().", NULL);
 	}
 }
 
@@ -113,65 +113,100 @@ void visit_expr(Expr* expr, Table* table)
 	case EXPR_IDNT:
 		visit_idnt(expr->idnt, table);
 		break;
+	case EXPR_FUNC_CALL:
+		visit_func_call(expr->func_call, table);
+		break;
 	case EXPR_UNARY_EXPR:
-		visit_unary_expr(expr, table);
+		visit_unary_expr(expr->unary_expr, table);
 		break;
 	case EXPR_BINARY_EXPR:
-		visit_binary_expr(expr, table);
+		visit_binary_expr(expr->binary_expr, table);
 		break;
 	default:
-		assert(0);
+		report_error("Unknown kind of binary expression met in visit_binary_expr()", NULL);
 	}
+	get_expr_type(expr, table);
 }
 
 void visit_idnt(Idnt* idnt, Table* table)
 {
-	// checking if identifier is parameter, then just set its type to idnt
-	if (is_function_param_passed(idnt->svalue, table))
-		idnt->type = get_function_param(idnt->svalue, table)->type;
-	else
+	// checking if identifier is not a function parameter
+	if (!is_function_param_passed(idnt->svalue, table))
 	{
-		// rather check if declared and initialized
+		// and check if declared and initialized
 		if (!is_variable_declared(idnt->svalue, table))
 			report_error(frmt("Variable %s is not declared.",
 				idnt->svalue), idnt->context);
 		if (!is_variable_initialized(idnt->svalue, table))
 			report_error(frmt("Variable %s is not initialized in current scope.",
 				idnt->svalue), idnt->context);
-		idnt->type = get_variable(idnt->svalue, table)->type_var->type;
 	}
 }
 
-void visit_unary_expr(Expr* expr, Table* table)
+void visit_func_call(FuncCall* func_call, Table* table)
 {
-	switch (expr->unary_expr->kind)
+	if (!is_function_declared(func_call->func_name, table))
+		report_error2(frmt("Function %s is not declared in current scope.", func_call->func_name),
+			func_call->area);
+	else
 	{
+		// visiting passed arguments to function call
+		FuncDecl* origin = get_function(func_call->func_name, table);
+		visit_type(origin->func_type, table);
+		size_t passed   = sbuffer_len(func_call->func_args);
+		size_t expected = sbuffer_len(origin->func_params);
+
+		if (passed > expected)
+			report_error2(frmt("Too much arguments passed to function call %s.", func_call->func_name),
+				func_call->area);
+
+		if (passed < expected)
+			report_error2(frmt("Not enough arguments passed to function call %s.", func_call->func_name),
+				func_call->area);
+	}
+}
+
+void visit_unary_expr(UnaryExpr* unary_expr, Table* table)
+{
+	switch (unary_expr->kind)
+	{
+	case UNARY_CAST:
+		visit_non_void_type(unary_expr->cast_type, table);
+		visit_expr(unary_expr->expr, table);
+		break;
+
+	case UNARY_PLUS:
+	case UNARY_MINUS:
+	case UNARY_LG_NOT:
+	case UNARY_BW_NOT:
 	case UNARY_DEREFERENCE:
-		if (!is_addressable_value(expr))
-			report_error2(frmt("Expression is not addressible value, cannot dereference it."), 
-				expr->unary_expr->area);
-		visit_expr(expr->unary_expr->expr, table);
+		visit_expr(unary_expr->expr, table);
+		break;
+
+	case UNARY_ADDRESS:
+	case UNARY_PREFIX_INC:
+	case UNARY_PREFIX_DEC:
+	case UNARY_POSTFIX_INC:
+	case UNARY_POSTFIX_DEC:
+		if (unary_expr->expr->kind != EXPR_IDNT)
+			report_error2("Variable expected for this unary operator.", 
+				get_expr_area(unary_expr->expr));
+		visit_expr(unary_expr->expr, table);
+		break;
+	case UNARY_SIZEOF:
+		if (!unary_expr->cast_type)
+			visit_expr(unary_expr->expr, table);
+		else
+			visit_non_void_type(unary_expr->cast_type, table);
 		break;
 	default:
-		assert(0);
+		report_error("Unknown kind of unary expression met in visit_unary_expr()", NULL);
 	}
 }
 
-void visit_arr_member_accessor_expr(BinaryExpr* binary_expr, Table* table)
+void visit_binary_expr(BinaryExpr* binary_expr, Table* table)
 {
-	if (!is_addressable_value(binary_expr->lexpr, table))
-		report_error2(frmt("Expression is not addressible value, cannot access it like array."), 
-			binary_expr->area);
-	visit_expr(binary_expr->lexpr, table);
-	visit_expr(binary_expr->rexpr, table);
-	// todo: check for array type
-}
-
-void visit_binary_expr(Expr* expr, Table* table)
-{
-	//todo: add type determinated logic for shifts, bitwises etc.
-
-	switch (expr->binary_expr->kind)
+	switch (binary_expr->kind)
 	{
 	case BINARY_ADD:
 	case BINARY_SUB:
@@ -194,13 +229,28 @@ void visit_binary_expr(Expr* expr, Table* table)
 	case BINARY_GREATER_THAN:
 	case BINARY_LESS_EQ_THAN:
 	case BINARY_GREATER_EQ_THAN:
-		visit_expr(expr->binary_expr->lexpr, table);
-		visit_expr(expr->binary_expr->rexpr, table);
+		visit_expr(binary_expr->lexpr, table);
+		visit_expr(binary_expr->rexpr, table);
 		break;
 
+	case BINARY_MEMBER_ACCESSOR:
 	case BINARY_ARR_MEMBER_ACCESSOR:
-		visit_arr_member_accessor_expr(
-			expr->binary_expr, table);
+	case BINARY_PTR_MEMBER_ACCESSOR:
+		break;
+
+	case BINARY_ASSIGN:
+	case BINARY_ADD_ASSIGN:
+	case BINARY_SUB_ASSIGN:
+	case BINARY_MUL_ASSIGN:
+	case BINARY_DIV_ASSIGN:
+	case BINARY_MOD_ASSIGN:
+	case BINARY_LSHIFT_ASSIGN:
+	case BINARY_RSHIFT_ASSIGN:
+		if (!is_addressable_value(binary_expr->lexpr))
+			report_error2("Cannot assign something to non-addressible value.", 
+				get_expr_area(binary_expr->lexpr));
+		visit_expr(binary_expr->lexpr, table);
+		visit_expr(binary_expr->rexpr, table);
 		break;
 	default:
 		assert(0);
@@ -351,9 +401,6 @@ void visit_func_decl(FuncDecl* func_decl, Table* table)
 		visit_non_void_type(func_decl->func_params[i]->type, table);
 	}
 
-	//todo: add all parameters to variable table
-	//for (size_t i = 0; i < sbuffer_len(func_decl->func_params); i++);
-
 	//checking function's return type
 	visit_type(func_decl->func_type, table);
 	//checking function's body
@@ -432,13 +479,4 @@ int is_addressable_value(Expr* expr)
 	default:
 		return 0;
 	}
-	// p 
-	// p[i]
-	// p.i
-	// p->i
-	// *(p+i)
-	// p++ p-- 
-	// --p ++p
-
-	// p->c->d
 }

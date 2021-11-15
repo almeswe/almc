@@ -78,7 +78,8 @@
 
 Type* get_string_type(Str* str);
 Type* get_const_type(Const* cnst);
-Type* get_idnt_type(Idnt* idnt);
+Type* get_idnt_type(Idnt* idnt, Table* table);
+Type* get_func_call_type(FuncCall* func_call, Table* table);
 
 Type* get_expr_type(Expr* expr, Table* table);
 Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table);

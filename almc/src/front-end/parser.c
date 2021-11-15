@@ -998,8 +998,7 @@ Stmt* parse_stmt(Parser* parser)
 	case TOKEN_KEYWORD_USER_TYPEDECL:
 		return parse_type_decl_stmt(parser);
 	default:
-		report_error(frmt("Expected token that specifies statement, but met: %s",
-			token_type_tostr(get_curr_token(parser)->type)), get_curr_token(parser)->context);
+		return parse_expr_stmt(parser);
 	}
 }
 
