@@ -187,6 +187,9 @@ Token** lex(Lexer* lexer)
 	while (!eos(lexer))
 	{
 		char curr_char = get_curr_char(lexer);
+		if (!matchc_in(lexer, 0, 255))
+			report_error(frmt("Cannot process char with code: %d", curr_char), 
+				src_context_new(lexer->curr_file, lexer->curr_line_offset, 1, lexer->curr_line));
 		if (isdigit(curr_char))
 			sbuffer_add(tokens, get_num_token(lexer));
 		else if (issquote(curr_char))
