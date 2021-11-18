@@ -2,8 +2,8 @@
 #define ALMC_FRONT_END_VISITOR_H
 
 #include "table.h"
-#include "type-checker.h"
 #include "assert.h"
+#include "type-checker.h"
 
 typedef struct Visitor
 {
@@ -31,6 +31,7 @@ void visit_var_decl(VarDecl* var_decl, Table* table);
 void visit_type_decl(TypeDecl* type_decl, Table* table);
 void visit_func_decl(FuncDecl* func_decl, Table* table);
 
+int expr_contains_var(Expr* expr);
 int is_addressable_value(Expr* expr);
 
 #endif

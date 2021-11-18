@@ -12,10 +12,10 @@
 
 Type* get_expr_type(Expr* expr, Table* table)
 {
-#define set_and_return_type(type, to_node) \
-	if (!type) return NULL;                \
-	type_dup_no_alloc(type, type_new);     \
-	to_node->type = type_new;              \
+#define set_and_return_type(type, to_node)        \
+	if (!type) return NULL;                       \
+	type_dup_no_alloc(type, type_new);            \
+	if (!to_node->type) to_node->type = type_new; \
 	return type_new
 
 	Type* type = NULL;
@@ -94,6 +94,8 @@ Type* get_const_type(Const* cnst)
 
 Type* get_idnt_type(Idnt* idnt, Table* table)
 {
+	if (is_enum_member(idnt->svalue, table))
+		return get_enum_member_type(idnt->svalue, table);
 	if (!is_variable_declared(idnt->svalue, table) &&
 		!is_function_param_passed(idnt->svalue, table))
 			return NULL;
@@ -686,5 +688,25 @@ char* get_member_name(Expr* expr)
 		report_error("Cannot get member name from expression.", NULL);
 		break;
 	}
+	return NULL;
+}
+
+int is_enum_member(const char* var, Table* table)
+{
+	for (Table* parent = table; parent; parent = parent->parent)
+		for (size_t i = 0; i < sbuffer_len(parent->enums); i++)
+			for (size_t j = 0; j < sbuffer_len(parent->enums[i]->enum_idnts); j++)
+				if (strcmp(var, parent->enums[i]->enum_idnts[j]->svalue) == 0)
+					return 1;
+	return 0;
+}
+
+Type* get_enum_member_type(const char* member, Table* table)
+{
+	for (Table* parent = table; parent; parent = parent->parent)
+		for (size_t i = 0; i < sbuffer_len(parent->enums); i++)
+			for (size_t j = 0; j < sbuffer_len(parent->enums[i]->enum_idnts); j++)
+				if (strcmp(member, parent->enums[i]->enum_idnts[j]->svalue) == 0)
+					return get_expr_type(parent->enums[i]->enum_idnt_values[j], table);
 	return NULL;
 }

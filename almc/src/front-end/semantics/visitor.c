@@ -131,7 +131,8 @@ void visit_expr(Expr* expr, Table* table)
 void visit_idnt(Idnt* idnt, Table* table)
 {
 	// checking if identifier is not a function parameter
-	if (!is_function_param_passed(idnt->svalue, table))
+	if (!is_enum_member(idnt->svalue, table) && 
+		!is_function_param_passed(idnt->svalue, table))
 	{
 		// and check if declared and initialized
 		if (!is_variable_declared(idnt->svalue, table))
@@ -253,32 +254,39 @@ void visit_binary_expr(BinaryExpr* binary_expr, Table* table)
 		visit_expr(binary_expr->rexpr, table);
 		break;
 	default:
-		assert(0);
+		report_error("Unknown kind of binary expression met in visit_binary_expr()", NULL);
 	}
 }
 
 void visit_var_decl(VarDecl* var_decl, Table* table)
 {
-	if (is_variable_declared(var_decl->type_var->var, table))
+	Type* type = var_decl->type_var->type;
+	SrcArea* area = var_decl->type_var->area;
+	const char* var = var_decl->type_var->var;
+
+	if (is_variable_declared(var, table))
 		report_error2(frmt("Variable %s is already declared.",
-			var_decl->type_var->var), var_decl->type_var->area);
-	else if (is_function_param_passed(var_decl->type_var->var, table))
+			var), area);
+	else if (is_function_param_passed(var, table))
 		report_error2(frmt("%s is already declared as function's parameter.",
-			var_decl->type_var->var), var_decl->type_var->area);
+			var), area);
+	else if (is_enum_member(var, table))
+		report_error2(frmt("%s is already declared as enum's identifier.",
+			var), area);
 	else
 	{
 		add_variable(var_decl, table);
-		visit_non_void_type(var_decl->type_var->type, table);
+		visit_non_void_type(type, table);
 		if (var_decl->var_init)
 		{
 			visit_expr(var_decl->var_init, table);
-			add_initialized_variable(var_decl->type_var->var, table);
+			add_initialized_variable(var, table);
 
 			// check type of created variable with type of initializing expression
 			Type* init_expr_type = get_expr_type(var_decl->var_init, table);
-			if (!can_cast_implicitly(var_decl->type_var->type, init_expr_type))
+			if (!can_cast_implicitly(type, init_expr_type))
 				report_error2(frmt("Expression-initializer has incompatible type %s with type of variable %s.",
-					type_tostr_plain(init_expr_type), type_tostr_plain(var_decl->type_var->type)), 
+					type_tostr_plain(init_expr_type), type_tostr_plain(type)), 
 						get_expr_area(var_decl->var_init));
 		}
 	}
@@ -288,23 +296,35 @@ void visit_enum(EnumDecl* enum_decl, Table* table)
 {
 	for (size_t i = 0; i < sbuffer_len(enum_decl->enum_idnts); i++)
 	{
+		// checking validity of values that assigned to enum idents
+		for (size_t j = 0; j < sbuffer_len(enum_decl->enum_idnt_values); j++)
+			if (!is_const_expr(enum_decl->enum_idnt_values[j]))
+				report_error2(frmt("Enum member %s has invalid value in %s enum.",
+					enum_decl->enum_idnts[j]->svalue, enum_decl->enum_name),
+						get_expr_area(enum_decl->enum_idnt_values[j]));
+
 		// iterating through all members of all enums (except current enum)
-		for (Table* parent = table; parent != NULL; parent = parent->parent)					    // each scope from above scope
-			for (size_t j = 0; j < sbuffer_len(parent->enums); j++)								    // each enum in iterating scope
-				if (strcmp(parent->enums[j]->enum_name, enum_decl->enum_name) != 0)					// if iterating enum != current enum
-					for (size_t z = 0; z < sbuffer_len(parent->enums[j]->enum_idnts); z++)			// each member in iterating enum
+		for (Table* parent = table; parent != NULL; parent = parent->parent)                        // each scope from above scope
+			for (size_t j = 0; j < sbuffer_len(parent->enums); j++)                                 // each enum in iterating scope
+				if (strcmp(parent->enums[j]->enum_name, enum_decl->enum_name) != 0)                 // if iterating enum != current enum
+					for (size_t z = 0; z < sbuffer_len(parent->enums[j]->enum_idnts); z++)          // each member in iterating enum
 						if (strcmp(parent->enums[j]->enum_idnts[z]->svalue,
-								   enum_decl->enum_idnts[i]->svalue) == 0)
-							report_error(frmt("Enum member %s is already declared in %s enum.",
-								enum_decl->enum_idnts[i]->svalue, parent->enums[j]->enum_name), 
-									enum_decl->enum_idnts[i]->context);
+							enum_decl->enum_idnts[i]->svalue) == 0)
+								report_error(frmt("Enum member %s is already declared in %s enum.",
+									enum_decl->enum_idnts[i]->svalue, parent->enums[j]->enum_name),
+										enum_decl->enum_idnts[i]->context);
+		// checking value type
+		Type* value_type = get_expr_type(enum_decl->enum_idnt_values[i], table);
+		if (!IS_INTEGRAL_TYPE(value_type))
+			report_error2(frmt("Enum's member %s has incompatible %s type in %s enum.",
+				enum_decl->enum_idnts[i]->svalue, type_tostr_plain(value_type), enum_decl->enum_name), 
+					get_expr_area(enum_decl->enum_idnt_values[i]));
 
 		// now checking for any duplicated names in current enum
-		for (size_t g = i + 1; g < sbuffer_len(enum_decl->enum_idnts); g++)
-			if (strcmp(enum_decl->enum_idnts[i]->svalue, enum_decl->enum_idnts[g]->svalue) == 0)
+		for (size_t j = i + 1; j < sbuffer_len(enum_decl->enum_idnts); j++)
+			if (strcmp(enum_decl->enum_idnts[i]->svalue, enum_decl->enum_idnts[j]->svalue) == 0)
 				report_error(frmt("Member %s is already declared in %s enum declaration.",
 					enum_decl->enum_idnts[i]->svalue, enum_decl->enum_name), enum_decl->enum_idnts[i]->context);
-		//todo: check for initizers (only consts)
 	}
 }
 
@@ -391,6 +411,10 @@ void visit_func_decl(FuncDecl* func_decl, Table* table)
 	// checking func parameters
 	for (size_t i = 0; i < sbuffer_len(func_decl->func_params); i++)
 	{
+		// checking if parameter with this name is already defined as enum identifier
+		if (is_enum_member(func_decl->func_params[i]->var, local))
+			report_error2(frmt("Function parameter %s is already defined as enum identifier.",
+				func_decl->func_params[i]->var), func_decl->func_params[i]->area);
 		// checking for duplicated parameter specification
 		if (is_function_param_passed(func_decl->func_params[i]->var, local))
 			report_error2(frmt("Function parameter %s is already specified in %s function parameter list.",
@@ -401,14 +425,15 @@ void visit_func_decl(FuncDecl* func_decl, Table* table)
 		visit_non_void_type(func_decl->func_params[i]->type, table);
 	}
 
-	//checking function's return type
+	// checking function's return type
 	visit_type(func_decl->func_type, table);
-	//checking function's body
+	// checking function's body
 	visit_block(func_decl->func_body, local);
 }
 
 int expr_contains_var(Expr* expr)
 {
+	//todo: incorrect function
 	switch (expr->kind)
 	{
 	case EXPR_IDNT:
@@ -422,6 +447,27 @@ int expr_contains_var(Expr* expr)
 	default:
 		return 0;
 	}
+}
+
+int is_const_expr(Expr* expr)
+{
+	switch (expr->kind)
+	{
+	case EXPR_CONST:
+		return 1;
+	case EXPR_UNARY_EXPR:
+		return is_const_expr(expr->unary_expr->expr);
+	case EXPR_BINARY_EXPR:
+		return is_const_expr(expr->binary_expr->lexpr) &&
+			   is_const_expr(expr->binary_expr->rexpr);
+	case EXPR_TERNARY_EXPR:
+		return is_const_expr(expr->ternary_expr->lexpr) &&
+			   is_const_expr(expr->ternary_expr->rexpr) &&
+			   is_const_expr(expr->ternary_expr->cond);
+	default:
+		return 0;
+	}
+	return 0;
 }
 
 int is_addressable_value(Expr* expr)
