@@ -14,11 +14,11 @@
 
 Type* get_expr_type(Expr* expr, Table* table)
 {
-#define set_and_return_type(type, to_node)        \
-	if (!type) return NULL;                       \
-	type_dup_no_alloc(type, type_new);            \
-	if (!to_node->type) to_node->type = type_new; \
-	return type_new
+#define set_and_return_type(type, to_node)  \
+	if (!type)                              \
+		return NULL;                        \
+	type_dup_no_alloc(type, type_new);      \
+	return to_node->type = type_new;        \
 
 	Type* type = NULL;
 	Type* type_new = NULL;

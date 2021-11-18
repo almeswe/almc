@@ -289,8 +289,6 @@ void visit_binary_expr(BinaryExpr* binary_expr, Table* table)
 		break;
 	default:
 		report_error("Unknown kind of binary expression met in visit_binary_expr()", NULL);
-<<<<<<< Updated upstream
-=======
 	}
 }
 
@@ -431,25 +429,26 @@ void visit_jump_stmt(JumpStmt* jump_stmt, Table* table)
 		break;
 	default:
 		report_error(frmt("Unknown jump statement kind met: %d", jump_stmt->kind), NULL);
->>>>>>> Stashed changes
 	}
 }
 
 void visit_break_stmt(JumpStmt* break_stmt, Table* table)
 {
-	// todo: specify context to statements
 	if (!table->in_loop && !table->in_switch)
-		report_error("Can't use break statement in this context.", NULL);
+		report_error2("Cannot use break statement in this context.", 
+			break_stmt->area);
 }
 
 void visit_return_stmt(JumpStmt* return_stmt, Table* table)
 {
 	if (!table->in_function)
-		report_error("Cannot use return statement when its not located in function.", NULL);
+		report_error2("Cannot use return statement when its not located in function.",
+			return_stmt->area);
 	if (!IS_VOID(table->in_function->func_type))
 	{
 		if (!return_stmt->additional_expr)
-			report_error("Return statement must return some value from function.", NULL);
+			report_error2("Return statement must return some value from function.", 
+				return_stmt->area);
 		Type* return_type = get_expr_type(return_stmt->additional_expr, table);
 		if (!can_cast_implicitly(table->in_function->func_type, return_type))
 			report_error2(frmt("Cannot return value of type %s from function with %s.",
@@ -465,21 +464,17 @@ void visit_return_stmt(JumpStmt* return_stmt, Table* table)
 void visit_continue_stmt(JumpStmt* continue_stmt, Table* table)
 {
 	if (!table->in_loop)
-		report_error("Can't use continue statement in this context.", NULL);
+		report_error2("Cannot use continue statement in this context.", 
+			continue_stmt->area);
 }
 
 void visit_var_decl_stmt(VarDecl* var_decl, Table* table)
 {
-<<<<<<< Updated upstream
 	Type* type = var_decl->type_var->type;
 	SrcArea* area = var_decl->type_var->area;
 	const char* var = var_decl->type_var->var;
 
 	if (is_variable_declared(var, table))
-=======
-	//todo: add enum's idnt recogniiton
-	if (is_variable_declared(var_decl->type_var->var, table))
->>>>>>> Stashed changes
 		report_error2(frmt("Variable %s is already declared.",
 			var), area);
 	else if (is_function_param_passed(var, table))

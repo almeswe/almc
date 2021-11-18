@@ -99,6 +99,7 @@ uint32_t can_cast_implicitly(Type* to, Type* type);
 
 SrcArea* get_expr_area(Expr* expr);
 char* get_member_name(Expr* expr);
+
 int is_enum_member(const char* var, Table* table);
 Type* get_enum_member_type(const char* member, Table* table);
 

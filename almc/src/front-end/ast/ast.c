@@ -378,6 +378,7 @@ ImportStmt* import_stmt_new(AstRoot* imported_ast)
 JumpStmt* jump_stmt_new(JumpStmtKind type, Expr* additional_expr)
 {
 	JumpStmt* js = new_s(JumpStmt, js);
+	js->area = NULL;
 	switch (js->kind = type)
 	{
 	case JUMP_BREAK:
@@ -598,7 +599,7 @@ void stmt_free(Stmt* stmt)
 			label_decl_free(stmt->label_decl);
 			break;
 		default:
-			report_error("Unexpected stmt type.", NULL);
+			report_error("Unexpected stmt kind met in stmt_free().", NULL);
 		}
 		free(stmt);
 	}
@@ -858,8 +859,9 @@ void jump_stmt_free(JumpStmt* jump_stmt)
 			expr_free(jump_stmt->additional_expr);
 			break;
 		default:
-			report_error("Unexpected jump-stmt type.", NULL);
+			report_error("Unexpected jump statement kind in jump_stmt_free().", NULL);
 		}
+		free(jump_stmt->area);
 		free(jump_stmt);
 	}
 }

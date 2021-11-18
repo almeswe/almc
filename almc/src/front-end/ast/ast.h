@@ -364,6 +364,7 @@ typedef enum JumpStmtKind
 
 typedef struct JumpStmt
 {
+	SrcArea* area;
 	JumpStmtKind kind;
 	//used by goto && return stmts
 	Expr* additional_expr;

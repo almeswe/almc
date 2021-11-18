@@ -1636,6 +1636,7 @@ Stmt* parse_from_import_member_stmt(Parser* parser, AstRoot* import_module)
 Stmt* parse_jump_stmt(Parser* parser)
 {
 	JumpStmtKind type = -1;
+	context_starts(parser, context);
 	Expr* additional_expr = NULL;
 	Idnt* goto_label = cnew_s(Idnt, goto_label, 1);
 
@@ -1667,8 +1668,10 @@ Stmt* parse_jump_stmt(Parser* parser)
 			token_type_tostr(get_curr_token(parser)->type)), get_curr_token(parser)->context);
 	}
 	expect_with_skip(parser, TOKEN_SEMICOLON, ";");
-	return stmt_new(STMT_JUMP, jump_stmt_new(type, 
+	Stmt* stmt = stmt_new(STMT_JUMP, jump_stmt_new(type, 
 		additional_expr));
+	context_ends(parser, context, stmt->jump_stmt);
+	return stmt;
 }
 
 TypeVar* parse_type_var(Parser* parser)
