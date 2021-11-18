@@ -1,5 +1,7 @@
 #include "type-checker.h"
 
+//todo: figure out the type checking for logical and relative operators
+
 #define type_dup(type, type_name)                 \
 	Type* type_name = cnew_s(Type, type_name, 1); \
 	type_name->mods = type->mods;                 \
@@ -403,7 +405,7 @@ Type* get_ternary_expr_type(TernaryExpr* ternary_expr, Table* table)
 	else if (can_cast_implicitly(rtype, ltype))
 		return cast_implicitly(rtype, ltype, ternary_expr->area);
 	else
-		report_error2("Left and right expressions in ternary expression should be the same or implicitly equal", 
+		report_error2("Left and right expressions in ternary expression should be the same or implicitly equal.", 
 			ternary_expr->area);
 	return NULL;
 }

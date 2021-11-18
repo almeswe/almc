@@ -23,6 +23,14 @@ Table* table_new(Table* parent)
 	table->unions = NULL;
 	table->structs = NULL;
 
+	table->in_function = parent ?
+		parent->in_function : NULL;
+
+	table->in_switch = parent ?
+		parent->in_switch : NULL;
+	table->in_loop = parent ?
+		parent->in_loop : NULL;
+
 	table->parent = parent;
 	table->childs = NULL;
 

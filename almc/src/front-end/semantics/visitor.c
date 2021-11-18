@@ -33,20 +33,35 @@ void visit_stmt(Stmt* stmt, Table* table)
 {
 	switch (stmt->kind)
 	{
+	case STMT_IF:
+		visit_if_stmt(stmt->if_stmt, table);
+		break;
+	case STMT_LOOP:
+		visit_loop_stmt(stmt->loop_stmt, table);
+		break;
+	case STMT_JUMP:
+		visit_jump_stmt(stmt->jump_stmt, table);
+		break;
 	case STMT_EXPR:
 		visit_expr(stmt->expr_stmt->expr, table);
 		break;
 	case STMT_BLOCK:
 		visit_block(stmt->block, table_new(table));
 		break;
+	case STMT_SWITCH:
+		visit_switch_stmt(stmt->switch_stmt, table);
+		break;
 	case STMT_VAR_DECL:
-		visit_var_decl(stmt->var_decl, table);
+		visit_var_decl_stmt(stmt->var_decl, table);
 		break;
 	case STMT_TYPE_DECL:
-		visit_type_decl(stmt->type_decl, table);
+		visit_type_decl_stmt(stmt->type_decl, table);
 		break;
 	case STMT_FUNC_DECL:
-		visit_func_decl(stmt->func_decl, table);
+		visit_func_decl_stmt(stmt->func_decl, table);
+		break;
+	case STMT_EMPTY:
+	case STMT_IMPORT:
 		break;
 	default:
 		report_error("Unknown statement kind to visit in visit_stmt().", NULL);
@@ -62,7 +77,7 @@ void visit_type(Type* type, Table* table)
 				report_error2(frmt("Undefined type %s met.",
 					type->repr), type->area);
 	if (type->mods.is_array && type->mods.is_ptr)
-		assert(0);
+		report_error("Cannot resolve type ambiguity in visit_type()", NULL);
 }
 
 void visit_non_void_type(Type* type, Table* table)
@@ -111,7 +126,7 @@ void visit_expr(Expr* expr, Table* table)
 	case EXPR_STRING:
 		break;
 	case EXPR_IDNT:
-		visit_idnt(expr->idnt, table);
+		visit_idnt(expr->idnt, table, 0);
 		break;
 	case EXPR_FUNC_CALL:
 		visit_func_call(expr->func_call, table);
@@ -122,13 +137,19 @@ void visit_expr(Expr* expr, Table* table)
 	case EXPR_BINARY_EXPR:
 		visit_binary_expr(expr->binary_expr, table);
 		break;
+	case EXPR_TERNARY_EXPR:
+		visit_ternary_expr(expr->ternary_expr, table);
+		break;
+	case EXPR_INITIALIZER:
+		report_error2("Initializers are not supported in language yet.", expr->initializer->area);
+		break;
 	default:
-		report_error("Unknown kind of binary expression met in visit_binary_expr()", NULL);
+		report_error("Unknown kind of binary expression met in visit_expr()", NULL);
 	}
 	get_expr_type(expr, table);
 }
 
-void visit_idnt(Idnt* idnt, Table* table)
+void visit_idnt(Idnt* idnt, Table* table, int is_in_assign)
 {
 	// checking if identifier is not a function parameter
 	if (!is_enum_member(idnt->svalue, table) && 
@@ -138,6 +159,8 @@ void visit_idnt(Idnt* idnt, Table* table)
 		if (!is_variable_declared(idnt->svalue, table))
 			report_error(frmt("Variable %s is not declared.",
 				idnt->svalue), idnt->context);
+		if (is_in_assign && !is_variable_initialized(idnt->svalue, table))
+			add_initialized_variable(idnt->svalue, table);
 		if (!is_variable_initialized(idnt->svalue, table))
 			report_error(frmt("Variable %s is not initialized in current scope.",
 				idnt->svalue), idnt->context);
@@ -240,6 +263,17 @@ void visit_binary_expr(BinaryExpr* binary_expr, Table* table)
 		break;
 
 	case BINARY_ASSIGN:
+		if (!is_addressable_value(binary_expr->lexpr))
+			report_error2("Cannot assign something to non-addressible value.",
+				get_expr_area(binary_expr->lexpr));
+		// if right expression is idnt, then set it as initialized
+		if (binary_expr->lexpr->kind == EXPR_IDNT)
+			visit_idnt(binary_expr->lexpr->idnt, table, 1);
+		else 
+			visit_expr(binary_expr->lexpr, table);
+		visit_expr(binary_expr->rexpr, table);
+		break;
+
 	case BINARY_ADD_ASSIGN:
 	case BINARY_SUB_ASSIGN:
 	case BINARY_MUL_ASSIGN:
@@ -255,16 +289,197 @@ void visit_binary_expr(BinaryExpr* binary_expr, Table* table)
 		break;
 	default:
 		report_error("Unknown kind of binary expression met in visit_binary_expr()", NULL);
+<<<<<<< Updated upstream
+=======
 	}
 }
 
-void visit_var_decl(VarDecl* var_decl, Table* table)
+void visit_ternary_expr(TernaryExpr* ternary_expr, Table* table)
 {
+	visit_condition(ternary_expr->cond, table);
+	visit_expr(ternary_expr->lexpr, table);
+	visit_expr(ternary_expr->rexpr, table);
+}
+
+void visit_condition(Expr* condition, Table* table)
+{
+	visit_expr(condition, table);
+	Type* type = get_expr_type(condition, table);
+	if (!IS_NUMERIC_TYPE(type))
+		report_error2(frmt("Condition expression must have numeric type, not %s",
+			type_tostr_plain(type)), get_expr_area(condition));
+}
+
+void visit_if_stmt(IfStmt* if_stmt, Table* table)
+{
+	Table* local = NULL;
+	visit_condition(if_stmt->if_cond, table);
+	visit_scope(if_stmt->if_body->stmts, local = table_new(table));
+	visit_block(if_stmt->if_body, local);
+
+	for (size_t i = 0; i < sbuffer_len(if_stmt->elifs); i++)
+		visit_condition(if_stmt->elifs[i]->elif_cond, table),
+			visit_scope(if_stmt->elifs[i]->elif_body->stmts, local = table_new(table)),
+				visit_block(if_stmt->elifs[i]->elif_body, local);
+
+	if (if_stmt->else_body)
+		visit_scope(if_stmt->else_body->stmts, local = table_new(table)),
+			visit_block(if_stmt->else_body, local);
+}
+
+void visit_switch_stmt(SwitchStmt* switch_stmt, Table* table)
+{
+	// todo: add enum type support for switch condition
+	Table* local = NULL;
+	visit_condition(switch_stmt->switch_cond, table);
+
+	Type* switch_case_type = NULL;
+	Type* switch_cond_type = get_expr_type(switch_stmt->switch_cond, table);
+
+	if (!IS_INTEGRAL_TYPE(switch_cond_type))
+		report_error2(frmt("Condition of switch statement must be of integral type, not %s", 
+			type_tostr_plain(switch_cond_type)), get_expr_area(switch_stmt->switch_cond));
+
+	for (size_t i = 0; i < sbuffer_len(switch_stmt->switch_cases); i++)
+	{
+		local = table_new(table);
+		local->in_switch = switch_stmt;
+
+		if (switch_stmt->switch_cases[i]->case_body)
+			visit_scope(switch_stmt->switch_cases[i]->case_body->stmts, local),
+				visit_block(switch_stmt->switch_cases[i]->case_body, local);
+
+		switch_case_type = get_expr_type(switch_stmt->switch_cases[i]->case_value, local);
+		if (!can_cast_implicitly(switch_cond_type, switch_case_type, local))
+			report_error2(frmt("Cannot use case statement with type %s when switch's condition has type %s",
+				type_tostr_plain(switch_case_type), type_tostr_plain(switch_cond_type)),
+					get_expr_area(switch_stmt->switch_cases[i]->case_value));
+		if (!IS_INTEGRAL_TYPE(switch_case_type))
+			report_error2(frmt("Condition of case statement must be of integral type, not %s",
+				type_tostr_plain(switch_case_type)), get_expr_area(switch_stmt->switch_cases[i]->case_value));
+	}
+
+	if (switch_stmt->switch_default)
+	{
+		local = table_new(table);
+		local->in_switch = switch_stmt;
+		visit_scope(switch_stmt->switch_default->stmts, local),
+			visit_block(switch_stmt->switch_default, local);
+	}
+}
+
+void visit_loop_stmt(LoopStmt* loop_stmt, Table* table)
+{
+	Table* local = table_new(table);
+	local->in_loop = loop_stmt;
+	switch (loop_stmt->kind)
+	{
+	case LOOP_DO:
+		visit_do_loop_stmt(loop_stmt->do_loop, local);
+		break;
+	case LOOP_FOR:
+		visit_for_loop_stmt(loop_stmt->for_loop, local);
+		break;
+	case LOOP_WHILE:
+		visit_while_loop_stmt(loop_stmt->while_loop, local);
+		break;
+	default:
+		report_error(frmt("Unknown loop kind met: %d", loop_stmt->kind), NULL);
+	}
+}
+
+void visit_do_loop_stmt(DoLoop* do_loop, Table* table)
+{
+	visit_block(do_loop->do_body, table);
+	visit_scope(do_loop->do_body->stmts, table);
+	visit_condition(do_loop->do_cond, table);
+}
+
+void visit_for_loop_stmt(ForLoop* for_loop, Table* table)
+{
+	if (for_loop->for_init)
+		visit_var_decl_stmt(for_loop->for_init, table);
+	if (for_loop->for_cond)
+		visit_condition(for_loop->for_cond, table);
+	if (for_loop->for_step)
+		visit_expr(for_loop->for_step, table);
+	visit_scope(for_loop->for_body->stmts, table);
+	visit_block(for_loop->for_body, table);
+}
+
+void visit_while_loop_stmt(WhileLoop* while_loop, Table* table)
+{
+	visit_condition(while_loop->while_cond, table);
+	visit_scope(while_loop->while_body->stmts, table);
+	visit_block(while_loop->while_body, table);
+}
+
+void visit_jump_stmt(JumpStmt* jump_stmt, Table* table)
+{
+	switch (jump_stmt->kind)
+	{
+	case JUMP_GOTO:
+		assert(0);
+	case JUMP_BREAK:
+		visit_break_stmt(jump_stmt, table);
+		break;
+	case JUMP_RETURN:
+		visit_return_stmt(jump_stmt, table);
+		break;
+	case JUMP_CONTINUE:
+		visit_continue_stmt(jump_stmt, table);
+		break;
+	default:
+		report_error(frmt("Unknown jump statement kind met: %d", jump_stmt->kind), NULL);
+>>>>>>> Stashed changes
+	}
+}
+
+void visit_break_stmt(JumpStmt* break_stmt, Table* table)
+{
+	// todo: specify context to statements
+	if (!table->in_loop && !table->in_switch)
+		report_error("Can't use break statement in this context.", NULL);
+}
+
+void visit_return_stmt(JumpStmt* return_stmt, Table* table)
+{
+	if (!table->in_function)
+		report_error("Cannot use return statement when its not located in function.", NULL);
+	if (!IS_VOID(table->in_function->func_type))
+	{
+		if (!return_stmt->additional_expr)
+			report_error("Return statement must return some value from function.", NULL);
+		Type* return_type = get_expr_type(return_stmt->additional_expr, table);
+		if (!can_cast_implicitly(table->in_function->func_type, return_type))
+			report_error2(frmt("Cannot return value of type %s from function with %s.",
+				type_tostr_plain(return_type), type_tostr_plain(table->in_function->func_type)),
+					get_expr_area(return_stmt->additional_expr));
+	}
+	else
+		if (return_stmt->additional_expr)
+			report_error2("Cannot return value from function with void type.",
+				get_expr_area(return_stmt->additional_expr));
+}
+
+void visit_continue_stmt(JumpStmt* continue_stmt, Table* table)
+{
+	if (!table->in_loop)
+		report_error("Can't use continue statement in this context.", NULL);
+}
+
+void visit_var_decl_stmt(VarDecl* var_decl, Table* table)
+{
+<<<<<<< Updated upstream
 	Type* type = var_decl->type_var->type;
 	SrcArea* area = var_decl->type_var->area;
 	const char* var = var_decl->type_var->var;
 
 	if (is_variable_declared(var, table))
+=======
+	//todo: add enum's idnt recogniiton
+	if (is_variable_declared(var_decl->type_var->var, table))
+>>>>>>> Stashed changes
 		report_error2(frmt("Variable %s is already declared.",
 			var), area);
 	else if (is_function_param_passed(var, table))
@@ -372,7 +587,7 @@ void visit_struct(StructDecl* struct_decl, Table* table)
 						struct_decl->struct_mmbrs[i]->area);
 }
 
-void visit_type_decl(TypeDecl* type_decl, Table* table)
+void visit_type_decl_stmt(TypeDecl* type_decl, Table* table)
 {
 	Table* local = table_new(NULL);
 	switch (type_decl->kind)
@@ -395,14 +610,15 @@ void visit_block(Block* block, Table* table)
 		visit_stmt(block->stmts[i], table);
 }
 
-void visit_func_decl(FuncDecl* func_decl, Table* table)
+void visit_func_decl_stmt(FuncDecl* func_decl, Table* table)
 {
 	Table* local = table_new(table);
+	local->in_function = func_decl;
 
 	if (func_decl->func_spec.is_external &&
 		func_decl->func_spec.is_forward &&
 		func_decl->func_spec.is_intrinsic)
-			assert(0);
+			report_error("Function's modifiers are not supported in language yet.", NULL);
 
 	if (func_decl->func_body)
 		visit_scope(func_decl->func_body->stmts, local);

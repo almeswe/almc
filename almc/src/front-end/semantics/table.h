@@ -18,6 +18,19 @@ typedef struct Table
 	StructDecl** structs;
 	//-------------------
 
+	//-------------------
+	// few extensions added to avoid parent passing to each node of ast
+
+	// current function in which this table declared
+	// needeed mostly for return statement
+	FuncDecl* in_function;
+
+	// last loop | switch mentioned in this scope
+	// needed for continue, break stmts
+	LoopStmt* in_loop;
+	SwitchStmt* in_switch;
+	//-------------------
+
 	char** initialized_variables_in_scope;
 
 	// included local scopes of this scope
