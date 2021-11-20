@@ -60,6 +60,9 @@ void visit_stmt(Stmt* stmt, Table* table)
 	case STMT_FUNC_DECL:
 		visit_func_decl_stmt(stmt->func_decl, table);
 		break;
+	case STMT_LABEL_DECL:
+		visit_label_decl_stmt(stmt->label_decl, table);
+		break;
 	case STMT_EMPTY:
 	case STMT_IMPORT:
 		break;
@@ -113,6 +116,14 @@ void visit_scope(Stmt** stmts, Table* table)
 				report_error(frmt("Function %s is already declared.",
 					stmts[i]->func_decl->func_name), NULL);
 			add_function(stmts[i]->func_decl, table);
+			break;
+		// also added labels here
+		case STMT_LABEL_DECL:
+			if (is_label_declared(stmts[i]->label_decl->label_idnt->svalue, table))
+				report_error(frmt("Label %s is already declared.",
+					stmts[i]->label_decl->label_idnt->svalue), 
+						stmts[i]->label_decl->label_idnt->context);
+			add_label(stmts[i]->label_decl, table);
 			break;
 		}
 	}
@@ -417,7 +428,8 @@ void visit_jump_stmt(JumpStmt* jump_stmt, Table* table)
 	switch (jump_stmt->kind)
 	{
 	case JUMP_GOTO:
-		assert(0);
+		visit_goto_stmt(jump_stmt, table);
+		break;
 	case JUMP_BREAK:
 		visit_break_stmt(jump_stmt, table);
 		break;
@@ -429,6 +441,21 @@ void visit_jump_stmt(JumpStmt* jump_stmt, Table* table)
 		break;
 	default:
 		report_error(frmt("Unknown jump statement kind met: %d", jump_stmt->kind), NULL);
+	}
+}
+
+void visit_goto_stmt(JumpStmt* goto_stmt, Table* table)
+{
+	if (!goto_stmt->additional_expr)
+		report_error2("Expression in jump statement is undefined. visit_goto_stmt().", NULL);
+	else
+	{
+		if (goto_stmt->additional_expr->kind != EXPR_IDNT)
+			report_error2("Expression in jump statement must be identifier in case of goto statement.",
+				goto_stmt->area);
+		if (!is_label_declared(goto_stmt->additional_expr->idnt->svalue, table))
+			report_error2(frmt("Label %s is not declared in current scope.",
+				goto_stmt->additional_expr->idnt->svalue), goto_stmt->area);
 	}
 }
 
@@ -640,6 +667,11 @@ void visit_func_decl_stmt(FuncDecl* func_decl, Table* table)
 	visit_type(func_decl->func_type, table);
 	// checking function's body
 	visit_block(func_decl->func_body, local);
+}
+
+void visit_label_decl_stmt(LabelDecl* label_decl, Table* table)
+{
+	// there are no any processing stuff for label declaration statement yet.  ? ?
 }
 
 int expr_contains_var(Expr* expr)

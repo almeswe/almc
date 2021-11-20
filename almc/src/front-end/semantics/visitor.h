@@ -38,6 +38,7 @@ void visit_for_loop_stmt(ForLoop* for_loop, Table* table);
 void visit_while_loop_stmt(WhileLoop* while_loop, Table* table);
 
 void visit_jump_stmt(JumpStmt* jump_stmt, Table* table);
+void visit_goto_stmt(JumpStmt* goto_stmt, Table* table);
 void visit_break_stmt(JumpStmt* break_stmt, Table* table);
 void visit_return_stmt(JumpStmt* return_stmt, Table* table);
 void visit_continue_stmt(JumpStmt* continue_stmt, Table* table);
@@ -45,6 +46,7 @@ void visit_continue_stmt(JumpStmt* continue_stmt, Table* table);
 void visit_var_decl_stmt(VarDecl* var_decl, Table* table);
 void visit_type_decl_stmt(TypeDecl* type_decl, Table* table);
 void visit_func_decl_stmt(FuncDecl* func_decl, Table* table);
+void visit_label_decl_stmt(LabelDecl* label_decl, Table* table);
 
 int expr_contains_var(Expr* expr);
 int is_addressable_value(Expr* expr);

@@ -18,6 +18,7 @@ Table* table_new(Table* parent)
 	table->functions = NULL;
 	table->variables = NULL;
 	table->parameters = NULL;
+	table->labels = NULL;
 
 	table->enums = NULL;
 	table->unions = NULL;
@@ -36,6 +37,8 @@ Table* table_new(Table* parent)
 
 	table->initialized_variables_in_scope = NULL;
 
+	if (parent)
+		sbuffer_add(parent->childs, table);
 	return table;
 }
 
@@ -46,6 +49,7 @@ void table_free(Table* table)
 		sbuffer_free(table->functions);
 		sbuffer_free(table->variables);
 		sbuffer_free(table->parameters);
+		sbuffer_free(table->labels);
 
 		sbuffer_free(table->enums);
 		sbuffer_free(table->unions);
@@ -77,6 +81,12 @@ int is_function_param_passed(const char* param_name, Table* table)
 {
 	for (Table* parent = table; parent != NULL; parent = parent->parent)
 		is_declared_in_collection(param_name, var, parent->parameters);
+}
+
+int is_label_declared(const char* label_name, Table* table)
+{
+	for (Table* parent = table; parent != NULL; parent = parent->parent)
+		is_declared_in_collection(label_name, label_idnt->svalue, parent->labels);
 }
 
 int is_variable_initialized(const char* var_name, Table* table)
@@ -118,6 +128,12 @@ void add_variable(VarDecl* var_decl, Table* table)
 		sbuffer_add(table->variables, var_decl);
 }
 
+void add_label(LabelDecl* label_decl, Table* table)
+{
+	if (!is_label_declared(label_decl->label_idnt->svalue, table))
+		sbuffer_add(table->labels, label_decl);
+}
+
 void add_function_param(TypeVar* type_var, Table* table)
 {
 	if (!is_function_param_passed(type_var->var, table))
@@ -151,6 +167,12 @@ VarDecl* get_variable(const char* var_name, Table* table)
 {
 	for (Table* parent = table; parent != NULL; parent = parent->parent)
 		get_from_collection(var_name, type_var->var, parent->variables);
+}
+
+LabelDecl* get_label(const char* label_name, Table* table)
+{
+	for (Table* parent = table; parent != NULL; parent = parent->parent)
+		get_from_collection(label_name, label_idnt->svalue, parent->labels);
 }
 
 FuncDecl* get_function(const char* func_name, Table* table)
