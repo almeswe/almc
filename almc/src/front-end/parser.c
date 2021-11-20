@@ -1219,6 +1219,7 @@ Stmt* parse_label_decl_stmt(Parser* parser)
 
 	expect_with_skip(parser, TOKEN_KEYWORD_LABEL, "label");
 	label->svalue = get_curr_token(parser)->svalue;
+	label->context = get_curr_token(parser)->context;
 	expect_with_skip(parser, TOKEN_IDNT, "label name");
 	expect_with_skip(parser, TOKEN_COLON, ":");
 	return stmt_new(STMT_LABEL_DECL, label_decl_new(label));
@@ -1296,7 +1297,6 @@ Stmt* parse_while_loop_stmt(Parser* parser)
 
 Stmt* parse_if_stmt(Parser* parser)
 {
-	char elif_met = 0;
 	Expr* if_cond = NULL;
 	Block* if_body = NULL;
 	ElseIf** elifs = NULL;
@@ -1308,8 +1308,8 @@ Stmt* parse_if_stmt(Parser* parser)
 	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
 	if_body = parse_block(parser)->block;
 	while (matcht(parser, TOKEN_KEYWORD_ELIF))
-		sbuffer_add(elifs, parse_elif_stmt(parser)), elif_met = 1;
-	if (matcht(parser, TOKEN_KEYWORD_ELSE) || elif_met)
+		sbuffer_add(elifs, parse_elif_stmt(parser));
+	if (matcht(parser, TOKEN_KEYWORD_ELSE))
 	{
 		expect_with_skip(parser, TOKEN_KEYWORD_ELSE, "else");
 		else_body = parse_block(parser)->block;
@@ -1335,13 +1335,16 @@ Case* parse_case_stmt(Parser* parser)
 {
 	Expr* case_cond = NULL;
 	Block* case_body = NULL;
+	uint32_t is_conjucted = 0;
 
 	expect_with_skip(parser, TOKEN_KEYWORD_CASE, "case");
 	case_cond = parse_expr(parser);
 	expect_with_skip(parser, TOKEN_COLON, ":");
-	case_body = !matcht(parser, TOKEN_KEYWORD_CASE) ?
-		parse_case_block(parser) : NULL;
-	return case_stmt_new(case_cond, case_body);
+	// if we face the case keyword next after ':', it means that this case is 
+	// conjucted, rather parse block
+	matcht(parser, TOKEN_KEYWORD_CASE) ?
+		is_conjucted = 1 : parse_case_block(parser);
+	return case_stmt_new(case_cond, case_body, is_conjucted);
 }
 
 Block* parse_case_block(Parser* parser)
