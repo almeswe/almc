@@ -351,11 +351,12 @@ IfStmt* if_stmt_new(Expr* if_cond, Block* if_body, ElseIf** elifs, Block* else_b
 	return i;
 }
 
-Case* case_stmt_new(Expr* case_value, Block* case_body)
+Case* case_stmt_new(Expr* case_value, Block* case_body, uint32_t is_conjucted)
 {
 	Case* c = new_s(Case, c);
 	c->case_value = case_value;
 	c->case_body = case_body;
+	c->is_conjucted = is_conjucted;
 	return c;
 }
 

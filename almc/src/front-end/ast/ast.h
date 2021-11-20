@@ -340,6 +340,8 @@ typedef struct Case
 {
 	Expr* case_value;
 	Block* case_body;
+	// means that this case statement has the same body with next case
+	uint32_t is_conjucted;
 } Case;
 
 typedef struct SwitchStmt
@@ -446,7 +448,7 @@ EmptyStmt* empty_stmt_new();
 
 JumpStmt* jump_stmt_new(JumpStmtKind type, Expr* return_expr);
 
-Case* case_stmt_new(Expr* case_value, Block* case_body);
+Case* case_stmt_new(Expr* case_value, Block* case_body, uint32_t is_conjucted);
 SwitchStmt* switch_stmt_new(Expr* switch_cond, Case** switch_cases, Block* switch_default);
 ImportStmt* import_stmt_new(AstRoot* imported_ast);
 

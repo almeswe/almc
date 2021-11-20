@@ -338,7 +338,8 @@ void visit_if_stmt(IfStmt* if_stmt, Table* table)
 
 void visit_switch_stmt(SwitchStmt* switch_stmt, Table* table)
 {
-	// todo: add enum type support for switch condition
+	// todo: add conjucting resolve
+	// todo: add check for duplicated conditions
 	Table* local = NULL;
 	visit_condition(switch_stmt->switch_cond, table);
 
@@ -366,6 +367,12 @@ void visit_switch_stmt(SwitchStmt* switch_stmt, Table* table)
 		if (!IS_INTEGRAL_TYPE(switch_case_type))
 			report_error2(frmt("Condition of case statement must be of integral type, not %s",
 				type_tostr_plain(switch_case_type)), get_expr_area(switch_stmt->switch_cases[i]->case_value));
+	}
+
+	// resolve conjucted cases
+	for (size_t i = 0; i < sbuffer_len(switch_stmt->switch_cases); i++)
+	{
+
 	}
 
 	if (switch_stmt->switch_default)
