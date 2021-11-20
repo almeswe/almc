@@ -1,5 +1,5 @@
-while (a < 2) {
+while (1) {
 	break;
 }
 
-while (a < 2);
+while (1);

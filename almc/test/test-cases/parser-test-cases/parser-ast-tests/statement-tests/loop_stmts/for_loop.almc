@@ -1,12 +1,12 @@
-for (let a: i32 = 0; a < 6; a++) {
+for (let a: i32 = 0; 1; 1) {
 	break;
 }
 
-for (; a < 6; a++) {
+for (; 1; 1) {
 	break;
 }
 
-for (; ; a++) {
+for (; ; 1) {
 	break;
 }
 

@@ -143,14 +143,218 @@ inline void test_var_decl_stmts()
 	ast_free(ast);
 }
 
+inline void test_do_loop_stmts()
+{
+	Lexer* lexer = lexer_new(
+		"test\\test-cases\\parser-test-cases\\parser-ast-tests\\statement-tests\\loop_stmts\\do_while_loop.almc", FROM_FILE);
+	char* path_copy = _strdup(lexer->curr_file);
+	Parser* parser = parser_new(path_copy, lex(lexer));
+	AstRoot* ast = parse(parser);
+
+	assert(sbuffer_len(ast->stmts) == 2);
+	assert(ast->stmts[0]->kind == STMT_LOOP);
+	assert(ast->stmts[0]->loop_stmt->kind == LOOP_DO);
+	assert(ast->stmts[0]->loop_stmt->do_loop->do_cond->kind == EXPR_CONST);
+	assert(sbuffer_len(ast->stmts[0]->loop_stmt->do_loop->do_body->stmts) == 1);
+
+	assert(ast->stmts[1]->kind == STMT_LOOP);
+	assert(ast->stmts[1]->loop_stmt->kind == LOOP_DO);
+	assert(ast->stmts[1]->loop_stmt->do_loop->do_cond->kind == EXPR_CONST);
+	assert(ast->stmts[1]->loop_stmt->do_loop->do_body->stmts[0]->kind == STMT_EMPTY);
+
+	free(path_copy);
+	lexer_free(lexer);
+	parser_free(parser);
+	clear_imported_modules();
+	ast_free(ast);
+}
+
+inline void test_while_loop_stmts()
+{
+	Lexer* lexer = lexer_new(
+		"test\\test-cases\\parser-test-cases\\parser-ast-tests\\statement-tests\\loop_stmts\\while_loop.almc", FROM_FILE);
+	char* path_copy = _strdup(lexer->curr_file);
+	Parser* parser = parser_new(path_copy, lex(lexer));
+	AstRoot* ast = parse(parser);
+
+	assert(sbuffer_len(ast->stmts) == 2);
+	assert(ast->stmts[0]->kind == STMT_LOOP);
+	assert(ast->stmts[0]->loop_stmt->kind == LOOP_WHILE);
+	assert(ast->stmts[0]->loop_stmt->while_loop->while_cond->kind == EXPR_CONST);
+	assert(sbuffer_len(ast->stmts[0]->loop_stmt->while_loop->while_body->stmts) == 1);
+
+	assert(ast->stmts[1]->kind == STMT_LOOP);
+	assert(ast->stmts[1]->loop_stmt->kind == LOOP_WHILE);
+	assert(ast->stmts[1]->loop_stmt->while_loop->while_cond->kind == EXPR_CONST);
+	assert(ast->stmts[1]->loop_stmt->while_loop->while_body->stmts[0]->kind == STMT_EMPTY);
+
+	free(path_copy);
+	lexer_free(lexer);
+	parser_free(parser);
+	clear_imported_modules();
+	ast_free(ast);
+}
+
+inline void test_for_loop_stmts()
+{
+	Lexer* lexer = lexer_new(
+		"test\\test-cases\\parser-test-cases\\parser-ast-tests\\statement-tests\\loop_stmts\\for_loop.almc", FROM_FILE);
+	char* path_copy = _strdup(lexer->curr_file);
+	Parser* parser = parser_new(path_copy, lex(lexer));
+	AstRoot* ast = parse(parser);
+
+	assert(sbuffer_len(ast->stmts) == 4);
+	assert(ast->stmts[0]->kind == STMT_LOOP);
+	assert(ast->stmts[0]->loop_stmt->kind == LOOP_FOR);
+	assert(ast->stmts[0]->loop_stmt->for_loop->for_init);
+	assert(ast->stmts[0]->loop_stmt->for_loop->for_cond);
+	assert(ast->stmts[0]->loop_stmt->for_loop->for_step);
+	assert(sbuffer_len(ast->stmts[0]->loop_stmt->for_loop->for_body->stmts) == 1);
+
+	assert(ast->stmts[1]->kind == STMT_LOOP);
+	assert(ast->stmts[1]->loop_stmt->kind == LOOP_FOR);
+	assert(!ast->stmts[1]->loop_stmt->for_loop->for_init);
+	assert(ast->stmts[1]->loop_stmt->for_loop->for_cond);
+	assert(ast->stmts[1]->loop_stmt->for_loop->for_step);
+	assert(sbuffer_len(ast->stmts[1]->loop_stmt->for_loop->for_body->stmts) == 1);
+
+	assert(ast->stmts[2]->kind == STMT_LOOP);
+	assert(ast->stmts[2]->loop_stmt->kind == LOOP_FOR);
+	assert(!ast->stmts[2]->loop_stmt->for_loop->for_init);
+	assert(!ast->stmts[2]->loop_stmt->for_loop->for_cond);
+	assert(ast->stmts[2]->loop_stmt->for_loop->for_step);
+	assert(sbuffer_len(ast->stmts[2]->loop_stmt->for_loop->for_body->stmts) == 1);
+
+	assert(ast->stmts[3]->kind == STMT_LOOP);
+	assert(ast->stmts[3]->loop_stmt->kind == LOOP_FOR);
+	assert(!ast->stmts[3]->loop_stmt->for_loop->for_init);
+	assert(!ast->stmts[3]->loop_stmt->for_loop->for_cond);
+	assert(!ast->stmts[3]->loop_stmt->for_loop->for_step);
+	assert(ast->stmts[3]->loop_stmt->for_loop->for_body->stmts[0]->kind == STMT_EMPTY);
+
+	free(path_copy);
+	lexer_free(lexer);
+	parser_free(parser);
+	clear_imported_modules();
+	ast_free(ast);
+}
+
 inline void test_loop_stmts()
 {
+	test_do_loop_stmts();
+	test_for_loop_stmts();
+	test_while_loop_stmts();
+}
 
+inline void test_if_stmts()
+{
+	Lexer* lexer = lexer_new(
+		"test\\test-cases\\parser-test-cases\\parser-ast-tests\\statement-tests\\selection_stmts\\if_else.almc", FROM_FILE);
+	char* path_copy = _strdup(lexer->curr_file);
+	Parser* parser = parser_new(path_copy, lex(lexer));
+	AstRoot* ast = parse(parser);
+
+	assert(sbuffer_len(ast->stmts) == 4);
+	assert(ast->stmts[0]->kind == STMT_IF);
+	assert(!ast->stmts[0]->if_stmt->else_body);
+	assert(sbuffer_len(ast->stmts[0]->if_stmt->elifs) == 0);
+
+	assert(ast->stmts[1]->kind == STMT_IF);
+	assert(ast->stmts[1]->if_stmt->else_body);
+	assert(sbuffer_len(ast->stmts[1]->if_stmt->elifs) == 0);
+
+	assert(ast->stmts[2]->kind == STMT_IF);
+	assert(!ast->stmts[2]->if_stmt->else_body);
+	assert(sbuffer_len(ast->stmts[2]->if_stmt->elifs) == 2);
+
+	assert(ast->stmts[3]->kind == STMT_IF);
+	assert(ast->stmts[3]->if_stmt->else_body);
+	assert(sbuffer_len(ast->stmts[3]->if_stmt->elifs) == 2);
+
+	free(path_copy);
+	lexer_free(lexer);
+	parser_free(parser);
+	clear_imported_modules();
+	ast_free(ast);
+}
+
+inline void test_switch_stmts()
+{
+	Lexer* lexer = lexer_new(
+		"test\\test-cases\\parser-test-cases\\parser-ast-tests\\statement-tests\\selection_stmts\\switch_case.almc", FROM_FILE);
+	char* path_copy = _strdup(lexer->curr_file);
+	Parser* parser = parser_new(path_copy, lex(lexer));
+	AstRoot* ast = parse(parser);
+
+	assert(sbuffer_len(ast->stmts) == 5);
+	assert(ast->stmts[0]->kind == STMT_SWITCH);
+	assert(!ast->stmts[0]->switch_stmt->switch_default);
+	assert(sbuffer_len(ast->stmts[0]->switch_stmt->switch_cases) == 0);
+
+	assert(ast->stmts[1]->kind == STMT_SWITCH);
+	assert(ast->stmts[1]->switch_stmt->switch_default);
+	assert(sbuffer_len(ast->stmts[1]->switch_stmt->switch_cases) == 0);
+
+	assert(ast->stmts[2]->kind == STMT_SWITCH);
+	assert(!ast->stmts[2]->switch_stmt->switch_default);
+	assert(ast->stmts[2]->switch_stmt->switch_cases[0]->is_conjucted);
+	assert(!ast->stmts[2]->switch_stmt->switch_cases[1]->is_conjucted);
+	assert(sbuffer_len(ast->stmts[2]->switch_stmt->switch_cases) == 2);
+
+	assert(ast->stmts[3]->kind == STMT_SWITCH);
+	assert(!ast->stmts[3]->switch_stmt->switch_default);
+	assert(!ast->stmts[3]->switch_stmt->switch_cases[0]->is_conjucted);
+	assert(!ast->stmts[3]->switch_stmt->switch_cases[1]->is_conjucted);
+	assert(sbuffer_len(ast->stmts[3]->switch_stmt->switch_cases) == 2);
+
+	assert(ast->stmts[4]->kind == STMT_SWITCH);
+	assert(ast->stmts[4]->switch_stmt->switch_default);
+	assert(!ast->stmts[4]->switch_stmt->switch_cases[0]->is_conjucted);
+	assert(!ast->stmts[4]->switch_stmt->switch_cases[1]->is_conjucted);
+	assert(sbuffer_len(ast->stmts[4]->switch_stmt->switch_cases) == 2);
+
+	free(path_copy);
+	lexer_free(lexer);
+	parser_free(parser);
+	clear_imported_modules();
+	ast_free(ast);
+}
+
+inline void test_selection_stmts()
+{
+	test_if_stmts();
+	test_switch_stmts();
 }
 
 inline void test_jump_stmts()
 {
+	Lexer* lexer = lexer_new(
+		"test\\test-cases\\parser-test-cases\\parser-ast-tests\\statement-tests\\jump_stmts.almc", FROM_FILE);
+	char* path_copy = _strdup(lexer->curr_file);
+	Parser* parser = parser_new(path_copy, lex(lexer));
+	AstRoot* ast = parse(parser);
 
+	assert(sbuffer_len(ast->stmts) == 5);
+	for (size_t i = 0; i < sbuffer_len(ast->stmts); i++)
+		assert(ast->stmts[i]->kind == STMT_JUMP);
+
+	assert(ast->stmts[0]->jump_stmt->kind == JUMP_RETURN);
+	assert(ast->stmts[0]->jump_stmt->additional_expr);
+
+	assert(ast->stmts[1]->jump_stmt->kind == JUMP_RETURN);
+	assert(!ast->stmts[1]->jump_stmt->additional_expr);
+
+	assert(ast->stmts[2]->jump_stmt->kind == JUMP_GOTO);
+	assert(ast->stmts[2]->jump_stmt->additional_expr->kind == EXPR_IDNT);
+
+	assert(ast->stmts[3]->jump_stmt->kind == JUMP_CONTINUE);
+	assert(ast->stmts[4]->jump_stmt->kind == JUMP_BREAK);
+
+	free(path_copy);
+	lexer_free(lexer);
+	parser_free(parser);
+	clear_imported_modules();
+	ast_free(ast);
 }
 
 inline void ast_stmt_tests()
@@ -158,6 +362,8 @@ inline void ast_stmt_tests()
 	test_func_decl_stmts();
 	test_type_decl_stmts();
 	test_var_decl_stmts();
+	test_selection_stmts();
+	test_jump_stmts();
 	test_loop_stmts();
 }
 
