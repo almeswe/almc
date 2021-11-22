@@ -32,6 +32,9 @@ void visit_condition(Expr* condition, Table* table);
 void visit_if_stmt(IfStmt* if_stmt, Table* table);
 void visit_switch_stmt(SwitchStmt* switch_stmt, Table* table);
 
+void check_for_conjuction_collisions(SwitchStmt* switch_stmt);
+void check_for_duplicated_case_conditions(SwitchStmt* switch_stmt, Table* table);
+
 void visit_loop_stmt(LoopStmt* loop_stmt, Table* table);
 void visit_do_loop_stmt(DoLoop* do_loop, Table* table);
 void visit_for_loop_stmt(ForLoop* for_loop, Table* table);

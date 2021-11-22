@@ -2,7 +2,6 @@
 
 //todo: think about how i can access struct members (also if struct is pointer) in initializer
 //todo: how i can save the order of abstract-declarators in type declaration? (char*[4] and char[4]* are the same types yet)
-//todo: add parent to each node of tree
 
 #define matcht(parser, t) (get_curr_token(parser)->type == (t))
 #define expect_with_skip(parser, type, str) expect(parser, type, str), get_next_token(parser)
@@ -440,33 +439,39 @@ Expr* parse_unary_expr(Parser* parser)
     expr = expr_new(EXPR_UNARY_EXPR,                    \
 		unary_expr_new(type, parse_cast_expr(parser))); \
 	context_ends(parser, context, expr->unary_expr);    \
-	return expr
 
 #define unary_unary_case(parser, type)                   \
 	get_next_token(parser);			                     \
     expr = expr_new(EXPR_UNARY_EXPR,                     \
 		unary_expr_new(type, parse_unary_expr(parser))); \
 	context_ends(parser, context, expr->unary_expr);     \
-	return expr
 
 	switch (get_curr_token(parser)->type)
 	{
 	case TOKEN_INC:
 		unary_unary_case(parser, UNARY_PREFIX_INC);
+		return expr;
 	case TOKEN_DEC:
 		unary_unary_case(parser, UNARY_PREFIX_DEC);
+		return expr;
 	case TOKEN_PLUS:
 		unary_cast_case(parser, UNARY_PLUS);
+		return expr;
 	case TOKEN_DASH:
 		unary_cast_case(parser, UNARY_MINUS);
+		return expr;
 	case TOKEN_TILDE:
 		unary_cast_case(parser, UNARY_BW_NOT);
+		return expr;
 	case TOKEN_ASTERISK:
 		unary_cast_case(parser, UNARY_DEREFERENCE);
+		return expr;
 	case TOKEN_AMPERSAND:
 		unary_cast_case(parser, UNARY_ADDRESS);
+		return expr;
 	case TOKEN_EXCL_MARK:
 		unary_cast_case(parser, UNARY_LG_NOT);
+		return expr;
 	case TOKEN_KEYWORD_SIZEOF:
 		return parse_sizeof_expr(parser);
 	default:
@@ -485,7 +490,6 @@ Type* try_to_get_type(Parser* parser)
 		switch (get_curr_token(parser)->type)
 		{
 		case TOKEN_IDNT:
-			//TODO: this method of idnt cast expr is not finished
 			type = parse_type_name(parser);
 			if (matcht(parser, TOKEN_CL_PAREN) && type->mods.is_ptr)
 				goto type_declaration;
@@ -1339,6 +1343,10 @@ Case* parse_case_stmt(Parser* parser)
 
 	expect_with_skip(parser, TOKEN_KEYWORD_CASE, "case");
 	case_cond = parse_expr(parser);
+	if (case_cond->kind != EXPR_IDNT &&
+		case_cond->kind != EXPR_CONST)
+		report_error2("Constant or identifier expression expected in case condition.",
+			get_expr_area(case_cond));
 	expect_with_skip(parser, TOKEN_COLON, ":");
 	// if we face the case keyword next after ':', it means that this case is 
 	// conjucted, rather parse block

@@ -1,5 +1,8 @@
 #include "visitor.h"
 
+// todo: set enum identifiers as i32 type
+// todo: also set the i32 type to all consts (except they have i64)
+
 #define IS_USER_TYPE_ALREADY_DECLARED(typedec, typestr) \
 	if (is_##typedec##_declared(stmts[i]->type_decl->##typedec##_decl->##typedec##_name, table)) \
 		report_error(frmt("%s type %s is already declared.",						             \
@@ -223,8 +226,11 @@ void visit_unary_expr(UnaryExpr* unary_expr, Table* table)
 	case UNARY_PREFIX_DEC:
 	case UNARY_POSTFIX_INC:
 	case UNARY_POSTFIX_DEC:
-		if (unary_expr->expr->kind != EXPR_IDNT)
-			report_error2("Variable expected for this unary operator.", 
+		if (is_addressable_value(unary_expr->expr, table))
+			report_error2("Addressable value expected for this unary operator.", 
+				get_expr_area(unary_expr->expr));
+		if (is_enum_member(unary_expr->expr->idnt->svalue, table))
+			report_error2("Cannot use enum member with this unary operator.",
 				get_expr_area(unary_expr->expr));
 		visit_expr(unary_expr->expr, table);
 		break;
@@ -274,7 +280,7 @@ void visit_binary_expr(BinaryExpr* binary_expr, Table* table)
 		break;
 
 	case BINARY_ASSIGN:
-		if (!is_addressable_value(binary_expr->lexpr))
+		if (!is_addressable_value(binary_expr->lexpr, table))
 			report_error2("Cannot assign something to non-addressible value.",
 				get_expr_area(binary_expr->lexpr));
 		// if right expression is idnt, then set it as initialized
@@ -292,7 +298,7 @@ void visit_binary_expr(BinaryExpr* binary_expr, Table* table)
 	case BINARY_MOD_ASSIGN:
 	case BINARY_LSHIFT_ASSIGN:
 	case BINARY_RSHIFT_ASSIGN:
-		if (!is_addressable_value(binary_expr->lexpr))
+		if (!is_addressable_value(binary_expr->lexpr, table))
 			report_error2("Cannot assign something to non-addressible value.", 
 				get_expr_area(binary_expr->lexpr));
 		visit_expr(binary_expr->lexpr, table);
@@ -336,10 +342,53 @@ void visit_if_stmt(IfStmt* if_stmt, Table* table)
 			visit_block(if_stmt->else_body, local);
 }
 
+void check_for_conjuction_collisions(SwitchStmt* switch_stmt)
+{
+	int collision_resolved = 1;
+	int cases_count = sbuffer_len(switch_stmt->switch_cases);
+	for (size_t i = 0; i < cases_count; i++)
+		collision_resolved = !switch_stmt->switch_cases[i]->is_conjucted;
+	if (!collision_resolved)
+		report_error2("Expected body for this case statement.",
+			get_expr_area(switch_stmt->switch_cases[cases_count-1]->case_value));
+}
+
+void check_for_duplicated_case_conditions(SwitchStmt* switch_stmt, Table* table)
+{
+	Expr** conditions = NULL;
+
+	for (size_t i = 0; i < sbuffer_len(switch_stmt->switch_cases); i++)
+	{
+		Expr* case_value = switch_stmt->switch_cases[i]->case_value;
+		switch (case_value->kind)
+		{
+		case EXPR_IDNT:
+			if (!is_enum_member(case_value->idnt->svalue, table))
+				report_error2("Only enum members is allowed for case condition.",
+					get_expr_area(case_value));
+			for (size_t j = 0; j < sbuffer_len(conditions); j++)
+				if (conditions[j]->kind == EXPR_IDNT)
+					if (strcmp(conditions[j]->idnt->svalue, case_value->idnt->svalue) == 0)
+						report_error2(frmt("This condition \'%s\' is already mentioned above.",
+							case_value->idnt->svalue), get_expr_area(case_value));
+			sbuffer_add(conditions, case_value);
+			break;
+		case EXPR_CONST:
+			for (size_t j = 0; j < sbuffer_len(conditions); j++)
+				if (conditions[j]->kind == EXPR_CONST)
+					if (conditions[j]->cnst->ivalue == case_value->cnst->ivalue)
+						report_error2(frmt("This condition \'%d\' is already mentioned above.",
+							case_value->cnst->ivalue), get_expr_area(case_value));
+			sbuffer_add(conditions, case_value);
+			break;
+		}
+	}
+	sbuffer_free(conditions);
+}
+
 void visit_switch_stmt(SwitchStmt* switch_stmt, Table* table)
 {
 	// todo: add conjucting resolve
-	// todo: add check for duplicated conditions
 	Table* local = NULL;
 	visit_condition(switch_stmt->switch_cond, table);
 
@@ -349,6 +398,9 @@ void visit_switch_stmt(SwitchStmt* switch_stmt, Table* table)
 	if (!IS_INTEGRAL_TYPE(switch_cond_type))
 		report_error2(frmt("Condition of switch statement must be of integral type, not %s", 
 			type_tostr_plain(switch_cond_type)), get_expr_area(switch_stmt->switch_cond));
+
+	check_for_conjuction_collisions(switch_stmt, table);
+	check_for_duplicated_case_conditions(switch_stmt, table);
 
 	for (size_t i = 0; i < sbuffer_len(switch_stmt->switch_cases); i++)
 	{
@@ -367,12 +419,6 @@ void visit_switch_stmt(SwitchStmt* switch_stmt, Table* table)
 		if (!IS_INTEGRAL_TYPE(switch_case_type))
 			report_error2(frmt("Condition of case statement must be of integral type, not %s",
 				type_tostr_plain(switch_case_type)), get_expr_area(switch_stmt->switch_cases[i]->case_value));
-	}
-
-	// resolve conjucted cases
-	for (size_t i = 0; i < sbuffer_len(switch_stmt->switch_cases); i++)
-	{
-
 	}
 
 	if (switch_stmt->switch_default)
@@ -579,7 +625,7 @@ void visit_union(UnionDecl* union_decl, Table* table)
 		// checking for self included type (and not pointer)
 		if (strcmp(union_decl->union_name, union_decl->union_mmbrs[i]->type->repr) == 0)
 			if (!union_decl->union_mmbrs[i]->type->mods.is_ptr)
-				report_error(frmt("Member %s has type %s which is self included, and not pointer.",
+				report_error2(frmt("Member %s has type %s which is self included, and not pointer.",
 					union_decl->union_mmbrs[i]->var, union_decl->union_name), 
 						union_decl->union_mmbrs[i]->area);
 		visit_non_void_type(union_decl->union_mmbrs[i]->type, table);
@@ -589,7 +635,7 @@ void visit_union(UnionDecl* union_decl, Table* table)
 	for (size_t i = 0; i < sbuffer_len(union_decl->union_mmbrs); i++)
 		for (size_t j = i + 1; j < sbuffer_len(union_decl->union_mmbrs); j++)
 			if (strcmp(union_decl->union_mmbrs[i]->var, union_decl->union_mmbrs[j]->var) == 0)
-				report_error(frmt("Member [%s] is already declared in [%s] union declaration.",
+				report_error2(frmt("Member [%s] is already declared in [%s] union declaration.",
 					union_decl->union_mmbrs[i]->var, union_decl->union_name), union_decl->union_mmbrs[i]->area);
 }
 
@@ -601,7 +647,7 @@ void visit_struct(StructDecl* struct_decl, Table* table)
 		// checking for self included type (and not pointer)
 		if (strcmp(struct_decl->struct_name, struct_decl->struct_mmbrs[i]->type->repr) == 0)
 			if (!struct_decl->struct_mmbrs[i]->type->mods.is_ptr)
-				report_error(frmt("Member %s has type %s which is self included, and not pointer.",
+				report_error2(frmt("Member %s has type %s which is self included, and not pointer.",
 					struct_decl->struct_mmbrs[i]->var, struct_decl->struct_name), 
 						struct_decl->struct_mmbrs[i]->area);
 		visit_non_void_type(struct_decl->struct_mmbrs[i]->type, table);
@@ -611,7 +657,7 @@ void visit_struct(StructDecl* struct_decl, Table* table)
 	for (size_t i = 0; i < sbuffer_len(struct_decl->struct_mmbrs); i++)
 		for (size_t j = i+1; j < sbuffer_len(struct_decl->struct_mmbrs); j++)
 			if (strcmp(struct_decl->struct_mmbrs[i]->var, struct_decl->struct_mmbrs[j]->var) == 0)
-				report_error(frmt("Member %s is already declared in %s struct declaration.",
+				report_error2(frmt("Member %s is already declared in %s struct declaration.",
 					struct_decl->struct_mmbrs[i]->var, struct_decl->struct_name), 
 						struct_decl->struct_mmbrs[i]->area);
 }
@@ -720,14 +766,16 @@ int is_const_expr(Expr* expr)
 	return 0;
 }
 
-int is_addressable_value(Expr* expr)
+int is_addressable_value(Expr* expr, Table* table)
 {
+	//todo: figure out the addressable value
 	if (!expr)
 		return 0;
 	switch (expr->kind)
 	{	
 	case EXPR_IDNT:
-		return 1;
+		return !is_enum_member(
+			expr->idnt->svalue, table);
 	case EXPR_UNARY_EXPR:
 		switch (expr->unary_expr->kind)
 		{
@@ -735,7 +783,7 @@ int is_addressable_value(Expr* expr)
 		case UNARY_PREFIX_DEC:
 		case UNARY_POSTFIX_INC:
 		case UNARY_POSTFIX_DEC:
-			return expr->unary_expr->kind == EXPR_IDNT;
+			return is_addressable_value(expr->unary_expr->expr, table);
 
 		case UNARY_DEREFERENCE:
 			switch (expr->unary_expr->expr->kind)
@@ -743,7 +791,7 @@ int is_addressable_value(Expr* expr)
 			case EXPR_IDNT:
 				return 1;
 			case EXPR_UNARY_EXPR:
-				return is_addressable_value(expr->unary_expr->expr);
+				return is_addressable_value(expr->unary_expr->expr, table);
 			case EXPR_BINARY_EXPR:
 				return expr_contains_var(expr->unary_expr->expr->binary_expr->lexpr) ||
 					   expr_contains_var(expr->unary_expr->expr->binary_expr->rexpr);
@@ -761,17 +809,18 @@ int is_addressable_value(Expr* expr)
 		{
 		case BINARY_MEMBER_ACCESSOR:
 		case BINARY_PTR_MEMBER_ACCESSOR:
-			return is_addressable_value(expr->binary_expr->lexpr) &&
-				   is_addressable_value(expr->binary_expr->rexpr);
+			return is_addressable_value(expr->binary_expr->lexpr, table) &&
+				   is_addressable_value(expr->binary_expr->rexpr, table);
 		case BINARY_ARR_MEMBER_ACCESSOR:
-			return is_addressable_value(expr->binary_expr->lexpr);
+			// here just check the right expression
+			return is_addressable_value(expr->binary_expr->lexpr, table),
+				is_addressable_value(expr->binary_expr->lexpr, table);
 		default:
 			return 0;
 		}
 		break;
 	case EXPR_TERNARY_EXPR:
-		return is_addressable_value(expr->ternary_expr->lexpr) &&
-			is_addressable_value(expr->ternary_expr->rexpr);
+		return is_addressable_value(expr->ternary_expr->rexpr, table);
 	default:
 		return 0;
 	}
