@@ -44,10 +44,10 @@
     <ClCompile Include="src\front-end\parser.c">
       <Filter>Common Files\Sources</Filter>
     </ClCompile>
-    <ClCompile Include="src\front-end\ast\ast-debug\ast-expr-eval.h">
+    <ClCompile Include="src\front-end\ast\ast-debug\ast-expr-evaluator.h">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\front-end\ast\ast-debug\ast-expr-eval.c">
+    <ClCompile Include="src\front-end\ast\ast-debug\ast-expr-evaluator.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\front-end\ast\ast-debug\ast-console-printer.c">

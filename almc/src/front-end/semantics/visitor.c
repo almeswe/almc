@@ -226,7 +226,7 @@ void visit_unary_expr(UnaryExpr* unary_expr, Table* table)
 	case UNARY_PREFIX_DEC:
 	case UNARY_POSTFIX_INC:
 	case UNARY_POSTFIX_DEC:
-		if (is_addressable_value(unary_expr->expr, table))
+		if (!is_addressable_value(unary_expr->expr, table))
 			report_error2("Addressable value expected for this unary operator.", 
 				get_expr_area(unary_expr->expr));
 		if (is_enum_member(unary_expr->expr->idnt->svalue, table))
@@ -254,6 +254,7 @@ void visit_binary_expr(BinaryExpr* binary_expr, Table* table)
 	case BINARY_DIV:
 	case BINARY_MOD:
 	case BINARY_MULT:
+	case BINARY_COMMA:
 	case BINARY_LSHIFT:
 	case BINARY_RSHIFT:
 
@@ -270,12 +271,13 @@ void visit_binary_expr(BinaryExpr* binary_expr, Table* table)
 	case BINARY_GREATER_THAN:
 	case BINARY_LESS_EQ_THAN:
 	case BINARY_GREATER_EQ_THAN:
+
+	case BINARY_ARR_MEMBER_ACCESSOR:
 		visit_expr(binary_expr->lexpr, table);
 		visit_expr(binary_expr->rexpr, table);
 		break;
 
 	case BINARY_MEMBER_ACCESSOR:
-	case BINARY_ARR_MEMBER_ACCESSOR:
 	case BINARY_PTR_MEMBER_ACCESSOR:
 		break;
 
@@ -588,8 +590,8 @@ void visit_enum(EnumDecl* enum_decl, Table* table)
 	{
 		// checking validity of values that assigned to enum idents
 		for (size_t j = 0; j < sbuffer_len(enum_decl->enum_idnt_values); j++)
-			if (!is_const_expr(enum_decl->enum_idnt_values[j]))
-				report_error2(frmt("Enum member %s has invalid value in %s enum.",
+			if (!is_simple_const_expr(enum_decl->enum_idnt_values[j]))
+				report_error2(frmt("Enum member %s must have constant expression, in %s enum.",
 					enum_decl->enum_idnts[j]->svalue, enum_decl->enum_name),
 						get_expr_area(enum_decl->enum_idnt_values[j]));
 
@@ -604,13 +606,26 @@ void visit_enum(EnumDecl* enum_decl, Table* table)
 									enum_decl->enum_idnts[i]->svalue, parent->enums[j]->enum_name),
 										enum_decl->enum_idnts[i]->context);
 		// checking value type
+		
+		// evaluating the value to get the proper type of it
+		// and then compare with 8 byte type
+		// enum identifier's value must be less equal than 4 bytes
+		Type* const_expr_type = get_ivalue_type(
+			evaluate_expr_itype(enum_decl->enum_idnt_values[i]));
+		if (get_type_size_in_bytes(const_expr_type) > 4)
+			report_error2(frmt("Enum member %s must have value type less equal than 4 bytes, in %s enum.",
+				enum_decl->enum_idnts[i]->svalue, enum_decl->enum_name),
+					get_expr_area(enum_decl->enum_idnt_values[i]));
+		type_free(const_expr_type);
+
+		// set type to enum identifier
 		Type* value_type = get_expr_type(enum_decl->enum_idnt_values[i], table);
 		if (!IS_INTEGRAL_TYPE(value_type))
 			report_error2(frmt("Enum's member %s has incompatible %s type in %s enum.",
 				enum_decl->enum_idnts[i]->svalue, type_tostr_plain(value_type), enum_decl->enum_name), 
 					get_expr_area(enum_decl->enum_idnt_values[i]));
 
-		// now checking for any duplicated names in current enum
+		// checking for any duplicated names in current enum
 		for (size_t j = i + 1; j < sbuffer_len(enum_decl->enum_idnts); j++)
 			if (strcmp(enum_decl->enum_idnts[i]->svalue, enum_decl->enum_idnts[j]->svalue) == 0)
 				report_error(frmt("Member %s is already declared in %s enum declaration.",
@@ -725,103 +740,4 @@ void visit_func_decl_stmt(FuncDecl* func_decl, Table* table)
 void visit_label_decl_stmt(LabelDecl* label_decl, Table* table)
 {
 	// there are no any processing stuff for label declaration statement yet.  ? ?
-}
-
-int expr_contains_var(Expr* expr)
-{
-	//todo: incorrect function
-	switch (expr->kind)
-	{
-	case EXPR_IDNT:
-		return 1;
-	case EXPR_UNARY_EXPR:
-		return expr_contains_var(expr->unary_expr->expr);
-	case EXPR_BINARY_EXPR:
-	case EXPR_TERNARY_EXPR:
-		return expr_contains_var(expr->binary_expr->lexpr) ||
-			   expr_contains_var(expr->binary_expr->rexpr);
-	default:
-		return 0;
-	}
-}
-
-int is_const_expr(Expr* expr)
-{
-	switch (expr->kind)
-	{
-	case EXPR_CONST:
-		return 1;
-	case EXPR_UNARY_EXPR:
-		return is_const_expr(expr->unary_expr->expr);
-	case EXPR_BINARY_EXPR:
-		return is_const_expr(expr->binary_expr->lexpr) &&
-			   is_const_expr(expr->binary_expr->rexpr);
-	case EXPR_TERNARY_EXPR:
-		return is_const_expr(expr->ternary_expr->lexpr) &&
-			   is_const_expr(expr->ternary_expr->rexpr) &&
-			   is_const_expr(expr->ternary_expr->cond);
-	default:
-		return 0;
-	}
-	return 0;
-}
-
-int is_addressable_value(Expr* expr, Table* table)
-{
-	//todo: figure out the addressable value
-	if (!expr)
-		return 0;
-	switch (expr->kind)
-	{	
-	case EXPR_IDNT:
-		return !is_enum_member(
-			expr->idnt->svalue, table);
-	case EXPR_UNARY_EXPR:
-		switch (expr->unary_expr->kind)
-		{
-		case UNARY_PREFIX_INC:
-		case UNARY_PREFIX_DEC:
-		case UNARY_POSTFIX_INC:
-		case UNARY_POSTFIX_DEC:
-			return is_addressable_value(expr->unary_expr->expr, table);
-
-		case UNARY_DEREFERENCE:
-			switch (expr->unary_expr->expr->kind)
-			{
-			case EXPR_IDNT:
-				return 1;
-			case EXPR_UNARY_EXPR:
-				return is_addressable_value(expr->unary_expr->expr, table);
-			case EXPR_BINARY_EXPR:
-				return expr_contains_var(expr->unary_expr->expr->binary_expr->lexpr) ||
-					   expr_contains_var(expr->unary_expr->expr->binary_expr->rexpr);
-			case EXPR_TERNARY_EXPR:
-				return expr_contains_var(expr->unary_expr->expr->ternary_expr->lexpr) &&
-					   expr_contains_var(expr->unary_expr->expr->ternary_expr->rexpr);
-			default:
-				return 0;
-			}
-			break;
-		}
-		break;
-	case EXPR_BINARY_EXPR:
-		switch (expr->binary_expr->kind)
-		{
-		case BINARY_MEMBER_ACCESSOR:
-		case BINARY_PTR_MEMBER_ACCESSOR:
-			return is_addressable_value(expr->binary_expr->lexpr, table) &&
-				   is_addressable_value(expr->binary_expr->rexpr, table);
-		case BINARY_ARR_MEMBER_ACCESSOR:
-			// here just check the right expression
-			return is_addressable_value(expr->binary_expr->lexpr, table),
-				is_addressable_value(expr->binary_expr->lexpr, table);
-		default:
-			return 0;
-		}
-		break;
-	case EXPR_TERNARY_EXPR:
-		return is_addressable_value(expr->ternary_expr->rexpr, table);
-	default:
-		return 0;
-	}
 }

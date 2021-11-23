@@ -78,6 +78,8 @@
 
 Type* get_string_type(Str* str);
 Type* get_const_type(Const* cnst);
+Type* get_fvalue_type(double value);
+Type* get_ivalue_type(int64_t value);
 Type* get_idnt_type(Idnt* idnt, Table* table);
 Type* get_func_call_type(FuncCall* func_call, Table* table);
 
@@ -90,7 +92,7 @@ uint32_t get_type_size_in_bytes(Type* type);
 uint32_t get_type_priority(Type* type);
 
 Type* cast_explicitly(Type* to, Type* type);
-Type* cast_explicitly_when_const(Type* to, Type* const_type);
+Type* cast_explicitly_when_const_expr(Expr* const_expr, Type* to, Type* const_expr_type);
 
 Type* cast_implicitly(Type* to, Type* type, SrcArea* area);
 Type* cast_implicitly_when_assign(Type* to, Type* type, SrcArea* area);
@@ -100,7 +102,11 @@ uint32_t can_cast_implicitly(Type* to, Type* type);
 SrcArea* get_expr_area(Expr* expr);
 char* get_member_name(Expr* expr);
 
+int is_const_expr(Expr* expr);
+int is_simple_const_expr(Expr* expr);
 int is_enum_member(const char* var, Table* table);
+int is_addressable_value(Expr* expr, Table* table);
+
 Type* get_enum_member_type(const char* member, Table* table);
 
 #endif

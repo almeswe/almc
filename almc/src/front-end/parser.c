@@ -1030,11 +1030,10 @@ Stmt* parse_enum_decl_stmt(Parser* parser)
 	Expr** enum_idnt_values = NULL;
 
 	expect_with_skip(parser, TOKEN_KEYWORD_ENUM, "enum");
+	// enum can be no-name
 	if (matcht(parser, TOKEN_IDNT))
-	{
-		enum_name = get_curr_token(parser)->svalue;
-		expect_with_skip(parser, TOKEN_IDNT, "enum name");
-	}
+		enum_name = get_curr_token(parser)->svalue,
+			expect_with_skip(parser, TOKEN_IDNT, "enum name");
 	expect_with_skip(parser, TOKEN_OP_BRACE, "{");
 	while (!matcht(parser, TOKEN_CL_BRACE))
 	{
@@ -1054,9 +1053,7 @@ Stmt* parse_enum_decl_stmt(Parser* parser)
 		if (matcht(parser, TOKEN_ASSIGN))
 		{
 			get_next_token(parser);
-			//expr_free(enum_idnt_value);
-			enum_idnt_value =
-				parse_constant_expr(parser);
+			enum_idnt_value = parse_constant_expr(parser);
 		}
 		sbuffer_add(enum_idnt_values, enum_idnt_value);
 		if (matcht(parser, TOKEN_COMMA))
@@ -1064,7 +1061,8 @@ Stmt* parse_enum_decl_stmt(Parser* parser)
 	}
 	expect_with_skip(parser, TOKEN_CL_BRACE, "}");
 	return stmt_new(STMT_TYPE_DECL,
-		type_decl_new(TYPE_DECL_ENUM, enum_decl_new(enum_idnts, enum_idnt_values, enum_name)));
+		type_decl_new(TYPE_DECL_ENUM, 
+			enum_decl_new(enum_idnts, enum_idnt_values, enum_name)));
 }
 
 Stmt* parse_union_decl_stmt(Parser* parser)
@@ -1073,11 +1071,8 @@ Stmt* parse_union_decl_stmt(Parser* parser)
 	TypeVar** union_mmbrs = NULL;
 
 	expect_with_skip(parser, TOKEN_KEYWORD_UNION, "union");
-	if (matcht(parser, TOKEN_IDNT))
-	{
-		union_name = get_curr_token(parser)->svalue;
-		expect_with_skip(parser, TOKEN_IDNT, "union name");
-	}
+	union_name = get_curr_token(parser)->svalue;
+	expect_with_skip(parser, TOKEN_IDNT, "union name");
 	expect_with_skip(parser, TOKEN_OP_BRACE, "{");
 	while (!matcht(parser, TOKEN_CL_BRACE))
 	{
@@ -1095,11 +1090,8 @@ Stmt* parse_struct_decl_stmt(Parser* parser)
 	TypeVar** struct_mmbrs = NULL;
 
 	expect_with_skip(parser, TOKEN_KEYWORD_STRUCT, "struct");
-	if (matcht(parser, TOKEN_IDNT))
-	{
-		struct_name = get_curr_token(parser)->svalue;
-		expect_with_skip(parser, TOKEN_IDNT, "struct name");
-	}
+	struct_name = get_curr_token(parser)->svalue;
+	expect_with_skip(parser, TOKEN_IDNT, "struct name");
 	expect_with_skip(parser, TOKEN_OP_BRACE, "{");
 	while (!matcht(parser, TOKEN_CL_BRACE))
 	{

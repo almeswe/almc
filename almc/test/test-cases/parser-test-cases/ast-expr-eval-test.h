@@ -12,7 +12,7 @@ inline void ast_expr_eval_run_tests()
 	l = lexer_new(str_expr, FROM_CHAR_PTR);			\
 	p = parser_new(l->curr_file, lex(l));			\
 	ast = parse_expr(p);						    \
-	assert((expr) == eval_expr(ast)); 			    \
+	assert((expr) == evaluate_expr_itype(ast)); 	\
 	parser_eval_test_case_free(l, p)
 
 	Lexer* l;

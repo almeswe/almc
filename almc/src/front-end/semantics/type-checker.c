@@ -12,6 +12,9 @@
 	type_name->mods = type->mods;            \
 	type_name->repr = _strdup(type->repr)
 
+#define IN_BOUNDS_OF(ubound, bbound, value) \
+	(((value) <= (ubound)) && ((value) >= (bbound)))
+
 Type* get_expr_type(Expr* expr, Table* table)
 {
 #define set_and_return_type(type, to_node)  \
@@ -58,30 +61,19 @@ Type* get_expr_type(Expr* expr, Table* table)
 
 Type* get_const_type(Const* cnst)
 {
-#define IN_BOUNDS_OF(ubound, bbound, value) \
-	(((value) <= (ubound)) && ((value) >= (bbound)))
-
 	Type* type = cnew_s(Type, type, 1);
 	type->mods.is_predefined = 1;
 
 	switch (cnst->kind)
 	{
 	case CONST_INT:
-		if (IN_BOUNDS_OF(INT8_MAX, INT8_MIN, cnst->ivalue))
-			type->repr = "i8";
-		else if (IN_BOUNDS_OF(INT16_MAX, INT16_MIN, cnst->ivalue))
-			type->repr = "i16";
-		else if (IN_BOUNDS_OF(INT32_MAX, INT32_MIN, cnst->ivalue))
+		if (IN_BOUNDS_OF(INT32_MAX, INT32_MIN, cnst->ivalue))
 			type->repr = "i32";
 		else
 			type->repr = "i64";
 		break;
 	case CONST_UINT:
-		if (IN_BOUNDS_OF(UINT8_MAX, 0, cnst->uvalue))
-			type->repr = "u8";
-		else if (IN_BOUNDS_OF(UINT16_MAX, 0, cnst->uvalue))
-			type->repr = "u16";
-		else if (IN_BOUNDS_OF(UINT32_MAX, 0, cnst->uvalue))
+		if (IN_BOUNDS_OF(UINT32_MAX, 0, cnst->uvalue))
 			type->repr = "u32";
 		else
 			type->repr = "u64";
@@ -92,6 +84,39 @@ Type* get_const_type(Const* cnst)
 		break;
 	}
 	return cnst->type = type;
+}
+
+Type* get_ivalue_type(int64_t value)
+{
+	Type* type = cnew_s(Type, type, 1);
+	type->mods.is_predefined = 1;
+
+	if (IN_BOUNDS_OF(INT8_MAX, INT8_MIN, value))
+		type->repr = "i8";
+	else if (IN_BOUNDS_OF(UINT8_MAX, 0, value))
+		type->repr = "u8";
+	else if (IN_BOUNDS_OF(INT16_MAX, INT16_MIN, value))
+		type->repr = "i16";
+	else if (IN_BOUNDS_OF(UINT16_MAX, 0, value))
+		type->repr = "u16";
+	else if (IN_BOUNDS_OF(INT32_MAX, INT32_MIN, value))
+		type->repr = "i32";
+	else if (IN_BOUNDS_OF(UINT32_MAX, 0, value))
+		type->repr = "u32";
+	else if (IN_BOUNDS_OF(INT64_MAX, INT64_MIN, value))
+		type->repr = "i64";
+	else
+		type->repr = "u64";
+	return type;
+}
+
+Type* get_fvalue_type(double value)
+{
+	Type* type = cnew_s(Type, type, 1);
+	type->mods.is_predefined = 1;
+	type->repr = (int64_t)value <= INT32_MAX &&
+		(int64_t)value >= INT32_MIN ? "f32" : "f64";
+	return type;
 }
 
 Type* get_idnt_type(Idnt* idnt, Table* table)
@@ -188,9 +213,10 @@ Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 	//-----------------------------
 
 	case UNARY_CAST:
-		if (unary_expr->expr->kind == EXPR_CONST)
-			cast_explicitly_when_const(unary_expr->cast_type, type, unary_expr->area);
-		return cast_explicitly(unary_expr->cast_type, type, unary_expr->area);
+		if (is_const_expr(unary_expr->expr))
+			return cast_explicitly_when_const_expr(unary_expr->expr,
+				unary_expr->cast_type, type);
+		return cast_explicitly(unary_expr->cast_type, type);
 	case UNARY_SIZEOF:
 		if (!unary_expr->cast_type)
 		{
@@ -289,6 +315,8 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 	case BINARY_SUB:
 	case BINARY_DIV:
 	case BINARY_MULT:
+	case BINARY_LG_OR:
+	case BINARY_LG_AND:
 	case BINARY_LESS_THAN:
 	case BINARY_GREATER_THAN:
 	case BINARY_LESS_EQ_THAN:
@@ -379,7 +407,7 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 
 
 	default:
-		report_error(frmt("Unknown binary expression kind met: %d",
+		report_error(frmt("Unknown binary expression kind met in get_binary_expr_type(): %d",
 			binary_expr->type), NULL);
 	}
 	// useless, only to avoid warning
@@ -429,8 +457,7 @@ uint32_t get_type_size_in_bytes(Type* type)
 			report_error("Cannot get size of %s type", type_tostr_plain(type));
 	}
 	else
-		//todo: add type size for user types
-		assert(0);
+		report_error("Cannot get size of user-defined type (is not supported)", type_tostr_plain(type));
 }
 
 uint32_t get_type_priority(Type* type)
@@ -448,6 +475,8 @@ uint32_t get_type_priority(Type* type)
 	if (IS_U32(type))
 		return U32;
 	if (IS_I32(type))
+		return I32;
+	if (!type->mods.is_predefined)
 		return I32;
 	if (IS_U64(type))
 		return U64;
@@ -482,19 +511,36 @@ Type* cast_explicitly(Type* to, Type* type)
 	return to;
 }
 
-Type* cast_explicitly_when_const(Type* to, Type* const_type)
+Type* cast_explicitly_when_const_expr(Expr* const_expr, Type* to, Type* const_expr_type)
 {
-	if (!to || !const_type)
+	if (!to || !const_expr_type)
 		report_error2("Cannot determine at least one type when trying to convert explicitly.", NULL);
 	else
 	{
 		if (to->mods.is_void && !IS_POINTER_TYPE(to))
 			report_error2("Explicit conversion to void is not allowed.", to->area);
-		if (to->mods.is_predefined && const_type->mods.is_predefined)
-			if (get_type_size_in_bytes(to) < get_type_size_in_bytes(const_type))
+
+		//---------------------------------------
+		// determining the type of evaluated constant
+		Type* const_expr_type_new = NULL;
+		if (IS_INTEGRAL_TYPE(const_expr_type) || IS_POINTER_TYPE(const_expr_type))
+			const_expr_type_new = get_ivalue_type(
+				(int64_t)evaluate_expr_itype(const_expr));
+		else if (IS_REAL_TYPE(const_expr_type))
+			const_expr_type_new = get_fvalue_type(
+				evaluate_expr_ftype(const_expr));
+		else
+			report_error2("Cannot evaluate constant expression for explicit cast.",
+				get_expr_area(const_expr));
+		//---------------------------------------
+
+		if (to->mods.is_predefined && const_expr_type_new->mods.is_predefined)
+			if (get_type_size_in_bytes(to) < get_type_size_in_bytes(const_expr_type_new))
 				report_error2(frmt("Cannot explicitly convert constant value of type %s to %s.",
-					type_tostr_plain(to), type_tostr_plain(const_type)), to->area);
-		return cast_explicitly(to, const_type);
+					type_tostr_plain(to), type_tostr_plain(const_expr_type_new)), to->area);
+		// think about: 
+		type_free(const_expr_type_new);
+		return cast_explicitly(to, const_expr_type);
 	}
 }
 
@@ -504,13 +550,13 @@ Type* cast_implicitly(Type* to, Type* type, SrcArea* area)
 	{
 		if (IS_POINTER_TYPE(to) && IS_POINTER_TYPE(type))
 			return to;
-		if (IS_POINTER_TYPE(to) && (get_type_priority(type) >= I32))
+		if (IS_POINTER_TYPE(to) && (get_type_priority(type) > I32))
 			return type;
-		if (IS_POINTER_TYPE(to) && (get_type_priority(type) < U32))
+		if (IS_POINTER_TYPE(to) && (get_type_priority(type) <= I32))
 			return to;
-		if ((get_type_priority(to) >= I32) && IS_POINTER_TYPE(type))
+		if ((get_type_priority(to) > I32) && IS_POINTER_TYPE(type))
 			return to;
-		if ((get_type_priority(to) < U32) && IS_POINTER_TYPE(type))
+		if ((get_type_priority(to) <= I32) && IS_POINTER_TYPE(type))
 			return type;
 		
 		return get_type_priority(to) >= get_type_priority(type) ?
@@ -693,6 +739,48 @@ char* get_member_name(Expr* expr)
 	return NULL;
 }
 
+int is_const_expr(Expr* expr)
+{
+	switch (expr->kind)
+	{
+	case EXPR_CONST:
+		return 1;
+	case EXPR_UNARY_EXPR:
+		return is_const_expr(expr->unary_expr->expr);
+	case EXPR_BINARY_EXPR:
+		return is_const_expr(expr->binary_expr->lexpr) &&
+			   is_const_expr(expr->binary_expr->rexpr);
+	case EXPR_TERNARY_EXPR:
+		return is_const_expr(expr->ternary_expr->lexpr) &&
+			   is_const_expr(expr->ternary_expr->rexpr) &&
+			   is_const_expr(expr->ternary_expr->cond);
+	default:
+		return 0;
+	}
+	return 0;
+}
+
+int is_simple_const_expr(Expr* expr)
+{
+	// the diffrence with is_const_expr 
+	// that here i removed logic with unary expressions
+	switch (expr->kind)
+	{
+	case EXPR_CONST:
+		return 1;
+	case EXPR_BINARY_EXPR:
+		return is_simple_const_expr(expr->binary_expr->lexpr) &&
+			is_simple_const_expr(expr->binary_expr->rexpr);
+	case EXPR_TERNARY_EXPR:
+		return is_simple_const_expr(expr->ternary_expr->lexpr) &&
+			is_simple_const_expr(expr->ternary_expr->rexpr) &&
+			is_simple_const_expr(expr->ternary_expr->cond);
+	default:
+		return 0;
+	}
+	return 0;
+}
+
 int is_enum_member(const char* var, Table* table)
 {
 	for (Table* parent = table; parent; parent = parent->parent)
@@ -701,6 +789,60 @@ int is_enum_member(const char* var, Table* table)
 				if (strcmp(var, parent->enums[i]->enum_idnts[j]->svalue) == 0)
 					return 1;
 	return 0;
+}
+
+int is_addressable_value(Expr* expr, Table* table)
+{
+	if (!expr)
+		return 0;
+	switch (expr->kind)
+	{
+	case EXPR_IDNT:
+		return !is_enum_member(
+			expr->idnt->svalue, table);
+	case EXPR_UNARY_EXPR:
+		switch (expr->unary_expr->kind)
+		{
+		case UNARY_PREFIX_INC:
+		case UNARY_PREFIX_DEC:
+		case UNARY_POSTFIX_INC:
+		case UNARY_POSTFIX_DEC:
+			return is_addressable_value(expr->unary_expr->expr, table);
+
+		case UNARY_DEREFERENCE:
+			switch (expr->unary_expr->expr->kind)
+			{
+			case EXPR_IDNT:
+				return 1;
+			case EXPR_UNARY_EXPR:
+				return is_addressable_value(expr->unary_expr->expr, table);
+			case EXPR_BINARY_EXPR:
+				return is_addressable_value(expr->unary_expr->expr->binary_expr->lexpr, table) ||
+					is_addressable_value(expr->unary_expr->expr->binary_expr->rexpr, table);
+			default:
+				return 0;
+			}
+			break;
+		}
+		break;
+	case EXPR_BINARY_EXPR:
+		switch (expr->binary_expr->kind)
+		{
+		case BINARY_MEMBER_ACCESSOR:
+		case BINARY_PTR_MEMBER_ACCESSOR:
+			return is_addressable_value(expr->binary_expr->lexpr, table) &&
+				is_addressable_value(expr->binary_expr->rexpr, table);
+		case BINARY_ARR_MEMBER_ACCESSOR:
+			return is_addressable_value(expr->binary_expr->lexpr, table);
+		default:
+			return 0;
+		}
+		break;
+		/*case EXPR_TERNARY_EXPR:
+			return is_addressable_value(expr->ternary_expr->rexpr, table);*/
+	default:
+		return 0;
+	}
 }
 
 Type* get_enum_member_type(const char* member, Table* table)

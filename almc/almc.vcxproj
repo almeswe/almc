@@ -26,8 +26,8 @@
     <ClCompile Include="src\back-end\x86 asm\stack-frame.c" />
     <ClCompile Include="src\back-end\x86 asm\types.c" />
     <ClCompile Include="src\front-end\ast\ast-debug\ast-console-printer.c" />
-    <ClCompile Include="src\front-end\ast\ast-debug\ast-expr-eval.c" />
-    <ClCompile Include="src\front-end\ast\ast-debug\ast-expr-eval.h" />
+    <ClCompile Include="src\front-end\ast\ast-debug\ast-expr-evaluator.c" />
+    <ClCompile Include="src\front-end\ast\ast-debug\ast-expr-evaluator.h" />
     <ClCompile Include="src\front-end\ast\ast.c" />
     <ClCompile Include="src\front-end\lexer.c" />
     <ClCompile Include="src\front-end\semantics\table.c" />
