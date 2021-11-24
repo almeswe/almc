@@ -53,7 +53,7 @@
 auto
 break
 case
-chr
+char
 const
 continue
 default

@@ -25,9 +25,9 @@
     <ClCompile Include="src\back-end\x86 asm\regtable.c" />
     <ClCompile Include="src\back-end\x86 asm\stack-frame.c" />
     <ClCompile Include="src\back-end\x86 asm\types.c" />
-    <ClCompile Include="src\front-end\ast\ast-debug\ast-console-printer.c" />
-    <ClCompile Include="src\front-end\ast\ast-debug\ast-expr-evaluator.c" />
-    <ClCompile Include="src\front-end\ast\ast-debug\ast-expr-evaluator.h" />
+    <ClCompile Include="src\front-end\ast\debug\ast-console-printer.c" />
+    <ClCompile Include="src\front-end\ast\ast-expr-evaluator.c" />
+    <ClCompile Include="src\front-end\ast\ast-expr-evaluator.h" />
     <ClCompile Include="src\front-end\ast\ast.c" />
     <ClCompile Include="src\front-end\lexer.c" />
     <ClCompile Include="src\front-end\semantics\table.c" />
@@ -38,7 +38,6 @@
     <ClCompile Include="src\utils\context.c" />
     <ClCompile Include="src\error.c" />
     <ClCompile Include="src\front-end\parser.c" />
-    <ClCompile Include="src\utils\data-structures\ht.c" />
     <ClCompile Include="src\utils\data-structures\sbuffer.c" />
     <ClCompile Include="src\utils\data-structures\sbuffer.h" />
     <ClCompile Include="src\main.c" />
@@ -53,7 +52,7 @@
     <ClInclude Include="src\back-end\x86 asm\program.h" />
     <ClInclude Include="src\back-end\x86 asm\stack-frame.h" />
     <ClInclude Include="src\back-end\x86 asm\types.h" />
-    <ClInclude Include="src\front-end\ast\ast-debug\ast-console-printer.h" />
+    <ClInclude Include="src\front-end\ast\debug\ast-console-printer.h" />
     <ClInclude Include="src\front-end\ast\ast.h" />
     <ClInclude Include="src\front-end\front-end.h" />
     <ClInclude Include="src\front-end\lexer.h" />
@@ -64,7 +63,6 @@
     <ClInclude Include="src\utils\context.h" />
     <ClInclude Include="src\error.h" />
     <ClInclude Include="src\front-end\parser.h" />
-    <ClInclude Include="src\utils\data-structures\ht.h" />
     <ClInclude Include="src\utils\os.h" />
     <ClInclude Include="test\test-cases\lexer-test-cases\lexer-test-cases.h" />
     <ClInclude Include="test\test-cases\parser-test-cases\ast-expr-eval-test.h" />

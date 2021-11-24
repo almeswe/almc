@@ -16,7 +16,7 @@ typedef struct x86_StackFrame
 	int* argument_offsets; // offset for each function argument in this stack frame
 
 	char* func_name;
-
+	char return_stmt_mentioned;
 	uint64_t label_counter;
 } StackFrame;
 

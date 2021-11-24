@@ -93,7 +93,7 @@ char* keywords[] = {
 	"auto",
 	"break",
 	"case",
-	"chr",
+	"char",
 	"const",
 	"continue",
 	"default",

@@ -2,12 +2,13 @@
 
 //todo: figure out the type checking for logical and relative operators
 
-#define type_dup(type, type_name)                 \
+#define TYPE_DUP(type, type_name)                 \
 	Type* type_name = cnew_s(Type, type_name, 1); \
 	type_name->mods = type->mods;                 \
 	type_name->repr = _strdup(type->repr)
 
-#define type_dup_no_alloc(type, type_name)   \
+// means that the type instance is not assigned to new variable
+#define TYPE_DUP_NO_ALLOC(type, type_name)   \
 	type_name = cnew_s(Type, type_name, 1);  \
 	type_name->mods = type->mods;            \
 	type_name->repr = _strdup(type->repr)
@@ -17,10 +18,10 @@
 
 Type* get_expr_type(Expr* expr, Table* table)
 {
-#define set_and_return_type(type, to_node)  \
+#define SET_AND_RETURN_TYPE(type, to_node)  \
 	if (!type)                              \
 		return NULL;                        \
-	type_dup_no_alloc(type, type_new);      \
+	TYPE_DUP_NO_ALLOC(type, type_new);      \
 	return to_node->type = type_new;        \
 
 	Type* type = NULL;
@@ -33,25 +34,25 @@ Type* get_expr_type(Expr* expr, Table* table)
 	{
 	case EXPR_IDNT:
 		type = get_idnt_type(expr->idnt, table, table);
-		set_and_return_type(type, expr->idnt);
+		SET_AND_RETURN_TYPE(type, expr->idnt);
 	case EXPR_CONST:
 		type = get_const_type(expr->cnst);
-		set_and_return_type(type, expr->cnst);
+		SET_AND_RETURN_TYPE(type, expr->cnst);
 	case EXPR_STRING:
 		type = get_string_type(expr->str);
-		set_and_return_type(type, expr->str);
+		SET_AND_RETURN_TYPE(type, expr->str);
 	case EXPR_FUNC_CALL:
 		type = get_func_call_type(expr->func_call, table);
-		set_and_return_type(type, expr->func_call);
+		SET_AND_RETURN_TYPE(type, expr->func_call);
 	case EXPR_UNARY_EXPR:
 		type = get_unary_expr_type(expr->unary_expr, table);
-		set_and_return_type(type, expr->unary_expr);
+		SET_AND_RETURN_TYPE(type, expr->unary_expr);
 	case EXPR_BINARY_EXPR:
 		type = get_binary_expr_type(expr->unary_expr, table);
-		set_and_return_type(type, expr->binary_expr);
+		SET_AND_RETURN_TYPE(type, expr->binary_expr);
 	case EXPR_TERNARY_EXPR:
 		type = get_ternary_expr_type(expr->ternary_expr, table);
-		set_and_return_type(type, expr->ternary_expr);
+		SET_AND_RETURN_TYPE(type, expr->ternary_expr);
 	default:
 		report_error(frmt("Unknown expression kind met: %d",
 			expr->kind), NULL);
@@ -67,16 +68,12 @@ Type* get_const_type(Const* cnst)
 	switch (cnst->kind)
 	{
 	case CONST_INT:
-		if (IN_BOUNDS_OF(INT32_MAX, INT32_MIN, cnst->ivalue))
-			type->repr = "i32";
-		else
-			type->repr = "i64";
+		type->repr = IN_BOUNDS_OF(INT32_MAX, INT32_MIN, cnst->ivalue) ?
+			"i32" : "i64";
 		break;
 	case CONST_UINT:
-		if (IN_BOUNDS_OF(UINT32_MAX, 0, cnst->uvalue))
-			type->repr = "u32";
-		else
-			type->repr = "u64";
+		type->repr = IN_BOUNDS_OF(UINT32_MAX, 0, cnst->uvalue) ?
+			"u32" : "u64";
 		break;
 	case CONST_FLOAT:
 		type->repr = (int64_t)cnst->fvalue <= INT32_MAX &&
@@ -193,7 +190,7 @@ Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 		else
 		{
 			// setting the new type based on extracted type, with is_ptr changed
-			type_dup_no_alloc(type, type_new);
+			TYPE_DUP_NO_ALLOC(type, type_new);
 			type_new->mods.is_ptr += 1;
 			return type_new;
 		}
@@ -206,7 +203,7 @@ Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 				type_tostr_plain(type)), unary_expr->area);
 		else
 		{
-			type_dup_no_alloc(type, type_new);
+			TYPE_DUP_NO_ALLOC(type, type_new);
 			type_new->mods.is_ptr -= 1;
 			return type_new;
 		}
@@ -357,7 +354,7 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 		if (!IS_INTEGRAL_TYPE(rtype))
 			report_error2(frmt("Index should be value of integral type. Type %s met.",
 				type_tostr_plain(rtype)), binary_expr->area);
-		type_dup_no_alloc(ltype, type_new);
+		TYPE_DUP_NO_ALLOC(ltype, type_new);
 		type_new->mods.is_ptr -= 1;
 		return type_new;
 
@@ -522,13 +519,14 @@ Type* cast_explicitly_when_const_expr(Expr* const_expr, Type* to, Type* const_ex
 
 		//---------------------------------------
 		// determining the type of evaluated constant
+		double value = 0.0f;
 		Type* const_expr_type_new = NULL;
 		if (IS_INTEGRAL_TYPE(const_expr_type) || IS_POINTER_TYPE(const_expr_type))
 			const_expr_type_new = get_ivalue_type(
-				(int64_t)evaluate_expr_itype(const_expr));
+				value = (int64_t)evaluate_expr_itype(const_expr));
 		else if (IS_REAL_TYPE(const_expr_type))
 			const_expr_type_new = get_fvalue_type(
-				evaluate_expr_ftype(const_expr));
+				value = evaluate_expr_ftype(const_expr));
 		else
 			report_error2("Cannot evaluate constant expression for explicit cast.",
 				get_expr_area(const_expr));
@@ -536,9 +534,9 @@ Type* cast_explicitly_when_const_expr(Expr* const_expr, Type* to, Type* const_ex
 
 		if (to->mods.is_predefined && const_expr_type_new->mods.is_predefined)
 			if (get_type_size_in_bytes(to) < get_type_size_in_bytes(const_expr_type_new))
-				report_error2(frmt("Cannot explicitly convert constant value of type %s to %s.",
-					type_tostr_plain(to), type_tostr_plain(const_expr_type_new)), to->area);
-		// think about: 
+				report_error2(frmt("Cannot explicitly convert constant value of type %s to %s (value: %f).",
+					type_tostr_plain(to), type_tostr_plain(const_expr_type_new), value), to->area);
+		// freeing temporary type instance (type from evaluated const expression) 
 		type_free(const_expr_type_new);
 		return cast_explicitly(to, const_expr_type);
 	}

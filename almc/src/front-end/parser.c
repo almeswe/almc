@@ -1,7 +1,6 @@
 #include "parser.h"
 
 //todo: think about how i can access struct members (also if struct is pointer) in initializer
-//todo: how i can save the order of abstract-declarators in type declaration? (char*[4] and char[4]* are the same types yet)
 
 #define matcht(parser, t) (get_curr_token(parser)->type == (t))
 #define expect_with_skip(parser, type, str) expect(parser, type, str), get_next_token(parser)

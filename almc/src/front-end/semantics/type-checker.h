@@ -1,10 +1,7 @@
 #ifndef ALMC_FRONT_END_TYPE_CHECKER_H
 #define ALMC_FRONT_END_TYPE_CHECKER_H
 
-#include <limits.h>
-
 #include "table.h"
-#include "..\ast\ast.h"
 
 //----------------------------------------
 #define U8   0x0

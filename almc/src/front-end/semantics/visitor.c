@@ -1,8 +1,5 @@
 #include "visitor.h"
 
-// todo: set enum identifiers as i32 type
-// todo: also set the i32 type to all consts (except they have i64)
-
 #define IS_USER_TYPE_ALREADY_DECLARED(typedec, typestr) \
 	if (is_##typedec##_declared(stmts[i]->type_decl->##typedec##_decl->##typedec##_name, table)) \
 		report_error(frmt("%s type %s is already declared.",						             \
@@ -155,7 +152,8 @@ void visit_expr(Expr* expr, Table* table)
 		visit_ternary_expr(expr->ternary_expr, table);
 		break;
 	case EXPR_INITIALIZER:
-		report_error2("Initializers are not supported in language yet.", expr->initializer->area);
+		report_error2("Initializers are not supported in language yet.", 
+			expr->initializer->area);
 		break;
 	default:
 		report_error("Unknown kind of binary expression met in visit_expr()", NULL);
@@ -184,8 +182,8 @@ void visit_idnt(Idnt* idnt, Table* table, int is_in_assign)
 void visit_func_call(FuncCall* func_call, Table* table)
 {
 	if (!is_function_declared(func_call->func_name, table))
-		report_error2(frmt("Function %s is not declared in current scope.", func_call->func_name),
-			func_call->area);
+		report_error2(frmt("Function %s is not declared in current scope.", 
+			func_call->func_name), func_call->area);
 	else
 	{
 		// visiting passed arguments to function call
@@ -390,7 +388,6 @@ void check_for_duplicated_case_conditions(SwitchStmt* switch_stmt, Table* table)
 
 void visit_switch_stmt(SwitchStmt* switch_stmt, Table* table)
 {
-	// todo: add conjucting resolve
 	Table* local = NULL;
 	visit_condition(switch_stmt->switch_cond, table);
 
@@ -448,7 +445,8 @@ void visit_loop_stmt(LoopStmt* loop_stmt, Table* table)
 		visit_while_loop_stmt(loop_stmt->while_loop, local);
 		break;
 	default:
-		report_error(frmt("Unknown loop kind met: %d", loop_stmt->kind), NULL);
+		report_error("Unknown loop kind met in visit_loop_stmt()",
+			NULL);
 	}
 }
 
@@ -495,14 +493,15 @@ void visit_jump_stmt(JumpStmt* jump_stmt, Table* table)
 		visit_continue_stmt(jump_stmt, table);
 		break;
 	default:
-		report_error(frmt("Unknown jump statement kind met: %d", jump_stmt->kind), NULL);
+		report_error("Unknown jump statement kind met in visit_jump_stmt()", 
+			NULL);
 	}
 }
 
 void visit_goto_stmt(JumpStmt* goto_stmt, Table* table)
 {
 	if (!goto_stmt->additional_expr)
-		report_error2("Expression in jump statement is undefined. visit_goto_stmt().", NULL);
+		report_error2("Expression in jump statement is undefined in visit_goto_stmt().", NULL);
 	else
 	{
 		if (goto_stmt->additional_expr->kind != EXPR_IDNT)
@@ -691,6 +690,8 @@ void visit_type_decl_stmt(TypeDecl* type_decl, Table* table)
 	case TYPE_DECL_STRUCT:
 		visit_struct(type_decl->struct_decl, table);
 		break;
+	default:
+		report_error("Unknown type of type declaration met in visit_type_decl_stmt()", NULL);
 	}
 }
 
@@ -740,4 +741,5 @@ void visit_func_decl_stmt(FuncDecl* func_decl, Table* table)
 void visit_label_decl_stmt(LabelDecl* label_decl, Table* table)
 {
 	// there are no any processing stuff for label declaration statement yet.  ? ?
+	// check for duplicated label is already exists in visit_scope
 }
