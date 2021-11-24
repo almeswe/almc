@@ -25,10 +25,10 @@
     <ClCompile Include="src\back-end\x86 asm\regtable.c" />
     <ClCompile Include="src\back-end\x86 asm\stack-frame.c" />
     <ClCompile Include="src\back-end\x86 asm\types.c" />
-    <ClCompile Include="src\front-end\ast\debug\ast-console-printer.c" />
-    <ClCompile Include="src\front-end\ast\ast-expr-evaluator.c" />
-    <ClCompile Include="src\front-end\ast\ast-expr-evaluator.h" />
+    <ClCompile Include="src\front-end\ast\ast-evaluator.c" />
+    <ClCompile Include="src\front-end\ast\ast-evaluator.h" />
     <ClCompile Include="src\front-end\ast\ast.c" />
+    <ClCompile Include="src\front-end\ast\ast-printer.c" />
     <ClCompile Include="src\front-end\lexer.c" />
     <ClCompile Include="src\front-end\semantics\table.c" />
     <ClCompile Include="src\front-end\semantics\type-checker.c" />
@@ -52,8 +52,8 @@
     <ClInclude Include="src\back-end\x86 asm\program.h" />
     <ClInclude Include="src\back-end\x86 asm\stack-frame.h" />
     <ClInclude Include="src\back-end\x86 asm\types.h" />
-    <ClInclude Include="src\front-end\ast\debug\ast-console-printer.h" />
     <ClInclude Include="src\front-end\ast\ast.h" />
+    <ClInclude Include="src\front-end\ast\ast-printer.h" />
     <ClInclude Include="src\front-end\front-end.h" />
     <ClInclude Include="src\front-end\lexer.h" />
     <ClInclude Include="src\front-end\semantics\table.h" />

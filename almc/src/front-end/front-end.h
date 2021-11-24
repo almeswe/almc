@@ -1,7 +1,7 @@
 #include "lexer.h"
 #include "parser.h"
 
-#include "ast\ast-expr-evaluator.h"
-#include "ast\debug\ast-console-printer.h"
+#include "ast\ast-printer.h"
+#include "ast\ast-evaluator.h"
 
 #include "semantics\visitor.h"

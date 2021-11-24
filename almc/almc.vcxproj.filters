@@ -44,13 +44,10 @@
     <ClCompile Include="src\front-end\parser.c">
       <Filter>Common Files\Sources</Filter>
     </ClCompile>
-    <ClCompile Include="src\front-end\ast\ast-expr-evaluator.h">
+    <ClCompile Include="src\front-end\ast\ast-evaluator.h">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\front-end\ast\ast-expr-evaluator.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\front-end\ast\debug\ast-console-printer.c">
+    <ClCompile Include="src\front-end\ast\ast-evaluator.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\front-end\token.c">
@@ -95,6 +92,9 @@
     <ClCompile Include="src\front-end\semantics\type-checker.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\front-end\ast\ast-printer.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\utils\context.h">
@@ -107,9 +107,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\front-end\parser.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\front-end\ast\debug\ast-console-printer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\front-end\front-end.h">
@@ -170,6 +167,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\front-end\semantics\type-checker.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\front-end\ast\ast-printer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
