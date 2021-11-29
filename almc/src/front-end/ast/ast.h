@@ -227,6 +227,7 @@ typedef struct VarDecl
 
 typedef struct FuncSpecifiers
 {
+	char is_entry;
 	char is_forward;
 	char is_external;
 	char is_intrinsic;

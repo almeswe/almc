@@ -1156,6 +1156,10 @@ FuncSpecifiers* parse_func_specifiers(Parser* parser)
 	FuncSpecifiers* func_spec = cnew_s(FuncSpecifiers, func_spec, 1);
 	switch (get_curr_token(parser)->type)
 	{
+	case TOKEN_KEYWORD_ENTRY:
+		get_next_token(parser);
+		func_spec->is_entry = 1;
+		break;
 	case TOKEN_KEYWORD_EXTERN:
 		get_next_token(parser);
 		func_spec->is_external = 1;

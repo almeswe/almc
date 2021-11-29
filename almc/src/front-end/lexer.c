@@ -90,7 +90,7 @@ char* keychars[] = {
 	"../",
 };
 char* keywords[] = {
-	"auto",
+	"auto",//?
 	"break",
 	"case",
 	"char",
@@ -99,14 +99,15 @@ char* keywords[] = {
 	"default",
 	"enum",
 	"elif",
-	"extern",
+	"entry",
+	"extern",//?
 	"for",
 	"fnc",
 	"from",
 	"false",
 	"f32",
 	"f64",
-	"forward",
+	"forward",//?
 	"goto",
 	"if",
 	"i8",
@@ -115,15 +116,15 @@ char* keywords[] = {
 	"i64",
 	"import",
 	"intrinsic",
-	"register",
+	"register",//?
 	"return",
 	"str",
 	"static",
-	"struct",
+	"struct", //?
 	"switch",
 	"sizeof",
 	"true",
-	"typeof",
+	"typeof",//?
 	"union",
 	"u8",
 	"u16",
@@ -132,7 +133,7 @@ char* keywords[] = {
 	"let",
 	"label",
 	"void",
-	"volatile",
+	"volatile",//?
 	"while",
 	"do",
 	"else",

@@ -20,7 +20,7 @@
 #define CHARS 26
 #define CHARS_IN_TOKEN_ENUM_OFFSET 0
 
-#define KEYWORDS 46
+#define KEYWORDS 47
 #define KEYWORD_IN_TOKEN_ENUM_OFFSET TOKEN_IDNT + 1
 
 typedef enum StreamType

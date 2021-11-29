@@ -59,6 +59,7 @@ continue
 default
 enum
 elif
+entry
 extern
 for
 fnc

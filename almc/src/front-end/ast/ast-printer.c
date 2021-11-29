@@ -308,6 +308,7 @@ void print_func_decl(FuncDecl* func_decl, const char* indent)
 	printf("%sfunc-decl: %s\n", indent, func_decl->func_name);
 	indent = frmt("   %s", indent);
 	printf(RESET);
+	print_func_spec(is_entry);
 	print_func_spec(is_forward);
 	print_func_spec(is_external);
 	print_func_spec(is_intrinsic);
