@@ -15,4 +15,4 @@ void report_error2(const char* message, SrcArea* area);
 void report_warning(const char* message, SrcContext* context);
 void report_warning2(const char* message, SrcArea* area);
 
-#endif //ALMC_ERROR_H
+#endif
