@@ -305,7 +305,8 @@ void print_func_decl(FuncDecl* func_decl, const char* indent)
 	printf("%s%s: %d\n", indent, #spec, func_decl->func_spec.spec) : 0
 
 	printf(BOLDCYAN);
-	printf("%sfunc-decl: %s\n", indent, func_decl->func_name);
+	printf("%sfunc-decl: %s\n", indent, 
+		func_decl->func_name->svalue);
 	indent = frmt("   %s", indent);
 	printf(RESET);
 	print_func_spec(is_entry);

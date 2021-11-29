@@ -11,27 +11,27 @@ inline void test_func_decl_stmts()
 
 	assert(sbuffer_len(ast->stmts) == 4);
 	assert(ast->stmts[0]->kind == STMT_FUNC_DECL);
-	assert(strcmp(ast->stmts[0]->func_decl->func_name, "a_1") == 0);
+	assert(strcmp(ast->stmts[0]->func_decl->func_name->svalue, "a_1") == 0);
 	assert(!ast->stmts[0]->func_decl->func_body);
 	assert(sbuffer_len(ast->stmts[0]->func_decl->func_params) == 0);
 	assert(ast->stmts[0]->func_decl->func_type->mods.is_void);
 
 	assert(ast->stmts[1]->kind == STMT_FUNC_DECL);
-	assert(strcmp(ast->stmts[1]->func_decl->func_name, "a_2") == 0);
+	assert(strcmp(ast->stmts[1]->func_decl->func_name->svalue, "a_2") == 0);
 	assert(!ast->stmts[1]->func_decl->func_body);
 	assert(strcmp(ast->stmts[1]->func_decl->func_params[0]->type->repr, "i32") == 0);
 	assert(strcmp(ast->stmts[1]->func_decl->func_params[1]->var, "b") == 0);
 	assert(strcmp(ast->stmts[1]->func_decl->func_type->repr, "i32") == 0);
 
 	assert(ast->stmts[2]->kind == STMT_FUNC_DECL);
-	assert(strcmp(ast->stmts[2]->func_decl->func_name, "a_3") == 0);
+	assert(strcmp(ast->stmts[2]->func_decl->func_name->svalue, "a_3") == 0);
 	assert(ast->stmts[2]->func_decl->func_spec.is_forward);
 	assert(!ast->stmts[2]->func_decl->func_body);
 	assert(sbuffer_len(ast->stmts[2]->func_decl->func_params) == 0);
 	assert(ast->stmts[2]->func_decl->func_type->mods.is_void);
 
 	assert(ast->stmts[3]->kind == STMT_FUNC_DECL);
-	assert(strcmp(ast->stmts[3]->func_decl->func_name, "a_4") == 0);
+	assert(strcmp(ast->stmts[3]->func_decl->func_name->svalue, "a_4") == 0);
 	assert(ast->stmts[3]->func_decl->func_spec.is_intrinsic);
 	assert(!ast->stmts[3]->func_decl->func_body);
 	assert(sbuffer_len(ast->stmts[3]->func_decl->func_params) == 0);
@@ -58,7 +58,7 @@ inline void test_type_decl_stmts()
 	assert(!ast->stmts[0]->type_decl->struct_decl->struct_mmbrs);
 
 	assert(ast->stmts[1]->type_decl->kind == TYPE_DECL_STRUCT);
-	assert(strcmp(ast->stmts[1]->type_decl->struct_decl->struct_name, "") == 0);
+	assert(strcmp(ast->stmts[1]->type_decl->struct_decl->struct_name, "a") == 0);
 	assert(strcmp(ast->stmts[1]->type_decl->struct_decl->struct_mmbrs[0]->var, "noname") == 0);
 
 	assert(ast->stmts[2]->type_decl->kind == TYPE_DECL_STRUCT);
@@ -102,7 +102,7 @@ inline void test_type_decl_stmts()
 	assert(!ast->stmts[8]->type_decl->union_decl->union_mmbrs);
 
 	assert(ast->stmts[9]->type_decl->kind == TYPE_DECL_UNION);
-	assert(strcmp(ast->stmts[9]->type_decl->union_decl->union_name, "") == 0);
+	assert(strcmp(ast->stmts[9]->type_decl->union_decl->union_name, "a") == 0);
 	assert(strcmp(ast->stmts[9]->type_decl->union_decl->union_mmbrs[0]->type->repr, "i32") == 0);
 
 	assert(ast->stmts[10]->type_decl->kind == TYPE_DECL_UNION);

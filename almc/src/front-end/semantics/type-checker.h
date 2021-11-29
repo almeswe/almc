@@ -73,6 +73,11 @@
 
 #define IS_VOID(type) (type && type->mods.is_void && !IS_POINTER_TYPE(type))
 
+#define IS_CHAR_REPR(type) (type && strcmp(type->repr, "char") == 0)
+#define IS_VOID_REPR(type) (type && strcmp(type->repr, "void") == 0)
+
+#define IS_POINTER_RANK(rank, type) (type && type->mods.is_ptr == (rank))
+
 Type* get_string_type(Str* str);
 Type* get_const_type(Const* cnst);
 Type* get_fvalue_type(double value);

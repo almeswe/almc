@@ -21,9 +21,9 @@
 
 void run_tests()
 {
-	//lexer_run_tests();
-	//test_import_all_cases();
-	//ast_expr_eval_run_tests();
-	//ast_stmt_tests();
+	lexer_run_tests();
+	test_import_all_cases();
+	ast_expr_eval_run_tests();
+	ast_stmt_tests();
 	manual_test();
 }

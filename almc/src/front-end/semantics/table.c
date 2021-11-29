@@ -68,7 +68,7 @@ void table_free(Table* table)
 int is_function_declared(const char* func_name, Table* table)
 {
 	for (Table* parent = table; parent != NULL; parent = parent->parent)
-		is_declared_in_collection(func_name, func_name, parent->functions);
+		is_declared_in_collection(func_name, func_name->svalue, parent->functions);
 }
 
 int is_variable_declared(const char* var_name, Table* table)
@@ -118,7 +118,7 @@ int is_union_declared(const char* union_name, Table* table)
 
 void add_function(FuncDecl* func_decl, Table* table)
 {
-	if (!is_function_declared(func_decl->func_name, table))
+	if (!is_function_declared(func_decl->func_name->svalue, table))
 		sbuffer_add(table->functions, func_decl);
 }
 
@@ -178,7 +178,7 @@ LabelDecl* get_label(const char* label_name, Table* table)
 FuncDecl* get_function(const char* func_name, Table* table)
 {
 	for (Table* parent = table; parent != NULL; parent = parent->parent)
-		get_from_collection(func_name, func_name, parent->functions);
+		get_from_collection(func_name, func_name->svalue, parent->functions);
 }
 
 TypeVar* get_function_param(const char* param_name, Table* table)

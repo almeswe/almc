@@ -2,7 +2,7 @@
 
 #define IS_USER_TYPE_ALREADY_DECLARED(typedec, typestr) \
 	if (is_##typedec##_declared(stmts[i]->type_decl->##typedec##_decl->##typedec##_name, table)) \
-		report_error(frmt("%s type %s is already declared.",						             \
+		report_error(frmt("\'%s\' type \'%s\' is already declared.",						             \
 			typestr, stmts[i]->type_decl->##typedec##_decl->##typedec##_name), NULL);		     \
 	add_##typedec##(stmts[i]->type_decl->##typedec##_decl, table);							     \
 
@@ -77,7 +77,7 @@ void visit_type(Type* type, Table* table)
 		if (!is_struct_declared(type->repr, table) &&
 			!is_union_declared(type->repr, table) &&
 			!is_enum_declared(type->repr, table))
-				report_error2(frmt("Undefined type %s met.",
+				report_error2(frmt("Undefined type \'%s\' met.",
 					type->repr), type->area);
 	if (type->mods.is_array && type->mods.is_ptr)
 		report_error("Cannot resolve type ambiguity in visit_type()", NULL);
@@ -85,7 +85,7 @@ void visit_type(Type* type, Table* table)
 
 void visit_non_void_type(Type* type, Table* table)
 {
-	if (type->mods.is_void && !type->mods.is_ptr)
+	if (IS_VOID(type))
 		report_error2("Void type is not allowed in this context.",
 			type->area);
 	visit_type(type, table);
@@ -112,15 +112,16 @@ void visit_scope(Stmt** stmts, Table* table)
 			}
 			break;
 		case STMT_FUNC_DECL:
-			if (is_function_declared(stmts[i]->func_decl->func_name, table))
-				report_error(frmt("Function %s is already declared.",
-					stmts[i]->func_decl->func_name), NULL);
+			if (is_function_declared(stmts[i]->func_decl->func_name->svalue, table))
+				report_error(frmt("Function \'%s\' is already declared.",
+					stmts[i]->func_decl->func_name->svalue), 
+						stmts[i]->func_decl->func_name->context);
 			add_function(stmts[i]->func_decl, table);
 			break;
 		// also added labels here
 		case STMT_LABEL_DECL:
 			if (is_label_declared(stmts[i]->label_decl->label_idnt->svalue, table))
-				report_error(frmt("Label %s is already declared.",
+				report_error(frmt("Label \'%s\' is already declared.",
 					stmts[i]->label_decl->label_idnt->svalue), 
 						stmts[i]->label_decl->label_idnt->context);
 			add_label(stmts[i]->label_decl, table);
@@ -169,12 +170,12 @@ void visit_idnt(Idnt* idnt, Table* table, int is_in_assign)
 	{
 		// and check if declared and initialized
 		if (!is_variable_declared(idnt->svalue, table))
-			report_error(frmt("Variable %s is not declared.",
+			report_error(frmt("Variable \'%s\' is not declared.",
 				idnt->svalue), idnt->context);
 		if (is_in_assign && !is_variable_initialized(idnt->svalue, table))
 			add_initialized_variable(idnt->svalue, table);
 		if (!is_variable_initialized(idnt->svalue, table))
-			report_error(frmt("Variable %s is not initialized in current scope.",
+			report_error(frmt("Variable \'%s\' is not initialized in current scope.",
 				idnt->svalue), idnt->context);
 	}
 }
@@ -182,7 +183,7 @@ void visit_idnt(Idnt* idnt, Table* table, int is_in_assign)
 void visit_func_call(FuncCall* func_call, Table* table)
 {
 	if (!is_function_declared(func_call->func_name, table))
-		report_error2(frmt("Function %s is not declared in current scope.", 
+		report_error2(frmt("Function \'%s\' is not declared in current scope.", 
 			func_call->func_name), func_call->area);
 	else
 	{
@@ -193,12 +194,12 @@ void visit_func_call(FuncCall* func_call, Table* table)
 		size_t expected = sbuffer_len(origin->func_params);
 
 		if (passed > expected)
-			report_error2(frmt("Too much arguments passed to function call %s.", func_call->func_name),
-				func_call->area);
+			report_error2(frmt("Too much arguments passed to function call \'%s\'.", 
+				func_call->func_name), func_call->area);
 
 		if (passed < expected)
-			report_error2(frmt("Not enough arguments passed to function call %s.", func_call->func_name),
-				func_call->area);
+			report_error2(frmt("Not enough arguments passed to function call \'%s\'.", 
+				func_call->func_name), func_call->area);
 	}
 }
 
@@ -321,7 +322,7 @@ void visit_condition(Expr* condition, Table* table)
 	visit_expr(condition, table);
 	Type* type = get_expr_type(condition, table);
 	if (!IS_NUMERIC_TYPE(type))
-		report_error2(frmt("Condition expression must have numeric type, not %s",
+		report_error2(frmt("Condition expression must have numeric type, not \'%s\'",
 			type_tostr_plain(type)), get_expr_area(condition));
 }
 
@@ -395,7 +396,7 @@ void visit_switch_stmt(SwitchStmt* switch_stmt, Table* table)
 	Type* switch_cond_type = get_expr_type(switch_stmt->switch_cond, table);
 
 	if (!IS_INTEGRAL_TYPE(switch_cond_type))
-		report_error2(frmt("Condition of switch statement must be of integral type, not %s", 
+		report_error2(frmt("Condition of switch statement must be of integral type, not \'%s\'", 
 			type_tostr_plain(switch_cond_type)), get_expr_area(switch_stmt->switch_cond));
 
 	check_for_conjuction_collisions(switch_stmt, table);
@@ -412,11 +413,11 @@ void visit_switch_stmt(SwitchStmt* switch_stmt, Table* table)
 
 		switch_case_type = get_expr_type(switch_stmt->switch_cases[i]->case_value, local);
 		if (!can_cast_implicitly(switch_cond_type, switch_case_type, local))
-			report_error2(frmt("Cannot use case statement with type %s when switch's condition has type %s",
+			report_error2(frmt("Cannot use case statement with type \'%s\' when switch's condition has type \'%s\'",
 				type_tostr_plain(switch_case_type), type_tostr_plain(switch_cond_type)),
 					get_expr_area(switch_stmt->switch_cases[i]->case_value));
 		if (!IS_INTEGRAL_TYPE(switch_case_type))
-			report_error2(frmt("Condition of case statement must be of integral type, not %s",
+			report_error2(frmt("Condition of case statement must be of integral type, not \'%s\'",
 				type_tostr_plain(switch_case_type)), get_expr_area(switch_stmt->switch_cases[i]->case_value));
 	}
 
@@ -508,7 +509,7 @@ void visit_goto_stmt(JumpStmt* goto_stmt, Table* table)
 			report_error2("Expression in jump statement must be identifier in case of goto statement.",
 				goto_stmt->area);
 		if (!is_label_declared(goto_stmt->additional_expr->idnt->svalue, table))
-			report_error2(frmt("Label %s is not declared in current scope.",
+			report_error2(frmt("Label \'%s\' is not declared in current scope.",
 				goto_stmt->additional_expr->idnt->svalue), goto_stmt->area);
 	}
 }
@@ -532,7 +533,7 @@ void visit_return_stmt(JumpStmt* return_stmt, Table* table)
 				return_stmt->area);
 		Type* return_type = get_expr_type(return_stmt->additional_expr, table);
 		if (!can_cast_implicitly(table->in_function->func_type, return_type))
-			report_error2(frmt("Cannot return value of type %s from function with %s.",
+			report_error2(frmt("Cannot return value of type \'%s\' from function with \'%s\'.",
 				type_tostr_plain(return_type), type_tostr_plain(table->in_function->func_type)),
 					get_expr_area(return_stmt->additional_expr));
 	}
@@ -556,13 +557,13 @@ void visit_var_decl_stmt(VarDecl* var_decl, Table* table)
 	const char* var = var_decl->type_var->var;
 
 	if (is_variable_declared(var, table))
-		report_error2(frmt("Variable %s is already declared.",
+		report_error2(frmt("Variable \'%s\' is already declared.",
 			var), area);
 	else if (is_function_param_passed(var, table))
-		report_error2(frmt("%s is already declared as function's parameter.",
+		report_error2(frmt("\'%s\' is already declared as function's parameter.",
 			var), area);
 	else if (is_enum_member(var, table))
-		report_error2(frmt("%s is already declared as enum's identifier.",
+		report_error2(frmt("\'%s\' is already declared as enum's identifier.",
 			var), area);
 	else
 	{
@@ -576,7 +577,7 @@ void visit_var_decl_stmt(VarDecl* var_decl, Table* table)
 			// check type of created variable with type of initializing expression
 			Type* init_expr_type = get_expr_type(var_decl->var_init, table);
 			if (!can_cast_implicitly(type, init_expr_type))
-				report_error2(frmt("Expression-initializer has incompatible type %s with type of variable %s.",
+				report_error2(frmt("Expression-initializer has incompatible type \'%s\' with type of variable \'%s\'.",
 					type_tostr_plain(init_expr_type), type_tostr_plain(type)), 
 						get_expr_area(var_decl->var_init));
 		}
@@ -590,7 +591,7 @@ void visit_enum(EnumDecl* enum_decl, Table* table)
 		// checking validity of values that assigned to enum idents
 		for (size_t j = 0; j < sbuffer_len(enum_decl->enum_idnt_values); j++)
 			if (!is_simple_const_expr(enum_decl->enum_idnt_values[j]))
-				report_error2(frmt("Enum member %s must have constant expression, in %s enum.",
+				report_error2(frmt("Enum member \'%s\' must have constant expression, in \'%s\' enum.",
 					enum_decl->enum_idnts[j]->svalue, enum_decl->enum_name),
 						get_expr_area(enum_decl->enum_idnt_values[j]));
 
@@ -601,7 +602,7 @@ void visit_enum(EnumDecl* enum_decl, Table* table)
 					for (size_t z = 0; z < sbuffer_len(parent->enums[j]->enum_idnts); z++)          // each member in iterating enum
 						if (strcmp(parent->enums[j]->enum_idnts[z]->svalue,
 							enum_decl->enum_idnts[i]->svalue) == 0)
-								report_error(frmt("Enum member %s is already declared in %s enum.",
+								report_error(frmt("Enum member \'%s\' is already declared in \'%s\' enum.",
 									enum_decl->enum_idnts[i]->svalue, parent->enums[j]->enum_name),
 										enum_decl->enum_idnts[i]->context);
 		// checking value type
@@ -612,7 +613,7 @@ void visit_enum(EnumDecl* enum_decl, Table* table)
 		Type* const_expr_type = get_ivalue_type(
 			evaluate_expr_itype(enum_decl->enum_idnt_values[i]));
 		if (get_type_size_in_bytes(const_expr_type) > 4)
-			report_error2(frmt("Enum member %s must have value type less equal than 4 bytes, in %s enum.",
+			report_error2(frmt("Enum member \'%s\' must have value type less equal than 4 bytes, in \'%s\' enum.",
 				enum_decl->enum_idnts[i]->svalue, enum_decl->enum_name),
 					get_expr_area(enum_decl->enum_idnt_values[i]));
 		type_free(const_expr_type);
@@ -620,14 +621,14 @@ void visit_enum(EnumDecl* enum_decl, Table* table)
 		// set type to enum identifier
 		Type* value_type = get_expr_type(enum_decl->enum_idnt_values[i], table);
 		if (!IS_INTEGRAL_TYPE(value_type))
-			report_error2(frmt("Enum's member %s has incompatible %s type in %s enum.",
+			report_error2(frmt("Enum's member \'%s\' has incompatible \'%s\' type in \'%s\' enum.",
 				enum_decl->enum_idnts[i]->svalue, type_tostr_plain(value_type), enum_decl->enum_name), 
 					get_expr_area(enum_decl->enum_idnt_values[i]));
 
 		// checking for any duplicated names in current enum
 		for (size_t j = i + 1; j < sbuffer_len(enum_decl->enum_idnts); j++)
 			if (strcmp(enum_decl->enum_idnts[i]->svalue, enum_decl->enum_idnts[j]->svalue) == 0)
-				report_error(frmt("Member %s is already declared in %s enum declaration.",
+				report_error(frmt("Member \'%s\' is already declared in \'%s\' enum declaration.",
 					enum_decl->enum_idnts[i]->svalue, enum_decl->enum_name), enum_decl->enum_idnts[i]->context);
 	}
 }
@@ -639,7 +640,7 @@ void visit_union(UnionDecl* union_decl, Table* table)
 		// checking for self included type (and not pointer)
 		if (strcmp(union_decl->union_name, union_decl->union_mmbrs[i]->type->repr) == 0)
 			if (!union_decl->union_mmbrs[i]->type->mods.is_ptr)
-				report_error2(frmt("Member %s has type %s which is self included, and not pointer.",
+				report_error2(frmt("Member \'%s\' has type \'%s\' which is self included, and not pointer.",
 					union_decl->union_mmbrs[i]->var, union_decl->union_name), 
 						union_decl->union_mmbrs[i]->area);
 		visit_non_void_type(union_decl->union_mmbrs[i]->type, table);
@@ -649,7 +650,7 @@ void visit_union(UnionDecl* union_decl, Table* table)
 	for (size_t i = 0; i < sbuffer_len(union_decl->union_mmbrs); i++)
 		for (size_t j = i + 1; j < sbuffer_len(union_decl->union_mmbrs); j++)
 			if (strcmp(union_decl->union_mmbrs[i]->var, union_decl->union_mmbrs[j]->var) == 0)
-				report_error2(frmt("Member [%s] is already declared in [%s] union declaration.",
+				report_error2(frmt("Member \'%s\' is already declared in \'%s\' union declaration.",
 					union_decl->union_mmbrs[i]->var, union_decl->union_name), union_decl->union_mmbrs[i]->area);
 }
 
@@ -661,7 +662,7 @@ void visit_struct(StructDecl* struct_decl, Table* table)
 		// checking for self included type (and not pointer)
 		if (strcmp(struct_decl->struct_name, struct_decl->struct_mmbrs[i]->type->repr) == 0)
 			if (!struct_decl->struct_mmbrs[i]->type->mods.is_ptr)
-				report_error2(frmt("Member %s has type %s which is self included, and not pointer.",
+				report_error2(frmt("Member \'%s\' has type \'%s\' which is self included, and not pointer.",
 					struct_decl->struct_mmbrs[i]->var, struct_decl->struct_name), 
 						struct_decl->struct_mmbrs[i]->area);
 		visit_non_void_type(struct_decl->struct_mmbrs[i]->type, table);
@@ -671,7 +672,7 @@ void visit_struct(StructDecl* struct_decl, Table* table)
 	for (size_t i = 0; i < sbuffer_len(struct_decl->struct_mmbrs); i++)
 		for (size_t j = i+1; j < sbuffer_len(struct_decl->struct_mmbrs); j++)
 			if (strcmp(struct_decl->struct_mmbrs[i]->var, struct_decl->struct_mmbrs[j]->var) == 0)
-				report_error2(frmt("Member %s is already declared in %s struct declaration.",
+				report_error2(frmt("Member \'%s\' is already declared in \'%s\' struct declaration.",
 					struct_decl->struct_mmbrs[i]->var, struct_decl->struct_name), 
 						struct_decl->struct_mmbrs[i]->area);
 }
@@ -711,21 +712,23 @@ void visit_func_decl_stmt(FuncDecl* func_decl, Table* table)
 		func_decl->func_spec.is_intrinsic)
 			report_error("Function's modifiers are not supported in language yet.", NULL);
 
+	if (func_decl->func_spec.is_entry)
+		visit_entry_func_stmt(func_decl, table);
+
 	if (func_decl->func_body)
 		visit_scope(func_decl->func_body->stmts, local);
 
-	// todo: check for main func 
 	// checking func parameters
 	for (size_t i = 0; i < sbuffer_len(func_decl->func_params); i++)
 	{
 		// checking if parameter with this name is already defined as enum identifier
 		if (is_enum_member(func_decl->func_params[i]->var, local))
-			report_error2(frmt("Function parameter %s is already defined as enum identifier.",
+			report_error2(frmt("Function parameter \'%s\' is already defined as enum identifier.",
 				func_decl->func_params[i]->var), func_decl->func_params[i]->area);
 		// checking for duplicated parameter specification
 		if (is_function_param_passed(func_decl->func_params[i]->var, local))
-			report_error2(frmt("Function parameter %s is already specified in %s function parameter list.",
-				func_decl->func_params[i]->var, func_decl->func_name), func_decl->func_params[i]->area);
+			report_error2(frmt("Function parameter \'%s\' is already specified in \'%s\' function's parameters.",
+				func_decl->func_params[i]->var, func_decl->func_name->svalue), func_decl->func_params[i]->area);
 		add_function_param(func_decl->func_params[i], local);
 
 		// checking for void type
@@ -742,4 +745,45 @@ void visit_label_decl_stmt(LabelDecl* label_decl, Table* table)
 {
 	// there are no any processing stuff for label declaration statement yet.  ? ?
 	// check for duplicated label is already exists in visit_scope
+}
+
+void check_entry_func_params(FuncDecl* func_decl)
+{
+	TypeVar** params = func_decl->func_params;
+	size_t param_count = sbuffer_len(params);
+
+	switch (param_count)
+	{
+	case 0:
+		break;
+	case 2:
+		if (!IS_I32(params[0]->type))
+			report_error2("First parameter of an entry method should be of type \'i32\' in this context.",
+				params[0]->type->area);
+		if (!IS_CHAR_REPR(params[1]->type) ||
+			!IS_POINTER_RANK(2, params[1]->type))
+			report_error2("Second parameter of an entry method should be of type \'char**\' in this context.",
+				params[1]->type->area);
+		break;
+	default:
+		report_error(frmt("Entry method \'%s'\ cannot accept this count \'%d\' of parameters.",
+			func_decl->func_name->svalue, param_count), func_decl->func_name->context);
+	}
+}
+
+void visit_entry_func_stmt(FuncDecl* func_decl, Table* table)
+{
+	if (func_decl->func_spec.is_entry && table->parent)
+		report_error(frmt("Cannot create entry function \'%s\' not in global scope.",
+			func_decl->func_name->svalue), func_decl->func_name->context);
+
+	if (func_decl->func_spec.is_entry)
+		for (size_t i = 0; i < sbuffer_len(table->functions); i++)
+			if (table->functions[i]->func_spec.is_entry &&
+				table->functions[i] != func_decl)
+				report_error(frmt("Cannot specify function \'%s\' as entry, entry function \'%s\' is already mentioned.",
+					func_decl->func_name->svalue, table->functions[i]->func_name->svalue),
+						func_decl->func_name->context);
+
+	check_entry_func_params(func_decl);
 }

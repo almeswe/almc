@@ -1,6 +1,8 @@
 #ifndef ALMC_AST_H
 #define ALMC_AST_H
 
+//todo: make some clean-up for function declarations
+
 #include "..\lexer.h"
 
 typedef struct Expr Expr;
@@ -235,10 +237,10 @@ typedef struct FuncSpecifiers
 
 typedef struct FuncDecl
 {
+	Idnt* func_name;
 	Type* func_type;
 	Block* func_body;
 	TypeVar** func_params;
-	const char* func_name;
 	FuncSpecifiers func_spec;
 } FuncDecl;
 
@@ -437,11 +439,13 @@ Stmt* stmt_new(StmtType type, void* stmt_value_ptr);
 
 Block* block_new(Stmt** stmts);
 ElseIf* elif_stmt_new(Expr* elif_cond, Block* elif_body);
-IfStmt* if_stmt_new(Expr* if_cond, Block* if_body, ElseIf** elifs, Block* else_body);
+IfStmt* if_stmt_new(Expr* if_cond, Block* if_body, ElseIf** elifs, 
+	Block* else_body);
 
 LoopStmt* loop_stmt_new(LoopStmtKind type, void* loop_stmt_value_ptr);
 DoLoop* do_loop_new(Expr* do_cond, Block* do_body);
-ForLoop* for_loop_new(VarDecl* for_init, Expr* for_cond, Expr* for_step, Block* for_body);
+ForLoop* for_loop_new(VarDecl* for_init, Expr* for_cond, Expr* for_step,
+	Block* for_body);
 WhileLoop* while_loop_new(Expr* while_cond, Block* while_body);
 
 ExprStmt* expr_stmt_new(Expr* expr);
@@ -449,14 +453,18 @@ EmptyStmt* empty_stmt_new();
 
 JumpStmt* jump_stmt_new(JumpStmtKind type, Expr* return_expr);
 
-Case* case_stmt_new(Expr* case_value, Block* case_body, uint32_t is_conjucted);
-SwitchStmt* switch_stmt_new(Expr* switch_cond, Case** switch_cases, Block* switch_default);
+Case* case_stmt_new(Expr* case_value, Block* case_body, 
+	uint32_t is_conjucted);
+SwitchStmt* switch_stmt_new(Expr* switch_cond, Case** switch_cases,
+	Block* switch_default);
 ImportStmt* import_stmt_new(AstRoot* imported_ast);
 
 VarDecl* var_decl_new(TypeVar* type_var, Expr* var_init);
-FuncDecl* func_decl_new(const char* func_name, TypeVar** func_params, Type* func_type, Block* func_body, FuncSpecifiers func_spec);
+FuncDecl* func_decl_new(Idnt* func_name, TypeVar** func_params, 
+	Type* func_type, Block* func_body, FuncSpecifiers func_spec);
 TypeDecl* type_decl_new(TypeDeclKind type, void* type_decl_value_ptr);
-EnumDecl* enum_decl_new(Idnt** enum_idnts, Expr** enum_idnt_values, const char* enum_name);
+EnumDecl* enum_decl_new(Idnt** enum_idnts, Expr** enum_idnt_values, 
+	const char* enum_name);
 UnionDecl* union_decl_new(TypeVar** union_mmbrs, const char* union_name);
 StructDecl* struct_decl_new(TypeVar** struct_mmbrs, const char* struct_name);
 LabelDecl* label_decl_new(Idnt* label_idnt);

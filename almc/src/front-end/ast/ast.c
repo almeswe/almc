@@ -271,7 +271,7 @@ VarDecl* var_decl_new(TypeVar* type_var, Expr* var_init)
 	return vd;
 }
 
-FuncDecl* func_decl_new(const char* func_name, TypeVar** func_params, Type* func_type, Block* func_body, FuncSpecifiers func_spec)
+FuncDecl* func_decl_new(Idnt* func_name, TypeVar** func_params, Type* func_type, Block* func_body, FuncSpecifiers func_spec)
 {
 	FuncDecl* fd = new_s(FuncDecl, fd);
 	fd->func_name = func_name;

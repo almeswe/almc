@@ -70,7 +70,7 @@ void gen_block(Block* block, StackFrame* frame)
 
 void gen_func_decl_stmt(FuncDecl* func_decl)
 {
-	printf(frmt("%s proc\n", func_decl->func_name));
+	printf(frmt("%s proc\n", func_decl->func_name->svalue));
 
 	// header
 	PUSH32(get_register_str(ESP));
@@ -88,5 +88,5 @@ void gen_func_decl_stmt(FuncDecl* func_decl)
 		POP32(get_register_str(EBP));
 		OUT("ret");
 	//}
-	printf(frmt("%s endp\n", func_decl->func_name));
+	printf(frmt("%s endp\n", func_decl->func_name->svalue));
 }

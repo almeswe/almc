@@ -1178,7 +1178,7 @@ FuncSpecifiers* parse_func_specifiers(Parser* parser)
 
 Stmt* parse_func_decl_stmt(Parser* parser)
 {
-	char* func_name = NULL;
+	Idnt* func_name = NULL;
 	Type* func_type = NULL;
 	Block* func_body = NULL;
 	TypeVar** func_params = NULL;
@@ -1186,7 +1186,8 @@ Stmt* parse_func_decl_stmt(Parser* parser)
 
 	expect_with_skip(parser, TOKEN_KEYWORD_FUNC, "fnc");
 	func_spec = parse_func_specifiers(parser);
-	func_name = get_curr_token(parser)->svalue;
+	func_name = idnt_new(get_curr_token(parser)->svalue,
+		get_curr_token(parser)->context);
 	expect_with_skip(parser, TOKEN_IDNT, "func name");
 	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
 	while (!matcht(parser, TOKEN_CL_PAREN))
@@ -1444,7 +1445,7 @@ char* get_stmt_for_import_name(Stmt* stmt)
 	case STMT_VAR_DECL:
 		return stmt->var_decl->type_var->var;
 	case STMT_FUNC_DECL:
-		return stmt->func_decl->func_name;
+		return stmt->func_decl->func_name->svalue;
 	}
 	return NULL;
 }

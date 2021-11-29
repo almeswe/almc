@@ -49,4 +49,7 @@ void visit_type_decl_stmt(TypeDecl* type_decl, Table* table);
 void visit_func_decl_stmt(FuncDecl* func_decl, Table* table);
 void visit_label_decl_stmt(LabelDecl* label_decl, Table* table);
 
+void check_entry_func_params(FuncDecl* func_decl);
+void visit_entry_func_stmt(FuncDecl* func_decl, Table* table);
+
 #endif
