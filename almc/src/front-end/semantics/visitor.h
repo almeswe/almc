@@ -2,6 +2,7 @@
 #define ALMC_FRONT_END_VISITOR_H
 
 #include "type-checker.h"
+#include "flow-checker.h"
 
 typedef struct Visitor
 {

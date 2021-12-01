@@ -739,6 +739,8 @@ void visit_func_decl_stmt(FuncDecl* func_decl, Table* table)
 	visit_type(func_decl->func_type, table);
 	// checking function's body
 	visit_block(func_decl->func_body, local);
+	//checking that all code paths return value
+	check_func_return_flow(func_decl);
 }
 
 void visit_label_decl_stmt(LabelDecl* label_decl, Table* table)
@@ -758,15 +760,15 @@ void check_entry_func_params(FuncDecl* func_decl)
 		break;
 	case 2:
 		if (!IS_I32(params[0]->type))
-			report_error2("First parameter of an entry method should be of type \'i32\' in this context.",
-				params[0]->type->area);
+			report_error2("First parameter of an entry method"
+				" should be of type \'i32\' in this context.", params[0]->type->area);
 		if (!IS_CHAR_REPR(params[1]->type) ||
 			!IS_POINTER_RANK(2, params[1]->type))
-			report_error2("Second parameter of an entry method should be of type \'char**\' in this context.",
-				params[1]->type->area);
+			report_error2("Second parameter of an entry method should"
+				" be of type \'char**\' in this context.", params[1]->type->area);
 		break;
 	default:
-		report_error(frmt("Entry method \'%s'\ cannot accept this count \'%d\' of parameters.",
+		report_error(frmt("Entry method \'%s\' cannot accept this count \'%d\' of parameters.",
 			func_decl->func_name->svalue, param_count), func_decl->func_name->context);
 	}
 }
@@ -781,9 +783,9 @@ void visit_entry_func_stmt(FuncDecl* func_decl, Table* table)
 		for (size_t i = 0; i < sbuffer_len(table->functions); i++)
 			if (table->functions[i]->func_spec.is_entry &&
 				table->functions[i] != func_decl)
-				report_error(frmt("Cannot specify function \'%s\' as entry, entry function \'%s\' is already mentioned.",
-					func_decl->func_name->svalue, table->functions[i]->func_name->svalue),
-						func_decl->func_name->context);
+				report_error(frmt("Cannot specify function \'%s\' as entry,"
+					" entry function \'%s\' is already mentioned.", func_decl->func_name->svalue, 
+						table->functions[i]->func_name->svalue), func_decl->func_name->context);
 
 	check_entry_func_params(func_decl);
 }

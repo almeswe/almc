@@ -95,6 +95,9 @@
     <ClCompile Include="src\front-end\ast\ast-printer.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\front-end\semantics\flow-checker.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\utils\context.h">
@@ -170,6 +173,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\front-end\ast\ast-printer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\front-end\semantics\flow-checker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

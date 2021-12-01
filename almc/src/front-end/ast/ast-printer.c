@@ -19,10 +19,6 @@ void print_type(Type* type, const char* indent)
 	printf(RESET);
 	print_type_mode(is_ptr);
 	print_type_mode(is_void);
-	print_type_mode(is_static);
-	print_type_mode(is_register);
-	print_type_mode(is_volatile);
-	print_type_mode(is_const_ptr);
 	print_type_mode(is_predefined);
 	print_type_mode(is_array);
 	indent = frmt("%s   ", indent);
