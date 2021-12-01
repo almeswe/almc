@@ -2,7 +2,7 @@ struct a {
 
 }
 
-struct {
+struct a {
 	noname: i32*;
 }
 
@@ -43,7 +43,7 @@ union a {
 
 }
 
-union {
+union a {
 	no_name: i32;
 }
 
