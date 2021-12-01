@@ -1,6 +1,6 @@
 let a_var: i32 = 10;
 
-fnc a_func() : void {
+fnc a_func111() : void {
 	return;
 }
 

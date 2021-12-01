@@ -24,7 +24,9 @@ typedef struct TypeMods
 
 typedef struct TypeInfo
 {
-	Expr** arr_dim_sizes;
+	uint32_t arr_dims;        // dimension count
+	uint32_t arr_is_var_size; // is the dimensions initialized as variable size
+	Expr** arr_dim_sizes;     // size of each dimension
 } TypeInfo;
 
 typedef struct Type
@@ -50,6 +52,7 @@ typedef enum UnaryExprKind
 
 	UNARY_CAST,
 	UNARY_SIZEOF,
+	UNARY_LENGTHOF,
 
 	UNARY_POSTFIX_INC,
 	UNARY_POSTFIX_DEC,
@@ -230,8 +233,6 @@ typedef struct VarDecl
 typedef struct FuncSpecifiers
 {
 	char is_entry;
-	char is_forward;
-	char is_external;
 	char is_intrinsic;
 } FuncSpecifiers;
 

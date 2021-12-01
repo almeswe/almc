@@ -717,6 +717,7 @@ void func_decl_free(FuncDecl* func_decl)
 {
 	if (func_decl)
 	{
+		idnt_free(func_decl->func_name);
 		type_free(func_decl->func_type);
 		block_free(func_decl->func_body);
 		for (uint32_t i = 0; i < sbuffer_len(func_decl->func_params); i++)

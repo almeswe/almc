@@ -1,4 +1,4 @@
 fnc a_1() : void;
 fnc a_2(a: i32, b: i16) : i32;
-fnc forward a_3() : void;
+fnc entry a_3() : void;
 fnc intrinsic a_4() : void;

@@ -63,7 +63,7 @@ void print_const(Const* cnst, const char* indent)
 		printf("%suint-const: %I64u", indent, cnst->uvalue);
 		break;
 	case CONST_FLOAT:
-		printf("%sfloat-const: %f", indent, cnst->fvalue);
+		printf("%sfloat-const: %lf", indent, cnst->fvalue);
 		break;
 	}
 	if (cnst->type)
@@ -108,6 +108,7 @@ void print_unary_expr(UnaryExpr* expr, const char* indent)
 
 		"unary-cast:",
 		"unary-sizeof:",
+		"unary-lengthof:",
 
 		"unary-postfix-inc: ++",
 		"unary-postfix-dec: --",
@@ -306,8 +307,6 @@ void print_func_decl(FuncDecl* func_decl, const char* indent)
 	indent = frmt("   %s", indent);
 	printf(RESET);
 	print_func_spec(is_entry);
-	print_func_spec(is_forward);
-	print_func_spec(is_external);
 	print_func_spec(is_intrinsic);
 
 	printf(BOLDCYAN);

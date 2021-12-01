@@ -89,25 +89,24 @@ char* keychars[] = {
 	"./",	//additional lexemes especially for path
 	"../",
 };
+
 char* keywords[] = {
 	"auto",//?
 	"break",
 	"case",
 	"char",
-	"const",
+	"cast",
 	"continue",
 	"default",
 	"enum",
 	"elif",
 	"entry",
-	"extern",//?
 	"for",
 	"fnc",
 	"from",
 	"false",
 	"f32",
 	"f64",
-	"forward",//?
 	"goto",
 	"if",
 	"i8",
@@ -116,15 +115,12 @@ char* keywords[] = {
 	"i64",
 	"import",
 	"intrinsic",
-	"register",//?
 	"return",
 	"str",
-	"static",
-	"struct", //?
+	"struct",
 	"switch",
 	"sizeof",
 	"true",
-	"typeof",//?
 	"union",
 	"u8",
 	"u16",
@@ -132,8 +128,8 @@ char* keywords[] = {
 	"u64",
 	"let",
 	"label",
+	"lengthof",
 	"void",
-	"volatile",//?
 	"while",
 	"do",
 	"else",

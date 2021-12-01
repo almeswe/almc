@@ -25,7 +25,7 @@ inline void test_func_decl_stmts()
 
 	assert(ast->stmts[2]->kind == STMT_FUNC_DECL);
 	assert(strcmp(ast->stmts[2]->func_decl->func_name->svalue, "a_3") == 0);
-	assert(ast->stmts[2]->func_decl->func_spec.is_forward);
+	assert(ast->stmts[2]->func_decl->func_spec.is_entry);
 	assert(!ast->stmts[2]->func_decl->func_body);
 	assert(sbuffer_len(ast->stmts[2]->func_decl->func_params) == 0);
 	assert(ast->stmts[2]->func_decl->func_type->mods.is_void);

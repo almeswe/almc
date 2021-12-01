@@ -1,6 +1,7 @@
-enum a {
-	f = 1024 * 2,
-	c,
-	d = 0xf,
-	d1
+import ../b;
+
+fnc a_func111() : i32 {
 }
+
+
+let a1: i32 = cast(i32)a_func();

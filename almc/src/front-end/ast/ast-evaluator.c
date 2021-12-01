@@ -93,6 +93,7 @@ int64_t evaluate_unary_expr_itype(UnaryExpr* unary_expr)
 	case UNARY_LG_NOT:
 		return !evaluate_expr_itype(unary_expr->expr);
 	case UNARY_SIZEOF:
+	case UNARY_LENGTHOF:
 		sizeof_value = evaluate_expr_itype(unary_expr->expr);
 		return (int64_t)(sizeof(sizeof_value));
 	case UNARY_CAST:
@@ -125,7 +126,7 @@ double evaluate_const_ftype(Const* cnst)
 	{
 	case CONST_INT:
 	case CONST_UINT:
-		return cnst->ivalue;
+		return (double)cnst->ivalue;
 	case CONST_FLOAT:
 		return cnst->fvalue;
 	}
@@ -194,6 +195,7 @@ double evaluate_unary_expr_ftype(UnaryExpr* unary_expr)
 	case UNARY_LG_NOT:
 		return !evaluate_expr_ftype(unary_expr->expr);
 	case UNARY_SIZEOF:
+	case UNARY_LENGTHOF:
 		sizeof_value = evaluate_expr_ftype(unary_expr->expr);
 		return (double)(sizeof(sizeof_value));
 	case UNARY_CAST:
