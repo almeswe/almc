@@ -17,6 +17,7 @@ typedef struct Parser
 
 Parser* parser_new(char* file, Token** tokens);
 void parser_free(Parser* parser);
+void parser_free_safe(Parser* parser);
 
 AstRoot* parse(Parser* parser);
 Expr* parse_expr(Parser* parser);
@@ -29,6 +30,7 @@ Expr* parse_postfix_expr(Parser* parser);
 Expr* parse_unary_expr(Parser* parser);
 Expr* parse_cast_expr(Parser* parser);
 Expr* parse_sizeof_expr(Parser* parser);
+Expr* parse_lengthof_expr(Parser* parser);
 
 Expr* parse_mul_arith_expr(Parser* parser);
 Expr* parse_add_arith_expr(Parser* parser);

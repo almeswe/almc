@@ -1,6 +1,8 @@
 #ifndef ALMC_FRONT_END_TYPE_CHECKER_H
 #define ALMC_FRONT_END_TYPE_CHECKER_H
 
+#include <float.h>
+
 #include "table.h"
 
 //----------------------------------------

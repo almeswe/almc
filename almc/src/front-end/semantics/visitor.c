@@ -64,7 +64,9 @@ void visit_stmt(Stmt* stmt, Table* table)
 		visit_label_decl_stmt(stmt->label_decl, table);
 		break;
 	case STMT_EMPTY:
+		break;
 	case STMT_IMPORT:
+		visit_import_stmt(stmt->import_stmt, table);
 		break;
 	default:
 		report_error("Unknown statement kind to visit in visit_stmt().", NULL);
@@ -234,10 +236,10 @@ void visit_unary_expr(UnaryExpr* unary_expr, Table* table)
 		visit_expr(unary_expr->expr, table);
 		break;
 	case UNARY_SIZEOF:
-		if (!unary_expr->cast_type)
-			visit_expr(unary_expr->expr, table);
-		else
-			visit_non_void_type(unary_expr->cast_type, table);
+		visit_non_void_type(unary_expr->cast_type, table);
+		break;
+	case UNARY_LENGTHOF:
+		visit_expr(unary_expr->expr, table);
 		break;
 	default:
 		report_error("Unknown kind of unary expression met in visit_unary_expr()", NULL);
@@ -707,10 +709,9 @@ void visit_func_decl_stmt(FuncDecl* func_decl, Table* table)
 	Table* local = table_new(table);
 	local->in_function = func_decl;
 
-	if (func_decl->func_spec.is_external &&
-		func_decl->func_spec.is_forward &&
-		func_decl->func_spec.is_intrinsic)
-			report_error("Function's modifiers are not supported in language yet.", NULL);
+	if (func_decl->func_spec.is_intrinsic)
+		report_error("Intrinsic specifier is not supported in language yet.", 
+			func_decl->func_name->context);
 
 	if (func_decl->func_spec.is_entry)
 		visit_entry_func_stmt(func_decl, table);
@@ -747,6 +748,13 @@ void visit_label_decl_stmt(LabelDecl* label_decl, Table* table)
 {
 	// there are no any processing stuff for label declaration statement yet.  ? ?
 	// check for duplicated label is already exists in visit_scope
+}
+
+void visit_import_stmt(ImportStmt* import_stmt, Table* table)
+{
+	visit_scope(import_stmt->imported_ast->stmts, table);
+	for (size_t i = 0; i < sbuffer_len(import_stmt->imported_ast->stmts); i++)
+		visit_stmt(import_stmt->imported_ast->stmts[i], table);
 }
 
 void check_entry_func_params(FuncDecl* func_decl)

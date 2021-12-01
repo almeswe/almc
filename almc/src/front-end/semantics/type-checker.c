@@ -54,7 +54,7 @@ Type* get_expr_type(Expr* expr, Table* table)
 		type = get_ternary_expr_type(expr->ternary_expr, table);
 		SET_AND_RETURN_TYPE(type, expr->ternary_expr);
 	default:
-		report_error(frmt("Unknown expression kind met: %d",
+		report_error(frmt("Unknown expression kind met in get_expr_type(): %d",
 			expr->kind), NULL);
 	}
 	return NULL;
@@ -76,8 +76,8 @@ Type* get_const_type(Const* cnst)
 			"u32" : "u64";
 		break;
 	case CONST_FLOAT:
-		type->repr = (int64_t)cnst->fvalue <= INT32_MAX &&
-			(int64_t)cnst->fvalue >= INT32_MIN ? "f32" : "f64";
+		type->repr = IN_BOUNDS_OF(FLT_MAX, FLT_MIN, cnst->fvalue) ?
+			"f32" : "f64";
 		break;
 	}
 	return cnst->type = type;
@@ -111,8 +111,8 @@ Type* get_fvalue_type(double value)
 {
 	Type* type = cnew_s(Type, type, 1);
 	type->mods.is_predefined = 1;
-	type->repr = (int64_t)value <= INT32_MAX &&
-		(int64_t)value >= INT32_MIN ? "f32" : "f64";
+	type->repr = IN_BOUNDS_OF(FLT_MAX, FLT_MIN, value) ? 
+		"f32" : "f64";
 	return type;
 }
 
@@ -199,7 +199,7 @@ Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 			report_error2("Cannot determine the type of unary expression while dereferencing it.",
 				unary_expr->area);
 		if (!IS_POINTER_TYPE(type))
-			report_error2(frmt("Cannot dereference value of type %s.",
+			report_error2(frmt("Cannot dereference value of type \'%s\'.",
 				type_tostr_plain(type)), unary_expr->area);
 		else
 		{
@@ -220,7 +220,7 @@ Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 			// handling type of expr of sizeof
 			if (unary_expr->expr && type)
 				if (!IS_NUMERIC_TYPE(type) && !IS_POINTER_TYPE(type))
-					report_error2(frmt("sizeof accepts only numeric or pointer type of expession, met %s.",
+					report_error2(frmt("sizeof accepts only numeric or pointer type of expession, met \'%s\'.",
 						type_tostr_plain(type)), unary_expr->area);
 
 			// if sizeof has idnt in expr, its can be simple variable or user-type, need to check it
@@ -237,6 +237,13 @@ Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 		// this case appears when sizeof(type)
 		// in this case expression in null -> expression type is null
 		// need to allocate it
+		type_new = cnew_s(Type, type_new, 1);
+		type_new->repr = "u32";
+		return type_new;
+	case UNARY_LENGTHOF:
+		if (!IS_NUMERIC_TYPE(type) && !IS_POINTER_TYPE(type))
+			report_error2(frmt("lengthof accepts only numeric or pointer type of expession, met \'%s\'.",
+				type_tostr_plain(type)), unary_expr->area);
 		type_new = cnew_s(Type, type_new, 1);
 		type_new->repr = "u32";
 		return type_new;
@@ -348,11 +355,11 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 	// accessors
 	case BINARY_ARR_MEMBER_ACCESSOR:
 		if (!IS_POINTER_TYPE(ltype))			
-			report_error2(frmt("Cannot access array element value of type %s, pointer type expected.",
+			report_error2(frmt("Cannot access array element value of type \'%s\', pointer type expected.",
 				type_tostr_plain(ltype)), binary_expr->area);
 		// index of an array should be an integral type
 		if (!IS_INTEGRAL_TYPE(rtype))
-			report_error2(frmt("Index should be value of integral type. Type %s met.",
+			report_error2(frmt("Index should be value of integral type. Type \'%s\' met.",
 				type_tostr_plain(rtype)), binary_expr->area);
 		TYPE_DUP_NO_ALLOC(ltype, type_new);
 		type_new->mods.is_ptr -= 1;
@@ -360,14 +367,14 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 
 	case BINARY_PTR_MEMBER_ACCESSOR:
 		if (!IS_POINTER_TYPE(ltype))
-			report_error2(frmt("Cannot access member of non-pointer type %s.",
+			report_error2(frmt("Cannot access member of non-pointer type \'%s\'.",
 				type_tostr_plain(ltype)), binary_expr->area);
 		// logic of pointer and common member accessor are the same except this primary condition
 		goto find_matching_member_type;
 
 	case BINARY_MEMBER_ACCESSOR:
 		if (IS_POINTER_TYPE(ltype))
-			report_error2(frmt("Cannot access member of pointer type %s.",
+			report_error2(frmt("Cannot access member of pointer type \'%s\'.",
 				type_tostr_plain(ltype)), binary_expr->area);
 		//~~~~~~~~~~~~~~~~~~~~~~~
 		find_matching_member_type:
@@ -376,7 +383,7 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 		// condition for both common and pointer accessors
 		// checks if the left expression's type is not predefined simple type
 		if (ltype->mods.is_predefined)
-			report_error2(frmt("Cannot access member of non-user defined type %s.",
+			report_error2(frmt("Cannot access member of non-user defined type \'%s\'.",
 				type_tostr_plain(ltype)), binary_expr->area);
 
 		// iterating through all struct and through all struct's members, trying to find matching
@@ -391,7 +398,7 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 				if (strcmp(((UnionDecl*)type_decl_stmt)->union_mmbrs[i]->var, get_member_name(binary_expr->rexpr)) == 0)
 					return ((UnionDecl*)type_decl_stmt)->union_mmbrs[i]->type;
 
-		report_error2(frmt("Cannot find any member with name %s in type %s.",
+		report_error2(frmt("Cannot find any member with name \'%s\' in type \'%s\'.",
 			binary_expr->rexpr->idnt->svalue, type_tostr_plain(ltype)), binary_expr->area);
 		break;
 	//------------------------------
@@ -422,7 +429,7 @@ Type* get_ternary_expr_type(TernaryExpr* ternary_expr, Table* table)
 			report_error2("Cannot determine the type of condition in ternary expression.", 
 				get_expr_area(ternary_expr->cond));
 		else 
-			report_error2(frmt("Expected numeric or pointer type in condition of ternary expression, type met: %s",
+			report_error2(frmt("Expected numeric or pointer type in condition of ternary expression, type met: \'%s\'",
 				type_tostr_plain(ctype)), get_expr_area(ternary_expr->cond));
 
 	if (can_cast_implicitly(ltype, rtype))
@@ -451,10 +458,12 @@ uint32_t get_type_size_in_bytes(Type* type)
 		else if (IS_U64(type) || IS_I64(type) || IS_F64(type))
 			return 8;
 		else
-			report_error("Cannot get size of %s type", type_tostr_plain(type));
+			report_error("Cannot get size of \'%s\' type", 
+				type_tostr_plain(type));
 	}
 	else
-		report_error("Cannot get size of user-defined type (is not supported)", type_tostr_plain(type));
+		report_error("Cannot get size of user-defined type (is not supported)", 
+			type_tostr_plain(type));
 }
 
 uint32_t get_type_priority(Type* type)
@@ -496,10 +505,12 @@ Type* cast_explicitly(Type* to, Type* type)
 		report_error2("Cannot determine at least one type when trying to convert explicitly.", NULL);
 	else
 	{
-		if (to->mods.is_void && !IS_POINTER_TYPE(to))
+		if (IS_VOID(to))
 			report_error2("Explicit conversion to void is not allowed.", to->area);
+		if (IS_VOID(type))
+			report_error2("Explicit conversion of void is not allowed.", to->area);
 		if (IS_STRING_TYPE(type) && !IS_STRING_TYPE(to) && !IS_CHAR_POINTER_TYPE(to))
-			report_error2(frmt("Cannot explicitly convert type %s to %s.",
+			report_error2(frmt("Cannot explicitly convert type \'%s\' to \'%s\'.",
 				type_tostr_plain(type), type_tostr_plain(to)), to->area);
 		if (IS_INTEGRAL_TYPE(to) && IS_REAL_TYPE(type))
 			report_warning2("Converting real type to integral type may occur data losses.",
@@ -523,7 +534,7 @@ Type* cast_explicitly_when_const_expr(Expr* const_expr, Type* to, Type* const_ex
 		Type* const_expr_type_new = NULL;
 		if (IS_INTEGRAL_TYPE(const_expr_type) || IS_POINTER_TYPE(const_expr_type))
 			const_expr_type_new = get_ivalue_type(
-				value = (int64_t)evaluate_expr_itype(const_expr));
+				(int64_t)(evaluate_expr_itype(const_expr)));
 		else if (IS_REAL_TYPE(const_expr_type))
 			const_expr_type_new = get_fvalue_type(
 				value = evaluate_expr_ftype(const_expr));
@@ -534,7 +545,7 @@ Type* cast_explicitly_when_const_expr(Expr* const_expr, Type* to, Type* const_ex
 
 		if (to->mods.is_predefined && const_expr_type_new->mods.is_predefined)
 			if (get_type_size_in_bytes(to) < get_type_size_in_bytes(const_expr_type_new))
-				report_error2(frmt("Cannot explicitly convert constant value of type %s to %s (value: %f).",
+				report_error2(frmt("Cannot explicitly convert constant value of type \'%s\' to \'%s\' (value: %f).",
 					type_tostr_plain(to), type_tostr_plain(const_expr_type_new), value), to->area);
 		// freeing temporary type instance (type from evaluated const expression) 
 		type_free(const_expr_type_new);
@@ -561,7 +572,7 @@ Type* cast_implicitly(Type* to, Type* type, SrcArea* area)
 			to : type;
 	}
 	else
-		report_error2(frmt("Cannot implicitly convert type %s to %s",
+		report_error2(frmt("Cannot implicitly convert type \'%s\' to \'%s\'",
 			type_tostr_plain(to), type_tostr_plain(type)), area);
 }
 
@@ -570,7 +581,7 @@ Type* cast_implicitly_when_assign(Type* to, Type* type, SrcArea* area)
 	if (can_cast_implicitly(to, type))
 		return to;
 	else
-		report_error2(frmt("Cannot implicitly convert type %s to %s",
+		report_error2(frmt("Cannot implicitly convert type \'%s\' to \'%s\'",
 			type_tostr_plain(to), type_tostr_plain(type)), area);
 }
 

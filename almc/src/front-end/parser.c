@@ -1,7 +1,5 @@
 #include "parser.h"
 
-//todo: think about how i can access struct members (also if struct is pointer) in initializer
-
 #define matcht(parser, t) (get_curr_token(parser)->type == (t))
 #define expect_with_skip(parser, type, str) expect(parser, type, str), get_next_token(parser)
 #define token_index_fits(parser) (parser->token_index >= 0 && parser->token_index < sbuffer_len(parser->tokens))
@@ -76,6 +74,18 @@ void parser_free(Parser* parser)
 	}
 }
 
+void parser_free_safe(Parser* parser)
+{
+	// needed for parse_module function, because origin parser_free frees the contexts
+	if (parser)
+	{
+		for (int i = 0; i < sbuffer_len(parser->tokens); i++)
+			free(parser->tokens[i]);
+		sbuffer_free(parser->tokens);
+		free(parser);
+	}
+}
+
 Token* get_next_token(Parser* parser)
 {
 	if (!parser->tokens)
@@ -145,16 +155,20 @@ Type* parse_abstract_declarator(Parser* parser, Type* type)
 	switch (get_curr_token(parser)->type)
 	{
 	case TOKEN_ASTERISK:
+		if (type->info.arr_dims)
+			report_error("Cannot create type with this sequence of type declarators.",
+				get_curr_token(parser)->context);
 		type->mods.is_ptr++;
 		get_next_token(parser);
 		return parse_abstract_declarator(parser, type);
-	/*case TOKEN_OP_BRACKET:
-		type->mods.is_array++;
+	case TOKEN_OP_BRACKET:
+		type->mods.is_ptr++;
+		type->info.arr_dims++;
 		get_next_token(parser);
 		sbuffer_add(type->info.arr_dim_sizes,
 			parse_expr(parser));
 		expect_with_skip(parser, TOKEN_CL_BRACKET, "]");
-		return parse_abstract_declarator(parser, type);*/
+		return parse_abstract_declarator(parser, type);
 	default:
 		return type;
 	}
@@ -242,7 +256,7 @@ Expr* parse_func_call_expr(Parser* parser)
 	return expr;
 }
 
-Expr* parse_idnt_ambigulty(Parser* parser)
+Expr* parse_idnt_ambiguity(Parser* parser)
 {
 	get_next_token(parser);
 	if (matcht(parser, TOKEN_OP_PAREN))
@@ -278,7 +292,7 @@ Expr* parse_primary_expr(Parser* parser)
 			const_new(CONST_FLOAT, token->svalue, token->context));
 		break;
 	case TOKEN_IDNT:
-		expr = parse_idnt_ambigulty(parser);
+		expr = parse_idnt_ambiguity(parser);
 		if (expr->kind == EXPR_FUNC_CALL)
 			return expr;
 		break;
@@ -292,8 +306,8 @@ Expr* parse_primary_expr(Parser* parser)
 		break;
 	case TOKEN_OP_PAREN:
 		return parse_paren_expr(parser);
-	case TOKEN_OP_BRACE:
-		return parse_initializer_expr(parser);
+	//case TOKEN_OP_BRACE:
+	//	return parse_initializer_expr(parser);
 	case TOKEN_KEYWORD_TRUE:
 	case TOKEN_KEYWORD_FALSE:
 		expr = expr_new(EXPR_CONST,
@@ -473,40 +487,10 @@ Expr* parse_unary_expr(Parser* parser)
 		return expr;
 	case TOKEN_KEYWORD_SIZEOF:
 		return parse_sizeof_expr(parser);
+	case TOKEN_KEYWORD_LENGTHOF:
+		return parse_lengthof_expr(parser);
 	default:
 		return parse_postfix_expr(parser);
-	}
-}
-
-Type* try_to_get_type(Parser* parser)
-{
-	Type* type = NULL;
-
-	switch (get_curr_token(parser)->type)
-	{
-	case TOKEN_OP_PAREN:
-		get_next_token(parser);
-		switch (get_curr_token(parser)->type)
-		{
-		case TOKEN_IDNT:
-			type = parse_type_name(parser);
-			if (matcht(parser, TOKEN_CL_PAREN) && type->mods.is_ptr)
-				goto type_declaration;
-			else
-				// <= here because we also need to unget idnt token
-				for (int i = 0; i <= type->mods.is_ptr; i++)
-					unget_curr_token(parser);
-			type = NULL;
-			break;
-		case TOKEN_PREDEFINED_TYPE:
-			type = parse_type_name(parser);
-			type_declaration:
-			expect_with_skip(parser, TOKEN_CL_PAREN, ")");
-			return type;
-		}
-		unget_curr_token(parser);
-	default:
-		return type;
 	}
 }
 
@@ -514,16 +498,20 @@ Expr* parse_cast_expr(Parser* parser)
 {
 	/*
 	<cast-expression> ::= <unary-expression>
-						| ( <type-name> ) <cast-expression>
+						| cast ( <type-name> ) <cast-expression>
 	*/
 
 	Type* type = NULL;
 	Expr* expr = NULL;
 
-	if (!(type = try_to_get_type(parser)))
+	if (!matcht(parser, TOKEN_KEYWORD_CAST))
 		return parse_unary_expr(parser);
 	else
 	{
+		expect_with_skip(parser, TOKEN_KEYWORD_CAST, "cast");
+		expect_with_skip(parser, TOKEN_OP_PAREN, "(");
+		type = parse_type_name(parser);
+		expect_with_skip(parser, TOKEN_CL_PAREN, ")");
 		context_starts(parser, context);
 		expr = expr_new(EXPR_UNARY_EXPR,
 			unary_expr_new(UNARY_CAST, parse_cast_expr(parser)));
@@ -536,23 +524,37 @@ Expr* parse_cast_expr(Parser* parser)
 Expr* parse_sizeof_expr(Parser* parser)
 {
 	/*
-	<sizeof-expression> ::= sizeof <unary-expression> 
-						 || sizeof ( <type-name> )
+	<sizeof-expression> ::= sizeof ( <type-name> )
 	*/
+
 	Type* type = NULL;
 	Expr* expr = NULL;
-	context_starts(parser, context);
 
+	context_starts(parser, context);
 	expect_with_skip(parser, TOKEN_KEYWORD_SIZEOF, "sizeof");
-	if (!(type = try_to_get_type(parser)))
-		expr = expr_new(EXPR_UNARY_EXPR,
-			unary_expr_new(UNARY_SIZEOF, parse_unary_expr(parser)));
-	else
-	{
-		expr = expr_new(EXPR_UNARY_EXPR,
-			unary_expr_new(UNARY_SIZEOF, NULL));
-		expr->unary_expr->cast_type = type;
-	}
+	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
+	type = parse_type_name(parser);
+	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
+	expr = expr_new(EXPR_UNARY_EXPR,
+		unary_expr_new(UNARY_SIZEOF, NULL));
+	expr->unary_expr->cast_type = type;
+	context_ends(parser, context, expr->unary_expr);
+	return expr;
+}
+
+Expr* parse_lengthof_expr(Parser* parser)
+{
+	/*
+	<lengthof-expression> ::= lengthof <unary-expression>
+	*/
+
+	Type* type = NULL;
+	Expr* expr = NULL;
+
+	context_starts(parser, context);
+	expect_with_skip(parser, TOKEN_KEYWORD_LENGTHOF, "lengthof");
+	expr = expr_new(EXPR_UNARY_EXPR,
+		unary_expr_new(UNARY_LENGTHOF, parse_unary_expr(parser)));
 	context_ends(parser, context, expr->unary_expr);
 	return expr;
 }
@@ -1144,7 +1146,8 @@ Stmt* parse_var_decl_stmt(Parser* parser)
 	if (matcht(parser, TOKEN_ASSIGN))
 	{
 		get_next_token(parser);
-		var_init = parse_expr(parser);
+		var_init = matcht(parser, TOKEN_OP_BRACE) ? 
+			parse_initializer_expr(parser) : parse_expr(parser);
 	}
 	expect_with_skip(parser, TOKEN_SEMICOLON, ";");
 	return stmt_new(STMT_VAR_DECL,
@@ -1159,14 +1162,6 @@ FuncSpecifiers* parse_func_specifiers(Parser* parser)
 	case TOKEN_KEYWORD_ENTRY:
 		get_next_token(parser);
 		func_spec->is_entry = 1;
-		break;
-	case TOKEN_KEYWORD_EXTERN:
-		get_next_token(parser);
-		func_spec->is_external = 1;
-		break;
-	case TOKEN_KEYWORD_FORWARD:
-		get_next_token(parser);
-		func_spec->is_forward = 1;
 		break;
 	case TOKEN_KEYWORD_INTRINSIC:
 		get_next_token(parser);
@@ -1411,7 +1406,7 @@ AstRoot* parse_module(const char* module_path)
 	Parser* parser = parser_new(module_path, lex(lexer));
 	AstRoot* module = parse(parser);
 	lexer_free(lexer);
-	parser_free(parser);
+	parser_free_safe(parser);
 	return module;
 }
 
