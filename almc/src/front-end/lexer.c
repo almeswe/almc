@@ -94,7 +94,7 @@ char* keywords[] = {
 	"auto",//?
 	"break",
 	"case",
-	"char",
+	CHAR_TYPE,
 	"cast",
 	"continue",
 	"default",
@@ -105,31 +105,31 @@ char* keywords[] = {
 	"fnc",
 	"from",
 	"false",
-	"f32",
-	"f64",
+	F32_TYPE,
+	F64_TYPE,
 	"goto",
 	"if",
-	"i8",
-	"i16",
-	"i32",
-	"i64",
+	I8_TYPE,
+	I16_TYPE,
+	I32_TYPE,
+	I64_TYPE,
 	"import",
 	"intrinsic",
 	"return",
-	"str",
+	STRING_TYPE,
 	"struct",
 	"switch",
 	"sizeof",
 	"true",
 	"union",
-	"u8",
-	"u16",
-	"u32",
-	"u64",
+	U8_TYPE,
+	U16_TYPE,
+	U32_TYPE,
+	U64_TYPE,
 	"let",
 	"label",
 	"lengthof",
-	"void",
+	VOID_TYPE,
 	"while",
 	"do",
 	"else",
@@ -199,7 +199,7 @@ Token** lex(Lexer* lexer)
 			sbuffer_add(tokens, get_keychar_token(lexer, isknch(curr_char)));
 		else
 			if (!isspace(curr_char) && !isescape(curr_char) && !issharp(curr_char))
-				report_error(frmt("Unknown char met (code: %d): [%c]", (int)get_curr_char(lexer), get_curr_char(lexer)),
+				report_error(frmt("Unknown char met (code: %d): \'%c\'", (int)get_curr_char(lexer), get_curr_char(lexer)),
 					src_context_new(lexer->curr_file, lexer->curr_line_offset, 1, lexer->curr_line));
 		get_next_char(lexer);
 	}
@@ -596,7 +596,7 @@ Token* get_char_token(Lexer* lexer)
 		is_escape : get_curr_char(lexer);
 	get_next_char(lexer);
 	if (!matchc(lexer, '\''))
-		report_error(frmt("Expected single quote, but met (code %d): [%c]", (int)get_curr_char(lexer), get_curr_char(lexer)),
+		report_error(frmt("Expected single quote, but met (code %d): \'%c\'", (int)get_curr_char(lexer), get_curr_char(lexer)),
 			src_context_new(lexer->curr_file, lexer->curr_line_offset, is_escape > 0 ? 4 : 3, lexer->curr_line));
 
 	Token* token = token_new(TOKEN_CHARACTER,
@@ -623,7 +623,7 @@ Token* get_string_token(Lexer* lexer)
 		size += (is_escape > 0) ? 2 : 1;
 	}
 	if (!matchc(lexer, '\"'))
-		report_error(frmt("Expected double quote, but met (code %d): [%c]", (int)get_curr_char(lexer), get_curr_char(lexer)),
+		report_error(frmt("Expected double quote, but met (code %d): \'%c\'", (int)get_curr_char(lexer), get_curr_char(lexer)),
 			src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
 	str_builder_reduce_buffer(temp, str, index);
 	Token* token = token_new(TOKEN_STRING,

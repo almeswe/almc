@@ -62,40 +62,40 @@
     <ClCompile Include="src\utils\os.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="test\test.c">
+    <ClCompile Include="src\front-end\ast\ast-printer.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\back-end\x86 asm\gen.c">
+    <ClCompile Include="src\front-end\types.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\back-end\x86 asm\regtable.h">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\back-end\x86 asm\regtable.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\back-end\x86 asm\expr-gen.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\back-end\x86 asm\types.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\back-end\x86 asm\stack-frame.c">
+    <ClCompile Include="src\front-end\semantics\flow-checker.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\front-end\semantics\table.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\front-end\semantics\visitor.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\front-end\semantics\type-checker.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\front-end\ast\ast-printer.c">
+    <ClCompile Include="src\front-end\semantics\visitor.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\front-end\semantics\flow-checker.c">
+    <ClCompile Include="test\test.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\back-end\x86 asm\expr-gen.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\back-end\x86 asm\gen.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\back-end\x86 asm\regtable.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\back-end\x86 asm\stack-frame.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\back-end\x86 asm\x86types.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -127,6 +127,27 @@
     <ClInclude Include="src\utils\os.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\back-end\masm32\x87\instructions_x87.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\front-end\ast\ast-printer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\front-end\types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\front-end\semantics\flow-checker.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\front-end\semantics\table.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\front-end\semantics\type-checker.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\front-end\semantics\visitor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="test\test-cases\lexer-test-cases\lexer-test-cases.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -136,63 +157,64 @@
     <ClInclude Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\import-stmt-tests.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\statement-tests.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="test\test-cases\parser-test-cases\ast-expr-eval-test.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="test\test.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\statement-tests.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\back-end\x86 asm\gen.h">
+    <ClInclude Include="src\front-end\type-macro.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\back-end\x86 asm\expr-gen.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\back-end\x86 asm\gen.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\back-end\x86 asm\instructions.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\back-end\masm32\x87\instructions_x87.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\back-end\x86 asm\types.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\back-end\x86 asm\stack-frame.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\back-end\x86 asm\program.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\front-end\semantics\table.h">
+    <ClInclude Include="src\back-end\x86 asm\regtable.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\front-end\semantics\type-checker.h">
+    <ClInclude Include="src\back-end\x86 asm\stack-frame.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\front-end\ast\ast-printer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\front-end\semantics\flow-checker.h">
+    <ClInclude Include="src\back-end\x86 asm\x86types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="test\test-cases\lexer-test-cases\COMMENTS-TEST.txt" />
-    <Text Include="test\test-cases\lexer-test-cases\gen-output.txt" />
-    <Text Include="test\test-cases\lexer-test-cases\LEXEME-TEST.txt" />
+    <Text Include="test\syntax.txt" />
     <Text Include="test\test-cases\lexer-test-cases\RECOGNITION-TEST.txt" />
     <Text Include="test\test-cases\lexer-test-cases\SRC-CONTEXT-TEST.txt" />
     <Text Include="test\test-cases\lexer-test-cases\TOKENS.txt" />
-    <Text Include="test\syntax.txt" />
+    <Text Include="test\test-cases\lexer-test-cases\LEXEME-TEST.txt" />
+    <Text Include="test\test-cases\lexer-test-cases\COMMENTS-TEST.txt" />
+    <Text Include="test\test-cases\lexer-test-cases\gen-output.txt" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="test\test-cases\lexer-test-cases\gen.py" />
-    <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\testfolder\for_import\module_a.almc" />
-    <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\testfolder\testfile.almc" />
     <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\b.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\testfolder\for_import\module_a.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\testfolder\back_end_test.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\testfolder\testfile.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\jump_stmts.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\selection_stmts\switch_case.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\declaration_stmts\func_decl.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\declaration_stmts\type_decl.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\declaration_stmts\var_decl.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\loop_stmts\do_while_loop.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\loop_stmts\for_loop.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\loop_stmts\while_loop.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\selection_stmts\if_else.almc" />
+    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\b.almc" />
     <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_1\a.almc" />
     <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_2\a.almc" />
     <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_3\a.almc" />
@@ -204,17 +226,6 @@
     <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_6\c.almc" />
     <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_7\folder\c.almc" />
     <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_7\a.almc" />
-    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\b.almc" />
-    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\declaration_stmts\func_decl.almc" />
-    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\declaration_stmts\type_decl.almc" />
-    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\declaration_stmts\var_decl.almc" />
-    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\loop_stmts\do_while_loop.almc" />
-    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\loop_stmts\for_loop.almc" />
-    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\loop_stmts\while_loop.almc" />
-    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\selection_stmts\if_else.almc" />
-    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\selection_stmts\switch_case.almc" />
-    <None Include="test\test-cases\parser-test-cases\parser-ast-tests\statement-tests\jump_stmts.almc" />
-    <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\testfolder\back_end_test.almc" />
-    <None Include="src\front-end\semantics\visitor.h" />
+    <None Include="test\test-cases\lexer-test-cases\gen.py" />
   </ItemGroup>
 </Project>

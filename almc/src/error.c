@@ -1,6 +1,6 @@
 #include "error.h"
 
-// todo: created header that will be repsonsive for colorized prints
+// todo: create header that will be responsive for colorized prints
 
 #define TABSIZE 8
 #define RESET_COLOR \

@@ -22,10 +22,10 @@ void print_type(Type* type, const char* indent)
 	print_type_mode(is_predefined);
 	print_type_mode(is_array);
 	indent = frmt("%s   ", indent);
-	for (int i = 0; i < sbuffer_len(type->info.arr_dim_sizes); i++)
+	for (int i = 0; i < sbuffer_len(type->info.arr_dimensions); i++)
 	{
 		printf("%sdim %d:\n", indent, i + 1);
-		print_expr(type->info.arr_dim_sizes[i], indent);
+		print_expr(type->info.arr_dimensions[i], indent);
 	}
 }
 
@@ -65,6 +65,9 @@ void print_const(Const* cnst, const char* indent)
 	case CONST_FLOAT:
 		printf("%sfloat-const: %lf", indent, cnst->fvalue);
 		break;
+	case CONST_CHAR:
+		printf("%schar-const: %c (%d)", indent,
+			(char)cnst->uvalue, (char)cnst->uvalue);
 	}
 	if (cnst->type)
 		printf(" (%s)\n", type_tostr_plain(cnst->type));

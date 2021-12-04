@@ -87,7 +87,7 @@ void visit_type(Type* type, Table* table)
 
 void visit_non_void_type(Type* type, Table* table)
 {
-	if (IS_VOID(type))
+	if (IS_VOID_TYPE(type))
 		report_error2("Void type is not allowed in this context.",
 			type->area);
 	visit_type(type, table);
@@ -528,7 +528,7 @@ void visit_return_stmt(JumpStmt* return_stmt, Table* table)
 	if (!table->in_function)
 		report_error2("Cannot use return statement when its not located in function.",
 			return_stmt->area);
-	if (!IS_VOID(table->in_function->func_type))
+	if (!IS_VOID_TYPE(table->in_function->func_type))
 	{
 		if (!return_stmt->additional_expr)
 			report_error2("Return statement must return some value from function.", 
@@ -767,10 +767,10 @@ void check_entry_func_params(FuncDecl* func_decl)
 	case 0:
 		break;
 	case 2:
-		if (!IS_I32(params[0]->type))
+		if (!IS_I32_TYPE(params[0]->type))
 			report_error2("First parameter of an entry method"
 				" should be of type \'i32\' in this context.", params[0]->type->area);
-		if (!IS_CHAR_REPR(params[1]->type) ||
+		if (!IS_CHAR_POINTER_TYPE(params[1]->type) ||
 			!IS_POINTER_RANK(2, params[1]->type))
 			report_error2("Second parameter of an entry method should"
 				" be of type \'char**\' in this context.", params[1]->type->area);

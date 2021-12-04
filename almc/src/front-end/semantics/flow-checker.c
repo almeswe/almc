@@ -79,7 +79,7 @@ int32_t check_flow_switch_stmt(SwitchStmt* switch_stmt)
 
 void check_func_return_flow(FuncDecl* func_decl)
 {
-	if (!IS_VOID(func_decl->func_type))
+	if (!IS_VOID_TYPE(func_decl->func_type))
 		if (!check_flow_scope(func_decl->func_body))
 			report_error(frmt("Not every code flow in function \'%s\' returns value.",
 				func_decl->func_name->svalue), func_decl->func_name->context);

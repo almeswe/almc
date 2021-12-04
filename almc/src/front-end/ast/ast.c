@@ -76,6 +76,7 @@ Const* const_new(ConstKind type, const char* svalue, SrcContext* context)
 		}
 		break;
 	case CONST_UINT:
+	case CONST_CHAR:
 		if (strlen(svalue) <= 1)
 			c->uvalue = atof(svalue);
 		else
@@ -421,9 +422,9 @@ void type_free(Type* type)
 {
 	if (type)
 	{ 
-		for (uint32_t i = 0; i < sbuffer_len(type->info.arr_dim_sizes); i++)
-			expr_free(type->info.arr_dim_sizes[i]);
-		sbuffer_free(type->info.arr_dim_sizes);
+		for (uint32_t i = 0; i < sbuffer_len(type->info.arr_dimensions); i++)
+			expr_free(type->info.arr_dimensions[i]);
+		sbuffer_free(type->info.arr_dimensions);
 		free(type->area);
 		free(type);
 	}

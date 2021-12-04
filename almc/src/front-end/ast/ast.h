@@ -1,41 +1,12 @@
 #ifndef ALMC_AST_H
 #define ALMC_AST_H
 
-//todo: make some clean-up for function declarations
-
 #include "..\lexer.h"
+#include "..\types.h"
 
 typedef struct Expr Expr;
 typedef struct Stmt Stmt;
 typedef struct AstRoot AstRoot;
-
-typedef struct TypeMods
-{
-	char is_ptr; // 0 - not pointer type, > 0 pointer type + pointer counter
-	char is_void;
-	char is_const; //?
-	char is_array; // same as is_ptr
-	char is_static;
-	char is_register;
-	char is_volatile;
-	char is_const_ptr; //?
-	char is_predefined;
-} TypeMods;
-
-typedef struct TypeInfo
-{
-	uint32_t arr_dims;        // dimension count
-	uint32_t arr_is_var_size; // is the dimensions initialized as variable size
-	Expr** arr_dim_sizes;     // size of each dimension
-} TypeInfo;
-
-typedef struct Type
-{
-	TypeMods mods;
-	TypeInfo info;
-	SrcArea* area;
-	const char* repr;
-} Type;
 
 typedef enum UnaryExprKind
 {
@@ -149,6 +120,7 @@ typedef enum ConstKind
 	CONST_INT,
 	CONST_UINT,
 	CONST_FLOAT,
+	CONST_CHAR,
 } ConstKind;
 
 typedef struct Const
@@ -423,6 +395,8 @@ typedef struct AstRoot
 {
 	Stmt** stmts;
 } AstRoot;
+
+//todo: make some clean-up for function declarations
 
 Expr* expr_new(ExprKind type, void* expr_value_ptr);
 

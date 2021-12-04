@@ -2,83 +2,28 @@
 #define ALMC_FRONT_END_TYPE_CHECKER_H
 
 #include <float.h>
-
 #include "table.h"
 
 //----------------------------------------
-#define U8   0x0
-#define I8   0x1
-#define CHAR 0x2
+#define U8		0x3
+#define I8		0x4
+#define CHAR	0x5
 
-#define U16 0x3
-#define I16 0x4
+#define U16		0x6
+#define I16		0x7
 
-#define U32 0x5
-#define I32 0x6
+#define U32		0x8
+#define I32		0x9
 
-#define U64 0x7
-#define I64 0x8
+#define U64		0xA
+#define I64		0xB
 
-#define F32 0x9
-#define F64 0xA
+#define F32		0xC
+#define F64		0xD
 
-#define STR  -0x1
-#define VOID -0x2
+#define STR		0x2
+#define VOID	0x1
 //----------------------------------------
-
-#define IS_POINTER_TYPE(type) \
-	(type && type->mods.is_ptr)
-
-#define IS_REAL_TYPE(type)             \
-   (type && (						   \
-    strcmp(type->repr, "f32")  == 0 || \
-	strcmp(type->repr, "f64")  == 0))
-
-#define IS_STRING_TYPE(type)									  \
-    (type && (													  \
-    (strcmp(type->repr, "chr") == 0 && type->mods.is_ptr == 1) || \
-     strcmp(type->repr, "str") == 0))
-
-#define IS_INTEGRAL_TYPE(type)        \
-   (type && (					      \
-    strcmp(type->repr, "i8")  == 0 || \
-	strcmp(type->repr, "i16") == 0 || \
-	strcmp(type->repr, "i32") == 0 || \
-	strcmp(type->repr, "i64") == 0 || \
-	strcmp(type->repr, "u8")  == 0 || \
-	strcmp(type->repr, "u16") == 0 || \
-	strcmp(type->repr, "u32") == 0 || \
-	strcmp(type->repr, "u64") == 0 || \
-	strcmp(type->repr, "chr") == 0 ))
-
-#define IS_NUMERIC_TYPE(type) \
-	(IS_REAL_TYPE(type) || IS_INTEGRAL_TYPE(type))
-
-#define IS_CHAR_POINTER_TYPE(type) \
-	(type && ((strcmp(type->repr, "chr") == 0) && (type->mods.is_ptr == 1)))
-
-#define IS_CHAR(type) (type && strcmp(type->repr, "chr") == 0        && !IS_POINTER_TYPE(type))
-#define IS_STRING_TYPE(type) (type && strcmp(type->repr, "str") == 0 && !IS_POINTER_TYPE(type))
-
-#define IS_I8(type)  (type && strcmp(type->repr, "i8") == 0 && !IS_POINTER_TYPE(type))
-#define IS_I16(type) (type && strcmp(type->repr, "i16") == 0 && !IS_POINTER_TYPE(type))
-#define IS_I32(type) (type && strcmp(type->repr, "i32") == 0 && !IS_POINTER_TYPE(type))
-#define IS_I64(type) (type && strcmp(type->repr, "i64") == 0 && !IS_POINTER_TYPE(type))
-
-#define IS_U8(type)  (type && strcmp(type->repr, "u8") == 0 && !IS_POINTER_TYPE(type))
-#define IS_U16(type) (type && strcmp(type->repr, "u16") == 0 && !IS_POINTER_TYPE(type))
-#define IS_U32(type) (type && strcmp(type->repr, "u32") == 0 && !IS_POINTER_TYPE(type))
-#define IS_U64(type) (type && strcmp(type->repr, "u64") == 0 && !IS_POINTER_TYPE(type))
-
-#define IS_F32(type) (type && strcmp(type->repr, "f32") == 0 && !IS_POINTER_TYPE(type))
-#define IS_F64(type) (type && strcmp(type->repr, "f64") == 0 && !IS_POINTER_TYPE(type))
-
-#define IS_VOID(type) (type && type->mods.is_void && !IS_POINTER_TYPE(type))
-
-#define IS_CHAR_REPR(type) (type && strcmp(type->repr, "char") == 0)
-#define IS_VOID_REPR(type) (type && strcmp(type->repr, "void") == 0)
-
-#define IS_POINTER_RANK(rank, type) (type && type->mods.is_ptr == (rank))
 
 Type* get_string_type(Str* str);
 Type* get_const_type(Const* cnst);

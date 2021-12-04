@@ -21,10 +21,9 @@
   <ItemGroup>
     <ClCompile Include="src\back-end\x86 asm\expr-gen.c" />
     <ClCompile Include="src\back-end\x86 asm\gen.c" />
-    <ClCompile Include="src\back-end\x86 asm\regtable.h" />
     <ClCompile Include="src\back-end\x86 asm\regtable.c" />
     <ClCompile Include="src\back-end\x86 asm\stack-frame.c" />
-    <ClCompile Include="src\back-end\x86 asm\types.c" />
+    <ClCompile Include="src\back-end\x86 asm\x86types.c" />
     <ClCompile Include="src\front-end\ast\ast-evaluator.c" />
     <ClCompile Include="src\front-end\ast\ast-evaluator.h" />
     <ClCompile Include="src\front-end\ast\ast.c" />
@@ -35,6 +34,7 @@
     <ClCompile Include="src\front-end\semantics\type-checker.c" />
     <ClCompile Include="src\front-end\semantics\visitor.c" />
     <ClCompile Include="src\front-end\token.c" />
+    <ClCompile Include="src\front-end\types.c" />
     <ClCompile Include="src\utils\common.c" />
     <ClCompile Include="src\utils\context.c" />
     <ClCompile Include="src\error.c" />
@@ -46,13 +46,14 @@
     <ClCompile Include="test\test.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\back-end\masm32\x87\instructions_x87.h" />
     <ClInclude Include="src\back-end\x86 asm\expr-gen.h" />
     <ClInclude Include="src\back-end\x86 asm\gen.h" />
     <ClInclude Include="src\back-end\x86 asm\instructions.h" />
-    <ClInclude Include="src\back-end\masm32\x87\instructions_x87.h" />
     <ClInclude Include="src\back-end\x86 asm\program.h" />
+    <ClInclude Include="src\back-end\x86 asm\regtable.h" />
     <ClInclude Include="src\back-end\x86 asm\stack-frame.h" />
-    <ClInclude Include="src\back-end\x86 asm\types.h" />
+    <ClInclude Include="src\back-end\x86 asm\x86types.h" />
     <ClInclude Include="src\front-end\ast\ast.h" />
     <ClInclude Include="src\front-end\ast\ast-printer.h" />
     <ClInclude Include="src\front-end\front-end.h" />
@@ -60,6 +61,9 @@
     <ClInclude Include="src\front-end\semantics\flow-checker.h" />
     <ClInclude Include="src\front-end\semantics\table.h" />
     <ClInclude Include="src\front-end\semantics\type-checker.h" />
+    <ClInclude Include="src\front-end\semantics\visitor.h" />
+    <ClInclude Include="src\front-end\type-macro.h" />
+    <ClInclude Include="src\front-end\types.h" />
     <ClInclude Include="src\front-end\token.h" />
     <ClInclude Include="src\utils\common.h" />
     <ClInclude Include="src\utils\context.h" />
@@ -83,7 +87,6 @@
     <Text Include="test\test-cases\lexer-test-cases\TOKENS.txt" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="src\front-end\semantics\visitor.h" />
     <None Include="test\test-cases\lexer-test-cases\gen.py" />
     <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\b.almc" />
     <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\testfolder\back_end_test.almc" />
