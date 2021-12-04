@@ -528,21 +528,25 @@ void visit_return_stmt(JumpStmt* return_stmt, Table* table)
 	if (!table->in_function)
 		report_error2("Cannot use return statement when its not located in function.",
 			return_stmt->area);
-	if (!IS_VOID_TYPE(table->in_function->func_type))
+	else
 	{
-		if (!return_stmt->additional_expr)
-			report_error2("Return statement must return some value from function.", 
-				return_stmt->area);
-		Type* return_type = get_expr_type(return_stmt->additional_expr, table);
-		if (!can_cast_implicitly(table->in_function->func_type, return_type))
-			report_error2(frmt("Cannot return value of type \'%s\' from function with \'%s\'.",
-				type_tostr_plain(return_type), type_tostr_plain(table->in_function->func_type)),
+		if (!IS_VOID_TYPE(table->in_function->func_type))
+		{
+			if (!return_stmt->additional_expr)
+				report_error2("Return statement must return some value from function.",
+					return_stmt->area);
+			visit_expr(return_stmt->additional_expr, table);
+			Type* return_type = get_expr_type(return_stmt->additional_expr, table);
+			if (!can_cast_implicitly(table->in_function->func_type, return_type))
+				report_error2(frmt("Cannot return value of type \'%s\' from function with \'%s\'.",
+					type_tostr_plain(return_type), type_tostr_plain(table->in_function->func_type)),
+						get_expr_area(return_stmt->additional_expr));
+		}
+		else
+			if (return_stmt->additional_expr)
+				report_error2("Cannot return value from function with void type.",
 					get_expr_area(return_stmt->additional_expr));
 	}
-	else
-		if (return_stmt->additional_expr)
-			report_error2("Cannot return value from function with void type.",
-				get_expr_area(return_stmt->additional_expr));
 }
 
 void visit_continue_stmt(JumpStmt* continue_stmt, Table* table)
