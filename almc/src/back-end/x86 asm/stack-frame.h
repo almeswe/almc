@@ -1,7 +1,7 @@
 #ifndef ALMC_BACK_END_STACK_FRAME
 #define ALMC_BACK_END_STACK_FRAME
 
-#include "types.h"
+#include "x86types.h"
 #include "regtable.h"
 #include "..\..\front-end\ast\ast.h"
 

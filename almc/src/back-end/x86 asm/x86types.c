@@ -1,4 +1,4 @@
-#include "types.h"
+#include "x86types.h"
 
 static const char* predefined_types_prefixes[] = {
 	"BYTE",
