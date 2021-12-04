@@ -1,59 +1,29 @@
 #include "type-checker.h"
 
-//todo: figure out the type checking for logical and relative operators
-
-#define TYPE_DUP(type, type_name)                 \
-	Type* type_name = cnew_s(Type, type_name, 1); \
-	type_name->mods = type->mods;                 \
-	type_name->repr = _strdup(type->repr)
-
-// todo: create type-dup in types.h ?
-// means that the type instance is not assigned to new variable
-#define TYPE_DUP_NO_ALLOC(type, type_name)   \
-	type_name = cnew_s(Type, type_name, 1);  \
-	type_name->mods = type->mods;            \
-	type_name->repr = _strdup(type->repr)
-
 #define IN_BOUNDS_OF(ubound, bbound, value) \
 	(((value) <= (ubound)) && ((value) >= (bbound)))
 
 Type* get_expr_type(Expr* expr, Table* table)
 {
-#define SET_AND_RETURN_TYPE(type, to_node)  \
-	if (!type)                              \
-		return unknown_type_new();          \
-	TYPE_DUP_NO_ALLOC(type, new_type);      \
-	return to_node->type = new_type;        \
-
-	Type* type = NULL;
-	Type* new_type = NULL;
-
 	if (!expr)
 		return unknown_type_new();
 
 	switch (expr->kind)
 	{
 	case EXPR_IDNT:
-		type = get_idnt_type(expr->idnt, table, table);
-		SET_AND_RETURN_TYPE(type, expr->idnt);
+		return get_idnt_type(expr->idnt, table, table);
 	case EXPR_CONST:
-		type = get_const_type(expr->cnst);
-		SET_AND_RETURN_TYPE(type, expr->cnst);
+		return get_const_type(expr->cnst);
 	case EXPR_STRING:
-		type = get_string_type(expr->str);
-		SET_AND_RETURN_TYPE(type, expr->str);
+		return get_string_type(expr->str);
 	case EXPR_FUNC_CALL:
-		type = get_func_call_type(expr->func_call, table);
-		SET_AND_RETURN_TYPE(type, expr->func_call);
+		return get_func_call_type(expr->func_call, table);
 	case EXPR_UNARY_EXPR:
-		type = get_unary_expr_type(expr->unary_expr, table);
-		SET_AND_RETURN_TYPE(type, expr->unary_expr);
+		return get_unary_expr_type(expr->unary_expr, table);
 	case EXPR_BINARY_EXPR:
-		type = get_binary_expr_type(expr->unary_expr, table);
-		SET_AND_RETURN_TYPE(type, expr->binary_expr);
+		return get_binary_expr_type(expr->binary_expr, table);
 	case EXPR_TERNARY_EXPR:
-		type = get_ternary_expr_type(expr->ternary_expr, table);
-		SET_AND_RETURN_TYPE(type, expr->ternary_expr);
+		return get_ternary_expr_type(expr->ternary_expr, table);
 	default:
 		report_error(frmt("Unknown expression kind met in get_expr_type(): %d",
 			expr->kind), NULL);
@@ -113,14 +83,16 @@ Type* get_idnt_type(Idnt* idnt, Table* table)
 	if (!is_variable_declared(idnt->svalue, table) &&
 		!is_function_param_passed(idnt->svalue, table))
 			return unknown_type_new();
-	return idnt->type = is_function_param_passed(idnt->svalue, table) ? 
+
+	Type* type = is_function_param_passed(idnt->svalue, table) ? 
 		get_function_param(idnt->svalue, table)->type : 
 			get_variable(idnt->svalue, table)->type_var->type;
+	return type_dup(type);
 }
 
 Type* get_string_type(Str* str)
 {
-	return str->type = type_new(
+	return type_new(
 		STRING_TYPE, NULL);
 }
 
@@ -131,15 +103,12 @@ Type* get_func_call_type(FuncCall* func_call, Table* table)
 	for (size_t i = 0; i < sbuffer_len(origin->func_params); i++)
 		cast_implicitly(origin->func_params[i]->type, get_expr_type(func_call->func_args[i], table),
 			get_expr_area(func_call->func_args[i]));
-	return func_call->type = origin->func_type;
+	return type_dup(origin->func_type);
 }
 
 Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 {
-	Type* type = get_expr_type(unary_expr->expr, table);
-
-	// this type needed to handle dereference, address exprs etc.
-	Type* new_type = NULL;
+	Type* type = get_and_set_expr_type(unary_expr->expr, table);
 
 	switch (unary_expr->kind)
 	{
@@ -149,10 +118,9 @@ Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 	case UNARY_MINUS:
 	case UNARY_LG_NOT:
 		if (IS_NUMERIC_TYPE(type) || IS_POINTER_TYPE(type))
-			return type;
+			return type_dup(type);
 		report_error2("Cannot use this operator with this operand type.",
 			unary_expr->area);
-	//-----------------------------
 
 	//-----------------------------
 	// operators that can be applied only with integral types & pointers
@@ -162,34 +130,26 @@ Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 	case UNARY_POSTFIX_INC:
 	case UNARY_POSTFIX_DEC:
 		if (IS_INTEGRAL_TYPE(type) || IS_POINTER_TYPE(type))
-			return type;
+			return type_dup(type);
 		report_error2("Cannot use this operator with this operand type.",
 			unary_expr->area);
-	//-----------------------------
 
 	//-----------------------------
 	// addresible cases
 	case UNARY_ADDRESS:
-		if (!type)
-			report_error2("Cannot determine the type of unary expression while taking an address.",
-				unary_expr->area);
+		if (type)
+			return type = type_dup(type),
+				type->mods.is_ptr += 1, type;
 		else
-		{
-			// setting the new type based on extracted type, with is_ptr changed
-			TYPE_DUP_NO_ALLOC(type, new_type);
-			new_type->mods.is_ptr += 1;
-			return new_type;
-		}
+			report_error2("Cannot determine the type of unary expression " 
+				"while taking an address.", unary_expr->area);
 	case UNARY_DEREFERENCE:
-		if (!IS_POINTER_TYPE(type))
+		if (IS_POINTER_TYPE(type))
+			return type = type_dup(type),
+				type->mods.is_ptr -= 1, type;
+		else
 			report_error2(frmt("Cannot dereference value of type \'%s\'.",
 				type_tostr_plain(type)), unary_expr->area);
-		else
-		{
-			TYPE_DUP_NO_ALLOC(type, new_type);
-			new_type->mods.is_ptr -= 1;
-			return new_type;
-		}
 	//-----------------------------
 
 	case UNARY_CAST:
@@ -198,24 +158,21 @@ Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 				unary_expr->cast_type, type);
 		return cast_explicitly(unary_expr->cast_type, type);
 	case UNARY_SIZEOF:
-		return type_new(U32_TYPE, NULL);
 	case UNARY_LENGTHOF:
-		if (!IS_NUMERIC_TYPE(type) && !IS_POINTER_TYPE(type))
-			report_error2(frmt("lengthof accepts only numeric or pointer type of expession, met \'%s\'.",
-				type_tostr_plain(type)), unary_expr->area);
 		return type_new(U32_TYPE, NULL);
 	default:
 		report_error(frmt("Unknown unary expression kind met: %d.",
 			unary_expr->type), NULL);
 	}
-	return type;
+	// to avoid warning
+	return type_dup(type);
 }
 
 Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 {
-	Type* ltype = get_expr_type(
+	Type* ltype = get_and_set_expr_type(
 		binary_expr->lexpr, table);
-	Type* rtype = get_expr_type(
+	Type* rtype = get_and_set_expr_type(
 		binary_expr->rexpr, table);
 
 	// type needed to handle the array member accessor expression
@@ -227,8 +184,32 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 	switch (binary_expr->kind)
 	{
 	//-----------------------------
-	// assign operators need only one check for implicit cast (to left assignable type) 
+	// cases with relative operators, which must return i32 type in any situation
 
+	// with any type
+	case BINARY_LG_EQ:
+	case BINARY_LG_NEQ:
+		if (can_cast_implicitly(ltype, rtype) ||
+			can_cast_implicitly(rtype, ltype))
+				return type_new(I32_TYPE, NULL);
+		report_error2("Cannot use this operator with this operand types.",
+			binary_expr->area);
+
+	// with numeric type
+	case BINARY_LESS_THAN:
+	case BINARY_GREATER_THAN:
+	case BINARY_LESS_EQ_THAN:
+	case BINARY_GREATER_EQ_THAN:
+		if ((IS_NUMERIC_TYPE(ltype) || IS_POINTER_TYPE(ltype)) &&
+			(IS_NUMERIC_TYPE(rtype) || IS_POINTER_TYPE(rtype)))
+				if (can_cast_implicitly(ltype, rtype) ||
+					can_cast_implicitly(rtype, ltype))
+						return type_new(I32_TYPE, NULL);
+		report_error2("Cannot use this operator with this operand types.",
+			binary_expr->area);
+
+	//-----------------------------
+	// assign operators need only one check for implicit cast (to left assignable type) 
 	// in case of common assign, any type can be
 	case BINARY_ASSIGN:
 	case BINARY_ADD_ASSIGN:
@@ -256,20 +237,15 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 				return cast_implicitly_when_assign(ltype, rtype, binary_expr->area);
 		report_error2("Cannot use this operator with this operand types.", 
 			binary_expr->area);
-	//-----------------------------
-
 
 	//-----------------------------
-	// operators that can be applied with strings
+	// operator that can be applied with strings
 	case BINARY_ADD:
-	case BINARY_LG_EQ:
-	case BINARY_LG_NEQ:
 		return can_cast_implicitly(rtype, ltype) ?
 			cast_implicitly(rtype, ltype, binary_expr->area) : 
 				cast_implicitly(ltype, rtype, binary_expr->area);
 		report_error2("Cannot use this operator with this operand types.",
 			binary_expr->area);
-	//-----------------------------
 
 	//-----------------------------
 	// operators that can be applied with numeric type & pointers
@@ -278,10 +254,6 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 	case BINARY_MULT:
 	case BINARY_LG_OR:
 	case BINARY_LG_AND:
-	case BINARY_LESS_THAN:
-	case BINARY_GREATER_THAN:
-	case BINARY_LESS_EQ_THAN:
-	case BINARY_GREATER_EQ_THAN:
 		if ((IS_NUMERIC_TYPE(ltype) || IS_POINTER_TYPE(ltype)) &&
 			(IS_NUMERIC_TYPE(rtype) || IS_POINTER_TYPE(rtype)))
 				return can_cast_implicitly(rtype, ltype) ? 
@@ -289,7 +261,6 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 						cast_implicitly(ltype, rtype, binary_expr->area);
 		report_error2("Cannot use this operator with this operand types.", 
 			binary_expr->area);
-	//-----------------------------
 	
 	//-----------------------------
 	// operators that can be applied only with integral types
@@ -306,7 +277,6 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 						cast_implicitly(ltype, rtype, binary_expr->area);
 		report_error2("Cannot use this operator with this operand types.",
 			binary_expr->area);
-	//-----------------------------
 
 	//------------------------------
 	// accessors
@@ -318,9 +288,8 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 		if (!IS_INTEGRAL_TYPE(rtype))
 			report_error2(frmt("Index should be value of integral type. Type \'%s\' met.",
 				type_tostr_plain(rtype)), binary_expr->area);
-		TYPE_DUP_NO_ALLOC(ltype, new_type);
-		new_type->mods.is_ptr -= 1;
-		return new_type;
+		return ltype = type_dup(ltype),
+			ltype->mods.is_ptr -= 1, ltype;
 
 	case BINARY_PTR_MEMBER_ACCESSOR:
 		if (!IS_POINTER_TYPE(ltype))
@@ -347,55 +316,80 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 		if (type_decl_stmt = get_struct(ltype->repr, table))
 			for (size_t i = 0; i < sbuffer_len(((StructDecl*)type_decl_stmt)->struct_mmbrs); i++)
 				if (strcmp(((StructDecl*)type_decl_stmt)->struct_mmbrs[i]->var, get_member_name(binary_expr->rexpr)) == 0)
-					return ((StructDecl*)type_decl_stmt)->struct_mmbrs[i]->type;
+					return type_dup(((StructDecl*)type_decl_stmt)->struct_mmbrs[i]->type);
 
 		// same logic as struct's was
 		if (type_decl_stmt = get_union(ltype->repr, table))
 			for (size_t i = 0; i < sbuffer_len(((UnionDecl*)type_decl_stmt)->union_mmbrs); i++)
 				if (strcmp(((UnionDecl*)type_decl_stmt)->union_mmbrs[i]->var, get_member_name(binary_expr->rexpr)) == 0)
-					return ((UnionDecl*)type_decl_stmt)->union_mmbrs[i]->type;
+					return type_dup(((UnionDecl*)type_decl_stmt)->union_mmbrs[i]->type);
 
 		report_error2(frmt("Cannot find any member with name \'%s\' in type \'%s\'.",
 			binary_expr->rexpr->idnt->svalue, type_tostr_plain(ltype)), binary_expr->area);
-		break;
-	//------------------------------
 
 	//------------------------------
 	// comma expr, just return right expr's type for any size of comma expr (specific parser property)
 	case BINARY_COMMA:
-		return rtype;
+		return type_dup(rtype);
 	//------------------------------
-
 
 	default:
 		report_error(frmt("Unknown binary expression kind met in get_binary_expr_type(): %d",
 			binary_expr->type), NULL);
 	}
 	// useless, only to avoid warning
-	return ltype;
+	return type_dup(ltype);
 }
 
 Type* get_ternary_expr_type(TernaryExpr* ternary_expr, Table* table)
 {
-	Type* ltype = get_expr_type(ternary_expr->lexpr, table);
-	Type* rtype = get_expr_type(ternary_expr->rexpr, table);
-	Type* ctype = get_expr_type(ternary_expr->cond, table);
+	Type* ltype = get_and_set_expr_type(ternary_expr->lexpr, table);
+	Type* rtype = get_and_set_expr_type(ternary_expr->rexpr, table);
+	Type* ctype = get_and_set_expr_type(ternary_expr->cond, table);
 
 	if (!IS_NUMERIC_TYPE(ctype) && !IS_POINTER_TYPE(ctype))
 		if (!ctype)
 			report_error2("Cannot determine the type of condition in ternary expression.", 
 				get_expr_area(ternary_expr->cond));
 		else 
-			report_error2(frmt("Expected numeric or pointer type in condition of ternary expression, type met: \'%s\'",
-				type_tostr_plain(ctype)), get_expr_area(ternary_expr->cond));
+			report_error2(frmt("Expected numeric or pointer type in "
+				"condition of ternary expression, type met: \'%s\'",
+					type_tostr_plain(ctype)), get_expr_area(ternary_expr->cond));
 
 	if (can_cast_implicitly(ltype, rtype))
 		return cast_implicitly(ltype, rtype, ternary_expr->area);
 	else if (can_cast_implicitly(rtype, ltype))
 		return cast_implicitly(rtype, ltype, ternary_expr->area);
 	else
-		report_error2("Left and right expressions in ternary expression should be the same or implicitly equal.", 
-			ternary_expr->area);
+		report_error2("Left and right expressions in ternary expression "
+				"should be the same or implicitly equal.", ternary_expr->area);
+	return unknown_type_new();
+}
+
+Type* get_and_set_expr_type(Expr* expr, Table* table)
+{
+	if (!expr)
+		return unknown_type_new();
+
+	Type* type = get_expr_type(expr, table);
+
+	switch (expr->kind)
+	{
+	case EXPR_IDNT:
+		return expr->idnt->type = type;
+	case EXPR_CONST:
+		return expr->cnst->type = type;
+	case EXPR_STRING:
+		return expr->str->type = type;
+	case EXPR_FUNC_CALL:
+		return expr->func_call->type = type;
+	case EXPR_UNARY_EXPR:
+		return expr->unary_expr->type = type;
+	case EXPR_BINARY_EXPR:
+		return expr->binary_expr->type = type;
+	case EXPR_TERNARY_EXPR:
+		return expr->ternary_expr->type = type;
+	}
 	return unknown_type_new();
 }
 
@@ -407,20 +401,19 @@ uint32_t get_type_size_in_bytes(Type* type)
 	if (type->mods.is_predefined)
 	{
 		if (IS_U8_TYPE(type) || IS_I8_TYPE(type) || IS_CHAR_TYPE(type))
-			return 1;
+			return sizeof(int8_t);
 		else if (IS_U16_TYPE(type) || IS_I16_TYPE(type))
-			return 2;
+			return sizeof(int16_t);
 		else if (IS_U32_TYPE(type) || IS_I32_TYPE(type) || IS_F32_TYPE(type))
-			return 4;
+			return sizeof(int32_t);
 		else if (IS_U64_TYPE(type) || IS_I64_TYPE(type) || IS_F64_TYPE(type))
-			return 8;
+			return sizeof(int64_t);
 		else
-			report_error("Cannot get size of \'%s\' type", 
-				type_tostr_plain(type));
+			report_error(frmt("Cannot get size of \'%s\' type", 
+				type_tostr_plain(type)), NULL);
 	}
 	else
-		report_error("Cannot get size of user-defined type (is not supported)", 
-			type_tostr_plain(type));
+		report_error("Cannot get size of user-defined type (is not supported)", NULL);
 }
 
 uint32_t get_type_priority(Type* type)
@@ -459,7 +452,8 @@ uint32_t get_type_priority(Type* type)
 Type* cast_explicitly(Type* to, Type* type)
 {
 	if (!to || !type)
-		report_error2("Cannot determine at least one type when trying to convert explicitly.", NULL);
+		report_error2("Cannot determine at least one type when "
+			"trying to convert explicitly.", NULL);
 	else
 	{
 		if (IS_VOID_TYPE(to))
@@ -473,13 +467,14 @@ Type* cast_explicitly(Type* to, Type* type)
 			report_warning2("Converting real type to integral type may occur data losses.",
 				to->area);
 	}
-	return to;
+	return type_dup(to);
 }
 
 Type* cast_explicitly_when_const_expr(Expr* const_expr, Type* to, Type* const_expr_type)
 {
 	if (!to || !const_expr_type)
-		report_error2("Cannot determine at least one type when trying to convert explicitly.", NULL);
+		report_error2("Cannot determine at least one type "
+			"when trying to convert explicitly.", NULL);
 	else
 	{
 		if (to->mods.is_void && !IS_POINTER_TYPE(to))
@@ -515,18 +510,18 @@ Type* cast_implicitly(Type* to, Type* type, SrcArea* area)
 	if (can_cast_implicitly(to, type))
 	{
 		if (IS_POINTER_TYPE(to) && IS_POINTER_TYPE(type))
-			return to;
+			return type_dup(to);
 		if (IS_POINTER_TYPE(to) && (get_type_priority(type) > I32))
-			return type;
+			return type_dup(type);
 		if (IS_POINTER_TYPE(to) && (get_type_priority(type) <= I32))
-			return to;
+			return type_dup(to);
 		if ((get_type_priority(to) > I32) && IS_POINTER_TYPE(type))
-			return to;
+			return type_dup(to);
 		if ((get_type_priority(to) <= I32) && IS_POINTER_TYPE(type))
-			return type;
+			return type_dup(type);
 		
-		return get_type_priority(to) >= get_type_priority(type) ?
-			to : type;
+		return type_dup(get_type_priority(to) >= get_type_priority(type) ?
+			to : type);
 	}
 	else
 		report_error2(frmt("Cannot implicitly convert type \'%s\' to \'%s\'",
@@ -536,7 +531,7 @@ Type* cast_implicitly(Type* to, Type* type, SrcArea* area)
 Type* cast_implicitly_when_assign(Type* to, Type* type, SrcArea* area)
 {
 	if (can_cast_implicitly(to, type))
-		return to;
+		return type_dup(to);
 	else
 		report_error2(frmt("Cannot implicitly convert type \'%s\' to \'%s\'",
 			type_tostr_plain(to), type_tostr_plain(type)), area);

@@ -50,3 +50,15 @@ Type* type_new3(const char* repr, TypeInfo info,
 	type->info = info;
 	return type;
 }
+
+Type* type_dup(Type* type)
+{
+	//todo: probably add deep copy for expressions in expr->info.arr_dimensions
+	TypeMods mods = type->mods;
+	TypeInfo info = type->info;
+	SrcArea* area = type->area ?
+		src_area_new(type->area->begins, 
+			type->area->ends) : NULL;
+	return type_new3(type->repr, 
+		info, mods, area);
+}

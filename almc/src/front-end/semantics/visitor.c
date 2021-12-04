@@ -161,7 +161,7 @@ void visit_expr(Expr* expr, Table* table)
 	default:
 		report_error("Unknown kind of binary expression met in visit_expr()", NULL);
 	}
-	get_expr_type(expr, table);
+	get_and_set_expr_type(expr, table);
 }
 
 void visit_idnt(Idnt* idnt, Table* table, int is_in_assign)

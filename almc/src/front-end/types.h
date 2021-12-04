@@ -44,4 +44,6 @@ Type* type_new2(const char* repr, TypeMods mods,
 Type* type_new3(const char* repr, TypeInfo info, 
 	TypeMods mods, SrcArea* area);
 
+Type* type_dup(Type* type);
+
 #endif
