@@ -26,6 +26,7 @@ void visit_func_call(FuncCall* func_call, Table* table);
 void visit_unary_expr(UnaryExpr* unary_expr, Table* table);
 void visit_binary_expr(BinaryExpr* binary_expr, Table* table);
 void visit_ternary_expr(TernaryExpr* ternary_expr, Table* table);
+void visit_arr_member_accessor(BinaryExpr* arr_accessor_expr, Table* table);
 
 void visit_condition(Expr* condition, Table* table);
 void visit_if_stmt(IfStmt* if_stmt, Table* table);

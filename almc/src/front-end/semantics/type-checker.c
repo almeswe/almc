@@ -138,15 +138,13 @@ Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 	// addresible cases
 	case UNARY_ADDRESS:
 		if (type)
-			return type = type_dup(type),
-				type->mods.is_ptr += 1, type;
+			return type_address(type_dup(type));
 		else
 			report_error2("Cannot determine the type of unary expression " 
 				"while taking an address.", unary_expr->area);
 	case UNARY_DEREFERENCE:
 		if (IS_POINTER_TYPE(type))
-			return type = type_dup(type),
-				type->mods.is_ptr -= 1, type;
+			return type_dereference(type_dup(type));
 		else
 			report_error2(frmt("Cannot dereference value of type \'%s\'.",
 				type_tostr_plain(type)), unary_expr->area);
@@ -288,8 +286,7 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 		if (!IS_INTEGRAL_TYPE(rtype))
 			report_error2(frmt("Index should be value of integral type. Type \'%s\' met.",
 				type_tostr_plain(rtype)), binary_expr->area);
-		return ltype = type_dup(ltype),
-			ltype->mods.is_ptr -= 1, ltype;
+		return type_dereference(type_dup(ltype));
 
 	case BINARY_PTR_MEMBER_ACCESSOR:
 		if (!IS_POINTER_TYPE(ltype))
@@ -395,7 +392,7 @@ Type* get_and_set_expr_type(Expr* expr, Table* table)
 
 uint32_t get_type_size_in_bytes(Type* type)
 {
-	if (type->mods.is_ptr)
+	if (type->mods.ptr_rank)
 		return sizeof(size_t);
 
 	if (type->mods.is_predefined)
@@ -548,7 +545,7 @@ uint32_t can_cast_implicitly(Type* to, Type* type)
 			return 0;
 
 	// case of two pointers of same rank
-	if (to->mods.is_ptr && (to->mods.is_ptr == type->mods.is_ptr))
+	if (to->mods.ptr_rank && (to->mods.ptr_rank == type->mods.ptr_rank))
 		return 1;
 
 	// case when types are equal
@@ -557,11 +554,11 @@ uint32_t can_cast_implicitly(Type* to, Type* type)
 			return 1;
 
 	// case of pointer && integral (not pointer), and not greater than 32 bits
-	if (to->mods.is_ptr && IS_INTEGRAL_TYPE(type) && (get_type_priority(type) <= I32) && !IS_POINTER_TYPE(type))
+	if (to->mods.ptr_rank && IS_INTEGRAL_TYPE(type) && (get_type_priority(type) <= I32) && !IS_POINTER_TYPE(type))
 		return 1;
 
 	// case of integral (not pointer) && pointer, and greater equal than 32 bits
-	if (type->mods.is_ptr && IS_INTEGRAL_TYPE(to) && (get_type_priority(to) >= U32) && !IS_POINTER_TYPE(to))
+	if (type->mods.ptr_rank && IS_INTEGRAL_TYPE(to) && (get_type_priority(to) >= U32) && !IS_POINTER_TYPE(to))
 		return 1;
 
 	// types that can be casted to u8 and char
@@ -715,8 +712,6 @@ int is_const_expr(Expr* expr)
 		return is_const_expr(expr->ternary_expr->lexpr) &&
 			   is_const_expr(expr->ternary_expr->rexpr) &&
 			   is_const_expr(expr->ternary_expr->cond);
-	default:
-		return 0;
 	}
 	return 0;
 }
@@ -736,8 +731,6 @@ int is_simple_const_expr(Expr* expr)
 		return is_simple_const_expr(expr->ternary_expr->lexpr) &&
 			is_simple_const_expr(expr->ternary_expr->rexpr) &&
 			is_simple_const_expr(expr->ternary_expr->cond);
-	default:
-		return 0;
 	}
 	return 0;
 }
@@ -801,9 +794,8 @@ int is_addressable_value(Expr* expr, Table* table)
 		break;
 		/*case EXPR_TERNARY_EXPR:
 			return is_addressable_value(expr->ternary_expr->rexpr, table);*/
-	default:
-		return 0;
 	}
+	return 0;
 }
 
 Type* get_enum_member_type(const char* member, Table* table)

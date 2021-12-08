@@ -11,7 +11,7 @@ static const char* predefined_types_prefixes[] = {
 
 int get_type_prefix(Type* type)
 {
-	if (type->mods.is_ptr)
+	if (type->mods.ptr_rank)
 		return DWORD;
 	if (!type->mods.is_predefined)
 		assert(0);
@@ -46,7 +46,7 @@ const char* get_predefined_type_str(int prefix)
 
 int get_type_size(Type* type)
 {
-	if (type->mods.is_ptr)
+	if (type->mods.ptr_rank)
 		return 4;
 	if (!type->mods.is_predefined)
 		assert(0);

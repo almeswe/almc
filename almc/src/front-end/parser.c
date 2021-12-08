@@ -159,15 +159,15 @@ Type* parse_abstract_declarator(Parser* parser, Type* type)
 	switch (get_curr_token(parser)->type)
 	{
 	case TOKEN_ASTERISK:
-		if (type->info.arr_dim_count)
+		if (type->mods.array_rank)
 			report_error("Cannot create type with this sequence of type declarators.",
 				get_curr_token(parser)->context);
-		type->mods.is_ptr++;
+		type->mods.ptr_rank++;
 		get_next_token(parser);
 		return parse_abstract_declarator(parser, type);
 	case TOKEN_OP_BRACKET:
-		type->mods.is_ptr++;
-		type->info.arr_dim_count++;
+		type->mods.ptr_rank++;
+		type->mods.array_rank++;
 		get_next_token(parser);
 		sbuffer_add(type->info.arr_dimensions,
 			parse_expr(parser));

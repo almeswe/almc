@@ -56,9 +56,25 @@ Type* type_dup(Type* type)
 	//todo: probably add deep copy for expressions in expr->info.arr_dimensions
 	TypeMods mods = type->mods;
 	TypeInfo info = type->info;
+	info.arr_dimensions = NULL;
 	SrcArea* area = type->area ?
 		src_area_new(type->area->begins, 
 			type->area->ends) : NULL;
 	return type_new3(type->repr, 
 		info, mods, area);
+}
+
+Type* type_address(Type* type)
+{
+	type->mods.ptr_rank += 1;
+	return type;
+}
+
+Type* type_dereference(Type* type)
+{
+	type->mods.ptr_rank -= type->mods.ptr_rank > 0 ?
+		1 : 0;
+	type->mods.array_rank -= type->mods.array_rank > 0 ?
+		1 : 0;
+	return type;
 }

@@ -401,7 +401,7 @@ JumpStmt* jump_stmt_new(JumpStmtKind type, Expr* additional_expr)
 char* type_tostr_plain(Type* type)
 {
 	char* str = type->repr;
-	for (size_t i = 0; i < type->mods.is_ptr; i++)
+	for (size_t i = 0; i < type->mods.ptr_rank; i++)
 		str = frmt("%s*", str);
 	return str;
 }

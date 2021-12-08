@@ -81,8 +81,6 @@ void visit_type(Type* type, Table* table)
 			!is_enum_declared(type->repr, table))
 				report_error2(frmt("Undefined type \'%s\' met.",
 					type->repr), type->area);
-	if (type->mods.is_array && type->mods.is_ptr)
-		report_error("Cannot resolve type ambiguity in visit_type()", NULL);
 }
 
 void visit_non_void_type(Type* type, Table* table)
@@ -272,10 +270,14 @@ void visit_binary_expr(BinaryExpr* binary_expr, Table* table)
 	case BINARY_GREATER_THAN:
 	case BINARY_LESS_EQ_THAN:
 	case BINARY_GREATER_EQ_THAN:
+		visit_expr(binary_expr->lexpr, table);
+		visit_expr(binary_expr->rexpr, table);
+		break;
 
 	case BINARY_ARR_MEMBER_ACCESSOR:
 		visit_expr(binary_expr->lexpr, table);
 		visit_expr(binary_expr->rexpr, table);
+		//visit_arr_member_accessor(binary_expr, table);
 		break;
 
 	case BINARY_MEMBER_ACCESSOR:
@@ -317,6 +319,21 @@ void visit_ternary_expr(TernaryExpr* ternary_expr, Table* table)
 	visit_condition(ternary_expr->cond, table);
 	visit_expr(ternary_expr->lexpr, table);
 	visit_expr(ternary_expr->rexpr, table);
+}
+
+void visit_arr_member_accessor(BinaryExpr* arr_accessor_expr, Table* table)
+{
+	// i32[1][6];
+	// a[1][1];
+	Type* type = arr_accessor_expr->type;
+	Expr** dimensions = type->info.arr_dimensions;
+	if (type->mods.array_rank)
+		if (is_const_expr(arr_accessor_expr->rexpr) &&
+			is_const_expr(dimensions[type->mods.array_rank - 1]))
+			if (evaluate_expr_itype(dimensions[type->mods.array_rank - 1]) <
+				evaluate_expr_itype(arr_accessor_expr->rexpr))
+				report_error2("Cannot access array element by this index.",
+					get_expr_area(arr_accessor_expr->rexpr));
 }
 
 void visit_condition(Expr* condition, Table* table)
@@ -645,7 +662,7 @@ void visit_union(UnionDecl* union_decl, Table* table)
 	{
 		// checking for self included type (and not pointer)
 		if (strcmp(union_decl->union_name, union_decl->union_mmbrs[i]->type->repr) == 0)
-			if (!union_decl->union_mmbrs[i]->type->mods.is_ptr)
+			if (!union_decl->union_mmbrs[i]->type->mods.ptr_rank)
 				report_error2(frmt("Member \'%s\' has type \'%s\' which is self included, and not pointer.",
 					union_decl->union_mmbrs[i]->var, union_decl->union_name), 
 						union_decl->union_mmbrs[i]->area);
@@ -667,7 +684,7 @@ void visit_struct(StructDecl* struct_decl, Table* table)
 	{
 		// checking for self included type (and not pointer)
 		if (strcmp(struct_decl->struct_name, struct_decl->struct_mmbrs[i]->type->repr) == 0)
-			if (!struct_decl->struct_mmbrs[i]->type->mods.is_ptr)
+			if (!struct_decl->struct_mmbrs[i]->type->mods.ptr_rank)
 				report_error2(frmt("Member \'%s\' has type \'%s\' which is self included, and not pointer.",
 					struct_decl->struct_mmbrs[i]->var, struct_decl->struct_name), 
 						struct_decl->struct_mmbrs[i]->area);

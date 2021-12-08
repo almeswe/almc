@@ -11,8 +11,8 @@ typedef struct Expr Expr;
 
 typedef struct TypeMods
 {
-	uint16_t is_ptr;   // ptr rank
-	uint16_t is_array; // arr rank
+	int16_t ptr_rank;   
+	int16_t array_rank;
 	
 	uint8_t is_void;
 	uint8_t is_unknown;
@@ -24,7 +24,6 @@ typedef struct TypeInfo
 	uint8_t is_fixed_array;
 	uint8_t is_dynamic_array;
 
-	uint64_t arr_dim_count; // dimension count
 	Expr** arr_dimensions;  // value of each dimension
 } TypeInfo;
 
@@ -45,5 +44,8 @@ Type* type_new3(const char* repr, TypeInfo info,
 	TypeMods mods, SrcArea* area);
 
 Type* type_dup(Type* type);
+
+Type* type_address(Type* type);
+Type* type_dereference(Type* type);
 
 #endif

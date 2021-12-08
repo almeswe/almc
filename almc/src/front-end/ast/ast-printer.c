@@ -17,10 +17,10 @@ void print_type(Type* type, const char* indent)
 	//printf("%s%s\n", indent, src_area_tostr(type->area));
 	indent = frmt("%s   ", indent);
 	printf(RESET);
-	print_type_mode(is_ptr);
+	print_type_mode(ptr_rank);
 	print_type_mode(is_void);
 	print_type_mode(is_predefined);
-	print_type_mode(is_array);
+	print_type_mode(array_rank);
 	indent = frmt("%s   ", indent);
 	for (int i = 0; i < sbuffer_len(type->info.arr_dimensions); i++)
 	{
