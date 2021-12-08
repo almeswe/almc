@@ -1,5 +1,7 @@
 #include "ast.h"
 
+//todo: use <stdbool.h>
+
 Expr* expr_new(ExprKind type, void* expr_value_ptr)
 {
 	#define expr_set_value(type, field) e->field = (type*)expr_value_ptr; break
@@ -48,6 +50,27 @@ Idnt* idnt_new(const char* idnt, SrcContext* context)
 
 Const* const_new(ConstKind type, const char* svalue, SrcContext* context)
 {
+#define CONST_CONVERSION(to, type, func)	   \
+	if (strlen(svalue) <= 1)				   \
+		c->to = atof(svalue);				   \
+	else									   \
+	{								           \
+		switch (tolower(svalue[1]))		       \
+		{									   \
+		case 'x':							   \
+			c->to = func(svalue + 2, NULL, 16);\
+			break;							   \
+		case 'o':							   \
+			c->to = func(svalue + 2, NULL, 8); \
+			break;							   \
+		case 'b':							   \
+			c->to = func(svalue + 2, NULL, 2); \
+			break;							   \
+		default:						       \
+			c->to = (type)atof(svalue);		   \
+		}									   \
+	}
+
 	Const* c = new_s(Const, c);
 	c->type = NULL;
 	c->context = context;
@@ -55,47 +78,11 @@ Const* const_new(ConstKind type, const char* svalue, SrcContext* context)
 	switch (c->kind = type)
 	{
 	case CONST_INT:
-		if (strlen(svalue) <= 1)
-			c->ivalue = atof(svalue);
-		else
-		{
-			switch (tolower(svalue[1]))
-			{
-			case 'x':
-				c->ivalue = strtoll(
-					svalue + 2, NULL, 16);break;
-			case 'o':
-				c->ivalue = strtoll(
-					svalue + 2, NULL, 8); break;
-			case 'b':
-				c->ivalue = strtoll(
-					svalue + 2, NULL, 2); break;
-			default:
-				c->ivalue = (int64_t)atof(svalue);
-			}
-		}
+		CONST_CONVERSION(ivalue, int64_t, strtoll);
 		break;
 	case CONST_UINT:
 	case CONST_CHAR:
-		if (strlen(svalue) <= 1)
-			c->uvalue = atof(svalue);
-		else
-		{
-			switch (tolower(svalue[1]))
-			{
-			case 'x':
-				c->uvalue = strtoull(
-					svalue + 2, NULL, 16);break;
-			case 'o':
-				c->uvalue = strtoull(
-					svalue + 2, NULL, 8); break;
-			case 'b':
-				c->uvalue = strtoull(
-					svalue + 2, NULL, 2); break;
-			default:
-				c->uvalue = (uint64_t)atof(svalue);
-			}
-		}
+		CONST_CONVERSION(uvalue, uint64_t, strtoull);
 		break;
 	case CONST_FLOAT:
 		c->fvalue = strtod(svalue, NULL);
