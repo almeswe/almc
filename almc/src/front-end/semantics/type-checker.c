@@ -390,12 +390,36 @@ Type* get_and_set_expr_type(Expr* expr, Table* table)
 	return unknown_type_new();
 }
 
+uint32_t get_user_type_size_in_bytes(Type* type, Table* table)
+{
+	// todo: add alignment?
+	StructDecl* type_decl = NULL;
+	uint32_t size = 0, buffer = 0;
+	if (type_decl = get_struct(type->repr, table))
+		for (size_t i = 0; i < sbuffer_len(type_decl->struct_mmbrs); i++)
+			size += get_type_size_in_bytes(
+				type_decl->struct_mmbrs[i]->type, table);
+	else if (is_enum_declared(type->repr, table))
+		size = sizeof(int32_t);
+	else if (type_decl = get_union(type->repr, table))
+		for (size_t i = 0; i < sbuffer_len(type_decl->struct_mmbrs); i++)
+			buffer = get_type_size_in_bytes(type_decl->struct_mmbrs[i]->type, table),
+			size = max(size, buffer);
+	else
+		report_error(frmt("Passed type \'%s\' is not user-defined, "
+			"in get_user_type_size_in_bytes()"), type_tostr_plain(type), NULL);
+	return size;
+}
+
 uint32_t get_type_size_in_bytes(Type* type)
 {
+	assert(!type->mods.array_rank);
 	if (type->mods.ptr_rank)
-		return sizeof(size_t);
+		return 8;
 
-	if (type->mods.is_predefined)
+	if (!type->mods.is_predefined)
+		assert(0);//return get_user_type_size_in_bytes(type, table);
+	else
 	{
 		if (IS_U8_TYPE(type) || IS_I8_TYPE(type) || IS_CHAR_TYPE(type))
 			return sizeof(int8_t);
@@ -406,11 +430,9 @@ uint32_t get_type_size_in_bytes(Type* type)
 		else if (IS_U64_TYPE(type) || IS_I64_TYPE(type) || IS_F64_TYPE(type))
 			return sizeof(int64_t);
 		else
-			report_error(frmt("Cannot get size of \'%s\' type", 
+			report_error(frmt("Cannot get size of \'%s\' type",
 				type_tostr_plain(type)), NULL);
 	}
-	else
-		report_error("Cannot get size of user-defined type (is not supported)", NULL);
 }
 
 uint32_t get_type_priority(Type* type)
