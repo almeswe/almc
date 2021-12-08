@@ -145,7 +145,7 @@ void gen_unary_expr2(UnaryExpr* unary_expr, StackFrame* frame)
 void gen_binary_expr2(BinaryExpr* binary_expr, StackFrame* frame)
 {
 	#define RESERVE_TEMP_REG  \
-		temp_reg = get_unreserved_register(frame->regtable)
+		temp_reg = get_unreserved_register(frame->regtable, REGSIZE_DWORD)
 
 	#define GEN_ASSIGN_EXPR(action)           \
 		action;                               \
