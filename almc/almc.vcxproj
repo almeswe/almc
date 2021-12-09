@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="src\back-end\x86 asm\expr-gen.c" />
     <ClCompile Include="src\back-end\x86 asm\gen.c" />
+    <ClCompile Include="src\back-end\x86 asm\program.c" />
     <ClCompile Include="src\back-end\x86 asm\regtable.c" />
     <ClCompile Include="src\back-end\x86 asm\stack-frame.c" />
     <ClCompile Include="src\back-end\x86 asm\x86types.c" />

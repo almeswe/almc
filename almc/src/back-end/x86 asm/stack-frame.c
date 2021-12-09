@@ -53,12 +53,12 @@ void add_argument(TypeVar* argument, StackFrame* frame)
 
 char* get_current_label(StackFrame* frame)
 {
-	return frmt("__label@%s$%d",
-		frame->func_name, frame->label_counter);
+	return frmt("$LN%d@%s", frame->label_counter,
+		frame->func_name);
 }
 
 char* increase_label_counter(StackFrame* frame)
 {
-	frame->label_counter += 1;
-	return get_current_label(frame);
+	return frame->label_counter += 1, 
+		get_current_label(frame);
 }

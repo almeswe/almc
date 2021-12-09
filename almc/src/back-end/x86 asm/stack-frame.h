@@ -5,12 +5,16 @@
 #include "regtable.h"
 #include "..\..\front-end\ast\ast.h"
 
+typedef struct x86_AsmCodeProc AsmCodeProc;
+
 typedef struct x86_StackFrame
 {
 	VarDecl** locals;    // local variables which were declared in this stack frame
 	TypeVar** arguments; // function arguments which were passed in this function
 	
 	RegisterTable* regtable;
+
+	AsmCodeProc* of_proc;
 
 	int* local_offsets;    // offset for each local variable in this stack frame
 	int* argument_offsets; // offset for each function argument in this stack frame

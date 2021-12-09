@@ -98,6 +98,9 @@
     <ClCompile Include="src\back-end\x86 asm\x86types.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\back-end\x86 asm\program.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\utils\context.h">
