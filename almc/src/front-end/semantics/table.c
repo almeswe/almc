@@ -101,19 +101,19 @@ int is_variable_initialized(const char* var_name, Table* table)
 int is_enum_declared(const char* enum_name, Table* table)
 {
 	for (Table* parent = table; parent != NULL; parent = parent->parent)
-		is_declared_in_collection(enum_name, enum_name, parent->enums);
+		is_declared_in_collection(enum_name, name, parent->enums);
 }
 
 int is_struct_declared(const char* struct_name, Table* table)
 {
 	for (Table* parent = table; parent != NULL; parent = parent->parent)
-		is_declared_in_collection(struct_name, struct_name, parent->structs);
+		is_declared_in_collection(struct_name, name, parent->structs);
 }
 
 int is_union_declared(const char* union_name, Table* table)
 {
 	for (Table* parent = table; parent != NULL; parent = parent->parent)
-		is_declared_in_collection(union_name, union_name, parent->unions);
+		is_declared_in_collection(union_name, name, parent->unions);
 }
 
 void add_function(FuncDecl* func_decl, Table* table)
@@ -147,19 +147,19 @@ void add_initialized_variable(char* var_name, Table* table)
 
 void add_enum(EnumDecl* enum_decl, Table* table)
 {
-	if (!is_enum_declared(enum_decl->enum_name, table))
+	if (!is_enum_declared(enum_decl->name, table))
 		sbuffer_add(table->enums, enum_decl);
 }
 
 void add_struct(StructDecl* struct_decl, Table* table)
 {
-	if (!is_struct_declared(struct_decl->struct_name, table))
+	if (!is_struct_declared(struct_decl->name, table))
 		sbuffer_add(table->structs, struct_decl);
 }
 
 void add_union(UnionDecl* union_decl, Table* table)
 {
-	if (!is_union_declared(union_decl->union_name, table))
+	if (!is_union_declared(union_decl->name, table))
 		sbuffer_add(table->unions, union_decl);
 }
 
@@ -190,17 +190,17 @@ TypeVar* get_function_param(const char* param_name, Table* table)
 EnumDecl* get_enum(const char* enum_name, Table* table)
 {
 	for (Table* parent = table; parent != NULL; parent = parent->parent)
-		get_from_collection(enum_name, enum_name, parent->enums);
+		get_from_collection(enum_name, name, parent->enums);
 }
 
 UnionDecl* get_union(const char* union_name, Table* table)
 {
 	for (Table* parent = table; parent != NULL; parent = parent->parent)
-		get_from_collection(union_name, union_name, parent->unions);
+		get_from_collection(union_name, name, parent->unions);
 }
 
 StructDecl* get_struct(const char* struct_name, Table* table)
 {
 	for (Table* parent = table; parent != NULL; parent = parent->parent)
-		get_from_collection(struct_name, struct_name, parent->structs);
+		get_from_collection(struct_name, name, parent->structs);
 }

@@ -176,9 +176,6 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 	// type needed to handle the array member accessor expression
 	Type* new_type = NULL;
 
-	// variable needed for containing possible value of struct or union (see accessor's part)
-	void* type_decl_stmt = NULL; 
-
 	switch (binary_expr->kind)
 	{
 	//-----------------------------
@@ -310,19 +307,19 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 				type_tostr_plain(ltype)), binary_expr->area);
 
 		// iterating through all struct and through all struct's members, trying to find matching
-		if (type_decl_stmt = get_struct(ltype->repr, table))
-			for (size_t i = 0; i < sbuffer_len(((StructDecl*)type_decl_stmt)->struct_mmbrs); i++)
-				if (strcmp(((StructDecl*)type_decl_stmt)->struct_mmbrs[i]->var, get_member_name(binary_expr->rexpr)) == 0)
-					return type_dup(((StructDecl*)type_decl_stmt)->struct_mmbrs[i]->type);
+		if (ltype->spec.is_struct)
+			for (size_t i = 0; i < sbuffer_len(ltype->members); i++)
+				if (strcmp(ltype->members[i]->name, get_member_name(binary_expr->rexpr)) == 0)
+					return type_dup(ltype->members[i]->type);
 
 		// same logic as struct's was
-		if (type_decl_stmt = get_union(ltype->repr, table))
-			for (size_t i = 0; i < sbuffer_len(((UnionDecl*)type_decl_stmt)->union_mmbrs); i++)
-				if (strcmp(((UnionDecl*)type_decl_stmt)->union_mmbrs[i]->var, get_member_name(binary_expr->rexpr)) == 0)
-					return type_dup(((UnionDecl*)type_decl_stmt)->union_mmbrs[i]->type);
+		if (ltype->spec.is_union)
+			for (size_t i = 0; i < sbuffer_len(ltype->members); i++)
+				if (strcmp(ltype->members[i]->name, get_member_name(binary_expr->rexpr)) == 0)
+					return type_dup(ltype->members[i]->type);
 
 		report_error2(frmt("Cannot find any member with name \'%s\' in type \'%s\'.",
-			binary_expr->rexpr->idnt->svalue, type_tostr_plain(ltype)), binary_expr->area);
+			binary_expr->rexpr->idnt->svalue, ltype->repr), binary_expr->area);
 
 	//------------------------------
 	// comma expr, just return right expr's type for any size of comma expr (specific parser property)

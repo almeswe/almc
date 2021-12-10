@@ -200,26 +200,35 @@ TypeDecl* type_decl_new(TypeDeclKind type, void* type_decl_value_ptr)
 EnumDecl* enum_decl_new(Idnt** enum_idnts, Expr** enum_idnt_values, const char* enum_name)
 {
 	EnumDecl* ed = new_s(EnumDecl, ed);
-	ed->enum_name = enum_name;
+	ed->name = enum_name;
 	ed->enum_idnts = enum_idnts;
 	ed->enum_idnt_values = enum_idnt_values;
 	return ed;
 }
 
-UnionDecl* union_decl_new(TypeVar** union_mmbrs, const char* union_name)
+UnionDecl* union_decl_new(Member** members, const char* name)
 {
 	UnionDecl* ud = new_s(UnionDecl, ud);
-	ud->union_name = union_name;
-	ud->union_mmbrs = union_mmbrs;
+	ud->name = name;
+	ud->members = members;
 	return ud;
 }
 
-StructDecl* struct_decl_new(TypeVar** struct_mmbrs, const char* struct_name)
+StructDecl* struct_decl_new(Member** members, const char* name)
 {
 	StructDecl* sd = new_s(StructDecl, sd);
-	sd->struct_name = struct_name;
-	sd->struct_mmbrs = struct_mmbrs;
+	sd->name = name;
+	sd->members = members;
 	return sd;
+}
+
+Member* member_new(char* name, Type* type, SrcArea* area)
+{
+	Member* member = new_s(Member, member);
+	member->name = name;
+	member->type = type;
+	member->area = area;
+	return member;
 }
 
 EmptyStmt* empty_stmt_new()
@@ -638,10 +647,9 @@ void union_decl_free(UnionDecl* union_decl)
 {
 	if (union_decl)
 	{
-		//free(union_decl->union_name);
-		for (uint32_t i = 0; i < sbuffer_len(union_decl->union_mmbrs); i++)
-			type_var_free(union_decl->union_mmbrs[i]);
-		sbuffer_free(union_decl->union_mmbrs);
+		for (uint32_t i = 0; i < sbuffer_len(union_decl->members); i++)
+			member_free(union_decl->members[i]);
+		sbuffer_free(union_decl->members);
 		free(union_decl);
 	}
 }
@@ -650,11 +658,20 @@ void struct_decl_free(StructDecl* struct_decl)
 {
 	if (struct_decl)
 	{
-		//free(struct_decl->struct_name);
-		for (uint32_t i = 0; i < sbuffer_len(struct_decl->struct_mmbrs); i++)
-			type_var_free(struct_decl->struct_mmbrs[i]);
-		sbuffer_free(struct_decl->struct_mmbrs);
+		for (uint32_t i = 0; i < sbuffer_len(struct_decl->members); i++)
+			member_free(struct_decl->members[i]);
+		sbuffer_free(struct_decl->members);
 		free(struct_decl);
+	}
+}
+
+void member_free(Member* member)
+{
+	if (member)
+	{
+		type_free(member->type);
+		free(member->area);
+		free(member);
 	}
 }
 

@@ -927,7 +927,7 @@ Stmt* parse_type_decl_stmt(Parser* parser)
 
 Stmt* parse_enum_decl_stmt(Parser* parser)
 {
-	char* enum_name = "";
+	char* name = "";
 	Idnt** enum_idnts = NULL;
 	Expr* enum_idnt_value = NULL;
 	Expr** enum_idnt_values = NULL;
@@ -935,7 +935,7 @@ Stmt* parse_enum_decl_stmt(Parser* parser)
 	expect_with_skip(parser, TOKEN_KEYWORD_ENUM, "enum");
 	// enum can be no-name
 	if (matcht(parser, TOKEN_IDNT))
-		enum_name = get_curr_token(parser)->svalue,
+		name = get_curr_token(parser)->svalue,
 			expect_with_skip(parser, TOKEN_IDNT, "enum name");
 	expect_with_skip(parser, TOKEN_OP_BRACE, "{");
 	while (!matcht(parser, TOKEN_CL_BRACE))
@@ -965,45 +965,53 @@ Stmt* parse_enum_decl_stmt(Parser* parser)
 	expect_with_skip(parser, TOKEN_CL_BRACE, "}");
 	return stmt_new(STMT_TYPE_DECL,
 		type_decl_new(TYPE_DECL_ENUM, 
-			enum_decl_new(enum_idnts, enum_idnt_values, enum_name)));
+			enum_decl_new(enum_idnts, enum_idnt_values, name)));
 }
 
 Stmt* parse_union_decl_stmt(Parser* parser)
 {
-	char* union_name = "";
-	TypeVar** union_mmbrs = NULL;
+	char* name = "";
+	Member** members = NULL;
+	TypeVar* typevar = NULL;
 
 	expect_with_skip(parser, TOKEN_KEYWORD_UNION, "union");
-	union_name = get_curr_token(parser)->svalue;
+	name = get_curr_token(parser)->svalue;
 	expect_with_skip(parser, TOKEN_IDNT, "union name");
 	expect_with_skip(parser, TOKEN_OP_BRACE, "{");
 	while (!matcht(parser, TOKEN_CL_BRACE))
 	{
-		sbuffer_add(union_mmbrs, parse_type_var(parser));
+		typevar = parse_type_var(parser);
+		sbuffer_add(members, member_new(typevar->var,
+			typevar->type, typevar->area));
 		expect_with_skip(parser, TOKEN_SEMICOLON, ";");
+		free(typevar);
 	}
 	expect_with_skip(parser, TOKEN_CL_BRACE, "}");
-	return stmt_new(STMT_TYPE_DECL,
-		type_decl_new(TYPE_DECL_UNION, union_decl_new(union_mmbrs, union_name)));
+	return stmt_new(STMT_TYPE_DECL, type_decl_new(TYPE_DECL_UNION, 
+		union_decl_new(members, name)));
 }
 
 Stmt* parse_struct_decl_stmt(Parser* parser)
 {
-	char* struct_name = "";
-	TypeVar** struct_mmbrs = NULL;
+	char* name = "";
+	TypeVar* typevar = NULL;
+	Member** members = NULL;
 
 	expect_with_skip(parser, TOKEN_KEYWORD_STRUCT, "struct");
-	struct_name = get_curr_token(parser)->svalue;
+	name = get_curr_token(parser)->svalue;
 	expect_with_skip(parser, TOKEN_IDNT, "struct name");
 	expect_with_skip(parser, TOKEN_OP_BRACE, "{");
 	while (!matcht(parser, TOKEN_CL_BRACE))
 	{
-		sbuffer_add(struct_mmbrs, parse_type_var(parser));
+		typevar = parse_type_var(parser);
+		sbuffer_add(members, member_new(typevar->var,
+			typevar->type, typevar->area));
 		expect_with_skip(parser, TOKEN_SEMICOLON, ";");
+		free(typevar);
 	}
 	expect_with_skip(parser, TOKEN_CL_BRACE, "}");
-	return stmt_new(STMT_TYPE_DECL,
-		type_decl_new(TYPE_DECL_STRUCT, struct_decl_new(struct_mmbrs, struct_name)));
+	return stmt_new(STMT_TYPE_DECL, type_decl_new(TYPE_DECL_STRUCT,
+		struct_decl_new(members, name)));
 }
 
 Stmt* parse_block(Parser* parser)
@@ -1332,11 +1340,11 @@ char* get_stmt_for_import_name(Stmt* stmt)
 		switch (stmt->type_decl->kind)
 		{
 		case TYPE_DECL_ENUM:
-			return stmt->type_decl->enum_decl->enum_name;
+			return stmt->type_decl->enum_decl->name;
 		case TYPE_DECL_UNION:
-			return stmt->type_decl->union_decl->union_name;
+			return stmt->type_decl->union_decl->name;
 		case TYPE_DECL_STRUCT:
-			return stmt->type_decl->struct_decl->struct_name;
+			return stmt->type_decl->struct_decl->name;
 		}
 		break;
 	case STMT_VAR_DECL:

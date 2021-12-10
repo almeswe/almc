@@ -41,6 +41,7 @@ void print_block(Block* block, const char* indent);
 void print_var_decl(VarDecl* var_decl, const char* indent);
 void print_func_decl(FuncDecl* func_decl, const char* indent);
 void print_label_decl(LabelDecl* label_decl, const char* indent);
+void print_member(Member* member, const char* indent);
 void print_enum_decl(EnumDecl* enum_decl, const char* indent);
 void print_union_decl(UnionDecl* union_decl, const char* indent);
 void print_struct_decl(StructDecl* struct_decl, const char* indent);

@@ -1,10 +1,10 @@
 #include "visitor.h"
 
 #define IS_USER_TYPE_ALREADY_DECLARED(typedec, typestr) \
-	if (is_##typedec##_declared(stmts[i]->type_decl->##typedec##_decl->##typedec##_name, table)) \
-		report_error(frmt("\'%s\' type \'%s\' is already declared.",						             \
-			typestr, stmts[i]->type_decl->##typedec##_decl->##typedec##_name), NULL);		     \
-	add_##typedec##(stmts[i]->type_decl->##typedec##_decl, table);							     \
+	if (is_##typedec##_declared(stmts[i]->type_decl->##typedec##_decl->name, table)) \
+		report_error(frmt("\'%s\' type \'%s\' is already declared.",				 \
+			typestr, stmts[i]->type_decl->##typedec##_decl->name), NULL);		     \
+	add_##typedec##(stmts[i]->type_decl->##typedec##_decl, table);					 \
 
 Visitor* visitor_new()
 {
@@ -76,6 +76,7 @@ void visit_stmt(Stmt* stmt, Table* table)
 void visit_type(Type* type, Table* table)
 {
 	if (!type->mods.is_predefined)
+	if (!type->spec.is_predefined)
 		if (!is_struct_declared(type->repr, table) &&
 			!is_union_declared(type->repr, table) &&
 			!is_enum_declared(type->repr, table))
@@ -603,6 +604,7 @@ void visit_var_decl_stmt(VarDecl* var_decl, Table* table)
 				report_error2(frmt("Expression-initializer has incompatible type \'%s\' with type of variable \'%s\'.",
 					type_tostr_plain(init_expr_type), type_tostr_plain(type)), 
 						get_expr_area(var_decl->var_init));
+			type_free(init_expr_type);
 		}
 	}
 }
@@ -615,18 +617,18 @@ void visit_enum(EnumDecl* enum_decl, Table* table)
 		for (size_t j = 0; j < sbuffer_len(enum_decl->enum_idnt_values); j++)
 			if (!is_simple_const_expr(enum_decl->enum_idnt_values[j]))
 				report_error2(frmt("Enum member \'%s\' must have constant expression, in \'%s\' enum.",
-					enum_decl->enum_idnts[j]->svalue, enum_decl->enum_name),
+					enum_decl->enum_idnts[j]->svalue, enum_decl->name),
 						get_expr_area(enum_decl->enum_idnt_values[j]));
 
 		// iterating through all members of all enums (except current enum)
 		for (Table* parent = table; parent != NULL; parent = parent->parent)                        // each scope from above scope
 			for (size_t j = 0; j < sbuffer_len(parent->enums); j++)                                 // each enum in iterating scope
-				if (strcmp(parent->enums[j]->enum_name, enum_decl->enum_name) != 0)                 // if iterating enum != current enum
+				if (strcmp(parent->enums[j]->name, enum_decl->name) != 0)                 // if iterating enum != current enum
 					for (size_t z = 0; z < sbuffer_len(parent->enums[j]->enum_idnts); z++)          // each member in iterating enum
 						if (strcmp(parent->enums[j]->enum_idnts[z]->svalue,
 							enum_decl->enum_idnts[i]->svalue) == 0)
 								report_error(frmt("Enum member \'%s\' is already declared in \'%s\' enum.",
-									enum_decl->enum_idnts[i]->svalue, parent->enums[j]->enum_name),
+									enum_decl->enum_idnts[i]->svalue, parent->enums[j]->name),
 										enum_decl->enum_idnts[i]->context);
 		// checking value type
 		
@@ -637,7 +639,7 @@ void visit_enum(EnumDecl* enum_decl, Table* table)
 			evaluate_expr_itype(enum_decl->enum_idnt_values[i]));
 		if (get_type_size_in_bytes(const_expr_type) > 4)
 			report_error2(frmt("Enum member \'%s\' must have value type less equal than 4 bytes, in \'%s\' enum.",
-				enum_decl->enum_idnts[i]->svalue, enum_decl->enum_name),
+				enum_decl->enum_idnts[i]->svalue, enum_decl->name),
 					get_expr_area(enum_decl->enum_idnt_values[i]));
 		type_free(const_expr_type);
 
@@ -645,59 +647,59 @@ void visit_enum(EnumDecl* enum_decl, Table* table)
 		Type* value_type = get_expr_type(enum_decl->enum_idnt_values[i], table);
 		if (!IS_INTEGRAL_TYPE(value_type))
 			report_error2(frmt("Enum's member \'%s\' has incompatible \'%s\' type in \'%s\' enum.",
-				enum_decl->enum_idnts[i]->svalue, type_tostr_plain(value_type), enum_decl->enum_name), 
+				enum_decl->enum_idnts[i]->svalue, type_tostr_plain(value_type), enum_decl->name), 
 					get_expr_area(enum_decl->enum_idnt_values[i]));
 
 		// checking for any duplicated names in current enum
 		for (size_t j = i + 1; j < sbuffer_len(enum_decl->enum_idnts); j++)
 			if (strcmp(enum_decl->enum_idnts[i]->svalue, enum_decl->enum_idnts[j]->svalue) == 0)
 				report_error(frmt("Member \'%s\' is already declared in \'%s\' enum declaration.",
-					enum_decl->enum_idnts[i]->svalue, enum_decl->enum_name), enum_decl->enum_idnts[i]->context);
+					enum_decl->enum_idnts[i]->svalue, enum_decl->name), enum_decl->enum_idnts[i]->context);
 	}
 }
 
 void visit_union(UnionDecl* union_decl, Table* table)
 {
-	for (size_t i = 0; i < sbuffer_len(union_decl->union_mmbrs); i++)
+	for (size_t i = 0; i < sbuffer_len(union_decl->members); i++)
 	{
 		// checking for self included type (and not pointer)
-		if (strcmp(union_decl->union_name, union_decl->union_mmbrs[i]->type->repr) == 0)
-			if (!union_decl->union_mmbrs[i]->type->mods.ptr_rank)
+		if (strcmp(union_decl->name, union_decl->members[i]->type->repr) == 0)
+			if (!union_decl->members[i]->type->spec.ptr_rank)
 				report_error2(frmt("Member \'%s\' has type \'%s\' which is self included, and not pointer.",
-					union_decl->union_mmbrs[i]->var, union_decl->union_name), 
-						union_decl->union_mmbrs[i]->area);
-		visit_non_void_type(union_decl->union_mmbrs[i]->type, table);
+					union_decl->members[i]->name, union_decl->name),
+						union_decl->members[i]->area);
+		visit_non_void_type(union_decl->members[i]->type, table);
 	}
 
 	// checking here for duplicated members
-	for (size_t i = 0; i < sbuffer_len(union_decl->union_mmbrs); i++)
-		for (size_t j = i + 1; j < sbuffer_len(union_decl->union_mmbrs); j++)
-			if (strcmp(union_decl->union_mmbrs[i]->var, union_decl->union_mmbrs[j]->var) == 0)
+	for (size_t i = 0; i < sbuffer_len(union_decl->members); i++)
+		for (size_t j = i + 1; j < sbuffer_len(union_decl->members); j++)
+			if (strcmp(union_decl->members[i]->name, union_decl->members[j]->name) == 0)
 				report_error2(frmt("Member \'%s\' is already declared in \'%s\' union declaration.",
-					union_decl->union_mmbrs[i]->var, union_decl->union_name), union_decl->union_mmbrs[i]->area);
+					union_decl->members[i]->name, union_decl->name), union_decl->members[i]->area);
 }
 
 void visit_struct(StructDecl* struct_decl, Table* table)
 {
 	// checking all member's types
-	for (size_t i = 0; i < sbuffer_len(struct_decl->struct_mmbrs); i++)
+	for (size_t i = 0; i < sbuffer_len(struct_decl->members); i++)
 	{
 		// checking for self included type (and not pointer)
-		if (strcmp(struct_decl->struct_name, struct_decl->struct_mmbrs[i]->type->repr) == 0)
-			if (!struct_decl->struct_mmbrs[i]->type->mods.ptr_rank)
+		if (strcmp(struct_decl->name, struct_decl->members[i]->type->repr) == 0)
+			if (!struct_decl->members[i]->type->spec.ptr_rank)
 				report_error2(frmt("Member \'%s\' has type \'%s\' which is self included, and not pointer.",
-					struct_decl->struct_mmbrs[i]->var, struct_decl->struct_name), 
-						struct_decl->struct_mmbrs[i]->area);
-		visit_non_void_type(struct_decl->struct_mmbrs[i]->type, table);
+					struct_decl->members[i]->name, struct_decl->name),
+						struct_decl->members[i]->area);
+		visit_non_void_type(struct_decl->members[i]->type, table);
 	}
 
 	// checking here for duplicated members
-	for (size_t i = 0; i < sbuffer_len(struct_decl->struct_mmbrs); i++)
-		for (size_t j = i+1; j < sbuffer_len(struct_decl->struct_mmbrs); j++)
-			if (strcmp(struct_decl->struct_mmbrs[i]->var, struct_decl->struct_mmbrs[j]->var) == 0)
+	for (size_t i = 0; i < sbuffer_len(struct_decl->members); i++)
+		for (size_t j = i+1; j < sbuffer_len(struct_decl->members); j++)
+			if (strcmp(struct_decl->members[i]->name, struct_decl->members[j]->name) == 0)
 				report_error2(frmt("Member \'%s\' is already declared in \'%s\' struct declaration.",
-					struct_decl->struct_mmbrs[i]->var, struct_decl->struct_name), 
-						struct_decl->struct_mmbrs[i]->area);
+					struct_decl->members[i]->name, struct_decl->members),
+						struct_decl->members[i]->area);
 }
 
 void visit_type_decl_stmt(TypeDecl* type_decl, Table* table)
@@ -753,7 +755,7 @@ void visit_func_decl_stmt(FuncDecl* func_decl, Table* table)
 				func_decl->func_params[i]->var, func_decl->func_name->svalue), func_decl->func_params[i]->area);
 		add_function_param(func_decl->func_params[i], local);
 
-		// checking for void type
+		// checking func param for void type
 		visit_non_void_type(func_decl->func_params[i]->type, table);
 	}
 

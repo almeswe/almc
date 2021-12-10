@@ -224,21 +224,30 @@ typedef struct LabelDecl
 
 typedef struct EnumDecl
 {
+	char* name;
 	Idnt** enum_idnts;
 	Expr** enum_idnt_values;
-	const char* enum_name;
 } EnumDecl;
+
+typedef struct Member
+{
+	char* name;
+	Type* type;
+	SrcArea* area;
+	uint32_t offset;
+	uint32_t padding;
+} Member;
 
 typedef struct UnionDecl
 {
-	TypeVar** union_mmbrs;
-	const char* union_name;
+	char* name;
+	Member** members;
 } UnionDecl;
 
 typedef struct StructDecl
 {
-	TypeVar** struct_mmbrs;
-	const char* struct_name;
+	char* name;
+	Member** members;
 } StructDecl;
 
 typedef enum TypeDeclKind
@@ -440,8 +449,9 @@ FuncDecl* func_decl_new(Idnt* func_name, TypeVar** func_params,
 TypeDecl* type_decl_new(TypeDeclKind type, void* type_decl_value_ptr);
 EnumDecl* enum_decl_new(Idnt** enum_idnts, Expr** enum_idnt_values, 
 	const char* enum_name);
-UnionDecl* union_decl_new(TypeVar** union_mmbrs, const char* union_name);
-StructDecl* struct_decl_new(TypeVar** struct_mmbrs, const char* struct_name);
+UnionDecl* union_decl_new(Member** members, const char* name);
+StructDecl* struct_decl_new(Member** members, const char* name);
+Member* member_new(char* name, Type* type, SrcArea* area);
 LabelDecl* label_decl_new(Idnt* label_idnt);
 
 char* type_tostr_plain(Type* type);
@@ -465,6 +475,7 @@ void type_decl_free(TypeDecl* type_decl);
 void enum_decl_free(EnumDecl* enum_decl);
 void union_decl_free(UnionDecl* union_decl);
 void struct_decl_free(StructDecl* struct_decl);
+void member_free(Member* member);
 
 void empty_stmt_free(EmptyStmt* empty_stmt);
 void expr_stmt_free(ExprStmt* expr_stmt);

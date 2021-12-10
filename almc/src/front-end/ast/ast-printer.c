@@ -346,10 +346,18 @@ void print_label_decl(LabelDecl* label_decl, const char* indent)
 	printf(RESET);
 }
 
+void print_member(Member* member, const char* indent)
+{
+	printf(CYAN);
+	printf("%smember: %s\n", indent, member->name);
+	print_type(member->type, frmt("   %s", indent));
+	printf(RESET);
+}
+
 void print_enum_decl(EnumDecl* enum_decl, const char* indent)
 {
 	printf(BOLDMAGENTA);
-	printf("%senum-decl: %s{idnts: %d}\n", indent, enum_decl->enum_name, sbuffer_len(enum_decl->enum_idnts));
+	printf("%senum-decl: %s{idnts: %d}\n", indent, enum_decl->name, sbuffer_len(enum_decl->enum_idnts));
 	printf(RESET);
 	for (int i = 0; i < sbuffer_len(enum_decl->enum_idnts); i++)
 	{
@@ -361,19 +369,21 @@ void print_enum_decl(EnumDecl* enum_decl, const char* indent)
 void print_union_decl(UnionDecl* union_decl, const char* indent)
 {
 	printf(BOLDMAGENTA);
-	printf("%sunion-decl: %s{mmbrs: %d}\n", indent, union_decl->union_name, sbuffer_len(union_decl->union_mmbrs));
+	printf("%sunion-decl: %s{mmbrs: %d}\n", indent, 
+		union_decl->name, sbuffer_len(union_decl->members));
 	printf(RESET);
-	for (int i = 0; i < sbuffer_len(union_decl->union_mmbrs); i++)
-		print_type_var(union_decl->union_mmbrs[i], frmt("   %s", indent));
+	for (int i = 0; i < sbuffer_len(union_decl->members); i++)
+		print_member(union_decl->members[i], frmt("   %s", indent));
 }
 
 void print_struct_decl(StructDecl* struct_decl, const char* indent)
 {
 	printf(BOLDMAGENTA);
-	printf("%sstruct-decl: %s{mmbrs: %d}\n", indent, struct_decl->struct_name, sbuffer_len(struct_decl->struct_mmbrs));
+	printf("%sstruct-decl: %s{mmbrs: %d}\n", indent, struct_decl->name,
+		sbuffer_len(struct_decl->members));
 	printf(RESET);
-	for (int i = 0; i < sbuffer_len(struct_decl->struct_mmbrs); i++)
-		print_type_var(struct_decl->struct_mmbrs[i], frmt("   %s", indent));
+	for (int i = 0; i < sbuffer_len(struct_decl->members); i++)
+		print_member(struct_decl->members[i], frmt("   %s", indent));
 }
 
 void print_type_decl(TypeDecl* type_decl, const char* indent)
