@@ -55,4 +55,13 @@ void visit_import_stmt(ImportStmt* import_stmt, Table* table);
 void check_entry_func_params(FuncDecl* func_decl);
 void visit_entry_func_stmt(FuncDecl* func_decl, Table* table);
 
+uint32_t get_size_of_aggregate_type(Type* type, Table* table);
+uint32_t get_size_of_primitive_type(Type* type);
+uint32_t get_size_of_type(Type* type, Table* table);
+
+void complete_size_of_aggregate_type(Type* type, Table* table);
+void complete_size_of_primitive_type(Type* type);
+void complete_size(Type* type, Table* table);
+void complete_type(Type* type, Table* table);
+
 #endif

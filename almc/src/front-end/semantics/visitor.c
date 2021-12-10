@@ -75,13 +75,13 @@ void visit_stmt(Stmt* stmt, Table* table)
 
 void visit_type(Type* type, Table* table)
 {
-	if (!type->mods.is_predefined)
 	if (!type->spec.is_predefined)
 		if (!is_struct_declared(type->repr, table) &&
 			!is_union_declared(type->repr, table) &&
 			!is_enum_declared(type->repr, table))
 				report_error2(frmt("Undefined type \'%s\' met.",
 					type->repr), type->area);
+	complete_type(type, table);
 }
 
 void visit_non_void_type(Type* type, Table* table)
@@ -637,7 +637,7 @@ void visit_enum(EnumDecl* enum_decl, Table* table)
 		// enum identifier's value must be less equal than 4 bytes
 		Type* const_expr_type = get_ivalue_type(
 			evaluate_expr_itype(enum_decl->enum_idnt_values[i]));
-		if (get_type_size_in_bytes(const_expr_type) > 4)
+		if (get_size_of_primitive_type(const_expr_type) > 4)
 			report_error2(frmt("Enum member \'%s\' must have value type less equal than 4 bytes, in \'%s\' enum.",
 				enum_decl->enum_idnts[i]->svalue, enum_decl->name),
 					get_expr_area(enum_decl->enum_idnt_values[i]));
@@ -819,4 +819,104 @@ void visit_entry_func_stmt(FuncDecl* func_decl, Table* table)
 						table->functions[i]->func_name->svalue), func_decl->func_name->context);
 
 	check_entry_func_params(func_decl);
+}
+
+uint32_t get_size_of_type(Type* type, Table* table)
+{
+	if (type->spec.ptr_rank && !type->spec.array_rank)
+		return MACHINE_WORD;
+	else if (type->spec.is_union ||
+			 type->spec.is_struct)
+		return get_size_of_aggregate_type(type, table);
+	else if (type->spec.is_predefined)
+		return get_size_of_primitive_type(type);
+	else
+		report_error(frmt("Cannot get size of \'%s\' type",
+			type_tostr_plain(type)), NULL);
+}
+
+uint32_t get_size_of_aggregate_type(Type* type, Table* table)
+{
+	uint32_t align = MACHINE_WORD;
+	uint32_t size = 0, buffer = 0;
+	if (type->spec.is_struct)
+		for (size_t i = 0; i < sbuffer_len(type->members); i++)
+			size += get_size_of_type(type->members[i]->type, table);
+	//-----------------------------------------------
+	else if (is_enum_declared(type->repr, table))
+		return sizeof(int32_t);
+	//-----------------------------------------------
+	else if (type->spec.is_union)
+		for (size_t i = 0; i < sbuffer_len(type->members); i++)
+			buffer = get_size_of_type(type->members[i]->type, table),
+				size = max(size, buffer);
+	else
+		report_error(frmt("Passed type \'%s\' is not user-defined, "
+			"in get_user_type_size_in_bytes()"), type_tostr_plain(type), NULL);
+	return size;
+}
+
+void complete_size_of_aggregate_type(Type* type, Table* table)
+{
+	type->size = get_size_of_aggregate_type(type, table);
+}
+
+uint32_t get_size_of_primitive_type(Type* type)
+{
+	if (!type || !type->spec.is_predefined)
+		report_error(frmt("Cannot get size of \'%s\' type",
+			type_tostr_plain(type)), NULL);
+	if (IS_STRING_TYPE(type))
+		return MACHINE_WORD;
+	if (IS_VOID_TYPE(type))
+		return 0x0;
+	if (IS_U8_TYPE(type) ||
+		IS_I8_TYPE(type) ||
+		IS_CHAR_TYPE(type))
+			return I8_SIZE;
+	else if (IS_U16_TYPE(type) ||
+		IS_I16_TYPE(type))
+			return I16_SIZE;
+	else if (IS_U32_TYPE(type) ||
+		IS_I32_TYPE(type) ||
+		IS_F32_TYPE(type))
+			return I32_SIZE;
+	return I64_SIZE;
+}
+
+void complete_size_of_primitive_type(Type* type)
+{
+	type->size = get_size_of_primitive_type(type);
+}
+
+void complete_size(Type* type, Table* table)
+{
+	if (type->spec.ptr_rank && !type->spec.array_rank)
+		type->size = MACHINE_WORD;
+	else if (type->spec.is_union ||
+			 type->spec.is_struct)
+		complete_size_of_aggregate_type(type, table);
+	else if (type->spec.is_predefined)
+		complete_size_of_primitive_type(type);
+	else 		
+		report_error(frmt("Cannot get size of \'%s\' type",
+			type_tostr_plain(type)), NULL);
+}
+
+void complete_type(Type* type, Table* table)
+{
+	/*
+		Completes the missing information in type structure
+		if its struct or union type
+	*/
+	//todo: add enum type
+	StructDecl* user_type = NULL;
+	if (user_type = get_struct(type->repr, table))
+		type->spec.is_struct = 1,
+			type->members = user_type->members;
+	else if (user_type = get_union(type->repr, table))
+		type->spec.is_union = 1,
+			type->members = user_type->members;
+
+	complete_size(type, table);
 }
