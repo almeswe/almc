@@ -35,18 +35,18 @@ int get_argument_by_name(const char* name, StackFrame* frame)
 
 void add_local(VarDecl* local, StackFrame* frame)
 {
-	size_t offset = get_type_size(local->type_var->type);
+	size_t offset = get_type_size2(local->type_var->type);
 	for (size_t i = 0; i < sbuffer_len(frame->local_offsets); i++)
-		offset += get_type_size(frame->locals[i]->type_var->type);
+		offset += get_type_size2(frame->locals[i]->type_var->type);
 	sbuffer_add(frame->local_offsets, offset);
 	sbuffer_add(frame->locals, local);
 }
 
 void add_argument(TypeVar* argument, StackFrame* frame)
 {
-	size_t offset = get_type_size(argument->type) + 4;
+	size_t offset = get_type_size2(argument->type) + 4;
 	for (size_t i = 0; i < sbuffer_len(frame->argument_offsets); i++)
-		offset += get_type_size(frame->arguments[i]->type);
+		offset += get_type_size2(frame->arguments[i]->type);
 	sbuffer_add(frame->argument_offsets, offset);
 	sbuffer_add(frame->arguments, argument);
 }

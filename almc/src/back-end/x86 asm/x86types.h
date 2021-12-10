@@ -11,7 +11,7 @@
 
 #include "..\..\front-end\ast\ast.h"
 
-int get_type_size(Type* type);
+int get_type_size2(Type* type);
 int get_type_prefix(Type* type);
 const char* get_predefined_type_str(int prefix);
 

@@ -21,7 +21,7 @@ void gen_jump_stmt(JumpStmt* jump_stmt, StackFrame* frame)
 	{
 	case JUMP_RETURN:
 		if (jump_stmt->additional_expr)
-			gen_expr(jump_stmt->additional_expr, frame);
+			gen_expr2(jump_stmt->additional_expr, frame);
 		MOV32(get_register_str(ESP), get_register_str(EBP));
 		POP32(get_register_str(EBP));
 		OUT("ret");
@@ -38,7 +38,7 @@ void gen_jump_stmt(JumpStmt* jump_stmt, StackFrame* frame)
 void gen_var_decl_stmt(VarDecl* var_decl, StackFrame* frame)
 {
 	add_local(var_decl, frame);
-	int size = get_type_size(
+	int size = get_type_size2(
 		var_decl->type_var->type);
 	int prefix = get_type_prefix(
 		var_decl->type_var->type);
@@ -49,7 +49,7 @@ void gen_var_decl_stmt(VarDecl* var_decl, StackFrame* frame)
 	if (var_decl->var_init)
 	{
 		//todo: extend to x64 + structs
-		gen_expr(var_decl->var_init, frame);
+		gen_expr2(var_decl->var_init, frame);
 		OUT(frmt("mov  %s PTR [ebp-%d], %s", get_predefined_type_str(prefix),
 			frame->local_offsets[index], get_register_str(EAX)));
 		unreserve_register(frame->regtable, EAX);
@@ -61,7 +61,7 @@ void gen_stmt(Stmt* stmt, StackFrame* frame)
 	switch (stmt->kind)
 	{
 	case STMT_EXPR:
-		gen_expr(stmt->expr_stmt->expr, frame);
+		gen_expr2(stmt->expr_stmt->expr, frame);
 		break;
 	case STMT_JUMP:
 		gen_jump_stmt(stmt->jump_stmt, frame);

@@ -77,7 +77,7 @@ char* gen_idnt_addr(Idnt* idnt, StackFrame* frame)
 	if ((index = get_local_by_name(idnt->svalue, frame)) >= 0)
 	{
 		VarDecl* var_decl = frame->locals[index];
-		size = get_type_size(var_decl->type_var->type);
+		size = get_type_size2(var_decl->type_var->type);
 		prefix = get_type_prefix(var_decl->type_var->type);
 		return frmt("%s PTR [ebp-%d]", get_predefined_type_str(prefix),
 			frame->local_offsets[index]);
@@ -85,7 +85,7 @@ char* gen_idnt_addr(Idnt* idnt, StackFrame* frame)
 	else if ((index = get_argument_by_name(idnt->svalue, frame)) >= 0)
 	{
 		TypeVar* type_var = frame->arguments[index];
-		size = get_type_size(type_var->type);
+		size = get_type_size2(type_var->type);
 		prefix = get_type_prefix(type_var->type);
 		return frmt("%s PTR [ebp+%d]", get_predefined_type_str(prefix),
 			frame->argument_offsets[index]);

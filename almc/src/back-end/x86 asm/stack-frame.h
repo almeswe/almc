@@ -7,17 +7,39 @@
 
 typedef struct x86_AsmCodeProc AsmCodeProc;
 
+typedef enum x86_StackFrameEntityKind
+{
+	
+} StackFrameEntityKind;
+
+typedef struct x86_StackFrameEntity
+{
+	int offset;
+	char* definition;
+	StackFrameEntityKind kind;
+	union
+	{
+		VarDecl* local;
+		TypeVar* argument;
+	};
+} StackFrameEntity;
+
 typedef struct x86_StackFrame
 {
 	VarDecl** locals;    // local variables which were declared in this stack frame
 	TypeVar** arguments; // function arguments which were passed in this function
 	
 	RegisterTable* regtable;
+	StackFrameEntity** entities;
 
 	AsmCodeProc* of_proc;
 
 	int* local_offsets;    // offset for each local variable in this stack frame
 	int* argument_offsets; // offset for each function argument in this stack frame
+
+	int required_space_for_locals;
+	//todo: define size for each type in Type struct!
+	int required_space_for_arguments;
 
 	char* func_name;
 	char return_stmt_mentioned;
