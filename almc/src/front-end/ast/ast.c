@@ -388,7 +388,7 @@ JumpStmt* jump_stmt_new(JumpStmtKind type, Expr* additional_expr)
 char* type_tostr_plain(Type* type)
 {
 	char* str = type->repr;
-	for (size_t i = 0; i < type->mods.ptr_rank; i++)
+	for (size_t i = 0; i < type->spec.ptr_rank; i++)
 		str = frmt("%s*", str);
 	return str;
 }
@@ -409,9 +409,12 @@ void type_free(Type* type)
 {
 	if (type)
 	{ 
-		for (uint32_t i = 0; i < sbuffer_len(type->info.arr_dimensions); i++)
-			expr_free(type->info.arr_dimensions[i]);
-		sbuffer_free(type->info.arr_dimensions);
+		if (type->is_origin)
+		{
+			for (uint32_t i = 0; i < sbuffer_len(type->dimensions); i++)
+				expr_free(type->dimensions[i]);
+			sbuffer_free(type->dimensions);
+		}
 		free(type->area);
 		free(type);
 	}

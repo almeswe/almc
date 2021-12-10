@@ -17,7 +17,7 @@ Type* unknown_type_new()
 {
 	Type* type = cnew_s(Type, type, 1);
 	type->repr = "unknown";
-	type->mods.is_unknown = 1;
+	type->spec.is_unknown = 1;
 	return type;
 }
 
@@ -25,56 +25,49 @@ Type* type_new(const char* repr, SrcArea* area)
 {
 	Type* type = cnew_s(Type, type, 1);
 	type->repr = repr;
-	type->mods.is_predefined = 
+	type->is_origin = 0;
+	type->spec.is_predefined = 
 		is_predefined_type(repr);
 	type->area = area;
 	return type;
 }
 
-Type* type_new2(const char* repr, TypeMods mods,
+Type* type_new2(const char* repr, TypeSpec spec,
 	SrcArea* area)
 {
 	Type* type = type_new(repr, area);
 	uint8_t is_predefined_already =
-		type->mods.is_predefined;
-	type->mods = mods;
+		type->spec.is_predefined;
+	type->spec = spec;
 	if (is_predefined_already)
-		type->mods.is_predefined = 1;
-	return type;
-}
-
-Type* type_new3(const char* repr, TypeInfo info,
-	TypeMods mods, SrcArea* area)
-{
-	Type* type = type_new2(repr, mods, area);
-	type->info = info;
+		type->spec.is_predefined = 1;
 	return type;
 }
 
 Type* type_dup(Type* type)
 {
-	//todo: probably add deep copy for expressions in expr->info.arr_dimensions
-	TypeMods mods = type->mods;
-	TypeInfo info = type->info;
-	info.arr_dimensions = NULL;
+	TypeSpec spec = type->spec;
 	SrcArea* area = type->area ?
 		src_area_new(type->area->begins, 
 			type->area->ends) : NULL;
-	return type_new3(type->repr, 
-		info, mods, area);
+	Type* dup = type_new2(type->repr, spec, area);
+	dup->is_origin = 0;
+	dup->members = type->members;
+	dup->dimensions = type->dimensions;
+	return dup->size = type->size, dup;
 }
 
 Type* type_address(Type* type)
 {
-	type->mods.ptr_rank += 1;
+	type->spec.ptr_rank += 1;
 	return type;
 }
 
 Type* type_dereference(Type* type)
 {
-	type->mods.ptr_rank -= type->mods.ptr_rank > 0 ?
+	type->spec.ptr_rank -= type->spec.ptr_rank > 0 ?
 		1 : 0;
-	type->mods.array_rank -= type->mods.array_rank > 0 ?
+	type->spec.array_rank -= type->spec.array_rank > 0 ?
 		1 : 0;
 	return type;
 }

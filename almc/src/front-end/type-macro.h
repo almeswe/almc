@@ -18,7 +18,7 @@
 #define IS_SPECIFIED_TYPE(type, type_str) \
 	(type && strcmp(type->repr, type_str) == 0)
 #define IS_SPECIFIED_TYPE_POINTER(type) \
-	(type && type->mods.ptr_rank)
+	(type && type->spec.ptr_rank)
 #define IS_SPECIFIED_TYPE_NON_POINTER(type, type_str) \
 	(IS_SPECIFIED_TYPE(type, type_str) && !IS_SPECIFIED_TYPE_POINTER(type))
 
@@ -41,7 +41,7 @@
 	(IS_REAL_TYPE(type) || IS_INTEGRAL_TYPE(type))
 
 #define IS_POINTER_RANK(rank, type) \
-	(type && type->mods.ptr_rank == (rank))
+	(type && type->spec.ptr_rank == (rank))
 #define IS_CHAR_POINTER_TYPE(type) \
 	(IS_SPECIFIED_TYPE(type, CHAR_TYPE) && IS_POINTER_TYPE(type))
 

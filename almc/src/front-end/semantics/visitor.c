@@ -326,11 +326,11 @@ void visit_arr_member_accessor(BinaryExpr* arr_accessor_expr, Table* table)
 	// i32[1][6];
 	// a[1][1];
 	Type* type = arr_accessor_expr->type;
-	Expr** dimensions = type->info.arr_dimensions;
-	if (type->mods.array_rank)
+	Expr** dimensions = type->dimensions;
+	if (type->spec.array_rank)
 		if (is_const_expr(arr_accessor_expr->rexpr) &&
-			is_const_expr(dimensions[type->mods.array_rank - 1]))
-			if (evaluate_expr_itype(dimensions[type->mods.array_rank - 1]) <
+			is_const_expr(dimensions[type->spec.array_rank - 1]))
+			if (evaluate_expr_itype(dimensions[type->spec.array_rank - 1]) <
 				evaluate_expr_itype(arr_accessor_expr->rexpr))
 				report_error2("Cannot access array element by this index.",
 					get_expr_area(arr_accessor_expr->rexpr));

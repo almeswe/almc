@@ -159,17 +159,18 @@ Type* parse_abstract_declarator(Parser* parser, Type* type)
 	switch (get_curr_token(parser)->type)
 	{
 	case TOKEN_ASTERISK:
-		if (type->mods.array_rank)
+		if (type->spec.array_rank)
 			report_error("Cannot create type with this sequence of type declarators.",
 				get_curr_token(parser)->context);
-		type->mods.ptr_rank++;
+		type->spec.ptr_rank++;
 		get_next_token(parser);
 		return parse_abstract_declarator(parser, type);
 	case TOKEN_OP_BRACKET:
-		type->mods.ptr_rank++;
-		type->mods.array_rank++;
+		type->is_origin = 1;
+		type->spec.ptr_rank++;
+		type->spec.array_rank++;
 		get_next_token(parser);
-		sbuffer_add(type->info.arr_dimensions,
+		sbuffer_add(type->dimensions,
 			parse_expr(parser));
 		expect_with_skip(parser, TOKEN_CL_BRACKET, "]");
 		return parse_abstract_declarator(parser, type);
@@ -213,8 +214,8 @@ Type* parse_type_name(Parser* parser)
 	case TOKEN_IDNT:
 	case TOKEN_PREDEFINED_TYPE:
 		type->repr = token->svalue;
-		type->mods.is_predefined = (token->type != TOKEN_IDNT);
-		type->mods.is_void = (token->type == TOKEN_KEYWORD_VOID);
+		type->spec.is_predefined = (token->type != TOKEN_IDNT);
+		type->spec.is_void = (token->type == TOKEN_KEYWORD_VOID);
 		get_next_token(parser);
 		type = parse_abstract_declarator(parser, type);
 		context_ends(parser, context, type);

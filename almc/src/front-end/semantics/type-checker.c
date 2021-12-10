@@ -305,7 +305,7 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 
 		// condition for both common and pointer accessors
 		// checks if the left expression's type is not predefined simple type
-		if (ltype->mods.is_predefined)
+		if (ltype->spec.is_predefined)
 			report_error2(frmt("Cannot access member of non-user defined type \'%s\'.",
 				type_tostr_plain(ltype)), binary_expr->area);
 
@@ -463,7 +463,7 @@ uint32_t get_type_priority(Type* type)
 		return STR;
 	if (IS_VOID_TYPE(type))
 		return VOID;
-	if (type && !type->mods.is_predefined)
+	if (type && !type->spec.is_predefined)
 		return I32;
 	return 0x0;
 }
@@ -496,7 +496,7 @@ Type* cast_explicitly_when_const_expr(Expr* const_expr, Type* to, Type* const_ex
 			"when trying to convert explicitly.", NULL);
 	else
 	{
-		if (to->mods.is_void && !IS_POINTER_TYPE(to))
+		if (to->spec.is_void && !IS_POINTER_TYPE(to))
 			report_error2("Explicit conversion to void is not allowed.", to->area);
 
 		//---------------------------------------
@@ -513,9 +513,8 @@ Type* cast_explicitly_when_const_expr(Expr* const_expr, Type* to, Type* const_ex
 			report_error2("Cannot evaluate constant expression for explicit cast.",
 				get_expr_area(const_expr));
 		//---------------------------------------
-
-		if (to->mods.is_predefined && const_expr_type_new->mods.is_predefined)
-			if (get_type_size_in_bytes(to) < get_type_size_in_bytes(const_expr_type_new))
+		if (to->spec.is_predefined && const_expr_type_new->spec.is_predefined)
+			if (to->size < get_size_of_primitive_type(const_expr_type_new))
 				report_error2(frmt("Cannot explicitly convert constant value of type \'%s\' to \'%s\' (value: %f).",
 					type_tostr_plain(to), type_tostr_plain(const_expr_type_new), value), to->area);
 		// freeing temporary type instance (type from evaluated const expression) 
@@ -558,7 +557,7 @@ Type* cast_implicitly_when_assign(Type* to, Type* type, SrcArea* area)
 
 uint32_t can_cast_implicitly(Type* to, Type* type)
 {
-	if (to->mods.is_void || type->mods.is_void)
+	if (to->spec.is_void || type->spec.is_void)
 		return 0;
 
 	// if one type is string, except second type
@@ -567,7 +566,7 @@ uint32_t can_cast_implicitly(Type* to, Type* type)
 			return 0;
 
 	// case of two pointers of same rank
-	if (to->mods.ptr_rank && (to->mods.ptr_rank == type->mods.ptr_rank))
+	if (to->spec.ptr_rank && (to->spec.ptr_rank == type->spec.ptr_rank))
 		return 1;
 
 	// case when types are equal
@@ -576,11 +575,11 @@ uint32_t can_cast_implicitly(Type* to, Type* type)
 			return 1;
 
 	// case of pointer && integral (not pointer), and not greater than 32 bits
-	if (to->mods.ptr_rank && IS_INTEGRAL_TYPE(type) && (get_type_priority(type) <= I32) && !IS_POINTER_TYPE(type))
+	if (to->spec.ptr_rank && IS_INTEGRAL_TYPE(type) && (get_type_priority(type) <= I32) && !IS_POINTER_TYPE(type))
 		return 1;
 
 	// case of integral (not pointer) && pointer, and greater equal than 32 bits
-	if (type->mods.ptr_rank && IS_INTEGRAL_TYPE(to) && (get_type_priority(to) >= U32) && !IS_POINTER_TYPE(to))
+	if (type->spec.ptr_rank && IS_INTEGRAL_TYPE(to) && (get_type_priority(to) >= U32) && !IS_POINTER_TYPE(to))
 		return 1;
 
 	// types that can be casted to u8 and char

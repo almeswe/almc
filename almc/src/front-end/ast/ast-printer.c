@@ -9,24 +9,29 @@ void print_ast(AstRoot* ast)
 
 void print_type(Type* type, const char* indent)
 {
-#define print_type_mode(mode) type->mods.mode ? \
-	printf("%s%s: %d\n", indent, #mode, type->mods.mode) : 0
+#define print_type_mode(mode) type->spec.mode ? \
+	printf("%s%s: %d\n", indent, #mode, type->spec.mode) : 0
 
 	printf(BOLDRED);
 	printf("%stype: %s\n", indent, type->repr);
-	//printf("%s%s\n", indent, src_area_tostr(type->area));
 	indent = frmt("%s   ", indent);
 	printf(RESET);
+	printf("%ssize: %d\n", indent, type->size);
+
 	print_type_mode(ptr_rank);
-	print_type_mode(is_void);
-	print_type_mode(is_predefined);
 	print_type_mode(array_rank);
+
+	print_type_mode(is_void);
+	print_type_mode(is_unknown);
+
+	print_type_mode(is_union);
+	print_type_mode(is_struct);
+	print_type_mode(is_predefined);
+
 	indent = frmt("%s   ", indent);
-	for (int i = 0; i < sbuffer_len(type->info.arr_dimensions); i++)
-	{
-		printf("%sdim %d:\n", indent, i + 1);
-		print_expr(type->info.arr_dimensions[i], indent);
-	}
+	for (int i = 0; i < sbuffer_len(type->dimensions); i++)
+		printf("%sdim %d:\n", indent, i + 1),
+			print_expr(type->dimensions[i], indent);
 }
 
 void print_idnt(Idnt* idnt, const char* indent)
