@@ -65,7 +65,7 @@
     <ClCompile Include="src\front-end\ast\ast-printer.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\front-end\types.c">
+    <ClCompile Include="src\front-end\type.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\front-end\semantics\flow-checker.c">
@@ -136,7 +136,7 @@
     <ClInclude Include="src\front-end\ast\ast-printer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\front-end\types.h">
+    <ClInclude Include="src\front-end\type.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\front-end\semantics\flow-checker.h">
@@ -167,9 +167,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="test\test.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\front-end\type-macro.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\back-end\x86 asm\expr-gen.h">

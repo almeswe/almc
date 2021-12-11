@@ -7,7 +7,7 @@ void print_ast(AstRoot* ast)
 		print_stmt(ast->stmts[i], "");
 }
 
-void print_type(Type* type, const char* indent)
+/*void print_type(Type* type, const char* indent)
 {
 #define print_type_mode(mode) type->spec.mode ? \
 	printf("%s%s: %d\n", indent, #mode, type->spec.mode) : 0
@@ -32,6 +32,55 @@ void print_type(Type* type, const char* indent)
 	for (int i = 0; i < sbuffer_len(type->dimensions); i++)
 		printf("%sdim %d:\n", indent, i + 1),
 			print_expr(type->dimensions[i], indent);
+}*/
+
+void print_type_spec(Type* type, const char* indent)
+{
+	const char* type_kind_str[] = {
+		[TYPE_ENUM] = "enum",
+		[TYPE_UNION] = "union",
+		[TYPE_STRUCT] = "struct",
+	};
+
+	switch (type->kind)
+	{
+	case TYPE_ARRAY:
+		printf("%sarray\n", indent);
+		print_expr(type->dimension, indent);
+		print_type_spec(type->base, frmt("%s   ", indent));
+		break;
+	case TYPE_POINTER:
+		printf("%spointer\n", indent);
+		print_type_spec(type->base, frmt("%s   ", indent));
+		break;
+	case TYPE_ENUM:
+	case TYPE_UNION:
+	case TYPE_STRUCT:
+		printf("%s%s: %s\n", indent, type_kind_str[type->kind],
+			type->repr);
+		break;
+	case TYPE_VOID:
+		printf("%svoid\n", indent);
+		break;
+	case TYPE_PRIMITIVE:
+		printf("%sprimitive: %s\n", indent, type->repr);
+		break;
+	case TYPE_INCOMPLETE:
+		printf("%sincomplete: %s\n", indent, type->repr);
+		break;
+	}
+	if (type->size)
+		printf("%ssize: %d\n", indent, type->size);
+	else 
+		printf("%ssize: ?\n", indent);
+}
+
+void print_type(Type* type, const char* indent)
+{
+	printf(BOLDRED);
+	printf("%stype: %s\n", indent, type->repr);
+	printf(RESET);
+	print_type_spec(type, frmt("%s   ", indent));
 }
 
 void print_idnt(Idnt* idnt, const char* indent)
@@ -58,6 +107,11 @@ void print_str(Str* str, const char* indent)
 
 void print_const(Const* cnst, const char* indent)
 {
+	char* a;
+	char b[5][10];
+
+	char* c = b;
+
 	printf(BOLDWHITE);
 	switch (cnst->kind)
 	{

@@ -1,5 +1,5 @@
 #include "..\test\test.h"
-#include "..\src\front-end\types.h"
+#include "..\src\front-end\type.h"
 #include "back-end/x86 asm/stack-frame.h"
 #include "back-end/x86 asm/gen.h"
 
@@ -33,12 +33,30 @@ int back_end_test()
 		//program_free(program);
 }
 
+void type2_test()
+{
+	while (1)
+	{
+		char buffer[30];
+		char* input = gets(buffer);
+		system("cls");
+
+		Lexer* lexer = lexer_new(
+			input, FROM_CHAR_PTR);
+		Parser* parser = parser_new(NULL, lex(lexer));
+		Type* type;
+		print_type(type = parse_type(parser), "");
+		type_free(type);
+	}
+}
+
 int main(int argc, char** argv)
 {
-	back_end_test();
+	//back_end_test();
 	//test();
 	//type_test();
 	//type2_test();
-	//run_tests();
+	
+	run_tests();
 	return 0;
 }

@@ -1,8 +1,8 @@
 #ifndef ALMC_AST_H
 #define ALMC_AST_H
 
+#include "..\type.h"
 #include "..\lexer.h"
-#include "..\types.h"
 
 typedef struct Expr Expr;
 typedef struct Stmt Stmt;
@@ -454,11 +454,7 @@ StructDecl* struct_decl_new(Member** members, const char* name);
 Member* member_new(char* name, Type* type, SrcArea* area);
 LabelDecl* label_decl_new(Idnt* label_idnt);
 
-char* type_tostr_plain(Type* type);
-
 void ast_free(AstRoot* root);
-
-void type_free(Type* type);
 
 void expr_free(Expr* expr);
 void str_free(Str* str);

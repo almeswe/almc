@@ -144,87 +144,78 @@ Expr* parse_expr(Parser* parser)
 	return parse_comma_expr(parser);
 }
 
-Type* parse_abstract_declarator(Parser* parser, Type* type)
+Type* parse_type_declarator(Parser* parser, Type* type)
 {
-	/*
-	<abstract-declarator> ::= <pointer>
-					| <pointer> <direct-abstract-declarator>
-					| <direct-abstract-declarator>
-
-	<direct-abstract-declarator> ::=  ( <abstract-declarator> )
-			| {<direct-abstract-declarator>}? [ {<constant-expression>}? ]
-			| {<direct-abstract-declarator>}? ( {<parameter-type-list>}? )
-	*/
-
 	switch (get_curr_token(parser)->type)
 	{
 	case TOKEN_ASTERISK:
-		if (type->spec.array_rank)
+		if (type->kind == TYPE_ARRAY)
 			report_error("Cannot create type with this sequence of type declarators.",
 				get_curr_token(parser)->context);
-		type->spec.ptr_rank++;
 		get_next_token(parser);
-		return parse_abstract_declarator(parser, type);
+		type = pointer_type_new(type);
+		return parse_type_declarator(parser, type);
 	case TOKEN_OP_BRACKET:
-		type->is_origin = 1;
-		type->spec.ptr_rank++;
-		type->spec.array_rank++;
 		get_next_token(parser);
-		sbuffer_add(type->dimensions,
-			parse_expr(parser));
+		type = array_type_new(type, parse_expr(parser));
 		expect_with_skip(parser, TOKEN_CL_BRACKET, "]");
-		return parse_abstract_declarator(parser, type);
+		return parse_type_declarator(parser, type);
 	default:
 		return type;
 	}
 }
 
-Type* parse_type_name(Parser* parser)
+Type* parse_type(Parser* parser)
 {
-	/*
-	<type-name> ::= {<specifier-qualifier>}+ {<abstract-declarator>}?
+	#define ASSIGN_TYPE(primitive) \
+		type = &primitive; break
 
-	<specifier-qualifier> ::= <type-specifier>
-						| <type-qualifier>
-
-	<type-qualifier> ::= const
-				   | volatile
-
-	<type-specifier> ::= char
-				   | void
-				   | int8
-				   | int16
-				   | int32
-				   | uint8
-				   | uint16
-				   | uint32
-				   | uint64
-				   | float32
-				   | float64
-				   | string
-				   | idnt
-	*/
-
-	context_starts(parser, context);
-	Type* type = cnew_s(Type, type, 1);
+	Type* type = NULL;
 	Token* token = get_curr_token(parser);
+	context_starts(parser, context);
 
 	switch (token->type)
 	{
+	case TOKEN_KEYWORD_VOID:
+		ASSIGN_TYPE(void_type);
+	case TOKEN_KEYWORD_CHAR:   
+		ASSIGN_TYPE(char_type);
+	case TOKEN_KEYWORD_INT8: 
+		ASSIGN_TYPE(i8_type);
+	case TOKEN_KEYWORD_INT16:	  
+		ASSIGN_TYPE(i16_type);
+	case TOKEN_KEYWORD_INT32:	  
+		ASSIGN_TYPE(i32_type);
+	case TOKEN_KEYWORD_INT64:
+		ASSIGN_TYPE(i64_type);
+	case TOKEN_KEYWORD_UINT8:
+		ASSIGN_TYPE(u8_type);
+	case TOKEN_KEYWORD_UINT16:
+		ASSIGN_TYPE(u16_type);
+	case TOKEN_KEYWORD_UINT32:
+		ASSIGN_TYPE(u32_type);
+	case TOKEN_KEYWORD_UINT64:
+		ASSIGN_TYPE(u64_type);
+	case TOKEN_KEYWORD_FLOAT32:
+		ASSIGN_TYPE(f32_type);
+	case TOKEN_KEYWORD_FLOAT64:
+		ASSIGN_TYPE(f64_type);
+	case TOKEN_KEYWORD_STRING:
+		assert(0);
 	case TOKEN_IDNT:
-	case TOKEN_PREDEFINED_TYPE:
-		type->repr = token->svalue;
-		type->spec.is_predefined = (token->type != TOKEN_IDNT);
-		type->spec.is_void = (token->type == TOKEN_KEYWORD_VOID);
-		get_next_token(parser);
-		type = parse_abstract_declarator(parser, type);
-		context_ends(parser, context, type);
-		return type;
+		type = type_new(token->svalue);
+		break;
 	default:
 		report_error(frmt("Type expected, but met: %s",
 			token_type_tostr(token->type)), token->context);
 	}
-	return 0;
+
+	get_next_token(parser);
+	type = parse_type_declarator(parser, type);
+	context_ends(parser, context, type);
+	return type;
+
+	#undef ASSIGN_TYPE
 }
 
 Expr* parse_paren_expr(Parser* parser)
@@ -484,7 +475,7 @@ Expr* parse_cast_expr(Parser* parser)
 	{
 		expect_with_skip(parser, TOKEN_KEYWORD_CAST, "cast");
 		expect_with_skip(parser, TOKEN_OP_PAREN, "(");
-		type = parse_type_name(parser);
+		type = parse_type(parser);
 		expect_with_skip(parser, TOKEN_CL_PAREN, ")");
 		context_starts(parser, context);
 		expr = expr_new(EXPR_UNARY_EXPR,
@@ -507,7 +498,7 @@ Expr* parse_sizeof_expr(Parser* parser)
 	context_starts(parser, context);
 	expect_with_skip(parser, TOKEN_KEYWORD_SIZEOF, "sizeof");
 	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
-	type = parse_type_name(parser);
+	type = parse_type(parser);
 	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
 	expr = expr_new(EXPR_UNARY_EXPR,
 		unary_expr_new(UNARY_SIZEOF, NULL));
@@ -1034,7 +1025,6 @@ Stmt* parse_block(Parser* parser)
 Stmt* parse_expr_stmt(Parser* parser)
 {
 	Expr* expr = parse_expr(parser);
-
 	expect_with_skip(parser, TOKEN_SEMICOLON, ";");
 	return stmt_new(STMT_EXPR, expr_stmt_new(expr));
 }
@@ -1103,7 +1093,7 @@ Stmt* parse_func_decl_stmt(Parser* parser)
 	}
 	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
 	expect_with_skip(parser, TOKEN_COLON, ":");
-	func_type = parse_type_name(parser);
+	func_type = parse_type(parser);
 	
 	// checking if function does not have any block
 	if (matcht(parser, TOKEN_SEMICOLON))
@@ -1594,7 +1584,7 @@ TypeVar* parse_type_var(Parser* parser)
 	context_starts(parser, context);
 	expect_with_skip(parser, TOKEN_IDNT, "variable's name");
 	expect_with_skip(parser, TOKEN_COLON, ":");
-	type = parse_type_name(parser);
+	type = parse_type(parser);
 	type_var = type_var_new(type, var);
 	context_ends(parser, context, type_var);
 	return type_var;

@@ -11,7 +11,7 @@ static const char* predefined_types_prefixes[] = {
 
 int get_type_prefix(Type* type)
 {
-	if (type->spec.ptr_rank)
+	/*if (type->spec.ptr_rank)
 		return DWORD;
 	if (!type->spec.is_predefined)
 		assert(0);
@@ -35,7 +35,8 @@ int get_type_prefix(Type* type)
 			return QWORD;
 		else
 			assert(0);
-	}
+	}*/
+	assert(0);
 }
 
 const char* get_predefined_type_str(int prefix)
@@ -47,7 +48,7 @@ const char* get_predefined_type_str(int prefix)
 int get_type_size2(Type* type)
 {
 	assert(0);
-	if (type->spec.ptr_rank)
+	/*if (type->spec.ptr_rank)
 		return 4;
 	if (!type->spec.is_predefined)
 		assert(0);
@@ -68,5 +69,5 @@ int get_type_size2(Type* type)
 		}
 	}
 	assert(0);
-	return -1;
+	return -1;*/
 }

@@ -9,7 +9,7 @@
 
 #include ".\token.h"
 #include "..\error.h"
-#include "type-macro.h"
+#include "type.h"
 
 #include "..\utils\common.h"
 #include "..\utils\context.h"

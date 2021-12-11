@@ -46,7 +46,7 @@ Type* cast_explicitly_when_const_expr(Expr* const_expr, Type* to, Type* const_ex
 Type* cast_implicitly(Type* to, Type* type, SrcArea* area);
 Type* cast_implicitly_when_assign(Type* to, Type* type, SrcArea* area);
 
-uint32_t can_cast_implicitly(Type* to, Type* type);
+bool can_cast_implicitly(Type* to, Type* type);
 
 SrcArea* get_expr_area(Expr* expr);
 char* get_member_name(Expr* expr);

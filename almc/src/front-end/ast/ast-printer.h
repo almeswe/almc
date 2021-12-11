@@ -26,6 +26,7 @@ void print_stmt(Stmt* stmt, const char* indent);
 
 void print_ast(AstRoot* ast);
 
+void print_type_spec(Type* type, const char* indent);
 void print_type(Type* type, const char* indent);
 void print_idnt(Idnt* idnt, const char* indent);
 void print_str(Str* str, const char* indent);

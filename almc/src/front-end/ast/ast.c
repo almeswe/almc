@@ -25,7 +25,7 @@ Expr* expr_new(ExprKind type, void* expr_value_ptr)
 	case EXPR_INITIALIZER:
 		expr_set_value(Initializer, initializer);
 	default:
-		report_error("Unexpected expr type.", NULL);
+		report_error("Unexpected expr type in expr_new().", NULL);
 	}
 	return e;
 }
@@ -394,14 +394,6 @@ JumpStmt* jump_stmt_new(JumpStmtKind type, Expr* additional_expr)
 	return js;
 }
 
-char* type_tostr_plain(Type* type)
-{
-	char* str = type->repr;
-	for (size_t i = 0; i < type->spec.ptr_rank; i++)
-		str = frmt("%s*", str);
-	return str;
-}
-
 //todo: still have mem leak, but not so big as before
 void ast_free(AstRoot* root)
 {
@@ -414,7 +406,7 @@ void ast_free(AstRoot* root)
 	}
 }
 
-void type_free(Type* type)
+/*void type_free(Type* type)
 {
 	if (type)
 	{ 
@@ -427,7 +419,7 @@ void type_free(Type* type)
 		free(type->area);
 		free(type);
 	}
-}
+}*/
 
 void expr_free(Expr* expr)
 {
@@ -460,7 +452,7 @@ void expr_free(Expr* expr)
 			initializer_free(expr->initializer);
 			break;
 		default:
-			report_error("Unexpected expr type.", NULL);
+			report_error("Unexpected expr type in expr_free().", NULL);
 		}
 		free(expr);
 	}
@@ -469,27 +461,24 @@ void expr_free(Expr* expr)
 void str_free(Str* str)
 {
 	if (str)
-	{
-		type_free(str->type);
+		//type_free(str->type);
 		free(str);
-	}
 }
 
 void idnt_free(Idnt* idnt)
 {
 	if (idnt)
-	{
-		//todo: probably no need to free type, because in common case type will be freed by var_decl_free function
-		type_free(idnt->type);
+		//todo: probably no need to free type, because in common case 
+		//type will be freed by var_decl_free function
+		//type_free(idnt->type);
 		free(idnt);
-	}
 }
 
 void const_free(Const* cnst)
 {
 	if (cnst)
 	{
-		type_free(cnst->type);
+		//type_free(cnst->type);
 		free(cnst);
 	}
 }
@@ -501,7 +490,7 @@ void func_call_free(FuncCall* func_call)
 		for (uint32_t i = 0; i < sbuffer_len(func_call->func_args); i++)
 			expr_free(func_call->func_args[i]);
 		sbuffer_free(func_call->func_args);
-		type_free(func_call->type);
+		//type_free(func_call->type);
 		free(func_call->area);
 		free(func_call);
 	}
@@ -511,9 +500,23 @@ void unary_expr_free(UnaryExpr* unary_expr)
 {
 	if (unary_expr)
 	{
+		// in cases of theses unary expressions
+		// each allocates new type, which is not a part
+		// of type-var or func-ret-type
+		switch (unary_expr->kind)
+		{
+		case UNARY_CAST:
+		case UNARY_SIZEOF:
+			type_free(unary_expr->cast_type);
+			break;
+		case UNARY_ADDRESS:
+			if (unary_expr->type)
+				free(unary_expr->type);
+			break;
+		}
 		expr_free(unary_expr->expr);
-		type_free(unary_expr->cast_type);
-		type_free(unary_expr->type);
+		//type_free(unary_expr->cast_type);
+		//type_free(unary_expr->type);
 		free(unary_expr->area);
 		free(unary_expr);
 	}
@@ -525,7 +528,7 @@ void binary_expr_free(BinaryExpr* binary_expr)
 	{
 		expr_free(binary_expr->lexpr);
 		expr_free(binary_expr->rexpr);
-		type_free(binary_expr->type);
+		//type_free(binary_expr->type);
 		free(binary_expr->area);
 		free(binary_expr);
 	}
@@ -538,7 +541,7 @@ void ternary_expr_free(TernaryExpr* ternary_expr)
 		expr_free(ternary_expr->cond);
 		expr_free(ternary_expr->lexpr);
 		expr_free(ternary_expr->rexpr);
-		type_free(ternary_expr->type);
+		//type_free(ternary_expr->type);
 		free(ternary_expr->area);
 		free(ternary_expr);
 	}
@@ -551,7 +554,7 @@ void initializer_free(Initializer* initializer)
 		for (uint32_t i = 0; i < sbuffer_len(initializer->values); i++)
 			expr_free(initializer->values[i]);
 		sbuffer_free(initializer->values);
-		type_free(initializer->type);
+		//type_free(initializer->type);
 		free(initializer->area);
 		free(initializer);
 	}
