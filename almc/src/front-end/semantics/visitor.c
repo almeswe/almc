@@ -640,49 +640,49 @@ void visit_var_decl_stmt(VarDecl* var_decl, Table* table)
 
 void visit_enum(EnumDecl* enum_decl, Table* table)
 {
-	for (size_t i = 0; i < sbuffer_len(enum_decl->enum_idnts); i++)
+	for (size_t i = 0; i < sbuffer_len(enum_decl->members); i++)
 	{
 		// checking validity of values that assigned to enum idents
-		for (size_t j = 0; j < sbuffer_len(enum_decl->enum_idnt_values); j++)
-			if (!is_const_expr(enum_decl->enum_idnt_values[j]))
+		for (size_t j = 0; j < sbuffer_len(enum_decl->members); j++)
+			if (!is_const_expr(enum_decl->members[j]->value))
 				report_error2(frmt("Enum member \'%s\' must have constant expression, in \'%s\' enum.",
-					enum_decl->enum_idnts[j]->svalue, enum_decl->name),
-						get_expr_area(enum_decl->enum_idnt_values[j]));
+					enum_decl->members[j]->name, enum_decl->name),
+						get_expr_area(enum_decl->members[j]->value));
 
 		// iterating through all members of all enums (except current enum)
 		for (Table* parent = table; parent != NULL; parent = parent->parent)                        // each scope from above scope
 			for (size_t j = 0; j < sbuffer_len(parent->enums); j++)                                 // each enum in iterating scope
 				if (strcmp(parent->enums[j]->name, enum_decl->name) != 0)                 // if iterating enum != current enum
-					for (size_t z = 0; z < sbuffer_len(parent->enums[j]->enum_idnts); z++)          // each member in iterating enum
-						if (strcmp(parent->enums[j]->enum_idnts[z]->svalue,
-							enum_decl->enum_idnts[i]->svalue) == 0)
+					for (size_t z = 0; z < sbuffer_len(parent->enums[j]->members); z++)          // each member in iterating enum
+						if (strcmp(parent->enums[j]->members[z]->name,
+							enum_decl->members[i]->name) == 0)
 								report_error(frmt("Enum member \'%s\' is already declared in \'%s\' enum.",
-									enum_decl->enum_idnts[i]->svalue, parent->enums[j]->name),
-										enum_decl->enum_idnts[i]->context);
+									enum_decl->members[i]->name, parent->enums[j]->name),
+										enum_decl->members[i]->context);
 		// checking value type
 		
 		// evaluating the value to get the proper type of it
 		// and then compare with 4 byte type
 		// enum identifier's value must be less equal than 4 bytes
 		Type* const_expr_type = get_ivalue_type(
-			evaluate_expr_itype(enum_decl->enum_idnt_values[i]));
+			evaluate_expr_itype(enum_decl->members[i]->value));
 		if (const_expr_type->size >= i32_type.size)
 			report_error2(frmt("Enum member \'%s\' must have value type less equal than 4 bytes, in \'%s\' enum.",
-				enum_decl->enum_idnts[i]->svalue, enum_decl->name),
-					get_expr_area(enum_decl->enum_idnt_values[i]));
+				enum_decl->members[i]->name, enum_decl->name),
+					get_expr_area(enum_decl->members[i]->value));
 
 		// set type to enum identifier
-		Type* value_type = get_expr_type(enum_decl->enum_idnt_values[i], table);
+		Type* value_type = get_expr_type(enum_decl->members[i]->value, table);
 		if (!is_integral_type(value_type) || value_type->size > i32_type.size)
 			report_error2(frmt("Enum's member \'%s\' has incompatible \'%s\' type in \'%s\' enum.",
-				enum_decl->enum_idnts[i]->svalue, type_tostr_plain(value_type), enum_decl->name), 
-					get_expr_area(enum_decl->enum_idnt_values[i]));
+				enum_decl->members[i]->name, type_tostr_plain(value_type), enum_decl->name),
+					get_expr_area(enum_decl->members[i]->value));
 
 		// checking for any duplicated names in current enum
-		for (size_t j = i + 1; j < sbuffer_len(enum_decl->enum_idnts); j++)
-			if (strcmp(enum_decl->enum_idnts[i]->svalue, enum_decl->enum_idnts[j]->svalue) == 0)
+		for (size_t j = i + 1; j < sbuffer_len(enum_decl->members); j++)
+			if (strcmp(enum_decl->members[i]->name, enum_decl->members[j]->name) == 0)
 				report_error(frmt("Member \'%s\' is already declared in \'%s\' enum declaration.",
-					enum_decl->enum_idnts[i]->svalue, enum_decl->name), enum_decl->enum_idnts[i]->context);
+					enum_decl->members[i]->name, enum_decl->name), enum_decl->members[i]->context);
 	}
 }
 

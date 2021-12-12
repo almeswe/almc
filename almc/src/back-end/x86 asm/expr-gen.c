@@ -275,11 +275,11 @@ void gen_binary_expr2(BinaryExpr* binary_expr, StackFrame* frame)
 
 void gen_func_call(FuncCall* func_call, StackFrame* frame)
 {
-	for (int i = sbuffer_len(func_call->func_args) - 1; i >= 0; i--)
+	for (int i = sbuffer_len(func_call->args) - 1; i >= 0; i--)
 	{
-		gen_expr2(func_call->func_args[i], frame);
+		gen_expr2(func_call->args[i], frame);
 		unreserve_register(frame->regtable, EAX);
 		PUSH32(get_register_str(EAX));
 	}
-	OUT(frmt("call %s", func_call->func_name));
+	OUT(frmt("call %s", func_call->name));
 }

@@ -381,16 +381,18 @@ void print_member(Member* member, const char* indent)
 	printf(RESET);
 }
 
+void print_enum_member(EnumMember* member, const char* indent)
+{
+	printf("%s   %s:\n", indent, member->name);
+	print_expr(member->value, frmt("   %s", indent));
+}
 void print_enum_decl(EnumDecl* enum_decl, const char* indent)
 {
 	printf(BOLDMAGENTA);
-	printf("%senum-decl: %s{idnts: %d}\n", indent, enum_decl->name, sbuffer_len(enum_decl->enum_idnts));
+	printf("%senum-decl: %s{idnts: %d}\n", indent, enum_decl->name, sbuffer_len(enum_decl->members));
 	printf(RESET);
-	for (int i = 0; i < sbuffer_len(enum_decl->enum_idnts); i++)
-	{
-		printf("%s   %s:\n", indent, enum_decl->enum_idnts[i]->svalue);
-		print_expr(enum_decl->enum_idnt_values[i], frmt("   %s", indent));
-	}
+	for (int i = 0; i < sbuffer_len(enum_decl->members); i++)
+		print_enum_member(enum_decl->members[i], indent);
 }
 
 void print_union_decl(UnionDecl* union_decl, const char* indent)

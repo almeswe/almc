@@ -222,11 +222,17 @@ typedef struct LabelDecl
 	Idnt* label_idnt;
 } LabelDecl;
 
+typedef struct EnumMember
+{
+	char* name;
+	Expr* value;
+	SrcContext* context;
+} EnumMember;
+
 typedef struct EnumDecl
 {
 	char* name;
-	Idnt** enum_idnts;
-	Expr** enum_idnt_values;
+	EnumMember** members;
 } EnumDecl;
 
 typedef struct Member
@@ -447,8 +453,7 @@ VarDecl* var_decl_new(TypeVar* type_var, Expr* var_init);
 FuncDecl* func_decl_new(Idnt* func_name, TypeVar** func_params, 
 	Type* func_type, Block* func_body, FuncSpecifiers func_spec);
 TypeDecl* type_decl_new(TypeDeclKind type, void* type_decl_value_ptr);
-EnumDecl* enum_decl_new(Idnt** enum_idnts, Expr** enum_idnt_values, 
-	const char* enum_name);
+EnumDecl* enum_decl_new(EnumMember** members, const char* name);
 UnionDecl* union_decl_new(Member** members, const char* name);
 StructDecl* struct_decl_new(Member** members, const char* name);
 Member* member_new(char* name, Type* type, SrcArea* area);

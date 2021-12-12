@@ -197,12 +197,11 @@ TypeDecl* type_decl_new(TypeDeclKind type, void* type_decl_value_ptr)
 	return td;
 }
 
-EnumDecl* enum_decl_new(Idnt** enum_idnts, Expr** enum_idnt_values, const char* enum_name)
+EnumDecl* enum_decl_new(EnumMember** members, const char* name)
 {
 	EnumDecl* ed = new_s(EnumDecl, ed);
-	ed->name = enum_name;
-	ed->enum_idnts = enum_idnts;
-	ed->enum_idnt_values = enum_idnt_values;
+	ed->name = name;
+	ed->members = members;
 	return ed;
 }
 
@@ -228,6 +227,15 @@ Member* member_new(char* name, Type* type, SrcArea* area)
 	member->name = name;
 	member->type = type;
 	member->area = area;
+	return member;
+}
+
+EnumMember* enum_member_new(char* name, Expr* value, SrcContext* context)
+{
+	EnumMember* member = new_s(EnumMember, member);
+	member->name = name;
+	member->value = value;
+	member->context = context;
 	return member;
 }
 

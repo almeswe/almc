@@ -918,10 +918,12 @@ Stmt* parse_type_decl_stmt(Parser* parser)
 
 Stmt* parse_enum_decl_stmt(Parser* parser)
 {
+	char* member_name = "";
+	Expr* member_value = NULL;
+	SrcContext* member_context = NULL;
+
 	char* name = "";
-	Idnt** enum_idnts = NULL;
-	Expr* enum_idnt_value = NULL;
-	Expr** enum_idnt_values = NULL;
+	EnumMember** members = NULL;
 
 	expect_with_skip(parser, TOKEN_KEYWORD_ENUM, "enum");
 	// enum can be no-name
@@ -931,32 +933,42 @@ Stmt* parse_enum_decl_stmt(Parser* parser)
 	expect_with_skip(parser, TOKEN_OP_BRACE, "{");
 	while (!matcht(parser, TOKEN_CL_BRACE))
 	{
-		// here i check if the prev-value is not null, if not, add 1 to the previous value
-		// and set it as actual value, either create 0 const
-		if (!enum_idnt_value)
-			enum_idnt_value = expr_new(EXPR_CONST, const_new(CONST_INT, "0", NULL));
-		else
-			enum_idnt_value = enum_idnt_value->kind == EXPR_CONST ?
-			expr_new(EXPR_CONST, const_new(CONST_INT, frmt("%d", enum_idnt_value->cnst->ivalue + 1), NULL)) :
-			expr_new(EXPR_BINARY_EXPR, binary_expr_new(BINARY_ADD, enum_idnt_value,
-				expr_new(EXPR_CONST, const_new(CONST_INT, "1", NULL))));
+		member_name = get_curr_token(parser)->svalue;
+		member_context = get_curr_token(parser)->context;
+		expect_with_skip(parser, TOKEN_IDNT, "enum's member's name");
 
-		sbuffer_add(enum_idnts, idnt_new(get_curr_token(parser)->svalue,
-			get_curr_token(parser)->context));
-		expect_with_skip(parser, TOKEN_IDNT, "enum's identifier");
+		// if we assign value explicitly, then just set value from parse_constant_expr
 		if (matcht(parser, TOKEN_ASSIGN))
+			get_next_token(parser),
+				member_value = parse_constant_expr(parser);
+		else
 		{
-			get_next_token(parser);
-			enum_idnt_value = parse_constant_expr(parser);
+			// either do following:
+			//	if there are no any assigned value yet, create expr->const->0
+			//	otherwise create expr based on this value, and add 1
+
+			if (!member_value)
+				member_value = expr_new(EXPR_CONST, 
+					const_new(CONST_INT, "0", NULL));
+			else
+			{
+				if (member_value->kind == EXPR_CONST)
+					member_value = expr_new(EXPR_CONST, const_new(
+						/*free this new created with frmt string?*/
+						CONST_INT, frmt("%d", member_value->cnst->ivalue + 1), NULL));
+				else
+					member_value = expr_new(EXPR_BINARY_EXPR, binary_expr_new(BINARY_ADD, member_value,
+						expr_new(EXPR_CONST, const_new(CONST_INT, "1", NULL))));
+			}
 		}
-		sbuffer_add(enum_idnt_values, enum_idnt_value);
+		sbuffer_add(members, enum_member_new(member_name, 
+			member_value, member_context));
 		if (matcht(parser, TOKEN_COMMA))
 			expect_with_skip(parser, TOKEN_COMMA, ",");
 	}
 	expect_with_skip(parser, TOKEN_CL_BRACE, "}");
-	return stmt_new(STMT_TYPE_DECL,
-		type_decl_new(TYPE_DECL_ENUM, 
-			enum_decl_new(enum_idnts, enum_idnt_values, name)));
+	return stmt_new(STMT_TYPE_DECL, type_decl_new(TYPE_DECL_ENUM,
+		enum_decl_new(members, name)));
 }
 
 Stmt* parse_union_decl_stmt(Parser* parser)
@@ -1340,7 +1352,7 @@ char* get_stmt_for_import_name(Stmt* stmt)
 	case STMT_VAR_DECL:
 		return stmt->var_decl->type_var->var;
 	case STMT_FUNC_DECL:
-		return stmt->func_decl->func_name->svalue;
+		return stmt->func_decl->name->svalue;
 	}
 	return NULL;
 }

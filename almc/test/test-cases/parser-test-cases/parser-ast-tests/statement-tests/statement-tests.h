@@ -11,31 +11,31 @@ inline void test_func_decl_stmts()
 
 	assert(sbuffer_len(ast->stmts) == 4);
 	assert(ast->stmts[0]->kind == STMT_FUNC_DECL);
-	assert(strcmp(ast->stmts[0]->func_decl->func_name->svalue, "a_1") == 0);
-	assert(!ast->stmts[0]->func_decl->func_body);
-	assert(sbuffer_len(ast->stmts[0]->func_decl->func_params) == 0);
-	assert(IS_VOID_TYPE(ast->stmts[0]->func_decl->func_type));
+	assert(strcmp(ast->stmts[0]->func_decl->name->svalue, "a_1") == 0);
+	assert(!ast->stmts[0]->func_decl->body);
+	assert(sbuffer_len(ast->stmts[0]->func_decl->params) == 0);
+	assert(IS_VOID_TYPE(ast->stmts[0]->func_decl->type));
 
 	assert(ast->stmts[1]->kind == STMT_FUNC_DECL);
-	assert(strcmp(ast->stmts[1]->func_decl->func_name->svalue, "a_2") == 0);
-	assert(!ast->stmts[1]->func_decl->func_body);
-	assert(strcmp(ast->stmts[1]->func_decl->func_params[0]->type->repr, I32_TYPE) == 0);
-	assert(strcmp(ast->stmts[1]->func_decl->func_params[1]->var, "b") == 0);
-	assert(strcmp(ast->stmts[1]->func_decl->func_type->repr, I32_TYPE) == 0);
+	assert(strcmp(ast->stmts[1]->func_decl->name->svalue, "a_2") == 0);
+	assert(!ast->stmts[1]->func_decl->body);
+	assert(strcmp(ast->stmts[1]->func_decl->params[0]->type->repr, I32_TYPE) == 0);
+	assert(strcmp(ast->stmts[1]->func_decl->params[1]->var, "b") == 0);
+	assert(strcmp(ast->stmts[1]->func_decl->type->repr, I32_TYPE) == 0);
 
 	assert(ast->stmts[2]->kind == STMT_FUNC_DECL);
-	assert(strcmp(ast->stmts[2]->func_decl->func_name->svalue, "a_3") == 0);
-	assert(ast->stmts[2]->func_decl->func_spec.is_entry);
-	assert(!ast->stmts[2]->func_decl->func_body);
-	assert(sbuffer_len(ast->stmts[2]->func_decl->func_params) == 0);
-	assert(IS_VOID_TYPE(ast->stmts[2]->func_decl->func_type));
+	assert(strcmp(ast->stmts[2]->func_decl->name->svalue, "a_3") == 0);
+	assert(ast->stmts[2]->func_decl->spec.is_entry);
+	assert(!ast->stmts[2]->func_decl->body);
+	assert(sbuffer_len(ast->stmts[2]->func_decl->params) == 0);
+	assert(IS_VOID_TYPE(ast->stmts[2]->func_decl->type));
 
 	assert(ast->stmts[3]->kind == STMT_FUNC_DECL);
-	assert(strcmp(ast->stmts[3]->func_decl->func_name->svalue, "a_4") == 0);
-	assert(ast->stmts[3]->func_decl->func_spec.is_intrinsic);
-	assert(!ast->stmts[3]->func_decl->func_body);
-	assert(sbuffer_len(ast->stmts[3]->func_decl->func_params) == 0);
-	assert(IS_VOID_TYPE(ast->stmts[3]->func_decl->func_type));
+	assert(strcmp(ast->stmts[3]->func_decl->name->svalue, "a_4") == 0);
+	assert(ast->stmts[3]->func_decl->spec.is_intrinsic);
+	assert(!ast->stmts[3]->func_decl->body);
+	assert(sbuffer_len(ast->stmts[3]->func_decl->params) == 0);
+	assert(IS_VOID_TYPE(ast->stmts[3]->func_decl->type));
 
 	free(path_copy);
 	lexer_free(lexer);
@@ -68,34 +68,34 @@ inline void test_type_decl_stmts()
 
 	assert(ast->stmts[3]->type_decl->kind == TYPE_DECL_ENUM);
 	assert(strcmp(ast->stmts[3]->type_decl->enum_decl->name, "a_e") == 0);
-	assert(!ast->stmts[3]->type_decl->enum_decl->enum_idnts);
+	assert(!ast->stmts[3]->type_decl->enum_decl->members);
 
 	assert(ast->stmts[4]->type_decl->kind == TYPE_DECL_ENUM);
 	assert(strcmp(ast->stmts[4]->type_decl->enum_decl->name, "") == 0);
-	assert(ast->stmts[4]->type_decl->enum_decl->enum_idnt_values[0]->cnst->ivalue == 255);
+	assert(ast->stmts[4]->type_decl->enum_decl->members[0]->value->cnst->ivalue == 255);
 
 	assert(ast->stmts[5]->type_decl->kind == TYPE_DECL_ENUM);
 	assert(strcmp(ast->stmts[5]->type_decl->enum_decl->name, "a") == 0);
-	assert(ast->stmts[5]->type_decl->enum_decl->enum_idnt_values[0]->cnst->ivalue == 0);
-	assert(ast->stmts[5]->type_decl->enum_decl->enum_idnt_values[1]->cnst->ivalue == 1);
-	assert(ast->stmts[5]->type_decl->enum_decl->enum_idnt_values[2]->cnst->ivalue == 2);
-	assert(strcmp(ast->stmts[5]->type_decl->enum_decl->enum_idnts[1]->svalue, "s") == 0);
+	assert(ast->stmts[5]->type_decl->enum_decl->members[0]->value->cnst->ivalue == 0);
+	assert(ast->stmts[5]->type_decl->enum_decl->members[1]->value->cnst->ivalue == 1);
+	assert(ast->stmts[5]->type_decl->enum_decl->members[2]->value->cnst->ivalue == 2);
+	assert(strcmp(ast->stmts[5]->type_decl->enum_decl->members[1]->name, "s") == 0);
 
 	assert(ast->stmts[6]->type_decl->kind == TYPE_DECL_ENUM);
 	assert(strcmp(ast->stmts[6]->type_decl->enum_decl->name, "b") == 0);
-	assert(ast->stmts[6]->type_decl->enum_decl->enum_idnt_values[0]->cnst->ivalue == 0xf);
-	assert(ast->stmts[6]->type_decl->enum_decl->enum_idnt_values[1]->cnst->ivalue == (0xf + 1));
-	assert(ast->stmts[6]->type_decl->enum_decl->enum_idnt_values[2]->cnst->ivalue == 1);
-	assert(ast->stmts[6]->type_decl->enum_decl->enum_idnt_values[3]->cnst->ivalue == 2);
-	assert(strcmp(ast->stmts[6]->type_decl->enum_decl->enum_idnts[3]->svalue, "g") == 0);
+	assert(ast->stmts[6]->type_decl->enum_decl->members[0]->value->cnst->ivalue == 0xf);
+	assert(ast->stmts[6]->type_decl->enum_decl->members[1]->value->cnst->ivalue == (0xf + 1));
+	assert(ast->stmts[6]->type_decl->enum_decl->members[2]->value->cnst->ivalue == 1);
+	assert(ast->stmts[6]->type_decl->enum_decl->members[3]->value->cnst->ivalue == 2);
+	assert(strcmp(ast->stmts[6]->type_decl->enum_decl->members[3]->name, "g") == 0);
 
 	assert(ast->stmts[7]->type_decl->kind == TYPE_DECL_ENUM);
 	assert(strcmp(ast->stmts[7]->type_decl->enum_decl->name, "c") == 0);
-	assert(ast->stmts[7]->type_decl->enum_decl->enum_idnt_values[0]->kind == EXPR_BINARY_EXPR);
-	assert(ast->stmts[7]->type_decl->enum_decl->enum_idnt_values[1]->binary_expr->rexpr->cnst->ivalue == 1);
-	assert(ast->stmts[7]->type_decl->enum_decl->enum_idnt_values[2]->cnst->ivalue == 0xf);
-	assert(ast->stmts[7]->type_decl->enum_decl->enum_idnt_values[3]->cnst->ivalue == (0xf + 1));
-	assert(strcmp(ast->stmts[7]->type_decl->enum_decl->enum_idnts[2]->svalue, "t") == 0);
+	assert(ast->stmts[7]->type_decl->enum_decl->members[0]->value->kind == EXPR_BINARY_EXPR);
+	assert(ast->stmts[7]->type_decl->enum_decl->members[1]->value->binary_expr->rexpr->cnst->ivalue == 1);
+	assert(ast->stmts[7]->type_decl->enum_decl->members[2]->value->cnst->ivalue == 0xf);
+	assert(ast->stmts[7]->type_decl->enum_decl->members[3]->value->cnst->ivalue == (0xf + 1));
+	assert(strcmp(ast->stmts[7]->type_decl->enum_decl->members[2]->name, "t") == 0);
 
 	assert(ast->stmts[8]->type_decl->kind == TYPE_DECL_UNION);
 	assert(strcmp(ast->stmts[8]->type_decl->union_decl->name, "a") == 0);
@@ -154,13 +154,13 @@ inline void test_do_loop_stmts()
 	assert(sbuffer_len(ast->stmts) == 2);
 	assert(ast->stmts[0]->kind == STMT_LOOP);
 	assert(ast->stmts[0]->loop_stmt->kind == LOOP_DO);
-	assert(ast->stmts[0]->loop_stmt->do_loop->do_cond->kind == EXPR_CONST);
-	assert(sbuffer_len(ast->stmts[0]->loop_stmt->do_loop->do_body->stmts) == 1);
+	assert(ast->stmts[0]->loop_stmt->do_loop->cond->kind == EXPR_CONST);
+	assert(sbuffer_len(ast->stmts[0]->loop_stmt->do_loop->body->stmts) == 1);
 
 	assert(ast->stmts[1]->kind == STMT_LOOP);
 	assert(ast->stmts[1]->loop_stmt->kind == LOOP_DO);
-	assert(ast->stmts[1]->loop_stmt->do_loop->do_cond->kind == EXPR_CONST);
-	assert(ast->stmts[1]->loop_stmt->do_loop->do_body->stmts[0]->kind == STMT_EMPTY);
+	assert(ast->stmts[1]->loop_stmt->do_loop->cond->kind == EXPR_CONST);
+	assert(ast->stmts[1]->loop_stmt->do_loop->body->stmts[0]->kind == STMT_EMPTY);
 
 	free(path_copy);
 	lexer_free(lexer);
@@ -206,31 +206,31 @@ inline void test_for_loop_stmts()
 	assert(sbuffer_len(ast->stmts) == 4);
 	assert(ast->stmts[0]->kind == STMT_LOOP);
 	assert(ast->stmts[0]->loop_stmt->kind == LOOP_FOR);
-	assert(ast->stmts[0]->loop_stmt->for_loop->for_init);
-	assert(ast->stmts[0]->loop_stmt->for_loop->for_cond);
-	assert(ast->stmts[0]->loop_stmt->for_loop->for_step);
-	assert(sbuffer_len(ast->stmts[0]->loop_stmt->for_loop->for_body->stmts) == 1);
+	assert(ast->stmts[0]->loop_stmt->for_loop->init);
+	assert(ast->stmts[0]->loop_stmt->for_loop->cond);
+	assert(ast->stmts[0]->loop_stmt->for_loop->step);
+	assert(sbuffer_len(ast->stmts[0]->loop_stmt->for_loop->body->stmts) == 1);
 
 	assert(ast->stmts[1]->kind == STMT_LOOP);
 	assert(ast->stmts[1]->loop_stmt->kind == LOOP_FOR);
-	assert(!ast->stmts[1]->loop_stmt->for_loop->for_init);
-	assert(ast->stmts[1]->loop_stmt->for_loop->for_cond);
-	assert(ast->stmts[1]->loop_stmt->for_loop->for_step);
-	assert(sbuffer_len(ast->stmts[1]->loop_stmt->for_loop->for_body->stmts) == 1);
+	assert(!ast->stmts[1]->loop_stmt->for_loop->init);
+	assert(ast->stmts[1]->loop_stmt->for_loop->cond);
+	assert(ast->stmts[1]->loop_stmt->for_loop->step);
+	assert(sbuffer_len(ast->stmts[1]->loop_stmt->for_loop->body->stmts) == 1);
 
 	assert(ast->stmts[2]->kind == STMT_LOOP);
 	assert(ast->stmts[2]->loop_stmt->kind == LOOP_FOR);
-	assert(!ast->stmts[2]->loop_stmt->for_loop->for_init);
-	assert(!ast->stmts[2]->loop_stmt->for_loop->for_cond);
-	assert(ast->stmts[2]->loop_stmt->for_loop->for_step);
-	assert(sbuffer_len(ast->stmts[2]->loop_stmt->for_loop->for_body->stmts) == 1);
+	assert(!ast->stmts[2]->loop_stmt->for_loop->init);
+	assert(!ast->stmts[2]->loop_stmt->for_loop->cond);
+	assert(ast->stmts[2]->loop_stmt->for_loop->step);
+	assert(sbuffer_len(ast->stmts[2]->loop_stmt->for_loop->body->stmts) == 1);
 
 	assert(ast->stmts[3]->kind == STMT_LOOP);
 	assert(ast->stmts[3]->loop_stmt->kind == LOOP_FOR);
-	assert(!ast->stmts[3]->loop_stmt->for_loop->for_init);
-	assert(!ast->stmts[3]->loop_stmt->for_loop->for_cond);
-	assert(!ast->stmts[3]->loop_stmt->for_loop->for_step);
-	assert(ast->stmts[3]->loop_stmt->for_loop->for_body->stmts[0]->kind == STMT_EMPTY);
+	assert(!ast->stmts[3]->loop_stmt->for_loop->init);
+	assert(!ast->stmts[3]->loop_stmt->for_loop->cond);
+	assert(!ast->stmts[3]->loop_stmt->for_loop->step);
+	assert(ast->stmts[3]->loop_stmt->for_loop->body->stmts[0]->kind == STMT_EMPTY);
 
 	free(path_copy);
 	lexer_free(lexer);

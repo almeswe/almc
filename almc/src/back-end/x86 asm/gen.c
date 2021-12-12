@@ -95,14 +95,14 @@ void gen_func_decl_stmt(FuncDecl* func_decl)
 	PROC_CODE_LINE2("mov",  get_register_str(EBP), 
 		get_register_str(ESP));
 	//------------------
-	if (func_decl->func_spec.is_entry)
+	if (func_decl->spec.is_entry)
 		PROGRAM_SET_ENTRY(proc->name);
-	gen_block(func_decl->func_body, proc->frame);
+	gen_block(func_decl->body, proc->frame);
 	
 	// function epilogue
 	unreserve_register(REGISTERS, ESP);
 	unreserve_register(REGISTERS, EBP);
-	if (IS_VOID_TYPE(func_decl->func_type))
+	if (IS_VOID_TYPE(func_decl->type))
 	{
 		PROC_CODE_LINE2("mov", get_register_str(ESP),
 			get_register_str(EBP));

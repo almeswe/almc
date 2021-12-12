@@ -99,11 +99,11 @@ Type* get_string_type(Str* str)
 Type* get_func_call_type(FuncCall* func_call, Table* table)
 {
 	// also checking type of each function's argument with type of passed value
-	FuncDecl* origin = get_function(func_call->func_name, table);
-	for (size_t i = 0; i < sbuffer_len(origin->func_params); i++)
-		cast_implicitly(origin->func_params[i]->type, get_expr_type(func_call->func_args[i], table),
-			get_expr_area(func_call->func_args[i]));
-	return origin->func_type;
+	FuncDecl* origin = get_function(func_call->name, table);
+	for (size_t i = 0; i < sbuffer_len(origin->params); i++)
+		cast_implicitly(origin->params[i]->type, get_expr_type(func_call->args[i], table),
+			get_expr_area(func_call->args[i]));
+	return origin->type;
 }
 
 Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
@@ -732,8 +732,8 @@ int is_enum_member(const char* var, Table* table)
 {
 	for (Table* parent = table; parent; parent = parent->parent)
 		for (size_t i = 0; i < sbuffer_len(parent->enums); i++)
-			for (size_t j = 0; j < sbuffer_len(parent->enums[i]->enum_idnts); j++)
-				if (strcmp(var, parent->enums[i]->enum_idnts[j]->svalue) == 0)
+			for (size_t j = 0; j < sbuffer_len(parent->enums[i]->members); j++)
+				if (strcmp(var, parent->enums[i]->members[j]->name) == 0)
 					return 1;
 	return 0;
 }
@@ -795,8 +795,8 @@ Type* get_enum_member_type(const char* member, Table* table)
 {
 	for (Table* parent = table; parent; parent = parent->parent)
 		for (size_t i = 0; i < sbuffer_len(parent->enums); i++)
-			for (size_t j = 0; j < sbuffer_len(parent->enums[i]->enum_idnts); j++)
-				if (strcmp(member, parent->enums[i]->enum_idnts[j]->svalue) == 0)
-					return get_expr_type(parent->enums[i]->enum_idnt_values[j], table);
+			for (size_t j = 0; j < sbuffer_len(parent->enums[i]->members); j++)
+				if (strcmp(member, parent->enums[i]->members[j]->name) == 0)
+					return get_expr_type(parent->enums[i]->members[j]->value, table);
 	return &unknown_type;
 }
