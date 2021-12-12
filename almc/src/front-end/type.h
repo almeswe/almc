@@ -96,27 +96,18 @@ typedef struct Type
 	SrcArea* area;
 	const char* repr;
 
-	/*
-		flag that specifies the possibility
-		for type_free to free current type
-		usualy its set in parse_type_name
-	*/
-	/*bool can_be_freed;
-	bool is_origin_array;
-
-	bool is_reference;*/
-	/*
-		Used by pointer and array types
-	*/
+	// Used by pointer and array types
 	struct Type* base;
 	union
 	{
 		struct _array_kind_data
 		{
+			// can be accessed when type is TYPE_ARRAY
 			Expr* dimension;
 		};
 		struct _aggregate_kind_data
 		{
+			// can be accessed when type is aggregate (struct or union)
 			Member** members;
 		};
 	};
@@ -138,6 +129,7 @@ static Type i64_type = { I64_SIZE, TYPE_PRIMITIVE, NULL, I64_TYPE };
 static Type u64_type = { U64_SIZE, TYPE_PRIMITIVE, NULL, U64_TYPE };
 static Type f64_type = { F64_SIZE, TYPE_PRIMITIVE, NULL, F64_TYPE };
 
+/* Initialization of some other supply types */
 static Type void_type = { 0, TYPE_VOID, NULL, VOID_TYPE };
 static Type unknown_type = { 0, TYPE_UNKNOWN, NULL, UNKNOWN_TYPE };
 
@@ -158,6 +150,7 @@ bool is_integral_smaller_than_pointer_type(Type* type);
 bool is_pointer_like_type(Type* type);
 bool is_not_aggregate_type(Type* type);
 bool is_both_primitive(Type* type1, Type* type2);
+bool is_both_are_equal_user_defined(Type* type1, Type* type2);
 
 Type* get_base_type(Type* type);
 uint32_t get_pointer_rank(Type* type);

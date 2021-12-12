@@ -15,7 +15,8 @@ void visitor_free(Visitor* visitor);
 void visit(AstRoot* ast, Visitor* visitor);
 void visit_stmt(Stmt* stmt, Table* table);
 void visit_type(Type* type, Table* table);
-void visit_non_void_type(Type* type, Table* table);
+void visit_pointer_like_type(Type* type);
+void visit_non_void_type(Type* type, SrcArea* area, Table* table);
 
 void visit_scope(Stmt** stmts, Table* table);
 void visit_block(Block* block, Table* table);
@@ -26,7 +27,7 @@ void visit_func_call(FuncCall* func_call, Table* table);
 void visit_unary_expr(UnaryExpr* unary_expr, Table* table);
 void visit_binary_expr(BinaryExpr* binary_expr, Table* table);
 void visit_ternary_expr(TernaryExpr* ternary_expr, Table* table);
-void visit_arr_member_accessor(BinaryExpr* arr_accessor_expr, Table* table);
+void visit_array_member_accessor(BinaryExpr* arr_accessor_expr, Table* table);
 
 void visit_condition(Expr* condition, Table* table);
 void visit_if_stmt(IfStmt* if_stmt, Table* table);
@@ -56,11 +57,9 @@ void check_entry_func_params(FuncDecl* func_decl);
 void visit_entry_func_stmt(FuncDecl* func_decl, Table* table);
 
 uint32_t get_size_of_aggregate_type(Type* type, Table* table);
-uint32_t get_size_of_primitive_type(Type* type);
 uint32_t get_size_of_type(Type* type, Table* table);
 
 void complete_size_of_aggregate_type(Type* type, Table* table);
-void complete_size_of_primitive_type(Type* type);
 void complete_size(Type* type, Table* table);
 void complete_type(Type* type, Table* table);
 

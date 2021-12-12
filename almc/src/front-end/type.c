@@ -38,8 +38,6 @@ Type* dereference_type(Type* type)
 	case TYPE_POINTER:
 		return type->base;
 	}
-	// todo: error here because in other case 
-	// we cannot dereference type
 	return type;
 }
 
@@ -91,7 +89,7 @@ bool is_integral_type(Type* type)
 		IS_I32_TYPE(type) || IS_U32_TYPE(type) ||
 		IS_I64_TYPE(type) || IS_U64_TYPE(type))
 			return true;
-	return false;
+	return IS_ENUM_TYPE(type) || false;
 }
 
 bool is_integral_smaller_than_pointer_type(Type* type)
@@ -110,6 +108,17 @@ bool is_both_primitive(Type* type1, Type* type2)
 {
 	return IS_PRIMITIVE_TYPE(type1) &&
 		IS_PRIMITIVE_TYPE(type2);
+}
+
+bool is_both_are_equal_user_defined(Type* type1, Type* type2)
+{
+	if (IS_UNION_TYPE(type1) && IS_UNION_TYPE(type2))
+		return IS_TYPE(type1, type2->repr);
+	else if (IS_STRUCT_TYPE(type1) && IS_STRUCT_TYPE(type2))
+		return IS_TYPE(type1, type2->repr);
+	else if (IS_ENUM_TYPE(type1) && IS_ENUM_TYPE(type2))
+		return IS_TYPE(type1, type2->repr);
+	return false;
 }
 
 bool is_not_aggregate_type(Type* type)
@@ -153,8 +162,6 @@ void type_free(Type* type)
 		if (IS_ARRAY_TYPE(type))
 			expr_free(type->dimension);
 		type_free(type->base);
-		//todo: issue with freeing area!
-		//free(type->area);
 		free(type);
 	}
 }

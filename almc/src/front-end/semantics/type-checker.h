@@ -4,7 +4,7 @@
 #include <float.h>
 #include "table.h"
 
-//----------------------------------------
+/* Type priorities */
 #define U8		0x3
 #define I8		0x4
 #define CHAR	0x5
@@ -23,7 +23,9 @@
 
 #define STR		0x2
 #define VOID	0x1
-//----------------------------------------
+
+extern int64_t evaluate_expr_itype(Expr* expr);
+extern double  evaluate_expr_ftype(Expr* expr);
 
 Type* get_string_type(Str* str);
 Type* get_const_type(Const* cnst);

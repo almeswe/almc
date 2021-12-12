@@ -303,13 +303,7 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 				type_tostr_plain(ltype)), binary_expr->area);
 
 		// iterating through all struct and through all struct's members, trying to find matching
-		if (IS_STRUCT_TYPE(ltype))
-			for (size_t i = 0; i < sbuffer_len(ltype->members); i++)
-				if (strcmp(ltype->members[i]->name, get_member_name(binary_expr->rexpr)) == 0)
-					return ltype->members[i]->type;
-
-		// same logic as struct's was
-		if (IS_UNION_TYPE(ltype))
+		if (IS_STRUCT_TYPE(ltype) || IS_UNION_TYPE(ltype))
 			for (size_t i = 0; i < sbuffer_len(ltype->members); i++)
 				if (strcmp(ltype->members[i]->name, get_member_name(binary_expr->rexpr)) == 0)
 					return ltype->members[i]->type;
@@ -338,7 +332,6 @@ Type* get_ternary_expr_type(TernaryExpr* ternary_expr, Table* table)
 	Type* ctype = get_and_set_expr_type(ternary_expr->cond, table);
 
 	if (!is_numeric_type(ctype) && !IS_POINTER_TYPE(ctype))
-		if (!ctype)
 			report_error2("Cannot determine the type of condition in ternary expression.", 
 				get_expr_area(ternary_expr->cond));
 		else 
@@ -446,25 +439,25 @@ Type* cast_explicitly_when_const_expr(Expr* const_expr, Type* to, Type* const_ex
 	{
 		if (IS_VOID_TYPE(to))
 			report_error2("Explicit conversion to void is not allowed.", to->area);
-		if (get_base_type(to)->kind != TYPE_PRIMITIVE)
+		if (!IS_PRIMITIVE_TYPE(get_base_type(to)) && !IS_ENUM_TYPE(get_base_type(to)))
 			report_error2(frmt("Cannot explicitly convert constant expression to type \'%s\'.",
 				type_tostr_plain(to)), to->area);
 
 		//---------------------------------------
 		// determining the type of evaluated constant
-		double value = 0.0f;
+		double value = 0.0;
 		Type* const_expr_type_new = NULL;
 		if (is_integral_type(const_expr_type) || is_pointer_like_type(const_expr_type))
-			const_expr_type_new = get_ivalue_type(
-				(int64_t)(evaluate_expr_itype(const_expr)));
+				const_expr_type_new = get_ivalue_type(
+					value = evaluate_expr_itype(const_expr));
 		else if (is_real_type(const_expr_type))
 			const_expr_type_new = get_fvalue_type(
 				value = evaluate_expr_ftype(const_expr));
 		else
 			report_error2("Cannot evaluate constant expression for explicit cast.",
 				get_expr_area(const_expr));
-		//---------------------------------------
-		if (is_both_primitive(to, const_expr_type_new))
+
+		if (const_expr_type_new)
 			if (to->size < const_expr_type_new->size)
 				report_error2(frmt("Cannot explicitly convert constant value of type \'%s\' to \'%s\' (value: %f).",
 					type_tostr_plain(to), type_tostr_plain(const_expr_type_new), value), to->area);
@@ -481,6 +474,11 @@ Type* cast_implicitly(Type* to, Type* type, SrcArea* area)
 			return to;
 		if (is_pointer_like_type(to) && IS_POINTER_TYPE(type))
 			return type;
+		// if one is enum and second is integral
+		if (IS_ENUM_TYPE(to) && is_integral_type(type))
+			return type;
+		if (IS_ENUM_TYPE(type) && is_integral_type(to))
+			return to;
 
 		// if one is pointer-like and second is primitive
 		if (is_pointer_like_type(to) && (get_type_priority(type) > I32))
@@ -534,16 +532,20 @@ bool can_cast_implicitly(Type* to, Type* type)
 	if ((is_pointer_like_type(to) && is_pointer_like_type(type)))
 	{
 		if (get_pointer_rank(to) == get_pointer_rank(type))
-		// and also if their base types can be casted implicitly
+			// and also if their base types can be casted implicitly
 			if (can_cast_implicitly(get_base_type(to), get_base_type(type)))
 				return true;
 	}
 
-	else if (!is_integral_smaller_than_pointer_type(to) && 
+	// case when trying to cast max 4 byte integral type to enum type
+	else if (IS_ENUM_TYPE(to) && is_integral_smaller_than_pointer_type(type))
+		return true;
+
+	else if (!is_integral_smaller_than_pointer_type(to) &&
 		is_pointer_like_type(type))
 		return true;
 
-	else if (is_pointer_like_type(to) && 
+	else if (is_pointer_like_type(to) &&
 		is_integral_smaller_than_pointer_type(type))
 		return true;
 
@@ -616,6 +618,8 @@ bool can_cast_implicitly(Type* to, Type* type)
 				IS_I64_TYPE(type) || IS_U64_TYPE(type) || IS_F32_TYPE(type)))
 			return true;
 	}
+	else if (is_both_are_equal_user_defined(to, type))
+		return true;
 	return false;
 }
 

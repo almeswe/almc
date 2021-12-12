@@ -1,10 +1,6 @@
 #include "visitor.h"
 
-//todo: check type casting (explicit, implicit)
-//todo: check type printing
 //todo: check type referrings to each other (for freeing)
-//todo: check type sizes
-//todo: check type completion
 
 #define IS_USER_TYPE_ALREADY_DECLARED(typedec, typestr) \
 	if (is_##typedec##_declared(stmts[i]->type_decl->##typedec##_decl->name, table)) \
@@ -88,18 +84,34 @@ void visit_type(Type* type, Table* table)
 			!is_enum_declared(type->repr, table))
 				report_error2(frmt("Undefined type \'%s\' met.",
 					type->repr), type->area);
-	
+	if (is_pointer_like_type(type))
+		visit_pointer_like_type(type);
 	if (IS_INCOMPLETE_TYPE(base))
 		complete_type(type, table);
 	complete_size(type, table);
 }
 
-void visit_non_void_type(Type* type, Table* table)
+void visit_pointer_like_type(Type* type)
 {
-	//todo: add context here
+	switch (type->kind)
+	{
+	case TYPE_ARRAY:
+		if (!is_const_expr(type->dimension))
+			report_error2("Array size is not a constant expression.",
+				get_expr_area(type->dimension));
+		visit_pointer_like_type(type->base);
+		break;
+	}
+}
+
+void visit_non_void_type(Type* type, SrcArea* area, Table* table)
+{
+	/*
+		SrcArea required here because void type is preallocated type with
+		no self-area, so, need to specify it
+	*/
 	if (IS_VOID_TYPE(type))
-		report_error2("Void type is not allowed in this context.",
-			type->area);
+		report_error2("void type is not allowed in this context.", area);
 	visit_type(type, table);
 }
 
@@ -220,7 +232,8 @@ void visit_unary_expr(UnaryExpr* unary_expr, Table* table)
 	switch (unary_expr->kind)
 	{
 	case UNARY_CAST:
-		visit_non_void_type(unary_expr->cast_type, table);
+		// todo: ...
+		visit_non_void_type(unary_expr->cast_type, unary_expr->area, table);
 		visit_expr(unary_expr->expr, table);
 		break;
 
@@ -246,7 +259,8 @@ void visit_unary_expr(UnaryExpr* unary_expr, Table* table)
 		visit_expr(unary_expr->expr, table);
 		break;
 	case UNARY_SIZEOF:
-		visit_non_void_type(unary_expr->cast_type, table);
+		//todo: ...
+		visit_non_void_type(unary_expr->cast_type, unary_expr->area, table);
 		break;
 	case UNARY_LENGTHOF:
 		visit_expr(unary_expr->expr, table);
@@ -289,7 +303,7 @@ void visit_binary_expr(BinaryExpr* binary_expr, Table* table)
 	case BINARY_ARR_MEMBER_ACCESSOR:
 		visit_expr(binary_expr->lexpr, table);
 		visit_expr(binary_expr->rexpr, table);
-		//visit_arr_member_accessor(binary_expr, table);
+		visit_array_member_accessor(binary_expr, table);
 		break;
 
 	case BINARY_MEMBER_ACCESSOR:
@@ -333,20 +347,24 @@ void visit_ternary_expr(TernaryExpr* ternary_expr, Table* table)
 	visit_expr(ternary_expr->rexpr, table);
 }
 
-void visit_arr_member_accessor(BinaryExpr* arr_accessor_expr, Table* table)
+void visit_array_member_accessor(BinaryExpr* arr_accessor_expr, Table* table)
 {
-	// i32[1][6];
-	// a[1][1];
-	/*Type* type = arr_accessor_expr->type;
-	Expr** dimensions = type->dimensions;
-	if (type->spec.array_rank)
-		if (is_const_expr(arr_accessor_expr->rexpr) &&
-			is_const_expr(dimensions[type->spec.array_rank - 1]))
-			if (evaluate_expr_itype(dimensions[type->spec.array_rank - 1]) <
-				evaluate_expr_itype(arr_accessor_expr->rexpr))
-				report_error2("Cannot access array element by this index.",
-					get_expr_area(arr_accessor_expr->rexpr));*/
-	assert(0);
+	Expr* rexpr = arr_accessor_expr->rexpr;
+	Expr* lexpr = arr_accessor_expr->lexpr;
+	Type* ltype = get_expr_type(lexpr, table);
+
+	if (IS_ARRAY_TYPE(ltype))
+	{
+		// in this case we cannot evaluate expression, so do nothing
+		if (!is_const_expr(rexpr))
+			return;
+
+		int32_t index = evaluate_expr_itype(rexpr),
+			size = evaluate_expr_itype(ltype->dimension);
+		if (index >= size)
+			report_error2(frmt("Array accessor index does not fits in current dimension's size. (size: %d, index: %d)",
+				size, index), get_expr_area(rexpr));
+	}
 }
 
 void visit_condition(Expr* condition, Table* table)
@@ -604,7 +622,7 @@ void visit_var_decl_stmt(VarDecl* var_decl, Table* table)
 	else
 	{
 		add_variable(var_decl, table);
-		visit_non_void_type(type, table);
+		visit_non_void_type(type, area, table);
 		if (var_decl->var_init)
 		{
 			visit_expr(var_decl->var_init, table);
@@ -626,7 +644,7 @@ void visit_enum(EnumDecl* enum_decl, Table* table)
 	{
 		// checking validity of values that assigned to enum idents
 		for (size_t j = 0; j < sbuffer_len(enum_decl->enum_idnt_values); j++)
-			if (!is_simple_const_expr(enum_decl->enum_idnt_values[j]))
+			if (!is_const_expr(enum_decl->enum_idnt_values[j]))
 				report_error2(frmt("Enum member \'%s\' must have constant expression, in \'%s\' enum.",
 					enum_decl->enum_idnts[j]->svalue, enum_decl->name),
 						get_expr_area(enum_decl->enum_idnt_values[j]));
@@ -648,14 +666,14 @@ void visit_enum(EnumDecl* enum_decl, Table* table)
 		// enum identifier's value must be less equal than 4 bytes
 		Type* const_expr_type = get_ivalue_type(
 			evaluate_expr_itype(enum_decl->enum_idnt_values[i]));
-		if (const_expr_type->size > MACHINE_WORD)
+		if (const_expr_type->size >= i32_type.size)
 			report_error2(frmt("Enum member \'%s\' must have value type less equal than 4 bytes, in \'%s\' enum.",
 				enum_decl->enum_idnts[i]->svalue, enum_decl->name),
 					get_expr_area(enum_decl->enum_idnt_values[i]));
 
 		// set type to enum identifier
 		Type* value_type = get_expr_type(enum_decl->enum_idnt_values[i], table);
-		if (!is_integral_type(value_type))
+		if (!is_integral_type(value_type) || value_type->size > i32_type.size)
 			report_error2(frmt("Enum's member \'%s\' has incompatible \'%s\' type in \'%s\' enum.",
 				enum_decl->enum_idnts[i]->svalue, type_tostr_plain(value_type), enum_decl->name), 
 					get_expr_area(enum_decl->enum_idnt_values[i]));
@@ -678,7 +696,8 @@ void visit_union(UnionDecl* union_decl, Table* table)
 				report_error2(frmt("Member \'%s\' has type \'%s\' which is self included, and not pointer.",
 					union_decl->members[i]->name, union_decl->name),
 						union_decl->members[i]->area);
-		visit_non_void_type(union_decl->members[i]->type, table);
+		visit_non_void_type(union_decl->members[i]->type, 
+			union_decl->members[i]->area, table);
 	}
 
 	// checking here for duplicated members
@@ -700,7 +719,8 @@ void visit_struct(StructDecl* struct_decl, Table* table)
 				report_error2(frmt("Member \'%s\' has type \'%s\' which is self included, and not pointer.",
 					struct_decl->members[i]->name, struct_decl->name),
 						struct_decl->members[i]->area);
-		visit_non_void_type(struct_decl->members[i]->type, table);
+		visit_non_void_type(struct_decl->members[i]->type,
+			struct_decl->members[i]->area, table);
 	}
 
 	// checking here for duplicated members
@@ -766,7 +786,8 @@ void visit_func_decl_stmt(FuncDecl* func_decl, Table* table)
 		add_function_param(func_decl->func_params[i], local);
 
 		// checking func param for void type
-		visit_non_void_type(func_decl->func_params[i]->type, table);
+		visit_non_void_type(func_decl->func_params[i]->type, 
+			func_decl->func_params[i]->area, table);
 	}
 
 	// checking function's return type
@@ -837,6 +858,12 @@ uint32_t get_size_of_type(Type* type, Table* table)
 	else if (IS_ARRAY_TYPE(type))
 		return get_size_of_type(type->base, table) *
 			evaluate_expr_itype(type->dimension);
+	else if (IS_ENUM_TYPE(type))
+		// enum type just ensures that variable can store 
+		// 4-byte variable inside
+
+		// so just return the size of i32
+		return i32_type.size;
 	else if (IS_UNION_TYPE(type) ||
 			 IS_STRUCT_TYPE(type))
 		return get_size_of_aggregate_type(type, table);
@@ -854,10 +881,6 @@ uint32_t get_size_of_aggregate_type(Type* type, Table* table)
 	if (IS_STRUCT_TYPE(type))
 		for (size_t i = 0; i < sbuffer_len(type->members); i++)
 			size += get_size_of_type(type->members[i]->type, table);
-	//-----------------------------------------------
-	//else if (is_enum_declared(type->repr, table))
-	//	return sizeof(int32_t);
-	//-----------------------------------------------
 	else if (IS_UNION_TYPE(type))
 		for (size_t i = 0; i < sbuffer_len(type->members); i++)
 			buffer = get_size_of_type(type->members[i]->type, table),
@@ -885,6 +908,10 @@ void complete_size(Type* type, Table* table)
 	case TYPE_UNION:
 	case TYPE_STRUCT:
 		complete_size_of_aggregate_type(type, table);
+		break;
+	case TYPE_ENUM:
+		type->size = get_size_of_type(type, table);
+		break;
 	}
 }
 
@@ -894,12 +921,13 @@ void complete_type(Type* type, Table* table)
 		Completes the missing information in type structure
 		if its struct or union type + gets size of it
 	*/
-	//todo: add enum type
 	StructDecl* user_type = NULL;
 	Type* base = get_base_type(type);
 	if (user_type = get_struct(base->repr, table))
 		base->kind = TYPE_STRUCT,
 			base->members = user_type->members;
+	else if (get_enum(base->repr, table))
+		base->kind = TYPE_ENUM;
 	else if (user_type = get_union(base->repr, table))
 		base->kind = TYPE_UNION,
 			base->members = user_type->members;

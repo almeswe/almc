@@ -14,7 +14,7 @@ inline void test_func_decl_stmts()
 	assert(strcmp(ast->stmts[0]->func_decl->func_name->svalue, "a_1") == 0);
 	assert(!ast->stmts[0]->func_decl->func_body);
 	assert(sbuffer_len(ast->stmts[0]->func_decl->func_params) == 0);
-	assert(ast->stmts[0]->func_decl->func_type->spec.is_void);
+	assert(IS_VOID_TYPE(ast->stmts[0]->func_decl->func_type));
 
 	assert(ast->stmts[1]->kind == STMT_FUNC_DECL);
 	assert(strcmp(ast->stmts[1]->func_decl->func_name->svalue, "a_2") == 0);
@@ -28,14 +28,14 @@ inline void test_func_decl_stmts()
 	assert(ast->stmts[2]->func_decl->func_spec.is_entry);
 	assert(!ast->stmts[2]->func_decl->func_body);
 	assert(sbuffer_len(ast->stmts[2]->func_decl->func_params) == 0);
-	assert(ast->stmts[2]->func_decl->func_type->spec.is_void);
+	assert(IS_VOID_TYPE(ast->stmts[2]->func_decl->func_type));
 
 	assert(ast->stmts[3]->kind == STMT_FUNC_DECL);
 	assert(strcmp(ast->stmts[3]->func_decl->func_name->svalue, "a_4") == 0);
 	assert(ast->stmts[3]->func_decl->func_spec.is_intrinsic);
 	assert(!ast->stmts[3]->func_decl->func_body);
 	assert(sbuffer_len(ast->stmts[3]->func_decl->func_params) == 0);
-	assert(ast->stmts[3]->func_decl->func_type->spec.is_void);
+	assert(IS_VOID_TYPE(ast->stmts[3]->func_decl->func_type));
 
 	free(path_copy);
 	lexer_free(lexer);

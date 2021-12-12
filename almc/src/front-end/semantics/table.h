@@ -27,14 +27,14 @@ typedef struct Table
 	FuncDecl* in_function;
 
 	// last loop | switch mentioned in this scope
-	// needed for continue, break stmts
+	// needed for continue & break stmts
 	LoopStmt* in_loop;
 	SwitchStmt* in_switch;
 	//-------------------
 
 	char** initialized_variables_in_scope;
 
-	// included local scopes of this scope
+	// included scopes of this scope
 	struct Table* parent;
 	struct Table** childs;
 } Table;

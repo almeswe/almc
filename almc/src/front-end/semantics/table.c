@@ -1,5 +1,7 @@
 #include "table.h"
 
+//todo: switch all this stuff from arrays to hash-tables
+
 #define is_declared_in_collection(member, member_in_collection, collection)   \
 	for (size_t i = 0; i < sbuffer_len(collection); i++)				      \
 		if (strcmp(collection[i]->member_in_collection, member) == 0)         \
