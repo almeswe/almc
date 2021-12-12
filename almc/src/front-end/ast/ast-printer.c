@@ -111,17 +111,17 @@ void print_const(Const* cnst, const char* indent)
 void print_func_call(FuncCall* func_call, const char* indent)
 {
 	printf(GREEN);
-	size_t len = sbuffer_len(func_call->func_args);
+	size_t len = sbuffer_len(func_call->args);
 	if (func_call->type)
 		printf("%sfunc-call: %s(args: %d) %s\n", indent,
-			func_call->func_name, len, type_tostr_plain(func_call->type));
+			func_call->name, len, type_tostr_plain(func_call->type));
 	else
 		printf("%sfunc-call: %s(args: %d)\n", indent,
-		func_call->func_name, len);
+		func_call->name, len);
 	printf(RESET);
 	if (len)
 		for (int i = 0; i < len; i++)
-			print_expr(func_call->func_args[i], indent);
+			print_expr(func_call->args[i], indent);
 	else
 		printf("%s   no-args\n", indent);
 }
@@ -333,12 +333,12 @@ void print_var_decl(VarDecl* var_decl, const char* indent)
 
 void print_func_decl(FuncDecl* func_decl, const char* indent)
 {
-#define print_func_spec(spec) func_decl->func_spec.spec ? \
-	printf("%s%s: %d\n", indent, #spec, func_decl->func_spec.spec) : 0
+#define print_func_spec(x) func_decl->spec.x ? \
+	printf("%s%s: %d\n", indent, #x, func_decl->spec.x) : 0
 
 	printf(BOLDCYAN);
 	printf("%sfunc-decl: %s\n", indent, 
-		func_decl->func_name->svalue);
+		func_decl->name->svalue);
 	indent = frmt("   %s", indent);
 	printf(RESET);
 	print_func_spec(is_entry);
@@ -347,29 +347,29 @@ void print_func_decl(FuncDecl* func_decl, const char* indent)
 	printf(BOLDCYAN);
 	printf("%sfunc-ret-type:\n", indent);
 	printf(RESET);
-	print_type(func_decl->func_type, frmt("   %s", indent));
+	print_type(func_decl->type, frmt("   %s", indent));
 
 	printf(BOLDCYAN);
 	printf("%sfunc-params:\n", indent);
 	printf(RESET);
-	if (!sbuffer_len(func_decl->func_params))
+	if (!sbuffer_len(func_decl->params))
 		printf("%s   no-params\n", indent);
-	for (int i = 0; i < sbuffer_len(func_decl->func_params); i++)
-		print_type_var(func_decl->func_params[i], frmt("   %s", indent));
+	for (int i = 0; i < sbuffer_len(func_decl->params); i++)
+		print_type_var(func_decl->params[i], frmt("   %s", indent));
 
-	if (func_decl->func_body)
+	if (func_decl->body)
 	{
 		printf(BOLDCYAN);
 		printf("%sfunc-body:\n", indent);
 		printf(RESET);
-		print_block(func_decl->func_body, frmt("   %s", indent));
+		print_block(func_decl->body, frmt("   %s", indent));
 	}
 }
 
 void print_label_decl(LabelDecl* label_decl, const char* indent)
 {
 	printf(BOLDCYAN);
-	printf("%slabel-decl: %s\n", indent, label_decl->label_idnt->svalue);
+	printf("%slabel-decl: %s\n", indent, label_decl->label->svalue);
 	printf(RESET);
 }
 
@@ -386,6 +386,7 @@ void print_enum_member(EnumMember* member, const char* indent)
 	printf("%s   %s:\n", indent, member->name);
 	print_expr(member->value, frmt("   %s", indent));
 }
+
 void print_enum_decl(EnumDecl* enum_decl, const char* indent)
 {
 	printf(BOLDMAGENTA);
@@ -443,12 +444,12 @@ void print_do_loop(DoLoop* do_loop, const char* indent)
 	printf(BOLDCYAN);
 	printf("%sdo-body:\n", indent);
 	printf(RESET);
-	print_block(do_loop->do_body, frmt("   %s", indent));
+	print_block(do_loop->body, frmt("   %s", indent));
 
 	printf(BOLDCYAN);
 	printf("%sdo-cond:\n", indent);
 	printf(RESET);
-	print_expr(do_loop->do_cond, indent);
+	print_expr(do_loop->cond, indent);
 }
 
 void print_for_loop(ForLoop* for_loop, const char* indent)
@@ -459,22 +460,22 @@ void print_for_loop(ForLoop* for_loop, const char* indent)
 	printf(BOLDCYAN);
 	printf("%sfor-init:\n", indent);
 	printf(RESET);
-	print_var_decl(for_loop->for_init, frmt("   %s", indent));
+	print_var_decl(for_loop->init, frmt("   %s", indent));
 
 	printf(BOLDCYAN);
 	printf("%sfor-cond:\n", indent);
 	printf(RESET);
-	print_expr(for_loop->for_cond, indent);
+	print_expr(for_loop->cond, indent);
 
 	printf(BOLDCYAN);
 	printf("%sfor-step:\n", indent);
 	printf(RESET);
-	print_expr(for_loop->for_step, indent);
+	print_expr(for_loop->step, indent);
 
 	printf(BOLDCYAN);
 	printf("%sfor-body:\n", indent);
 	printf(RESET);
-	print_block(for_loop->for_body, frmt("   %s", indent));
+	print_block(for_loop->body, frmt("   %s", indent));
 }
 
 void print_while_loop(WhileLoop* while_loop, const char* indent)
@@ -487,12 +488,12 @@ void print_while_loop(WhileLoop* while_loop, const char* indent)
 	printf(BOLDCYAN);
 	printf("%swhile-cond:\n", indent);
 	printf(RESET);
-	print_expr(while_loop->while_cond, indent);
+	print_expr(while_loop->cond, indent);
 
 	printf(BOLDCYAN);
 	printf("%swhile-body:\n", indent);
 	printf(RESET);
-	print_block(while_loop->while_body, frmt("   %s", indent));
+	print_block(while_loop->body, frmt("   %s", indent));
 }
 
 void print_loop_stmt(LoopStmt* loop_stmt, const char* indent)
@@ -538,12 +539,12 @@ void print_if_stmt(IfStmt* if_stmt, const char* indent)
 	printf(BOLDCYAN);
 	printf("%sif-cond:\n", indent2);
 	printf(RESET);
-	print_expr(if_stmt->if_cond, indent2);
+	print_expr(if_stmt->cond, indent2);
 
 	printf(BOLDCYAN);
 	printf("%sif-body:\n", indent2);
 	printf(RESET);
-	print_block(if_stmt->if_body, frmt("   %s", indent2));
+	print_block(if_stmt->body, frmt("   %s", indent2));
 
 	for (int i = 0; i < sbuffer_len(if_stmt->elifs); i++)
 	{
@@ -554,12 +555,12 @@ void print_if_stmt(IfStmt* if_stmt, const char* indent)
 		printf(BOLDCYAN);
 		printf("%selif-cond:\n", indent2);
 		printf(RESET);
-		print_expr(if_stmt->elifs[i]->elif_cond, indent2);
+		print_expr(if_stmt->elifs[i]->cond, indent2);
 
 		printf(BOLDCYAN);
 		printf("%selif-body:\n", indent2);
 		printf(RESET);
-		print_block(if_stmt->elifs[i]->elif_body, frmt("   %s", indent2));
+		print_block(if_stmt->elifs[i]->body, frmt("   %s", indent2));
 	}
 
 	if (if_stmt->else_body)
@@ -605,14 +606,14 @@ void print_case_stmt(Case* case_stmt, const char* indent)
 	indent = frmt("%s   ", indent);
 	printf("%scase-value:\n", indent);
 	printf(RESET);
-	print_expr(case_stmt->case_value, indent);
+	print_expr(case_stmt->value, indent);
 
-	if (case_stmt->case_body)
+	if (case_stmt->body)
 	{
 		printf(BOLDMAGENTA);
 		printf("%scase-body:\n", indent);
 		printf(RESET);
-		print_block(case_stmt->case_body, frmt("%s   ", indent));
+		print_block(case_stmt->body, frmt("%s   ", indent));
 	}
 }
 
@@ -626,17 +627,17 @@ void print_switch_stmt(SwitchStmt* switch_stmt, const char* indent)
 	printf(BOLDMAGENTA);
 	printf("%sswitch-cond:\n", indent);
 	printf(RESET);
-	print_expr(switch_stmt->switch_cond, indent);
+	print_expr(switch_stmt->cond, indent);
 
-	for (int i = 0; i < sbuffer_len(switch_stmt->switch_cases); i++)
-		print_case_stmt(switch_stmt->switch_cases[i], frmt("%s   ", indent));
+	for (int i = 0; i < sbuffer_len(switch_stmt->cases); i++)
+		print_case_stmt(switch_stmt->cases[i], frmt("%s   ", indent));
 
-	if (switch_stmt->switch_default)
+	if (switch_stmt->default_case)
 	{
 		printf(BOLDMAGENTA);
 		printf("%sdefault-stmt:\n", indent);
 		printf(RESET);
-		print_block(switch_stmt->switch_default, frmt("%s   ", indent));
+		print_block(switch_stmt->default_case, frmt("%s   ", indent));
 	}
 }
 
@@ -645,8 +646,8 @@ void print_import_stmt(ImportStmt* import_stmt, const char* indent)
 	printf(BOLDRED);
 	printf("%simport-stmt:\n", indent);
 	printf(RESET);
-	for (int i = 0; i < sbuffer_len(import_stmt->imported_ast->stmts); i++)
-		print_stmt(import_stmt->imported_ast->stmts[i], indent);
+	for (int i = 0; i < sbuffer_len(import_stmt->ast->stmts); i++)
+		print_stmt(import_stmt->ast->stmts[i], indent);
 }
 
 void print_stmt(Stmt* stmt, const char* indent)

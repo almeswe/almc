@@ -28,11 +28,11 @@ int32_t check_flow_scope(Block* scope)
 int32_t check_flow_if_stmt(IfStmt* if_stmt)
 {
 	int32_t stmt_resolved = check_flow_scope(
-		if_stmt->if_body);
+		if_stmt->body);
 
 	for (size_t i = 0; i < sbuffer_len(if_stmt->elifs); i++)
 		stmt_resolved &= check_flow_scope(
-			if_stmt->elifs[i]->elif_body);
+			if_stmt->elifs[i]->body);
 
 	if (!if_stmt->else_body)
 		stmt_resolved = 0;
@@ -50,13 +50,13 @@ int32_t check_flow_loop_stmt(LoopStmt* loop_stmt)
 	{
 	case LOOP_DO:
 		return check_flow_scope(
-			loop_stmt->do_loop->do_body);
+			loop_stmt->do_loop->body);
 	case LOOP_FOR:
 		return check_flow_scope(
-			loop_stmt->for_loop->for_body);
+			loop_stmt->for_loop->body);
 	case LOOP_WHILE:
 		return check_flow_scope(
-			loop_stmt->while_loop->while_body);
+			loop_stmt->while_loop->body);
 	}
 	return 0;
 }
@@ -65,22 +65,22 @@ int32_t check_flow_switch_stmt(SwitchStmt* switch_stmt)
 {
 	int32_t stmt_resolved = 0;
 
-	for (size_t i = 0; i < sbuffer_len(switch_stmt->switch_cases); i++)
-		if (switch_stmt->switch_cases[i]->case_body)
+	for (size_t i = 0; i < sbuffer_len(switch_stmt->cases); i++)
+		if (switch_stmt->cases[i]->body)
 			stmt_resolved &= check_flow_scope(
-				switch_stmt->switch_cases[i]->case_body);
+				switch_stmt->cases[i]->body);
 
-	if (switch_stmt->switch_default)
+	if (switch_stmt->default_case)
 		stmt_resolved &= check_flow_scope(
-			switch_stmt->switch_default);
+			switch_stmt->default_case);
 
 	return stmt_resolved;
 }
 
 void check_func_return_flow(FuncDecl* func_decl)
 {
-	if (!IS_VOID_TYPE(func_decl->func_type))
-		if (!check_flow_scope(func_decl->func_body))
+	if (!IS_VOID_TYPE(func_decl->type))
+		if (!check_flow_scope(func_decl->body))
 			report_error(frmt("Not every code flow in function \'%s\' returns value.",
-				func_decl->func_name->svalue), func_decl->func_name->context);
+				func_decl->name->svalue), func_decl->name->context);
 }

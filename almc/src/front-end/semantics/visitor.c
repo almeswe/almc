@@ -136,18 +136,18 @@ void visit_scope(Stmt** stmts, Table* table)
 			}
 			break;
 		case STMT_FUNC_DECL:
-			if (is_function_declared(stmts[i]->func_decl->func_name->svalue, table))
+			if (is_function_declared(stmts[i]->func_decl->name->svalue, table))
 				report_error(frmt("Function \'%s\' is already declared.",
-					stmts[i]->func_decl->func_name->svalue), 
-						stmts[i]->func_decl->func_name->context);
+					stmts[i]->func_decl->name->svalue), 
+						stmts[i]->func_decl->name->context);
 			add_function(stmts[i]->func_decl, table);
 			break;
 		// also added labels here
 		case STMT_LABEL_DECL:
-			if (is_label_declared(stmts[i]->label_decl->label_idnt->svalue, table))
+			if (is_label_declared(stmts[i]->label_decl->label->svalue, table))
 				report_error(frmt("Label \'%s\' is already declared.",
-					stmts[i]->label_decl->label_idnt->svalue), 
-						stmts[i]->label_decl->label_idnt->context);
+					stmts[i]->label_decl->label->svalue), 
+						stmts[i]->label_decl->label->context);
 			add_label(stmts[i]->label_decl, table);
 			break;
 		}
@@ -206,24 +206,24 @@ void visit_idnt(Idnt* idnt, Table* table, int is_in_assign)
 
 void visit_func_call(FuncCall* func_call, Table* table)
 {
-	if (!is_function_declared(func_call->func_name, table))
+	if (!is_function_declared(func_call->name, table))
 		report_error2(frmt("Function \'%s\' is not declared in current scope.", 
-			func_call->func_name), func_call->area);
+			func_call->name), func_call->area);
 	else
 	{
 		// visiting passed arguments to function call
-		FuncDecl* origin = get_function(func_call->func_name, table);
-		visit_type(origin->func_type, table);
-		size_t passed   = sbuffer_len(func_call->func_args);
-		size_t expected = sbuffer_len(origin->func_params);
+		FuncDecl* origin = get_function(func_call->name, table);
+		visit_type(origin->type, table);
+		size_t passed   = sbuffer_len(func_call->args);
+		size_t expected = sbuffer_len(origin->params);
 
 		if (passed > expected)
 			report_error2(frmt("Too much arguments passed to function call \'%s\'.", 
-				func_call->func_name), func_call->area);
+				func_call->name), func_call->area);
 
 		if (passed < expected)
 			report_error2(frmt("Not enough arguments passed to function call \'%s\'.", 
-				func_call->func_name), func_call->area);
+				func_call->name), func_call->area);
 	}
 }
 
@@ -379,14 +379,14 @@ void visit_condition(Expr* condition, Table* table)
 void visit_if_stmt(IfStmt* if_stmt, Table* table)
 {
 	Table* local = NULL;
-	visit_condition(if_stmt->if_cond, table);
-	visit_scope(if_stmt->if_body->stmts, local = table_new(table));
-	visit_block(if_stmt->if_body, local);
+	visit_condition(if_stmt->cond, table);
+	visit_scope(if_stmt->body->stmts, local = table_new(table));
+	visit_block(if_stmt->body, local);
 
 	for (size_t i = 0; i < sbuffer_len(if_stmt->elifs); i++)
-		visit_condition(if_stmt->elifs[i]->elif_cond, table),
-			visit_scope(if_stmt->elifs[i]->elif_body->stmts, local = table_new(table)),
-				visit_block(if_stmt->elifs[i]->elif_body, local);
+		visit_condition(if_stmt->elifs[i]->cond, table),
+			visit_scope(if_stmt->elifs[i]->body->stmts, local = table_new(table)),
+				visit_block(if_stmt->elifs[i]->body, local);
 
 	if (if_stmt->else_body)
 		visit_scope(if_stmt->else_body->stmts, local = table_new(table)),
@@ -396,21 +396,21 @@ void visit_if_stmt(IfStmt* if_stmt, Table* table)
 void check_for_conjuction_collisions(SwitchStmt* switch_stmt)
 {
 	int collision_resolved = 1;
-	int cases_count = sbuffer_len(switch_stmt->switch_cases);
+	int cases_count = sbuffer_len(switch_stmt->cases);
 	for (size_t i = 0; i < cases_count; i++)
-		collision_resolved = !switch_stmt->switch_cases[i]->is_conjucted;
+		collision_resolved = !switch_stmt->cases[i]->is_conjucted;
 	if (!collision_resolved)
 		report_error2("Expected body for this case statement.",
-			get_expr_area(switch_stmt->switch_cases[cases_count-1]->case_value));
+			get_expr_area(switch_stmt->cases[cases_count-1]->value));
 }
 
 void check_for_duplicated_case_conditions(SwitchStmt* switch_stmt, Table* table)
 {
 	Expr** conditions = NULL;
 
-	for (size_t i = 0; i < sbuffer_len(switch_stmt->switch_cases); i++)
+	for (size_t i = 0; i < sbuffer_len(switch_stmt->cases); i++)
 	{
-		Expr* case_value = switch_stmt->switch_cases[i]->case_value;
+		Expr* case_value = switch_stmt->cases[i]->value;
 		switch (case_value->kind)
 		{
 		case EXPR_IDNT:
@@ -440,43 +440,43 @@ void check_for_duplicated_case_conditions(SwitchStmt* switch_stmt, Table* table)
 void visit_switch_stmt(SwitchStmt* switch_stmt, Table* table)
 {
 	Table* local = NULL;
-	visit_condition(switch_stmt->switch_cond, table);
+	visit_condition(switch_stmt->cond, table);
 
 	Type* switch_case_type = NULL;
-	Type* switch_cond_type = get_expr_type(switch_stmt->switch_cond, table);
+	Type* switch_cond_type = get_expr_type(switch_stmt->cond, table);
 
 	if (!is_integral_type(switch_cond_type))
 		report_error2(frmt("Condition of switch statement must be of integral type, not \'%s\'", 
-			type_tostr_plain(switch_cond_type)), get_expr_area(switch_stmt->switch_cond));
+			type_tostr_plain(switch_cond_type)), get_expr_area(switch_stmt->cond));
 
 	check_for_conjuction_collisions(switch_stmt, table);
 	check_for_duplicated_case_conditions(switch_stmt, table);
 
-	for (size_t i = 0; i < sbuffer_len(switch_stmt->switch_cases); i++)
+	for (size_t i = 0; i < sbuffer_len(switch_stmt->cases); i++)
 	{
 		local = table_new(table);
 		local->in_switch = switch_stmt;
 
-		if (switch_stmt->switch_cases[i]->case_body)
-			visit_scope(switch_stmt->switch_cases[i]->case_body->stmts, local),
-				visit_block(switch_stmt->switch_cases[i]->case_body, local);
+		if (switch_stmt->cases[i]->body)
+			visit_scope(switch_stmt->cases[i]->body->stmts, local),
+				visit_block(switch_stmt->cases[i]->body, local);
 
-		switch_case_type = get_expr_type(switch_stmt->switch_cases[i]->case_value, local);
+		switch_case_type = get_expr_type(switch_stmt->cases[i]->value, local);
 		if (!can_cast_implicitly(switch_cond_type, switch_case_type, local))
 			report_error2(frmt("Cannot use case statement with type \'%s\' when switch's condition has type \'%s\'",
 				type_tostr_plain(switch_case_type), type_tostr_plain(switch_cond_type)),
-					get_expr_area(switch_stmt->switch_cases[i]->case_value));
+					get_expr_area(switch_stmt->cases[i]->value));
 		if (!is_integral_type(switch_case_type))
 			report_error2(frmt("Condition of case statement must be of integral type, not \'%s\'",
-				type_tostr_plain(switch_case_type)), get_expr_area(switch_stmt->switch_cases[i]->case_value));
+				type_tostr_plain(switch_case_type)), get_expr_area(switch_stmt->cases[i]->value));
 	}
 
-	if (switch_stmt->switch_default)
+	if (switch_stmt->default_case)
 	{
 		local = table_new(table);
 		local->in_switch = switch_stmt;
-		visit_scope(switch_stmt->switch_default->stmts, local),
-			visit_block(switch_stmt->switch_default, local);
+		visit_scope(switch_stmt->default_case->stmts, local),
+			visit_block(switch_stmt->default_case, local);
 	}
 }
 
@@ -503,28 +503,28 @@ void visit_loop_stmt(LoopStmt* loop_stmt, Table* table)
 
 void visit_do_loop_stmt(DoLoop* do_loop, Table* table)
 {
-	visit_block(do_loop->do_body, table);
-	visit_scope(do_loop->do_body->stmts, table);
-	visit_condition(do_loop->do_cond, table);
+	visit_block(do_loop->body, table);
+	visit_scope(do_loop->body->stmts, table);
+	visit_condition(do_loop->cond, table);
 }
 
 void visit_for_loop_stmt(ForLoop* for_loop, Table* table)
 {
-	if (for_loop->for_init)
-		visit_var_decl_stmt(for_loop->for_init, table);
-	if (for_loop->for_cond)
-		visit_condition(for_loop->for_cond, table);
-	if (for_loop->for_step)
-		visit_expr(for_loop->for_step, table);
-	visit_scope(for_loop->for_body->stmts, table);
-	visit_block(for_loop->for_body, table);
+	if (for_loop->init)
+		visit_var_decl_stmt(for_loop->init, table);
+	if (for_loop->cond)
+		visit_condition(for_loop->cond, table);
+	if (for_loop->step)
+		visit_expr(for_loop->step, table);
+	visit_scope(for_loop->body->stmts, table);
+	visit_block(for_loop->body, table);
 }
 
 void visit_while_loop_stmt(WhileLoop* while_loop, Table* table)
 {
-	visit_condition(while_loop->while_cond, table);
-	visit_scope(while_loop->while_body->stmts, table);
-	visit_block(while_loop->while_body, table);
+	visit_condition(while_loop->cond, table);
+	visit_scope(while_loop->body->stmts, table);
+	visit_block(while_loop->body, table);
 }
 
 void visit_jump_stmt(JumpStmt* jump_stmt, Table* table)
@@ -578,16 +578,16 @@ void visit_return_stmt(JumpStmt* return_stmt, Table* table)
 			return_stmt->area);
 	else
 	{
-		if (!IS_VOID_TYPE(table->in_function->func_type))
+		if (!IS_VOID_TYPE(table->in_function->type))
 		{
 			if (!return_stmt->additional_expr)
 				report_error2("Return statement must return some value from function.",
 					return_stmt->area);
 			visit_expr(return_stmt->additional_expr, table);
 			Type* return_type = get_expr_type(return_stmt->additional_expr, table);
-			if (!can_cast_implicitly(table->in_function->func_type, return_type))
+			if (!can_cast_implicitly(table->in_function->type, return_type))
 				report_error2(frmt("Cannot return value of type \'%s\' from function with \'%s\'.",
-					type_tostr_plain(return_type), type_tostr_plain(table->in_function->func_type)),
+					type_tostr_plain(return_type), type_tostr_plain(table->in_function->type)),
 						get_expr_area(return_stmt->additional_expr));
 		}
 		else
@@ -762,38 +762,38 @@ void visit_func_decl_stmt(FuncDecl* func_decl, Table* table)
 	Table* local = table_new(table);
 	local->in_function = func_decl;
 
-	if (func_decl->func_spec.is_intrinsic)
+	if (func_decl->spec.is_intrinsic)
 		report_error("Intrinsic specifier is not supported in language yet.", 
-			func_decl->func_name->context);
+			func_decl->name->context);
 
-	if (func_decl->func_spec.is_entry)
+	if (func_decl->spec.is_entry)
 		visit_entry_func_stmt(func_decl, table);
 
-	if (func_decl->func_body)
-		visit_scope(func_decl->func_body->stmts, local);
+	if (func_decl->body)
+		visit_scope(func_decl->body->stmts, local);
 
 	// checking func parameters
-	for (size_t i = 0; i < sbuffer_len(func_decl->func_params); i++)
+	for (size_t i = 0; i < sbuffer_len(func_decl->params); i++)
 	{
 		// checking if parameter with this name is already defined as enum identifier
-		if (is_enum_member(func_decl->func_params[i]->var, local))
+		if (is_enum_member(func_decl->params[i]->var, local))
 			report_error2(frmt("Function parameter \'%s\' is already defined as enum identifier.",
-				func_decl->func_params[i]->var), func_decl->func_params[i]->area);
+				func_decl->params[i]->var), func_decl->params[i]->area);
 		// checking for duplicated parameter specification
-		if (is_function_param_passed(func_decl->func_params[i]->var, local))
+		if (is_function_param_passed(func_decl->params[i]->var, local))
 			report_error2(frmt("Function parameter \'%s\' is already specified in \'%s\' function's parameters.",
-				func_decl->func_params[i]->var, func_decl->func_name->svalue), func_decl->func_params[i]->area);
-		add_function_param(func_decl->func_params[i], local);
+				func_decl->params[i]->var, func_decl->name->svalue), func_decl->params[i]->area);
+		add_function_param(func_decl->params[i], local);
 
 		// checking func param for void type
-		visit_non_void_type(func_decl->func_params[i]->type, 
-			func_decl->func_params[i]->area, table);
+		visit_non_void_type(func_decl->params[i]->type, 
+			func_decl->params[i]->area, table);
 	}
 
 	// checking function's return type
-	visit_type(func_decl->func_type, table);
+	visit_type(func_decl->type, table);
 	// checking function's body
-	visit_block(func_decl->func_body, local);
+	visit_block(func_decl->body, local);
 	//checking that all code paths return value
 	check_func_return_flow(func_decl);
 }
@@ -806,14 +806,14 @@ void visit_label_decl_stmt(LabelDecl* label_decl, Table* table)
 
 void visit_import_stmt(ImportStmt* import_stmt, Table* table)
 {
-	visit_scope(import_stmt->imported_ast->stmts, table);
-	for (size_t i = 0; i < sbuffer_len(import_stmt->imported_ast->stmts); i++)
-		visit_stmt(import_stmt->imported_ast->stmts[i], table);
+	visit_scope(import_stmt->ast->stmts, table);
+	for (size_t i = 0; i < sbuffer_len(import_stmt->ast->stmts); i++)
+		visit_stmt(import_stmt->ast->stmts[i], table);
 }
 
 void check_entry_func_params(FuncDecl* func_decl)
 {
-	TypeVar** params = func_decl->func_params;
+	TypeVar** params = func_decl->params;
 	size_t param_count = sbuffer_len(params);
 
 	switch (param_count)
@@ -830,23 +830,23 @@ void check_entry_func_params(FuncDecl* func_decl)
 		break;
 	default:
 		report_error(frmt("Entry method \'%s\' cannot accept this count \'%d\' of parameters.",
-			func_decl->func_name->svalue, param_count), func_decl->func_name->context);
+			func_decl->name->svalue, param_count), func_decl->name->context);
 	}
 }
 
 void visit_entry_func_stmt(FuncDecl* func_decl, Table* table)
 {
-	if (func_decl->func_spec.is_entry && table->parent)
+	if (func_decl->spec.is_entry && table->parent)
 		report_error(frmt("Cannot create entry function \'%s\' not in global scope.",
-			func_decl->func_name->svalue), func_decl->func_name->context);
+			func_decl->name->svalue), func_decl->name->context);
 
-	if (func_decl->func_spec.is_entry)
+	if (func_decl->spec.is_entry)
 		for (size_t i = 0; i < sbuffer_len(table->functions); i++)
-			if (table->functions[i]->func_spec.is_entry &&
+			if (table->functions[i]->spec.is_entry &&
 				table->functions[i] != func_decl)
 				report_error(frmt("Cannot specify function \'%s\' as entry,"
-					" entry function \'%s\' is already mentioned.", func_decl->func_name->svalue, 
-						table->functions[i]->func_name->svalue), func_decl->func_name->context);
+					" entry function \'%s\' is already mentioned.", func_decl->name->svalue, 
+						table->functions[i]->name->svalue), func_decl->name->context);
 
 	check_entry_func_params(func_decl);
 }

@@ -108,7 +108,7 @@ AsmCodeProc* proc_new(FuncDecl* func_decl)
 		new_s(AsmCodeProc, proc);
 	proc->lines = NULL;
 	proc->defines = NULL;
-	proc->name = func_decl->func_name->svalue;
+	proc->name = func_decl->name->svalue;
 	proc->frame = stack_frame_new(func_decl);
 	proc->frame->of_proc = proc;
 	return proc;

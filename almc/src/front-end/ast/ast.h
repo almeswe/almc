@@ -139,9 +139,9 @@ typedef struct Const
 typedef struct FuncCall
 {
 	Type* type;
-	Expr** func_args;
+	Expr** args;
 	SrcArea* area;
-	const char* func_name;
+	const char* name;
 } FuncCall;
 
 typedef struct Initializer
@@ -204,22 +204,22 @@ typedef struct VarDecl
 
 typedef struct FuncSpecifiers
 {
-	char is_entry;
-	char is_intrinsic;
+	bool is_entry;
+	bool is_intrinsic;
 } FuncSpecifiers;
 
 typedef struct FuncDecl
 {
-	Idnt* func_name;
-	Type* func_type;
-	Block* func_body;
-	TypeVar** func_params;
-	FuncSpecifiers func_spec;
+	Idnt* name;
+	Type* type;
+	Block* body;
+	TypeVar** params;
+	FuncSpecifiers spec;
 } FuncDecl;
 
 typedef struct LabelDecl
 {
-	Idnt* label_idnt;
+	Idnt* label;
 } LabelDecl;
 
 typedef struct EnumMember
@@ -276,22 +276,22 @@ typedef struct TypeDecl
 
 typedef struct DoLoop
 {
-	Expr* do_cond;
-	Block* do_body;
+	Expr* cond;
+	Block* body;
 } DoLoop;
 
 typedef struct ForLoop
 {
-	Expr* for_cond;
-	Expr* for_step;
-	Block* for_body;
-	VarDecl* for_init;
+	Expr* cond;
+	Expr* step;
+	Block* body;
+	VarDecl* init;
 } ForLoop;
 
 typedef struct WhileLoop
 {
-	Expr* while_cond;
-	Block* while_body;
+	Expr* cond;
+	Block* body;
 } WhileLoop;
 
 typedef enum LoopStmtKind
@@ -314,14 +314,14 @@ typedef struct LoopStmt
 
 typedef struct ElseIf
 {
-	Expr* elif_cond;
-	Block* elif_body;
+	Expr* cond;
+	Block* body;
 } ElseIf;
 
 typedef struct IfStmt
 {
-	Expr* if_cond;
-	Block* if_body;
+	Expr* cond;
+	Block* body;
 	Block* else_body;
 
 	ElseIf** elifs;
@@ -329,17 +329,17 @@ typedef struct IfStmt
 
 typedef struct Case
 {
-	Expr* case_value;
-	Block* case_body;
+	Expr* value;
+	Block* body;
 	// means that this case statement has the same body with next case
-	uint32_t is_conjucted;
+	bool is_conjucted;
 } Case;
 
 typedef struct SwitchStmt
 {
-	Expr* switch_cond;
-	Case** switch_cases;
-	Block* switch_default;
+	Expr* cond;
+	Case** cases;
+	Block* default_case;
 } SwitchStmt;
 
 typedef struct EmptyStmt
@@ -365,8 +365,7 @@ typedef struct JumpStmt
 
 typedef struct ImportStmt
 {
-	//structure for containing path here?
-	AstRoot* imported_ast;
+	AstRoot* ast;
 } ImportStmt;
 
 typedef enum StmtType
@@ -418,7 +417,7 @@ Expr* expr_new(ExprKind type, void* expr_value_ptr);
 Str* str_new(const char* string, SrcContext* context);
 Idnt* idnt_new(const char* idnt, SrcContext* context);
 Const* const_new(ConstKind type, const char* svalue, SrcContext* context);
-FuncCall* func_call_new(const char* func_name, Expr** func_args);
+FuncCall* func_call_new(const char* name, Expr** args);
 UnaryExpr* unary_expr_new(UnaryExprKind type, Expr* expr);
 BinaryExpr* binary_expr_new(BinaryExprKind type, Expr* lexpr, Expr* rexpr);
 TernaryExpr* ternary_expr_new(Expr* cond, Expr* lexpr, Expr* rexpr);
@@ -428,36 +427,34 @@ TypeVar* type_var_new(Type* type, const char* var);
 Stmt* stmt_new(StmtType type, void* stmt_value_ptr);
 
 Block* block_new(Stmt** stmts);
-ElseIf* elif_stmt_new(Expr* elif_cond, Block* elif_body);
-IfStmt* if_stmt_new(Expr* if_cond, Block* if_body, ElseIf** elifs, 
-	Block* else_body);
+ElseIf* elif_stmt_new(Expr* cond, Block* body);
+IfStmt* if_stmt_new(Expr* cond, Block* body, ElseIf** elifs, Block* else_body);
 
+DoLoop* do_loop_new(Expr* cond, Block* body);
+ForLoop* for_loop_new(VarDecl* init, Expr* cond, Expr* step, Block* body);
+WhileLoop* while_loop_new(Expr* cond, Block* body);
 LoopStmt* loop_stmt_new(LoopStmtKind type, void* loop_stmt_value_ptr);
-DoLoop* do_loop_new(Expr* do_cond, Block* do_body);
-ForLoop* for_loop_new(VarDecl* for_init, Expr* for_cond, Expr* for_step,
-	Block* for_body);
-WhileLoop* while_loop_new(Expr* while_cond, Block* while_body);
 
 ExprStmt* expr_stmt_new(Expr* expr);
+
 EmptyStmt* empty_stmt_new();
-
 JumpStmt* jump_stmt_new(JumpStmtKind type, Expr* return_expr);
+ImportStmt* import_stmt_new(AstRoot* ast);
 
-Case* case_stmt_new(Expr* case_value, Block* case_body, 
-	uint32_t is_conjucted);
-SwitchStmt* switch_stmt_new(Expr* switch_cond, Case** switch_cases,
-	Block* switch_default);
-ImportStmt* import_stmt_new(AstRoot* imported_ast);
+Case* case_stmt_new(Expr* value, Block* body, bool is_conjucted);
+SwitchStmt* switch_stmt_new(Expr* cond, Case** cases, Block* default_case);
 
-VarDecl* var_decl_new(TypeVar* type_var, Expr* var_init);
-FuncDecl* func_decl_new(Idnt* func_name, TypeVar** func_params, 
-	Type* func_type, Block* func_body, FuncSpecifiers func_spec);
+LabelDecl* label_decl_new(Idnt* label);
+VarDecl* var_decl_new(TypeVar* type_var, Expr* init);
+FuncDecl* func_decl_new(Idnt* name, TypeVar** params, Type* type, Block* body, FuncSpecifiers spec);
+
 TypeDecl* type_decl_new(TypeDeclKind type, void* type_decl_value_ptr);
 EnumDecl* enum_decl_new(EnumMember** members, const char* name);
 UnionDecl* union_decl_new(Member** members, const char* name);
 StructDecl* struct_decl_new(Member** members, const char* name);
+
 Member* member_new(char* name, Type* type, SrcArea* area);
-LabelDecl* label_decl_new(Idnt* label_idnt);
+EnumMember* enum_member_new(char* name, Expr* value, SrcContext* context);
 
 void ast_free(AstRoot* root);
 
@@ -501,4 +498,4 @@ void import_stmt_free(ImportStmt* import_stmt);
 
 void jump_stmt_free(JumpStmt* jump_stmt);
 
-#endif // AST_H 
+#endif

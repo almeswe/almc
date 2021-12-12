@@ -180,13 +180,13 @@ inline void test_while_loop_stmts()
 	assert(sbuffer_len(ast->stmts) == 2);
 	assert(ast->stmts[0]->kind == STMT_LOOP);
 	assert(ast->stmts[0]->loop_stmt->kind == LOOP_WHILE);
-	assert(ast->stmts[0]->loop_stmt->while_loop->while_cond->kind == EXPR_CONST);
-	assert(sbuffer_len(ast->stmts[0]->loop_stmt->while_loop->while_body->stmts) == 1);
+	assert(ast->stmts[0]->loop_stmt->while_loop->cond->kind == EXPR_CONST);
+	assert(sbuffer_len(ast->stmts[0]->loop_stmt->while_loop->body->stmts) == 1);
 
 	assert(ast->stmts[1]->kind == STMT_LOOP);
 	assert(ast->stmts[1]->loop_stmt->kind == LOOP_WHILE);
-	assert(ast->stmts[1]->loop_stmt->while_loop->while_cond->kind == EXPR_CONST);
-	assert(ast->stmts[1]->loop_stmt->while_loop->while_body->stmts[0]->kind == STMT_EMPTY);
+	assert(ast->stmts[1]->loop_stmt->while_loop->cond->kind == EXPR_CONST);
+	assert(ast->stmts[1]->loop_stmt->while_loop->body->stmts[0]->kind == STMT_EMPTY);
 
 	free(path_copy);
 	lexer_free(lexer);
@@ -288,30 +288,30 @@ inline void test_switch_stmts()
 
 	assert(sbuffer_len(ast->stmts) == 5);
 	assert(ast->stmts[0]->kind == STMT_SWITCH);
-	assert(!ast->stmts[0]->switch_stmt->switch_default);
-	assert(sbuffer_len(ast->stmts[0]->switch_stmt->switch_cases) == 0);
+	assert(!ast->stmts[0]->switch_stmt->default_case);
+	assert(sbuffer_len(ast->stmts[0]->switch_stmt->cases) == 0);
 
 	assert(ast->stmts[1]->kind == STMT_SWITCH);
-	assert(ast->stmts[1]->switch_stmt->switch_default);
-	assert(sbuffer_len(ast->stmts[1]->switch_stmt->switch_cases) == 0);
+	assert(ast->stmts[1]->switch_stmt->default_case);
+	assert(sbuffer_len(ast->stmts[1]->switch_stmt->cases) == 0);
 
 	assert(ast->stmts[2]->kind == STMT_SWITCH);
-	assert(!ast->stmts[2]->switch_stmt->switch_default);
-	assert(ast->stmts[2]->switch_stmt->switch_cases[0]->is_conjucted);
-	assert(!ast->stmts[2]->switch_stmt->switch_cases[1]->is_conjucted);
-	assert(sbuffer_len(ast->stmts[2]->switch_stmt->switch_cases) == 2);
+	assert(!ast->stmts[2]->switch_stmt->default_case);
+	assert(ast->stmts[2]->switch_stmt->cases[0]->is_conjucted);
+	assert(!ast->stmts[2]->switch_stmt->cases[1]->is_conjucted);
+	assert(sbuffer_len(ast->stmts[2]->switch_stmt->cases) == 2);
 
 	assert(ast->stmts[3]->kind == STMT_SWITCH);
-	assert(!ast->stmts[3]->switch_stmt->switch_default);
-	assert(!ast->stmts[3]->switch_stmt->switch_cases[0]->is_conjucted);
-	assert(!ast->stmts[3]->switch_stmt->switch_cases[1]->is_conjucted);
-	assert(sbuffer_len(ast->stmts[3]->switch_stmt->switch_cases) == 2);
+	assert(!ast->stmts[3]->switch_stmt->default_case);
+	assert(!ast->stmts[3]->switch_stmt->cases[0]->is_conjucted);
+	assert(!ast->stmts[3]->switch_stmt->cases[1]->is_conjucted);
+	assert(sbuffer_len(ast->stmts[3]->switch_stmt->cases) == 2);
 
 	assert(ast->stmts[4]->kind == STMT_SWITCH);
-	assert(ast->stmts[4]->switch_stmt->switch_default);
-	assert(!ast->stmts[4]->switch_stmt->switch_cases[0]->is_conjucted);
-	assert(!ast->stmts[4]->switch_stmt->switch_cases[1]->is_conjucted);
-	assert(sbuffer_len(ast->stmts[4]->switch_stmt->switch_cases) == 2);
+	assert(ast->stmts[4]->switch_stmt->default_case);
+	assert(!ast->stmts[4]->switch_stmt->cases[0]->is_conjucted);
+	assert(!ast->stmts[4]->switch_stmt->cases[1]->is_conjucted);
+	assert(sbuffer_len(ast->stmts[4]->switch_stmt->cases) == 2);
 
 	free(path_copy);
 	lexer_free(lexer);
