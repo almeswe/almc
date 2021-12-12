@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <stdarg.h>
+#include <stdbool.h>
 
 #define new(type)			   (type*)malloc(sizeof(type))        
 #define newc(type, count)	   (type*)malloc(sizeof(type) * (count))
@@ -19,53 +20,62 @@
 
 char* frmt(const char* format, ...);
 
-inline int isidnt(char c)
+inline bool isidnt(char c)
 {
 	return isalpha(c) || c == '_';
-}
-inline int isidnt_ext(char c)
+} 
+
+inline bool isidnt_ext(char c)
 {
 	return isdigit(c) || isidnt(c);
-}
-inline int isdigit_bin(char c)
+} 
+
+inline bool isdigit_bin(char c)
 {
 	return c == '0' || c == '1';
-}
-inline int isdigit_oct(char c)
+} 
+
+inline bool isdigit_oct(char c)
 {
 	return isdigit(c) || (c >= '0' && c <= '7');
-}
-inline int isdigit_hex(char c)
+} 
+
+inline bool isdigit_hex(char c)
 {
 	return isdigit(c) || ((c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'));
-}
-inline int isdigit_ext(char c)
+} 
+
+inline bool isdigit_ext(char c)
 {
 	return isdigit(c) || c == '.' || c == 'e' || c == 'E';
-}
-inline int isdigit_fext(char c)
+} 
+
+inline bool isdigit_fext(char c)
 {
 	return isdigit(c) || c == 'e' || c == 'E';
-}
+} 
 
-
-inline int isstrc(char c)
+inline bool isstrc(char c)
 {
 	return c != '\n' && c != '\"';
-}
-inline int issquote(char c)
+} 
+
+inline bool issquote(char c)
 {
 	return c == '\'';
-}
-inline int isdquote(char c)
+} 
+
+inline bool isdquote(char c)
 {
 	return c == '\"';
-}
-inline int issharp(char c)
+} 
+
+inline bool issharp(char c)
 {
 	return c == '#';
-}
-inline int isescape(char c)
+} 
+
+inline bool isescape(char c)
 {
 	switch (c)
 	{
@@ -76,9 +86,10 @@ inline int isescape(char c)
 	case '\r':
 	case '\t':
 	case '\v':
-		return 1;
-	}
-	return 0;
-}
+		return true;
+	} 
+
+	return false;
+} 
 
 #endif // COMMON_H

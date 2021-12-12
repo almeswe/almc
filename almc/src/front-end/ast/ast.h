@@ -240,8 +240,8 @@ typedef struct Member
 	char* name;
 	Type* type;
 	SrcArea* area;
-	uint32_t offset;
-	uint32_t padding;
+	int32_t offset;
+	int32_t padding;
 } Member;
 
 typedef struct UnionDecl
@@ -254,6 +254,7 @@ typedef struct StructDecl
 {
 	char* name;
 	Member** members;
+	uint32_t alignment;
 } StructDecl;
 
 typedef enum TypeDeclKind
@@ -409,8 +410,6 @@ typedef struct AstRoot
 {
 	Stmt** stmts;
 } AstRoot;
-
-//todo: make some clean-up for function declarations
 
 Expr* expr_new(ExprKind type, void* expr_value_ptr);
 

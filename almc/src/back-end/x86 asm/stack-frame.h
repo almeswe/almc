@@ -38,7 +38,6 @@ typedef struct x86_StackFrame
 	int* argument_offsets; // offset for each function argument in this stack frame
 
 	int required_space_for_locals;
-	//todo: define size for each type in Type struct!
 	int required_space_for_arguments;
 
 	char* func_name;

@@ -2,7 +2,6 @@
 #define ALMC_TYPES_H
 
 #include <string.h>
-#include <stdbool.h>
 
 #include "..\utils\common.h"
 #include "..\utils\context.h"
@@ -22,7 +21,10 @@
 #define STRING_TYPE	 "str"
 #define UNKNOWN_TYPE "unknown"
 
-#define MACHINE_WORD 0x4
+#define MACHINE_WORD			 0x4
+#define STRUCT_DEFAULT_ALIGNMENT 0x4
+
+#define MAX_STACK_SIZE			 0x4000
 
 #define I8_SIZE		sizeof(int8_t)
 #define U8_SIZE		sizeof(uint8_t)
@@ -51,7 +53,9 @@
 #define IS_ENUM_TYPE(type)		(type && (type->kind == TYPE_ENUM))
 #define IS_UNION_TYPE(type)		(type && (type->kind == TYPE_UNION))
 #define IS_STRUCT_TYPE(type)	(type && (type->kind == TYPE_STRUCT))
-#define IS_AGGREGATE_TYPE(type) (IS_UNION_TYPE(type) || IS_STRUCT_TYPE(type))
+
+#define IS_STRUCT_OR_UNION_TYPE(type) (IS_UNION_TYPE(type) || IS_STRUCT_TYPE(type))
+#define IS_AGGREGATE_TYPE(type)       (IS_STRUCT_OR_UNION_TYPE(type) || IS_ARRAY_TYPE(type)) 
 
 #define IS_I8_TYPE(type)		(IS_PRIMITIVE_TYPE(type) && IS_TYPE(type, I8_TYPE))
 #define IS_I16_TYPE(type)		(IS_PRIMITIVE_TYPE(type) && IS_TYPE(type, I16_TYPE))
@@ -105,9 +109,9 @@ typedef struct Type
 			// can be accessed when type is TYPE_ARRAY
 			Expr* dimension;
 		};
-		struct _aggregate_kind_data
+		struct _struct_or_union_kind_data
 		{
-			// can be accessed when type is aggregate (struct or union)
+			// can be accessed when type is struct or union
 			Member** members;
 		};
 	};

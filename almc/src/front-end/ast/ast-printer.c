@@ -80,11 +80,6 @@ void print_str(Str* str, const char* indent)
 
 void print_const(Const* cnst, const char* indent)
 {
-	char* a;
-	char b[5][10];
-
-	char* c = b;
-
 	printf(BOLDWHITE);
 	switch (cnst->kind)
 	{
@@ -376,7 +371,8 @@ void print_label_decl(LabelDecl* label_decl, const char* indent)
 void print_member(Member* member, const char* indent)
 {
 	printf(CYAN);
-	printf("%smember: %s\n", indent, member->name);
+	printf("%smember: %s (%d:%d)\n", indent, member->name, 
+		member->padding, member->offset);
 	print_type(member->type, frmt("   %s", indent));
 	printf(RESET);
 }

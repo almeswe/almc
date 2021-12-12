@@ -56,6 +56,7 @@ void visit_import_stmt(ImportStmt* import_stmt, Table* table);
 void visit_enum(EnumDecl* enum_decl, Table* table);
 void visit_union(UnionDecl* union_decl, Table* table);
 void visit_struct(StructDecl* struct_decl, Table* table);
+void visit_struct_members(Member** members);
 
 void check_entry_func_params(FuncDecl* func_decl);
 void visit_entry_func_stmt(FuncDecl* func_decl, Table* table);
@@ -63,7 +64,6 @@ void visit_entry_func_stmt(FuncDecl* func_decl, Table* table);
 uint32_t get_size_of_aggregate_type(Type* type, Table* table);
 uint32_t get_size_of_type(Type* type, Table* table);
 
-void complete_size_of_aggregate_type(Type* type, Table* table);
 void complete_size(Type* type, Table* table);
 void complete_type(Type* type, Table* table);
 

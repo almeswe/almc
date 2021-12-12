@@ -230,6 +230,7 @@ StructDecl* struct_decl_new(Member** members, const char* name)
 	StructDecl* struct_decl = new_s(StructDecl, struct_decl);
 	struct_decl->name = name;
 	struct_decl->members = members;
+	struct_decl->alignment = STRUCT_DEFAULT_ALIGNMENT;
 	return struct_decl;
 }
 
@@ -239,6 +240,7 @@ Member* member_new(char* name, Type* type, SrcArea* area)
 	member->name = name;
 	member->type = type;
 	member->area = area;
+	member->padding = member->offset = 0;
 	return member;
 }
 

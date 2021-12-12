@@ -72,8 +72,7 @@ char* type_tostr_plain(Type* type)
 
 bool is_real_type(Type* type)
 {
-	return (IS_F32_TYPE(type) || IS_F64_TYPE(type)) ?
-		true : false;
+	return (IS_F32_TYPE(type) || IS_F64_TYPE(type));
 }
 
 bool is_numeric_type(Type* type)
@@ -152,7 +151,7 @@ uint32_t get_pointer_rank(Type* type)
 bool can_be_freed(Type* type)
 {
 	return is_pointer_like_type(type) ||
-		IS_AGGREGATE_TYPE(type);
+		IS_STRUCT_OR_UNION_TYPE(type);
 }
 
 void type_free(Type* type)
@@ -161,6 +160,8 @@ void type_free(Type* type)
 	{
 		if (IS_ARRAY_TYPE(type))
 			expr_free(type->dimension);
+		if (IS_STRUCT_OR_UNION_TYPE(type))
+			free(type->area);
 		type_free(type->base);
 		free(type);
 	}

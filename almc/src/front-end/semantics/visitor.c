@@ -1,6 +1,7 @@
 #include "visitor.h"
 
 //todo: check type referrings to each other (for freeing)
+//todo: add enum identifiers to is_const_expression
 
 #define IS_USER_TYPE_ALREADY_DECLARED(typedec, typestr) \
 	if (is_##typedec##_declared(stmts[i]->type_decl->##typedec##_decl->name, table)) \
@@ -88,7 +89,6 @@ void visit_type(Type* type, Table* table)
 		visit_pointer_like_type(type);
 	if (IS_INCOMPLETE_TYPE(base))
 		complete_type(type, table);
-	complete_size(type, table);
 }
 
 void visit_pointer_like_type(Type* type)
@@ -232,7 +232,6 @@ void visit_unary_expr(UnaryExpr* unary_expr, Table* table)
 	switch (unary_expr->kind)
 	{
 	case UNARY_CAST:
-		// todo: ...
 		visit_non_void_type(unary_expr->cast_type, unary_expr->area, table);
 		visit_expr(unary_expr->expr, table);
 		break;
@@ -259,7 +258,6 @@ void visit_unary_expr(UnaryExpr* unary_expr, Table* table)
 		visit_expr(unary_expr->expr, table);
 		break;
 	case UNARY_SIZEOF:
-		//todo: ...
 		visit_non_void_type(unary_expr->cast_type, unary_expr->area, table);
 		break;
 	case UNARY_LENGTHOF:
@@ -730,6 +728,19 @@ void visit_struct(StructDecl* struct_decl, Table* table)
 				report_error2(frmt("Member \'%s\' is already declared in \'%s\' struct declaration.",
 					struct_decl->members[i]->name, struct_decl->members),
 						struct_decl->members[i]->area);
+	visit_struct_members(struct_decl->members);
+}
+
+void visit_struct_members(Member** members)
+{
+	for (size_t i = 0; i < sbuffer_len(members); i++)
+	{
+		if (i == 0)
+			members[i]->offset = 0;
+		else
+			members[i]->offset = members[i - 1]->offset +
+			members[i - 1]->type->size;
+	}
 }
 
 void visit_type_decl_stmt(TypeDecl* type_decl, Table* table)
@@ -855,17 +866,12 @@ uint32_t get_size_of_type(Type* type, Table* table)
 {
 	if (IS_POINTER_TYPE(type))
 		return MACHINE_WORD;
-	else if (IS_ARRAY_TYPE(type))
-		return get_size_of_type(type->base, table) *
-			evaluate_expr_itype(type->dimension);
 	else if (IS_ENUM_TYPE(type))
 		// enum type just ensures that variable can store 
 		// 4-byte variable inside
-
 		// so just return the size of i32
 		return i32_type.size;
-	else if (IS_UNION_TYPE(type) ||
-			 IS_STRUCT_TYPE(type))
+	else if (IS_AGGREGATE_TYPE(type))
 		return get_size_of_aggregate_type(type, table);
 	else if (IS_PRIMITIVE_TYPE(type))
 		return type->size;
@@ -876,8 +882,8 @@ uint32_t get_size_of_type(Type* type, Table* table)
 
 uint32_t get_size_of_aggregate_type(Type* type, Table* table)
 {
-	uint32_t align = MACHINE_WORD;
 	uint32_t size = 0, buffer = 0;
+	uint32_t align = STRUCT_DEFAULT_ALIGNMENT;
 	if (IS_STRUCT_TYPE(type))
 		for (size_t i = 0; i < sbuffer_len(type->members); i++)
 			size += get_size_of_type(type->members[i]->type, table);
@@ -885,15 +891,13 @@ uint32_t get_size_of_aggregate_type(Type* type, Table* table)
 		for (size_t i = 0; i < sbuffer_len(type->members); i++)
 			buffer = get_size_of_type(type->members[i]->type, table),
 				size = max(size, buffer);
+	else if (IS_ARRAY_TYPE(type))
+		size = get_size_of_type(type->base, table) *
+			evaluate_expr_itype(type->dimension);
 	else
 		report_error(frmt("Passed type \'%s\' is not aggregate, "
 			"in get_user_type_size_in_bytes()"), type_tostr_plain(type), NULL);
 	return size;
-}
-
-void complete_size_of_aggregate_type(Type* type, Table* table)
-{
-	type->size = get_size_of_aggregate_type(type, table);
 }
 
 void complete_size(Type* type, Table* table)
@@ -907,7 +911,7 @@ void complete_size(Type* type, Table* table)
 		break;
 	case TYPE_UNION:
 	case TYPE_STRUCT:
-		complete_size_of_aggregate_type(type, table);
+		type->size = get_size_of_aggregate_type(type, table);
 		break;
 	case TYPE_ENUM:
 		type->size = get_size_of_type(type, table);
@@ -931,4 +935,5 @@ void complete_type(Type* type, Table* table)
 	else if (user_type = get_union(base->repr, table))
 		base->kind = TYPE_UNION,
 			base->members = user_type->members;
+	complete_size(type, table);
 }
