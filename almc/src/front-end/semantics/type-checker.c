@@ -1,8 +1,5 @@
 #include "type-checker.h"
 
-#define IN_BOUNDS_OF(ubound, bbound, value) \
-	(((value) <= (ubound)) && ((value) >= (bbound)))
-
 Type* get_expr_type(Expr* expr, Table* table)
 {
 	if (!expr)
@@ -445,22 +442,32 @@ Type* cast_explicitly_when_const_expr(Expr* const_expr, Type* to, Type* const_ex
 
 		//---------------------------------------
 		// determining the type of evaluated constant
+		// todo: prettyfy this code
 		double value = 0.0;
 		Type* const_expr_type_new = NULL;
 		if (is_integral_type(const_expr_type) || is_pointer_like_type(const_expr_type))
-				const_expr_type_new = get_ivalue_type(
-					value = evaluate_expr_itype(const_expr));
+		{
+			value = evaluate_expr_itype(const_expr);
+			if (is_real_type(to))
+				const_expr_type_new = get_fvalue_type(value);
+			else
+				const_expr_type_new = get_ivalue_type((int64_t)value);
+		}
 		else if (is_real_type(const_expr_type))
-			const_expr_type_new = get_fvalue_type(
-				value = evaluate_expr_ftype(const_expr));
+		{
+			value = evaluate_expr_ftype(const_expr);
+			if (is_integral_type(to) || is_pointer_like_type(to))
+				const_expr_type_new = get_ivalue_type((int64_t)value);
+			else
+				const_expr_type_new = get_fvalue_type(value);
+		}
 		else
 			report_error2("Cannot evaluate constant expression for explicit cast.",
 				get_expr_area(const_expr));
 
-		if (const_expr_type_new)
-			if (to->size < const_expr_type_new->size)
-				report_error2(frmt("Cannot explicitly convert constant value of type \'%s\' to \'%s\' (value: %f).",
-					type_tostr_plain(to), type_tostr_plain(const_expr_type_new), value), to->area);
+		if (!value_in_bounds_of_type(to, value))
+			report_error2(frmt("Cannot explicitly convert constant value of type \'%s\' to \'%s\' (value: %f).",
+				type_tostr_plain(const_expr_type_new), type_tostr_plain(to), value), to->area);
 		return cast_explicitly(to, const_expr_type);
 	}
 }
@@ -607,7 +614,7 @@ bool can_cast_implicitly(Type* to, Type* type)
 		else if (IS_F32_TYPE(to) &&
 			(IS_I8_TYPE(type) || IS_CHAR_TYPE(type) || IS_U8_TYPE(type) ||
 				IS_I16_TYPE(type) || IS_U16_TYPE(type) ||
-				IS_I32_TYPE(type) || IS_U32_TYPE(type)))
+				IS_I32_TYPE(type) || IS_U32_TYPE(type) || IS_F32_TYPE(type)))
 			return true;
 
 		// types that can be casted to f64
