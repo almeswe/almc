@@ -1,7 +1,35 @@
 #include "ast-evaluator.h"
 
+#define CAST(value, type)            \
+	if (IS_CHAR_TYPE(type))          \
+		return (char)value;          \
+	else if (IS_I8_TYPE(type))       \
+		return (int8_t)value;        \
+	else if (IS_I16_TYPE(type))      \
+		return (int16_t)value;       \
+	else if (IS_I32_TYPE(type))      \
+		return (int32_t)value;       \
+	else if (IS_I64_TYPE(type))      \
+		return (int64_t)value;       \
+	else if (IS_U8_TYPE(type))       \
+		return (uint8_t)value;       \
+	else if (IS_U16_TYPE(type))      \
+		return (uint16_t)value;      \
+	else if (IS_U32_TYPE(type))      \
+		return (uint32_t)value;      \
+	else if (IS_U64_TYPE(type))      \
+		return (uint64_t)value;      \
+	else if (IS_F32_TYPE(type))      \
+		return (float)value;         \
+	else if (IS_F64_TYPE(type))      \
+		return (double)value;
+
 int64_t evaluate_const_itype(Const* cnst)
 {
+	Type* type;
+	double value;
+
+
 	switch (cnst->kind)
 	{
 	case CONST_INT:
@@ -93,11 +121,13 @@ int64_t evaluate_unary_expr_itype(UnaryExpr* unary_expr)
 	case UNARY_LG_NOT:
 		return !evaluate_expr_itype(unary_expr->expr);
 	case UNARY_SIZEOF:
+		return unary_expr->cast_type->size;
 	case UNARY_LENGTHOF:
 		sizeof_value = evaluate_expr_itype(unary_expr->expr);
 		return (int64_t)(sizeof(sizeof_value));
 	case UNARY_CAST:
-		return evaluate_expr_itype(unary_expr->expr);
+		CAST(evaluate_expr_ftype(unary_expr->expr),
+			unary_expr->cast_type);
 	}
 	return 1;
 }
@@ -195,11 +225,13 @@ double evaluate_unary_expr_ftype(UnaryExpr* unary_expr)
 	case UNARY_LG_NOT:
 		return !evaluate_expr_ftype(unary_expr->expr);
 	case UNARY_SIZEOF:
+		return unary_expr->cast_type->size;
 	case UNARY_LENGTHOF:
 		sizeof_value = evaluate_expr_ftype(unary_expr->expr);
 		return (double)(sizeof(sizeof_value));
 	case UNARY_CAST:
-		return evaluate_expr_ftype(unary_expr->expr);
+		CAST(evaluate_expr_ftype(unary_expr->expr),
+			unary_expr->cast_type);
 	}
 	return 1.0f;
 }
@@ -218,4 +250,36 @@ double evaluate_expr_ftype(Expr* expr)
 		return evaluate_ternary_expr_ftype(expr->ternary_expr);
 	}
 	return 1.0f;
+}
+
+bool value_in_bounds_of_type(Type* type, double value)
+{
+	if (is_integral_type(type) || is_pointer_like_type(type))
+	{
+		int64_t ivalue = (int64_t)value;
+		uint64_t uvalue = (uint64_t)value;
+
+		if (IS_I8_TYPE(type))
+			return IN_BOUNDS_OF(INT8_MAX, INT8_MIN, ivalue);
+		if (IS_U8_TYPE(type))
+			return IN_BOUNDS_OF(UINT8_MAX, 0, uvalue);
+		if (IS_I16_TYPE(type))
+			return IN_BOUNDS_OF(INT16_MAX, INT16_MIN, ivalue);
+		if (IS_U16_TYPE(type))
+			return IN_BOUNDS_OF(UINT16_MAX, 0, uvalue);
+		if (IS_I32_TYPE(type) || IS_ENUM_TYPE(type))
+			return IN_BOUNDS_OF(INT32_MAX, INT32_MIN, ivalue);
+		if (IS_U32_TYPE(type) || IS_ENUM_TYPE(type) || is_pointer_like_type(type))
+			return IN_BOUNDS_OF(UINT32_MAX, 0, uvalue);
+		if (IS_I64_TYPE(type))
+			return IN_BOUNDS_OF(INT64_MAX, INT64_MIN, ivalue);
+		return IN_BOUNDS_OF(UINT64_MAX, 0, uvalue);
+	}
+	else if (is_real_type(type))
+	{
+		if (IS_F32_TYPE(type))
+			return IN_BOUNDS_OF(FLT_MAX, FLT_MIN, value);
+	}
+	else
+		return false;
 }
