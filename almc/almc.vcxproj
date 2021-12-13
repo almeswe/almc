@@ -78,6 +78,7 @@
     <ClInclude Include="test\test.h" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="src\back-end\x86 asm\instructions_list.txt" />
     <Text Include="test\syntax.txt" />
     <Text Include="test\test-cases\lexer-test-cases\COMMENTS-TEST.txt" />
     <Text Include="test\test-cases\lexer-test-cases\gen-output.txt" />
@@ -87,6 +88,7 @@
     <Text Include="test\test-cases\lexer-test-cases\TOKENS.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="src\back-end\x86 asm\instructions_gen.py" />
     <None Include="test\test-cases\lexer-test-cases\gen.py" />
     <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\b.almc" />
     <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\testfolder\back_end_test.almc" />

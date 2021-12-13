@@ -9,6 +9,8 @@
 #define IN_BOUNDS_OF(ubound, bbound, value) \
 	(((value) <= (ubound)) && ((value) >= (bbound)))
 
+//todo: fix bug with cast: cast(i8)(1 << 2) etc...
+
 int64_t evaluate_expr_itype(Expr* expr);
 double  evaluate_expr_ftype(Expr* expr);
 

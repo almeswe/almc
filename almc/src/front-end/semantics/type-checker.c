@@ -148,7 +148,7 @@ Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 	//-----------------------------
 
 	case UNARY_CAST:
-		if (is_const_expr(unary_expr->expr))
+		if (is_const_expr(unary_expr->expr, table))
 			return cast_explicitly_when_const_expr(unary_expr->expr,
 				unary_expr->cast_type, type);
 		return cast_explicitly(unary_expr->cast_type, type);
@@ -697,45 +697,48 @@ char* get_member_name(Expr* expr)
 	return &unknown_type;
 }
 
-int is_const_expr(Expr* expr)
+bool is_const_expr(Expr* expr, Table* table)
 {
 	switch (expr->kind)
 	{
 	case EXPR_CONST:
-		return 1;
+		return true;
+	case EXPR_IDNT:
+		return is_enum_member(expr->idnt->svalue,
+			table);
 	case EXPR_UNARY_EXPR:
-		return is_const_expr(expr->unary_expr->expr);
+		return is_const_expr(expr->unary_expr->expr, table);
 	case EXPR_BINARY_EXPR:
-		return is_const_expr(expr->binary_expr->lexpr) &&
-			   is_const_expr(expr->binary_expr->rexpr);
+		return is_const_expr(expr->binary_expr->lexpr, table) &&
+			   is_const_expr(expr->binary_expr->rexpr, table);
 	case EXPR_TERNARY_EXPR:
-		return is_const_expr(expr->ternary_expr->lexpr) &&
-			   is_const_expr(expr->ternary_expr->rexpr) &&
-			   is_const_expr(expr->ternary_expr->cond);
+		return is_const_expr(expr->ternary_expr->lexpr, table) &&
+			   is_const_expr(expr->ternary_expr->rexpr, table) &&
+			   is_const_expr(expr->ternary_expr->cond, table);
 	}
-	return 0;
+	return false;
 }
 
-int is_simple_const_expr(Expr* expr)
-{
-	// the diffrence with is_const_expr 
-	// that here i removed logic with unary expressions
-	switch (expr->kind)
-	{
-	case EXPR_CONST:
-		return 1;
-	case EXPR_BINARY_EXPR:
-		return is_simple_const_expr(expr->binary_expr->lexpr) &&
-			is_simple_const_expr(expr->binary_expr->rexpr);
-	case EXPR_TERNARY_EXPR:
-		return is_simple_const_expr(expr->ternary_expr->lexpr) &&
-			is_simple_const_expr(expr->ternary_expr->rexpr) &&
-			is_simple_const_expr(expr->ternary_expr->cond);
-	}
-	return 0;
-}
+//int is_simple_const_expr(Expr* expr)
+//{
+//	// the diffrence with is_const_expr 
+//	// that here i removed logic with unary expressions
+//	switch (expr->kind)
+//	{
+//	case EXPR_CONST:
+//		return 1;
+//	case EXPR_BINARY_EXPR:
+//		return is_simple_const_expr(expr->binary_expr->lexpr) &&
+//			is_simple_const_expr(expr->binary_expr->rexpr);
+//	case EXPR_TERNARY_EXPR:
+//		return is_simple_const_expr(expr->ternary_expr->lexpr) &&
+//			is_simple_const_expr(expr->ternary_expr->rexpr) &&
+//			is_simple_const_expr(expr->ternary_expr->cond);
+//	}
+//	return 0;
+//}
 
-int is_enum_member(const char* var, Table* table)
+bool is_enum_member(const char* var, Table* table)
 {
 	for (Table* parent = table; parent; parent = parent->parent)
 		for (size_t i = 0; i < sbuffer_len(parent->enums); i++)
@@ -751,9 +754,9 @@ int is_addressable_value(Expr* expr, Table* table)
 		return 0;
 	switch (expr->kind)
 	{
-	case EXPR_IDNT:
-		return !is_enum_member(
-			expr->idnt->svalue, table);
+	//case EXPR_IDNT:
+	//	return !is_enum_member(
+	//		expr->idnt->svalue, table);
 	case EXPR_UNARY_EXPR:
 		switch (expr->unary_expr->kind)
 		{

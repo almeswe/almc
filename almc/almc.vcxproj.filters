@@ -199,6 +199,7 @@
     <Text Include="test\test-cases\lexer-test-cases\LEXEME-TEST.txt" />
     <Text Include="test\test-cases\lexer-test-cases\COMMENTS-TEST.txt" />
     <Text Include="test\test-cases\lexer-test-cases\gen-output.txt" />
+    <Text Include="src\back-end\x86 asm\instructions_list.txt" />
   </ItemGroup>
   <ItemGroup>
     <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\b.almc" />
@@ -227,5 +228,6 @@
     <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_7\folder\c.almc" />
     <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_7\a.almc" />
     <None Include="test\test-cases\lexer-test-cases\gen.py" />
+    <None Include="src\back-end\x86 asm\instructions_gen.py" />
   </ItemGroup>
 </Project>

@@ -1,6 +1,6 @@
 #include "regtable.h"
 
-#define STATE_TO_ALL_COMPOUNDED(regstr, state)			               \
+#define STATE_TO_ALL_COMPOUNDED(regstr, state)			 \
 	for (int i = 0; i < REGISTER_ENUMERATOR_SCALAR; i++) \
 		table->reg_table[regstr+i] = state;
 
@@ -109,4 +109,16 @@ int unreserve_register(RegisterTable* table, int reg)
 		}
 		return 1;
 	}
+}
+
+int get_part_of_reg(int reg, RegisterSize size)
+{
+	switch (size)
+	{
+	case REGSIZE_BYTE:
+		return reg + 2;
+	case REGSIZE_WORD:
+		return reg + 1;
+	}
+	return reg;
 }

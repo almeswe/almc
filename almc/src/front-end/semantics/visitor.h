@@ -15,7 +15,7 @@ void visitor_free(Visitor* visitor);
 void visit(AstRoot* ast, Visitor* visitor);
 void visit_stmt(Stmt* stmt, Table* table);
 void visit_type(Type* type, Table* table);
-void visit_pointer_like_type(Type* type);
+void visit_pointer_like_type(Type* type, Table* table);
 void visit_non_void_type(Type* type, SrcArea* area, Table* table);
 
 void visit_scope(Stmt** stmts, Table* table);

@@ -3,7 +3,25 @@
 
 #include "regtable.h"
 #include "stack-frame.h"
-#include "..\..\utils\common.h"
+#include "..\..\front-end\front-end.h"
+
+#define TABLE     program->table
+#define REGISTERS program->regtable
+
+#define PROGRAM_ADD_PROC(proc) \
+	sbuffer_add(program->code->procs, proc)
+#define PROGRAM_SET_ENTRY(name) \
+	program->entry = name
+
+#define GET_CURR_PROC \
+	program->code->procs[sbuffer_len(program->code->procs)-1]
+
+#define PROC_CODE_LINE0(c) \
+	sbuffer_add(GET_CURR_PROC->lines, codeline_new(c, NULL, NULL))
+#define PROC_CODE_LINE1(c, arg1) \
+	sbuffer_add(GET_CURR_PROC->lines, codeline_new(c, arg1, NULL))
+#define PROC_CODE_LINE2(c, arg1, arg2) \
+	sbuffer_add(GET_CURR_PROC->lines, codeline_new(c, arg1, arg2))
 
 typedef struct FuncDecl FuncDecl;
 
@@ -15,7 +33,7 @@ typedef struct x86_AsmCodeDefine
 
 typedef struct x86_AsmCodeLine
 {
-	char* command;
+	uint32_t instruction;
 	char** arguments;
 } AsmCodeLine;
 
@@ -24,7 +42,6 @@ typedef struct x86_AsmCodeProc
 	char* name;
 	StackFrame* frame;
 	AsmCodeLine** lines;
-	AsmCodeDefine** defines;
 } AsmCodeProc;
 
 typedef struct x86_AsmCodeSegment
@@ -64,20 +81,23 @@ typedef struct x86_AsmProgram
 	char* entry;
 	char** incs;
 	char** libs;
-	RegisterTable* table;
+	Table* table;
+	RegisterTable* regtable;
 	AsmDataSegment* data;
 	AsmCodeSegment* code;
 } AsmProgram;
 
+AsmProgram* program;
+
 void print_program(AsmProgram* program);
 
-AsmProgram* program_new();
+AsmProgram* program_new(Table* table);
 AsmDataSegment* data_new();
 AsmCodeSegment* code_new();
 
 AsmDataLine* dataline_new(int size, char* name, 
 	char** values, DataSpecifier spec);
-AsmCodeLine* codeline_new(char* command, 
+AsmCodeLine* codeline_new(uint32_t instruction,
 	char* arg1, char* arg2);
 AsmCodeProc* proc_new(FuncDecl* func_decl);
 AsmCodeDefine* define_new(char* name, char* value);

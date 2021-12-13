@@ -86,20 +86,20 @@ void visit_type(Type* type, Table* table)
 				report_error2(frmt("Undefined type \'%s\' met.",
 					type->repr), type->area);
 	if (is_pointer_like_type(type))
-		visit_pointer_like_type(type);
+		visit_pointer_like_type(type, table);
 	if (IS_INCOMPLETE_TYPE(base))
 		complete_type(type, table);
 }
 
-void visit_pointer_like_type(Type* type)
+void visit_pointer_like_type(Type* type, Table* table)
 {
 	switch (type->kind)
 	{
 	case TYPE_ARRAY:
-		if (!is_const_expr(type->dimension))
+		if (!is_const_expr(type->dimension, table))
 			report_error2("Array size is not a constant expression.",
 				get_expr_area(type->dimension));
-		visit_pointer_like_type(type->base);
+		visit_pointer_like_type(type->base, table);
 		break;
 	}
 }
@@ -198,9 +198,11 @@ void visit_idnt(Idnt* idnt, Table* table, int is_in_assign)
 				idnt->svalue), idnt->context);
 		if (is_in_assign && !is_variable_initialized(idnt->svalue, table))
 			add_initialized_variable(idnt->svalue, table);
-		if (!is_variable_initialized(idnt->svalue, table))
-			report_error(frmt("Variable \'%s\' is not initialized in current scope.",
-				idnt->svalue), idnt->context);
+
+		//todo: comeback here later
+		//if (!is_variable_initialized(idnt->svalue, table))
+		//	report_error(frmt("Variable \'%s\' is not initialized in current scope.",
+		//		idnt->svalue), idnt->context);
 	}
 }
 
@@ -354,7 +356,7 @@ void visit_array_member_accessor(BinaryExpr* arr_accessor_expr, Table* table)
 	if (IS_ARRAY_TYPE(ltype))
 	{
 		// in this case we cannot evaluate expression, so do nothing
-		if (!is_const_expr(rexpr))
+		if (!is_const_expr(rexpr, table))
 			return;
 
 		int32_t index = evaluate_expr_itype(rexpr),
@@ -642,7 +644,7 @@ void visit_enum(EnumDecl* enum_decl, Table* table)
 	{
 		// checking validity of values that assigned to enum idents
 		for (size_t j = 0; j < sbuffer_len(enum_decl->members); j++)
-			if (!is_const_expr(enum_decl->members[j]->value))
+			if (!is_const_expr(enum_decl->members[j]->value, table))
 				report_error2(frmt("Enum member \'%s\' must have constant expression, in \'%s\' enum.",
 					enum_decl->members[j]->name, enum_decl->name),
 						get_expr_area(enum_decl->members[j]->value));

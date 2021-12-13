@@ -1,19 +1,24 @@
 #include "program.h"
 
+void print_define(StackFrameEntity* entity)
+{
+	printf("%s\t= %d\n", entity->definition, entity->offset);
+}
+
 void print_codeline(AsmCodeLine* line)
 {
 	int count = sbuffer_len(line->arguments);
 	switch (count)
 	{
 	case 0:
-		printf("\t%s\n", line->command);
+		printf("\t%s\n", instr_tostr(line->instruction));
 		break;
 	case 1:
-		printf("\t%s %s\n", line->command,
+		printf("\t%s\t%s\n", instr_tostr(line->instruction),
 			line->arguments[0]);
 		break;
 	case 2:
-		printf("\t%s %s, %s\n", line->command,
+		printf("\t%s\t%s, %s\n", instr_tostr(line->instruction),
 			line->arguments[0], line->arguments[1]);
 		break;
 	}
@@ -21,6 +26,8 @@ void print_codeline(AsmCodeLine* line)
 
 void print_proc(AsmCodeProc* proc)
 {
+	for (size_t i = 0; i < sbuffer_len(proc->frame->entities); i++)
+		print_define(proc->frame->entities[i]);
 	printf("%s proc\n", proc->name);
 	for (size_t i = 0; i < sbuffer_len(proc->lines); i++)
 		print_codeline(proc->lines[i]);
@@ -50,13 +57,14 @@ void print_program(AsmProgram* program)
 	printf("\nend %s\n", program->entry);
 }
 
-AsmProgram* program_new()
+AsmProgram* program_new(Table* table)
 {
 	AsmProgram* program = new_s(AsmProgram, program);
 	program->entry = NULL;
 	program->incs = NULL;
 	program->libs = NULL;
-	program->table = regtable_new();
+	program->table = table;
+	program->regtable = regtable_new();
 	program->code = code_new();
 	program->data = data_new();
 	return program;
@@ -89,11 +97,10 @@ AsmDataLine* dataline_new(int size, char* name,
 	return line;
 }
 
-//todo: create command mapping instead of string passing (int command -> commands_str[command])
-AsmCodeLine* codeline_new(char* command, char* arg1, char* arg2)
+AsmCodeLine* codeline_new(uint32_t instruction, char* arg1, char* arg2)
 {
 	AsmCodeLine* line = new_s(AsmCodeLine, line);
-	line->command = command;
+	line->instruction = instruction;
 	line->arguments = NULL;
 	if (arg1)
 		sbuffer_add(line->arguments, arg1);
@@ -107,7 +114,6 @@ AsmCodeProc* proc_new(FuncDecl* func_decl)
 	AsmCodeProc* proc = 
 		new_s(AsmCodeProc, proc);
 	proc->lines = NULL;
-	proc->defines = NULL;
 	proc->name = func_decl->name->svalue;
 	proc->frame = stack_frame_new(func_decl);
 	proc->frame->of_proc = proc;
@@ -131,7 +137,7 @@ void program_free(AsmProgram* program)
 		code_free(program->code);
 		for (size_t i = 0; i < sbuffer_len(program->incs); i++)
 			free(program->incs[i]);
-		free(program->table);
+		free(program->regtable);
 		free(program);
 	}
 }
@@ -174,10 +180,10 @@ void codeline_free(AsmCodeLine* codeline)
 {
 	if (codeline)
 	{
-		for (size_t i = 0; i < sbuffer_len(codeline->arguments); i++)
-			free(codeline->arguments[i]);
+		//todo: think about freeing this
+		//for (size_t i = 0; i < sbuffer_len(codeline->arguments); i++)
+		//	free(codeline->arguments[i]);
 		sbuffer_free(codeline->arguments);
-		free(codeline->command);
 		free(codeline);
 	}
 }
@@ -186,9 +192,9 @@ void proc_free(AsmCodeProc* proc)
 {
 	if (proc)
 	{
-		for (size_t i = 0; i < sbuffer_len(proc->defines); i++)
-			define_free(proc->defines[i]);
-		sbuffer_free(proc->defines);
+		//for (size_t i = 0; i < sbuffer_len(proc->defines); i++)
+		//	define_free(proc->defines[i]);
+		//sbuffer_free(proc->defines);
 		for (size_t i = 0; i < sbuffer_len(proc->lines); i++)
 			codeline_free(proc->lines[i]);
 		sbuffer_free(proc->lines);
