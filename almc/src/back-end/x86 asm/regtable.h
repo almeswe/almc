@@ -63,5 +63,6 @@ const char* get_register_str(int reg);
 int reserve_register(RegisterTable* table, int reg);
 int unreserve_register(RegisterTable* table, int reg);
 int get_unreserved_register(RegisterTable* table, RegisterSize size);
+int get_part_of_reg(int reg, RegisterSize size);
 
 #endif

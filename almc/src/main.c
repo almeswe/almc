@@ -1,36 +1,24 @@
 #include "..\test\test.h"
 #include "..\src\front-end\type.h"
-#include "back-end/x86 asm/stack-frame.h"
-#include "back-end/x86 asm/gen.h"
+#include "back-end/x86 asm/program.h"
 
 int back_end_test()
 {
-		/*Lexer* lexer = lexer_new(
-			"test\\test-cases\\parser-test-cases\\parser-ast-manual-tests\\testfolder\\back_end_test.almc", FROM_FILE);
-		char* path_copy = _strdup(lexer->curr_file);
-		Parser* parser = parser_new(path_copy, lex(lexer));
+	while (1)
+	{
+		Lexer* lexer = lexer_new("test\\test-cases\\parser-test-cases\\parser-ast-manual-tests\\testfolder\\back_end_test.almc",
+			FROM_FILE);
+		Parser* parser = parser_new(lexer->curr_file, lex(lexer));
 		AstRoot* ast = parse(parser);
-
 		Visitor* visitor = visitor_new();
 		visit(ast, visitor);
 
-		for (int i = 0; i < sbuffer_len(ast->stmts); i++)
-			gen_stmt(ast->stmts[i], NULL);
-		//print_expr(expr, "");
-		//init_reserved_registers();
+		AsmProgram* program = gen(ast, visitor->global);
+		print_program(program);
+		program_free(program);
 		char c = getchar();
 		system("cls");
-		*/
-		Lexer* lexer = lexer_new(
-			"fnc entry main() : void {}", FROM_CHAR_PTR);
-		Parser* parser = parser_new(NULL, lex(lexer));
-		AstRoot* ast = parse(parser);
-		Visitor* visitor = visitor_new();
-		visit(ast, visitor);
-
-		AsmProgram* program = gen(ast);
-		print_program(program);
-		//program_free(program);
+	}
 }
 
 void type2_test()
@@ -50,13 +38,20 @@ void type2_test()
 	}
 }
 
+void cast_type_test()
+{
+	Lexer* lexer = lexer_new(
+		"sizeof(i32)", FROM_CHAR_PTR);
+	Parser* parser = parser_new(NULL, lex(lexer));
+	Expr* expr = parse_expr(parser);
+	return;
+}
+
 int main(int argc, char** argv)
 {
-	//back_end_test();
-	//test();
-	//type_test();
-	//type2_test();
+	back_end_test();
 	
+	//printf("%s%-*iX\n", text, 50 - (int)strlen(text), num);
 	run_tests();
 	return 0;
 }

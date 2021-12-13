@@ -5,7 +5,6 @@
 #include <assert.h>
 #include "expr-gen.h"
 #include "program.h"
-#include "x86types.h"
 #include "..\..\utils\common.h"
 
 void gen_var_decl_stmt(VarDecl* var_decl, StackFrame* frame);

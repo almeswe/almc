@@ -1,11 +1,21 @@
-#>fnc sum(a: i32, b: i32) : i32
-{
-	return a+b;
-}<#
+struct c {
+	d3: i32;
+	d2: i32;
+	d1: i8;
+}
 
-fnc main(a: i32, b: i32) : i32 
-{
-	let c: i32 = a;
-	c >>= b ^ b;
-	# return 1;
+struct b {
+	c1: i32;
+	c2: i16;
+	c3: c;
+}
+
+struct a {
+	m1: i32;
+	m2: b;
+}
+
+fnc main1(arg: char) : void {
+	let loc: a;
+	let d: i32 = loc.m2.c2;
 }

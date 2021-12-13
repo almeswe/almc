@@ -133,7 +133,7 @@ void gen_unary_expr2(UnaryExpr* unary_expr, StackFrame* frame)
 		gen_expr32(unary_expr->expr, frame);
 	else
 	{
-		reserve_register(frame->regtable, EAX);
+		reserve_register(REGISTERS, EAX);
 		gen_primary_expr32(unary_expr->expr, EAX, frame);
 	}
 
@@ -235,7 +235,7 @@ void gen_binary_expr2(BinaryExpr* binary_expr, StackFrame* frame)
 	}
 
 	#define RESERVE_TEMP_REG  \
-		temp_reg = get_unreserved_register(frame->regtable, REGSIZE_DWORD)
+		temp_reg = get_unreserved_register(REGISTERS, REGSIZE_DWORD)
 
 	#define GEN_ASSIGN_EXPR(action)           
 
@@ -259,7 +259,7 @@ void gen_binary_expr2(BinaryExpr* binary_expr, StackFrame* frame)
 	else if (IS_PRIMARY_EXPR(binary_expr->lexpr) &&
 		IS_PRIMARY_EXPR(binary_expr->rexpr))
 	{
-		reserve_register(frame->regtable, EAX);
+		reserve_register(REGISTERS, EAX);
 		gen_primary_expr32(binary_expr->lexpr, EAX, frame);
 		RESERVE_TEMP_REG;
 		gen_primary_expr32(binary_expr->rexpr, temp_reg, frame);
@@ -278,7 +278,7 @@ void gen_binary_expr2(BinaryExpr* binary_expr, StackFrame* frame)
 	{
 		gen_expr32(binary_expr->lexpr, frame);
 		PUSH32(get_register_str(EAX));
-		unreserve_register(frame->regtable, EAX);
+		unreserve_register(REGISTERS, EAX);
 		gen_expr32(binary_expr->rexpr, frame);
 		RESERVE_TEMP_REG;
 		MOV32(get_register_str(temp_reg), get_register_str(EAX));
@@ -306,26 +306,26 @@ void gen_binary_expr2(BinaryExpr* binary_expr, StackFrame* frame)
 		GEN_ASSIGN_EXPR(SUB32(to, from));
 		break;
 	case BINARY_MOD:
-		reserve_register(frame->regtable, EDX);
+		reserve_register(REGISTERS, EDX);
 		MOD32(to, from);
 		MOV32(to, get_register_str(EDX));
-		unreserve_register(frame->regtable, EDX);
+		unreserve_register(REGISTERS, EDX);
 		break;
 	case BINARY_MOD_ASSIGN:
-		reserve_register(frame->regtable, EDX);
+		reserve_register(REGISTERS, EDX);
 		GEN_ASSIGN_EXPR(MOD32(to, from));
 		MOV32(to, get_register_str(EDX));
-		unreserve_register(frame->regtable, EDX);
+		unreserve_register(REGISTERS, EDX);
 		break;
 	case BINARY_MULT:
-		reserve_register(frame->regtable, EDX);
+		reserve_register(REGISTERS, EDX);
 		MUL32(to, from);
-		unreserve_register(frame->regtable, EDX);
+		unreserve_register(REGISTERS, EDX);
 		break;
 	case BINARY_MUL_ASSIGN:
-		reserve_register(frame->regtable, EDX);
+		reserve_register(REGISTERS, EDX);
 		GEN_ASSIGN_EXPR(MUL32(to, from));
-		unreserve_register(frame->regtable, EDX);
+		unreserve_register(REGISTERS, EDX);
 		break;
 	case BINARY_LSHIFT:
 		SHL32(to, from);
@@ -360,7 +360,7 @@ void gen_binary_expr2(BinaryExpr* binary_expr, StackFrame* frame)
 	default:
 		assert(0);
 	}
-	unreserve_register(frame->regtable, temp_reg);
+	unreserve_register(REGISTERS, temp_reg);
 
 #undef GEN_ASSIGN_EXPR
 #undef RESERVE_TEMP_REG
@@ -371,7 +371,7 @@ void gen_func_call(FuncCall* func_call, StackFrame* frame)
 	for (int i = sbuffer_len(func_call->args) - 1; i >= 0; i--)
 	{
 		gen_expr32(func_call->args[i], frame);
-		unreserve_register(frame->regtable, EAX);
+		unreserve_register(REGISTERS, EAX);
 		PUSH32(get_register_str(EAX));
 	}
 	OUT(frmt("call %s", func_call->name));
