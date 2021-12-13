@@ -435,10 +435,11 @@ Type* cast_explicitly_when_const_expr(Expr* const_expr, Type* to, Type* const_ex
 	else
 	{
 		if (IS_VOID_TYPE(to))
-			report_error2("Explicit conversion to void is not allowed.", to->area);
+			report_error2("Explicit conversion to void is not allowed.", 
+				get_expr_area(const_expr));
 		if (!IS_PRIMITIVE_TYPE(get_base_type(to)) && !IS_ENUM_TYPE(get_base_type(to)))
 			report_error2(frmt("Cannot explicitly convert constant expression to type \'%s\'.",
-				type_tostr_plain(to)), to->area);
+				type_tostr_plain(to)), get_expr_area(const_expr));
 
 		//---------------------------------------
 		// determining the type of evaluated constant
@@ -467,7 +468,7 @@ Type* cast_explicitly_when_const_expr(Expr* const_expr, Type* to, Type* const_ex
 
 		if (!value_in_bounds_of_type(to, value))
 			report_error2(frmt("Cannot explicitly convert constant value of type \'%s\' to \'%s\' (value: %f).",
-				type_tostr_plain(const_expr_type_new), type_tostr_plain(to), value), to->area);
+				type_tostr_plain(const_expr_type_new), type_tostr_plain(to), value), get_expr_area(const_expr));
 		return cast_explicitly(to, const_expr_type);
 	}
 }
@@ -744,8 +745,8 @@ bool is_enum_member(const char* var, Table* table)
 		for (size_t i = 0; i < sbuffer_len(parent->enums); i++)
 			for (size_t j = 0; j < sbuffer_len(parent->enums[i]->members); j++)
 				if (strcmp(var, parent->enums[i]->members[j]->name) == 0)
-					return 1;
-	return 0;
+					return true;
+	return false;
 }
 
 int is_addressable_value(Expr* expr, Table* table)
