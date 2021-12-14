@@ -214,11 +214,14 @@ void visit_func_call(FuncCall* func_call, Table* table)
 			func_call->name), func_call->area);
 	else
 	{
-		// visiting passed arguments to function call
 		FuncDecl* origin = get_function(func_call->name, table);
 		visit_type(origin->type, table);
 		size_t passed   = sbuffer_len(func_call->args);
 		size_t expected = sbuffer_len(origin->params);
+		
+		// visiting passed arguments to function call
+		for (size_t i = 0; i < sbuffer_len(func_call->args); i++)
+			visit_expr(func_call->args[i], table);
 
 		if (passed > expected)
 			report_error2(frmt("Too much arguments passed to function call \'%s\'.", 
