@@ -68,11 +68,11 @@ void gen_expr32(Expr* expr, StackFrame* frame)
 			gen_unary_expr2(expr->unary_expr, frame);
 			break;*/
 		case EXPR_BINARY_EXPR:
-			gen_binary_expr2(expr->binary_expr, frame);
+			gen_binary_expr32(expr->binary_expr, frame);
 			break;
-		/*case EXPR_FUNC_CALL:
-			gen_func_call(expr->func_call, frame);
-			break;*/
+		case EXPR_FUNC_CALL:
+			gen_func_call32(expr->func_call, frame);
+			break;
 		default:
 			assert(0);
 		}
@@ -577,13 +577,14 @@ void gen_binary_expr2(BinaryExpr* binary_expr, StackFrame* frame)
 #undef RESERVE_TEMP_REG
 }
 
-void gen_func_call(FuncCall* func_call, StackFrame* frame)
+void gen_func_call32(FuncCall* func_call, StackFrame* frame)
 {
-	for (int i = sbuffer_len(func_call->args) - 1; i >= 0; i--)
+	for (int32_t i = sbuffer_len(func_call->args) - 1; i >= 0; i--)
 	{
+		assert(func_call->args);
 		gen_expr32(func_call->args[i], frame);
 		unreserve_register(REGISTERS, EAX);
-		PUSH32(get_register_str(EAX));
+		PROC_CODE_LINE1(PUSH, get_register_str(EAX));
 	}
-	OUT(frmt("call %s", func_call->name));
+	PROC_CODE_LINE1(CALL, frmt("_%s", func_call->name));
 }
