@@ -41,6 +41,7 @@ typedef struct x86_AsmCodeLine
 typedef struct x86_AsmCodeProc
 {
 	char* name;
+	bool is_external;
 	StackFrame* frame;
 	AsmCodeLine** lines;
 } AsmCodeProc;

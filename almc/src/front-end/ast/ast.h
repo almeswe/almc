@@ -206,6 +206,9 @@ typedef struct FuncSpecifiers
 {
 	bool is_entry;
 	bool is_intrinsic;
+
+	bool is_from_sdk;
+	char* from;
 } FuncSpecifiers;
 
 typedef struct FuncDecl

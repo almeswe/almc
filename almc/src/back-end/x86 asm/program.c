@@ -26,12 +26,14 @@ void print_codeline(AsmCodeLine* line)
 
 void print_proc(AsmCodeProc* proc)
 {
+	if (proc->is_external)
+		return;
 	for (size_t i = 0; i < sbuffer_len(proc->frame->entities); i++)
 		print_define(proc->frame->entities[i]);
 	printf("%s proc\n", proc->name);
 	for (size_t i = 0; i < sbuffer_len(proc->lines); i++)
 		print_codeline(proc->lines[i]);
-	printf("%s endp\n", proc->name);
+	printf("%s endp\n\n", proc->name);
 }
 
 void print_program(AsmProgram* program)
@@ -39,9 +41,16 @@ void print_program(AsmProgram* program)
 	printf(".386\n");
 	printf(".model flat, stdcall\n\n");
 	
-	//includes...
-	//printf(";-----------INCLUDES------------\n");
-	//printf(";-------------------------------\n");
+	//includes
+	if (program->incs)
+	{
+		printf(";-----------INCLUDES------------\n");
+		for (size_t i = 0; i < sbuffer_len(program->incs); i++)
+			printf("include    %s.inc\n", program->incs[i]);
+		for (size_t i = 0; i < sbuffer_len(program->incs); i++)
+			printf("includelib %s.lib\n", program->libs[i]);
+		printf(";-------------------------------\n");
+	}
 	//
 	
 	// .data segment
@@ -114,7 +123,8 @@ AsmCodeProc* proc_new(FuncDecl* func_decl)
 	AsmCodeProc* proc = 
 		new_s(AsmCodeProc, proc);
 	proc->lines = NULL;
-	proc->name = func_decl->name->svalue;
+	proc->is_external = false;
+	proc->name = frmt("_%s", func_decl->name->svalue);
 	proc->frame = stack_frame_new(func_decl);
 	proc->frame->of_proc = proc;
 	return proc;
@@ -198,6 +208,7 @@ void proc_free(AsmCodeProc* proc)
 		for (size_t i = 0; i < sbuffer_len(proc->lines); i++)
 			codeline_free(proc->lines[i]);
 		sbuffer_free(proc->lines);
+		free(proc->name);
 		free(proc->frame);
 		free(proc);
 	}

@@ -1068,16 +1068,26 @@ Stmt* parse_var_decl_stmt(Parser* parser)
 
 FuncSpecifiers* parse_func_specifiers(Parser* parser)
 {
-	FuncSpecifiers* func_spec = cnew_s(FuncSpecifiers, func_spec, 1);
+	FuncSpecifiers* func_spec = 
+		cnew_s(FuncSpecifiers, func_spec, 1);
 	switch (get_curr_token(parser)->type)
 	{
+	case TOKEN_KEYWORD_FROM:
+		get_next_token(parser);
+		expect_with_skip(parser, TOKEN_OP_PAREN, "(");
+		if (matcht(parser, TOKEN_STRING))
+			func_spec->from = get_curr_token(parser)->svalue;
+		expect_with_skip(parser, TOKEN_STRING, "from package");
+		expect_with_skip(parser, TOKEN_CL_PAREN, ")");
+		func_spec->is_from_sdk = true;
+		break;
 	case TOKEN_KEYWORD_ENTRY:
 		get_next_token(parser);
-		func_spec->is_entry = 1;
+		func_spec->is_entry = true;
 		break;
 	case TOKEN_KEYWORD_INTRINSIC:
 		get_next_token(parser);
-		func_spec->is_intrinsic = 1;
+		func_spec->is_intrinsic = true;
 		break;
 	}
 	return func_spec;

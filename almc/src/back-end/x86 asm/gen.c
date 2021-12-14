@@ -81,10 +81,22 @@ void gen_stack_space_alloc(AsmCodeProc* proc)
 			frmt("%d", -(proc->frame->required_space_for_locals + 4)));
 }
 
+void gen_sdk_package(AsmCodeProc* proc, FuncDecl* func_decl)
+{
+	proc->is_external = true;
+	sbuffer_add(program->incs, frmt("%s%s",
+		"e:\\masm32\\include\\", func_decl->spec.from));
+	sbuffer_add(program->libs, frmt("%s%s",
+		"e:\\masm32\\lib\\", func_decl->spec.from));
+}
+
 void gen_func_decl_stmt(FuncDecl* func_decl)
 {
 	AsmCodeProc* proc = proc_new(func_decl);
 	PROGRAM_ADD_PROC(proc);
+
+	if (func_decl->spec.is_from_sdk)
+		return gen_sdk_package(proc, func_decl);
 
 	// function prologue
 	reserve_register(REGISTERS, ESP);

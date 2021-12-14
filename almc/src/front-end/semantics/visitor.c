@@ -780,17 +780,29 @@ void visit_block(Block* block, Table* table)
 		visit_stmt(block->stmts[i], table);
 }
 
+void visit_func_decl_specifiers(FuncDecl* func_decl, Table* table)
+{
+	if (func_decl->spec.is_intrinsic)
+		report_error("Intrinsic specifier is not supported in language yet.",
+			func_decl->name->context);
+	if (func_decl->spec.is_entry)
+		visit_entry_func_stmt(func_decl, table);
+
+	//todo: also check file
+	if (func_decl->spec.is_from_sdk)
+		if (func_decl->body)
+			report_error(frmt("Function \'%s\' specified like external.",
+				func_decl->name->svalue), func_decl->name->context);
+}
+
 void visit_func_decl_stmt(FuncDecl* func_decl, Table* table)
 {
 	Table* local = table_new(table);
 	local->in_function = func_decl;
 
-	if (func_decl->spec.is_intrinsic)
-		report_error("Intrinsic specifier is not supported in language yet.", 
-			func_decl->name->context);
-
-	if (func_decl->spec.is_entry)
-		visit_entry_func_stmt(func_decl, table);
+	visit_func_decl_specifiers(func_decl, table);
+	if (func_decl->spec.is_from_sdk)
+		return;
 
 	if (func_decl->body)
 		visit_scope(func_decl->body->stmts, local);
