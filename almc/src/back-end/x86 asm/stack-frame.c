@@ -70,7 +70,8 @@ StackFrameEntity* add_argument(TypeVar* argument, StackFrame* frame)
 	char* definition = frmt("_%s$", argument->var);
 	StackFrameEntity* entity = stack_frame_entity_new(argument->type,
 		frame->required_space_for_arguments, definition, STACK_FRAME_ENTITY_ARGUMENT);
-	frame->required_space_for_arguments += argument->type->size;
+	entity->offset = frame->required_space_for_arguments
+		+= argument->type->size;
 	sbuffer_add(frame->entities, entity);
 	return entity;
 }
