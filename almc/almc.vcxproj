@@ -19,12 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\back-end\x86 asm\expr-gen.c" />
-    <ClCompile Include="src\back-end\x86 asm\gen.c" />
-    <ClCompile Include="src\back-end\x86 asm\program.c" />
-    <ClCompile Include="src\back-end\x86 asm\regtable.c" />
-    <ClCompile Include="src\back-end\x86 asm\stack-frame.c" />
-    <ClCompile Include="src\back-end\x86 asm\x86types.c" />
+    <ClCompile Include="src\back-end\x86\expr-gen.c" />
+    <ClCompile Include="src\back-end\x86\gen.c" />
+    <ClCompile Include="src\back-end\x86\program.c" />
+    <ClCompile Include="src\back-end\x86\regtable.c" />
+    <ClCompile Include="src\back-end\x86\stack-frame.c" />
+    <ClCompile Include="src\back-end\x86\x86types.c" />
     <ClCompile Include="src\front-end\ast\ast-evaluator.c" />
     <ClCompile Include="src\front-end\ast\ast-evaluator.h" />
     <ClCompile Include="src\front-end\ast\ast.c" />
@@ -47,13 +47,13 @@
     <ClCompile Include="test\test.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\back-end\x86 asm\expr-gen.h" />
-    <ClInclude Include="src\back-end\x86 asm\gen.h" />
-    <ClInclude Include="src\back-end\x86 asm\instructions.h" />
-    <ClInclude Include="src\back-end\x86 asm\program.h" />
-    <ClInclude Include="src\back-end\x86 asm\regtable.h" />
-    <ClInclude Include="src\back-end\x86 asm\stack-frame.h" />
-    <ClInclude Include="src\back-end\x86 asm\x86types.h" />
+    <ClInclude Include="src\back-end\x86\expr-gen.h" />
+    <ClInclude Include="src\back-end\x86\gen.h" />
+    <ClInclude Include="src\back-end\x86\instructions.h" />
+    <ClInclude Include="src\back-end\x86\program.h" />
+    <ClInclude Include="src\back-end\x86\regtable.h" />
+    <ClInclude Include="src\back-end\x86\stack-frame.h" />
+    <ClInclude Include="src\back-end\x86\x86types.h" />
     <ClInclude Include="src\front-end\ast\ast.h" />
     <ClInclude Include="src\front-end\ast\ast-printer.h" />
     <ClInclude Include="src\front-end\front-end.h" />
@@ -77,7 +77,7 @@
     <ClInclude Include="test\test.h" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="src\back-end\x86 asm\instructions_list.txt" />
+    <Text Include="src\back-end\x86\instructions_list.txt" />
     <Text Include="test\syntax.txt" />
     <Text Include="test\test-cases\lexer-test-cases\COMMENTS-TEST.txt" />
     <Text Include="test\test-cases\lexer-test-cases\gen-output.txt" />
@@ -87,7 +87,7 @@
     <Text Include="test\test-cases\lexer-test-cases\TOKENS.txt" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="src\back-end\x86 asm\instructions_gen.py" />
+    <None Include="src\back-end\x86\instructions_gen.py" />
     <None Include="test\test-cases\lexer-test-cases\gen.py" />
     <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\b.almc" />
     <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\testfolder\back_end_test.almc" />

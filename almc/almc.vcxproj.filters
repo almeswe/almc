@@ -83,22 +83,22 @@
     <ClCompile Include="test\test.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\back-end\x86 asm\expr-gen.c">
+    <ClCompile Include="src\back-end\x86\expr-gen.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\back-end\x86 asm\gen.c">
+    <ClCompile Include="src\back-end\x86\gen.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\back-end\x86 asm\regtable.c">
+    <ClCompile Include="src\back-end\x86\regtable.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\back-end\x86 asm\stack-frame.c">
+    <ClCompile Include="src\back-end\x86\stack-frame.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\back-end\x86 asm\x86types.c">
+    <ClCompile Include="src\back-end\x86\x86types.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\back-end\x86 asm\program.c">
+    <ClCompile Include="src\back-end\x86\program.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -166,25 +166,25 @@
     <ClInclude Include="test\test.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\back-end\x86 asm\expr-gen.h">
+    <ClInclude Include="src\back-end\x86\expr-gen.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\back-end\x86 asm\gen.h">
+    <ClInclude Include="src\back-end\x86\gen.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\back-end\x86 asm\instructions.h">
+    <ClInclude Include="src\back-end\x86\instructions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\back-end\x86 asm\program.h">
+    <ClInclude Include="src\back-end\x86\program.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\back-end\x86 asm\regtable.h">
+    <ClInclude Include="src\back-end\x86\regtable.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\back-end\x86 asm\stack-frame.h">
+    <ClInclude Include="src\back-end\x86\stack-frame.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\back-end\x86 asm\x86types.h">
+    <ClInclude Include="src\back-end\x86\x86types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -196,7 +196,7 @@
     <Text Include="test\test-cases\lexer-test-cases\LEXEME-TEST.txt" />
     <Text Include="test\test-cases\lexer-test-cases\COMMENTS-TEST.txt" />
     <Text Include="test\test-cases\lexer-test-cases\gen-output.txt" />
-    <Text Include="src\back-end\x86 asm\instructions_list.txt" />
+    <Text Include="src\back-end\x86\instructions_list.txt" />
   </ItemGroup>
   <ItemGroup>
     <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\b.almc" />
@@ -225,6 +225,6 @@
     <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_7\folder\c.almc" />
     <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_7\a.almc" />
     <None Include="test\test-cases\lexer-test-cases\gen.py" />
-    <None Include="src\back-end\x86 asm\instructions_gen.py" />
+    <None Include="src\back-end\x86\instructions_gen.py" />
   </ItemGroup>
 </Project>
