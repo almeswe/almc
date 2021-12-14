@@ -1,11 +1,6 @@
 #ifndef ALMC_X86_BACKEND_ASM_PROGRAM
 #define ALMC_X86_BACKEND_ASM_PROGRAM
 
-#include "x86types.h"
-#include "regtable.h"
-#include "stack-frame.h"
-#include "..\..\front-end\front-end.h"
-
 #define TABLE     program->table
 #define REGISTERS program->regtable
 
@@ -23,6 +18,11 @@
 	sbuffer_add(GET_CURR_PROC->lines, codeline_new(c, arg1, NULL))
 #define PROC_CODE_LINE2(c, arg1, arg2) \
 	sbuffer_add(GET_CURR_PROC->lines, codeline_new(c, arg1, arg2))
+
+#include "x86types.h"
+#include "regtable.h"
+#include "stack-frame.h"
+#include "..\..\front-end\front-end.h"
 
 typedef struct FuncDecl FuncDecl;
 

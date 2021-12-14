@@ -368,7 +368,8 @@ _addressable_data* gen_addressable_data(Expr* expr, StackFrame* frame)
 
 void gen_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
 {
-	char* addr_arg = addressible_data_arg(
+	_addressable_data* data = NULL;
+	char* addr_arg = addressible_data_arg(data =
 		gen_addressable_data(assign_expr->lexpr, frame));
 	char* eax_reg_arg = get_register_str(EAX);
 
@@ -399,6 +400,31 @@ void gen_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
 			PROC_CODE_LINE2(SUB, 
 				temp_reg_arg, eax_reg_arg);
 			break;
+		case BINARY_BW_OR_ASSIGN:
+			PROC_CODE_LINE2(OR,
+				temp_reg_arg, eax_reg_arg);
+			break;
+		case BINARY_BW_XOR_ASSIGN:
+			PROC_CODE_LINE2(XOR,
+				temp_reg_arg, eax_reg_arg);
+			break;
+		case BINARY_BW_AND_ASSIGN:
+			PROC_CODE_LINE2(AND,
+				temp_reg_arg, eax_reg_arg);
+			break;
+		case BINARY_BW_NOT_ASSIGN:
+			PROC_CODE_LINE1(NOT, temp_reg_arg);
+			break;
+		case BINARY_LSHIFT_ASSIGN:
+			//PROC_CODE_LINE2(SHL,
+			//	temp_reg_arg, eax_reg_arg);
+			//break;
+		case BINARY_RSHIFT_ASSIGN:
+			//todo: figure out the shift operators
+			assert(0);
+			PROC_CODE_LINE2(SHR,
+				temp_reg_arg, eax_reg_arg);
+			break;
 
 		// result of following operators will be stored in eax:edx
 		// but at the end we expecting the temp_reg
@@ -406,7 +432,6 @@ void gen_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
 		case BINARY_MUL_ASSIGN:
 			reserve_register(REGISTERS, EDX);
 			gen_clear_reg(EDX);
-			//PROC_CODE_LINE2(XCHG, temp_reg_arg, eax_reg_arg);
 			PROC_CODE_LINE1(MUL, temp_reg_arg);
 			PROC_CODE_LINE2(MOV, temp_reg_arg, eax_reg_arg);
 			unreserve_register(REGISTERS, EDX);
@@ -414,6 +439,7 @@ void gen_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
 		case BINARY_DIV_ASSIGN:
 			reserve_register(REGISTERS, EDX);
 			gen_clear_reg(EDX);
+			// put xchg here because we carry about the operators order
 			PROC_CODE_LINE2(XCHG, temp_reg_arg, eax_reg_arg);
 			PROC_CODE_LINE1(DIV, temp_reg_arg);
 			PROC_CODE_LINE2(MOV, temp_reg_arg, eax_reg_arg);
@@ -434,9 +460,11 @@ void gen_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
 		PROC_CODE_LINE2(MOV, addr_arg, temp_reg_arg);
 		break;
 	}
-	unreserve_register(REGISTERS, temp_reg);
 	// return in eax
 	PROC_CODE_LINE2(MOV, eax_reg_arg, addr_arg);
+
+	addressable_data_free(data);
+	unreserve_register(REGISTERS, temp_reg);
 }
 
 void gen_binary_expr2(BinaryExpr* binary_expr, StackFrame* frame)
@@ -463,6 +491,7 @@ void gen_binary_expr2(BinaryExpr* binary_expr, StackFrame* frame)
 	case BINARY_LSHIFT_ASSIGN:
 	case BINARY_RSHIFT_ASSIGN:
 	case BINARY_BW_OR_ASSIGN:
+	case BINARY_BW_NOT_ASSIGN:
 	case BINARY_BW_AND_ASSIGN:
 	case BINARY_BW_XOR_ASSIGN:
 		return gen_assign_expr32(binary_expr, frame);

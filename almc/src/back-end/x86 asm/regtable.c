@@ -90,7 +90,8 @@ int reserve_register(RegisterTable* table, int reg)
 			STATE_TO_ALL_COMPOUNDED(reg, REGISTER_RESERVED);
 			break;
 		case REGISTER_RESERVED:
-			PUSH32(get_register_str(reg));
+			//todo: add ability to write directly to proc
+			//PROC_CODE_LINE1(PUSH, get_register_str(reg));
 			STATE_TO_ALL_COMPOUNDED(reg, REGISTER_NEEDS_RESTORE);
 			break;
 		case REGISTER_NEEDS_RESTORE:
@@ -114,7 +115,7 @@ int unreserve_register(RegisterTable* table, int reg)
 			STATE_TO_ALL_COMPOUNDED(reg, REGISTER_FREE);
 			break;
 		case REGISTER_NEEDS_RESTORE:
-			POP32(get_register_str(reg));
+			//PROC_CODE_LINE1(POP, get_register_str(reg));
 			STATE_TO_ALL_COMPOUNDED(reg, REGISTER_RESERVED);
 			break;
 		}

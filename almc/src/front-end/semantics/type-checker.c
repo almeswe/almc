@@ -220,6 +220,7 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 	case BINARY_MOD_ASSIGN:
 	case BINARY_BW_OR_ASSIGN:
 	case BINARY_BW_AND_ASSIGN:
+	case BINARY_BW_NOT_ASSIGN:
 	case BINARY_BW_XOR_ASSIGN:
 	case BINARY_LSHIFT_ASSIGN:
 	case BINARY_RSHIFT_ASSIGN:
