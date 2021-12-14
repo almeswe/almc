@@ -755,9 +755,9 @@ int is_addressable_value(Expr* expr, Table* table)
 		return 0;
 	switch (expr->kind)
 	{
-	//case EXPR_IDNT:
-	//	return !is_enum_member(
-	//		expr->idnt->svalue, table);
+	case EXPR_IDNT:
+		return !is_enum_member(
+			expr->idnt->svalue, table);
 	case EXPR_UNARY_EXPR:
 		switch (expr->unary_expr->kind)
 		{

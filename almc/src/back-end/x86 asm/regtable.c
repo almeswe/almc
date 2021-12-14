@@ -51,7 +51,18 @@ const char* get_register_str(int reg)
 int get_unreserved_register(RegisterTable* table, RegisterSize size)
 {
 	// this value would map to the needed register size depending on size
-	int offset = -(size / 8 - 3);
+	int offset;
+	switch (size)
+	{
+	case REGSIZE_BYTE:
+		offset = 2;
+		break;
+	case REGSIZE_WORD:
+		offset = 1;
+		break;
+	case REGSIZE_DWORD:
+		offset = 0;
+	}
 
 	for (int i = offset; i < REGISTERS_COUNT; i += REGISTER_ENUMERATOR_SCALAR)
 		if (table->reg_table[i] == REGISTER_FREE)

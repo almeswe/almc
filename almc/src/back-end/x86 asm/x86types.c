@@ -11,8 +11,8 @@ static const char* predefined_types_prefixes[] = {
 
 char* get_ptr_prefix(Type* type)
 {
-	if (IS_AGGREGATE_TYPE(type))
-		assert(0);
+	if (IS_STRUCT_OR_UNION_TYPE(type))
+		return "dword";
 	else
 	{
 		switch (type->size)

@@ -89,6 +89,7 @@ void visit_type(Type* type, Table* table)
 		visit_pointer_like_type(type, table);
 	if (IS_INCOMPLETE_TYPE(base))
 		complete_type(type, table);
+	complete_size(type, table);
 }
 
 void visit_pointer_like_type(Type* type, Table* table)
@@ -355,15 +356,17 @@ void visit_array_member_accessor(BinaryExpr* arr_accessor_expr, Table* table)
 
 	if (IS_ARRAY_TYPE(ltype))
 	{
+		//ltype->capacity = evaluate_expr_itype(
+		//	ltype->dimension);
+
 		// in this case we cannot evaluate expression, so do nothing
 		if (!is_const_expr(rexpr, table))
 			return;
 
-		int32_t index = evaluate_expr_itype(rexpr),
-			size = evaluate_expr_itype(ltype->dimension);
-		if (index >= size)
-			report_error2(frmt("Array accessor index does not fits in current dimension's size. (size: %d, index: %d)",
-				size, index), get_expr_area(rexpr));
+		int32_t index = evaluate_expr_itype(rexpr);
+		if (index >= ltype->capacity)
+			report_error2(frmt("Array accessor index does not fits in current dimension's capacity. (size: %d, index: %d)",
+				ltype->capacity, index), get_expr_area(rexpr));
 	}
 }
 
@@ -937,5 +940,4 @@ void complete_type(Type* type, Table* table)
 	else if (user_type = get_union(base->repr, table))
 		base->kind = TYPE_UNION,
 			base->members = user_type->members;
-	complete_size(type, table);
 }

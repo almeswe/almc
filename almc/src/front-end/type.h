@@ -108,6 +108,8 @@ typedef struct Type
 		{
 			// can be accessed when type is TYPE_ARRAY
 			Expr* dimension;
+			// max capacity of current dimension
+			uint32_t capacity;
 		};
 		struct _struct_or_union_kind_data
 		{

@@ -61,6 +61,7 @@
 #define SUB     54
 #define TEST    55
 #define XOR     56
+#define XCHG    57
 
 static char* instructions_str[] = {
 	[ADC] = "adc",
@@ -119,7 +120,8 @@ static char* instructions_str[] = {
 	[STOSW] = "stosw",
 	[SUB] = "sub",
 	[TEST] = "test",
-	[XOR] = "xor"
+	[XOR] = "xor",
+	[XCHG] = "xchg"
 };
 
 inline const char* instr_tostr(unsigned int instr)

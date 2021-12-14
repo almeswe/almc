@@ -54,6 +54,13 @@ StackFrameEntity* add_local(VarDecl* local, StackFrame* frame)
 	StackFrameEntity* entity = stack_frame_entity_new(local->type_var->type, 
 		frame->required_space_for_locals, definition, STACK_FRAME_ENTITY_LOCAL);
 	frame->required_space_for_locals -= local->type_var->type->size;
+	// if is aggregate type, need to specify the end of offset, because
+	// it will be addressed from the end, not the beginning (for more simplicily)
+	if (IS_ARRAY_TYPE(local->type_var->type))
+		entity->offset = frame->required_space_for_locals + 
+			local->type_var->type->base->size;
+	if (IS_STRUCT_OR_UNION_TYPE(local->type_var->type))
+		entity->offset = frame->required_space_for_locals + 1;
 	sbuffer_add(frame->entities, entity);
 	return entity;
 }
