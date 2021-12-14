@@ -47,7 +47,6 @@
     <ClCompile Include="test\test.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\back-end\masm32\x87\instructions_x87.h" />
     <ClInclude Include="src\back-end\x86 asm\expr-gen.h" />
     <ClInclude Include="src\back-end\x86 asm\gen.h" />
     <ClInclude Include="src\back-end\x86 asm\instructions.h" />
