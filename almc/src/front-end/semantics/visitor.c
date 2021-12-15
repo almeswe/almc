@@ -214,22 +214,31 @@ void visit_func_call(FuncCall* func_call, Table* table)
 			func_call->name), func_call->area);
 	else
 	{
-		FuncDecl* origin = get_function(func_call->name, table);
+		FuncDecl* origin = get_function(
+			func_call->name, table);
 		visit_type(origin->type, table);
-		size_t passed   = sbuffer_len(func_call->args);
-		size_t expected = sbuffer_len(origin->params);
+		func_call->is_external = origin->spec->is_external;
+		// calculating count of params without vararg (...)
+		// if its declared
+		int32_t params = (int32_t)sbuffer_len(origin->params);
+
+		int32_t args_passed = (int32_t)
+			sbuffer_len(func_call->args);
 		
+		if (args_passed < params)
+			report_error2(frmt("Not enough arguments passed to function call \'%s\'.",
+				func_call->name), func_call->area);
+
+		// if passed args count is greater than actual params
+		// and if the origin function is not vararg
+		else if (!origin->spec->is_vararg)
+			if (args_passed > params)
+				report_error2(frmt("Too much arguments passed to function call \'%s\'.",
+					func_call->name), func_call->area);
+
 		// visiting passed arguments to function call
 		for (size_t i = 0; i < sbuffer_len(func_call->args); i++)
 			visit_expr(func_call->args[i], table);
-
-		if (passed > expected)
-			report_error2(frmt("Too much arguments passed to function call \'%s\'.", 
-				func_call->name), func_call->area);
-
-		if (passed < expected)
-			report_error2(frmt("Not enough arguments passed to function call \'%s\'.", 
-				func_call->name), func_call->area);
 	}
 }
 
@@ -312,6 +321,10 @@ void visit_binary_expr(BinaryExpr* binary_expr, Table* table)
 
 	case BINARY_MEMBER_ACCESSOR:
 	case BINARY_PTR_MEMBER_ACCESSOR:
+		if (binary_expr->lexpr->kind != EXPR_IDNT)
+			visit_expr(binary_expr->lexpr, table);
+		else
+			visit_idnt(binary_expr->lexpr->idnt, table, false);
 		break;
 
 	case BINARY_ASSIGN:
@@ -780,19 +793,17 @@ void visit_block(Block* block, Table* table)
 		visit_stmt(block->stmts[i], table);
 }
 
-void visit_func_decl_specifiers(FuncDecl* func_decl, Table* table)
+bool visit_func_decl_specifiers(FuncDecl* func_decl, Table* table)
 {
-	if (func_decl->spec.is_intrinsic)
-		report_error("Intrinsic specifier is not supported in language yet.",
-			func_decl->name->context);
-	if (func_decl->spec.is_entry)
+	if (func_decl->spec->is_entry)
 		visit_entry_func_stmt(func_decl, table);
 
 	//todo: also check file
-	if (func_decl->spec.is_from_sdk)
+	if (func_decl->spec->is_external)
 		if (func_decl->body)
 			report_error(frmt("Function \'%s\' specified like external.",
 				func_decl->name->svalue), func_decl->name->context);
+	return func_decl->spec->is_external;
 }
 
 void visit_func_decl_stmt(FuncDecl* func_decl, Table* table)
@@ -800,11 +811,7 @@ void visit_func_decl_stmt(FuncDecl* func_decl, Table* table)
 	Table* local = table_new(table);
 	local->in_function = func_decl;
 
-	visit_func_decl_specifiers(func_decl, table);
-	if (func_decl->spec.is_from_sdk)
-		return;
-
-	if (func_decl->body)
+	if (!visit_func_decl_specifiers(func_decl, table))
 		visit_scope(func_decl->body->stmts, local);
 
 	// checking func parameters
@@ -825,12 +832,16 @@ void visit_func_decl_stmt(FuncDecl* func_decl, Table* table)
 			func_decl->params[i]->area, table);
 	}
 
-	// checking function's return type
-	visit_type(func_decl->type, table);
-	// checking function's body
-	visit_block(func_decl->body, local);
-	//checking that all code paths return value
-	check_func_return_flow(func_decl);
+	// if function is external it does not have a body
+	if (!func_decl->spec->is_external)
+	{
+		// checking function's return type
+		visit_type(func_decl->type, table);
+		// checking function's body
+		visit_block(func_decl->body, local);
+		//checking that all code paths return value
+		check_func_return_flow(func_decl);
+	}
 }
 
 void visit_label_decl_stmt(LabelDecl* label_decl, Table* table)
@@ -871,13 +882,13 @@ void check_entry_func_params(FuncDecl* func_decl)
 
 void visit_entry_func_stmt(FuncDecl* func_decl, Table* table)
 {
-	if (func_decl->spec.is_entry && table->parent)
+	if (func_decl->spec->is_entry && table->parent)
 		report_error(frmt("Cannot create entry function \'%s\' not in global scope.",
 			func_decl->name->svalue), func_decl->name->context);
 
-	if (func_decl->spec.is_entry)
+	if (func_decl->spec->is_entry)
 		for (size_t i = 0; i < sbuffer_len(table->functions); i++)
-			if (table->functions[i]->spec.is_entry &&
+			if (table->functions[i]->spec->is_entry &&
 				table->functions[i] != func_decl)
 				report_error(frmt("Cannot specify function \'%s\' as entry,"
 					" entry function \'%s\' is already mentioned.", func_decl->name->svalue, 
