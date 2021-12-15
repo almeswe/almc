@@ -1,5 +1,33 @@
 #include "type-checker.h"
 
+Type* retrieve_expr_type(Expr* expr)
+{
+	if (!expr)
+		return &unknown_type;
+
+	switch (expr->kind)
+	{
+	case EXPR_IDNT:
+		return expr->idnt->type;
+	case EXPR_CONST:
+		return expr->cnst->type;
+	case EXPR_STRING:
+		return expr->str->type;
+	case EXPR_FUNC_CALL:
+		return expr->func_call->type;
+	case EXPR_UNARY_EXPR:
+		return expr->unary_expr->type;
+	case EXPR_BINARY_EXPR:
+		return expr->binary_expr->type;
+	case EXPR_TERNARY_EXPR:
+		return expr->ternary_expr->type;
+	default:
+		report_error(frmt("Unknown expression kind met in retrieve_expr_type(): %d",
+			expr->kind), NULL);
+	}
+	return &unknown_type;
+}
+
 Type* get_expr_type(Expr* expr, Table* table)
 {
 	if (!expr)
