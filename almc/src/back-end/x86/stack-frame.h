@@ -6,6 +6,7 @@
 #include "..\..\front-end\ast\ast.h"
 
 typedef struct x86_AsmCodeProc AsmCodeProc;
+typedef struct x86_AsmCodeProtoProc AsmCodeProtoProc;
 
 typedef enum x86_StackFrameEntityKind
 {

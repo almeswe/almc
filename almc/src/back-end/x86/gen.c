@@ -81,22 +81,20 @@ void gen_stack_space_alloc(AsmCodeProc* proc)
 			frmt("%d", -(proc->frame->required_space_for_locals + 4)));
 }
 
-void gen_sdk_package(AsmCodeProc* proc, FuncDecl* func_decl)
+void gen_proto_proc(FuncDecl* func_decl)
 {
-	proc->is_external = true;
-	sbuffer_add(program->incs, frmt("%s%s",
-		"e:\\masm32\\include\\", func_decl->spec.from));
-	sbuffer_add(program->libs, frmt("%s%s",
-		"e:\\masm32\\lib\\", func_decl->spec.from));
+	AsmCodeProtoProc* proc = proto_proc_new(func_decl);
+	PROGRAM_ADD_PROTO_PROC(proc);
+	program_add_lib(program, proc->lib);
 }
 
 void gen_func_decl_stmt(FuncDecl* func_decl)
 {
+	if (func_decl->spec->is_external)
+		return gen_proto_proc(func_decl);
+
 	AsmCodeProc* proc = proc_new(func_decl);
 	PROGRAM_ADD_PROC(proc);
-
-	if (func_decl->spec.is_from_sdk)
-		return gen_sdk_package(proc, func_decl);
 
 	// function prologue
 	reserve_register(REGISTERS, ESP);
@@ -108,7 +106,7 @@ void gen_func_decl_stmt(FuncDecl* func_decl)
 	// require space for stack allocation command
 	PROC_CODE_LINE0(NOP);
 	//------------------
-	if (func_decl->spec.is_entry)
+	if (func_decl->spec->is_entry)
 		PROGRAM_SET_ENTRY(proc->name);
 	gen_block(func_decl->body, proc->frame);
 	
@@ -123,7 +121,7 @@ void gen_func_decl_stmt(FuncDecl* func_decl)
 		PROC_CODE_LINE2(MOV, get_register_str(ESP),
 			get_register_str(EBP));
 		PROC_CODE_LINE1(POP, get_register_str(EBP));
-		PROC_CODE_LINE1(RET, frmt("%d", proc->frame->required_space_for_arguments - 4));
+		PROC_CODE_LINE0(RET);
 	}
 	//------------------
 }

@@ -52,10 +52,19 @@ typedef struct {
 	_addressable_kind kind;
 } _addressable_data;
 
+_addressable_data* gen_addressable_data(Expr* expr, StackFrame* frame);
+
+_addressable_data* addressable_data_new();
+void addressable_data_free(_addressable_data* data);
+char* addressible_data_arg(_addressable_data* data);
+
 void gen_expr32(Expr* expr, StackFrame* frame);
-void gen_idnt32(Idnt* idnt, StackFrame* frame);
+void gen_idnt32(Idnt* idnt, int reg, StackFrame* frame);
+void gen_string32(Str* str, int reg);
 void gen_primary_expr32(Expr* prim_expr, int reg, StackFrame* frame);
-void gen_unary_expr2(UnaryExpr* unary_expr, StackFrame* frame);
+void gen_unary_sizeof32(UnaryExpr* expr);
+void gen_unary_lengthof32(UnaryExpr* expr);
+void gen_unary_expr32(UnaryExpr* unary_expr, StackFrame* frame);
 void gen_binary_expr32(BinaryExpr* binary_expr, StackFrame* frame);
 void gen_func_call32(FuncCall* func_call, StackFrame* frame);
 

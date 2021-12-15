@@ -1,11 +1,19 @@
 #ifndef ALMC_X86_BACKEND_ASM_PROGRAM
 #define ALMC_X86_BACKEND_ASM_PROGRAM
 
+#include "x86types.h"
+#include "regtable.h"
+#include "stack-frame.h"
+#include "..\..\front-end\front-end.h"
+
 #define TABLE     program->table
 #define REGISTERS program->regtable
 
 #define PROGRAM_ADD_PROC(proc) \
 	sbuffer_add(program->code->procs, proc)
+#define PROGRAM_ADD_PROTO_PROC(proto) \
+	sbuffer_add(program->code->proto_procs, proto)
+
 #define PROGRAM_SET_ENTRY(name) \
 	program->entry = name
 
@@ -19,10 +27,11 @@
 #define PROC_CODE_LINE2(c, arg1, arg2) \
 	sbuffer_add(GET_CURR_PROC->lines, codeline_new(c, arg1, arg2))
 
-#include "x86types.h"
-#include "regtable.h"
-#include "stack-frame.h"
-#include "..\..\front-end\front-end.h"
+#define PROC_DATA_LINE(dataline) \
+	sbuffer_add(program->data->lines, dataline)
+
+#define MASM_SDK_LIB_FOLDER "e:\\masm32\\lib"
+#define MASM_SDK_INC_FOLDER "e:\\masm32\\includes"
 
 typedef struct FuncDecl FuncDecl;
 
@@ -38,17 +47,27 @@ typedef struct x86_AsmCodeLine
 	char** arguments;
 } AsmCodeLine;
 
+typedef struct x86_AsmCodeProtoProc
+{
+	char* name;
+	Type** types;
+
+	char* lib;
+	char* convention;
+	bool is_vararg;
+} AsmCodeProtoProc;
+
 typedef struct x86_AsmCodeProc
 {
 	char* name;
-	bool is_external;
 	StackFrame* frame;
 	AsmCodeLine** lines;
 } AsmCodeProc;
 
 typedef struct x86_AsmCodeSegment
 {
-	AsmCodeProc** procs;
+	AsmCodeProc**      procs;
+	AsmCodeProtoProc** proto_procs;
 } AsmCodeSegment;
 
 typedef enum x86_DataSpecifier
@@ -67,7 +86,7 @@ typedef enum x86_DataSpecifier
 
 typedef struct x86_AsmDataLine
 {
-	int size;
+	char* size;
 	char* name;
 	char** values;
 	DataSpecifier spec;
@@ -94,24 +113,30 @@ AsmProgram* program;
 void print_program(AsmProgram* program);
 
 AsmProgram* program_new(Table* table);
+void program_add_lib(AsmProgram* program, char* lib);
 AsmDataSegment* data_new();
 AsmCodeSegment* code_new();
 
-AsmDataLine* dataline_new(int size, char* name, 
+AsmDataLine* dataline_new(char* size, char* name, 
 	char** values, DataSpecifier spec);
 AsmCodeLine* codeline_new(uint32_t instruction,
 	char* arg1, char* arg2);
 AsmCodeProc* proc_new(FuncDecl* func_decl);
+AsmCodeProtoProc* proto_proc_new(FuncDecl* func_decl);
+
 AsmCodeDefine* define_new(char* name, char* value);
 
 void program_free(AsmProgram* program);
 void data_free(AsmDataSegment* data);
 void code_free(AsmCodeSegment* code);
 
+char* data_add(AsmDataLine* dataline, AsmDataSegment* seg);
+
 void dataline_free(AsmDataLine* dataline);
 void codeline_free(AsmCodeLine* codeline);
 
 void proc_free(AsmCodeProc* proc);
+void proto_proc_free(AsmCodeProtoProc* proto_proc);
 void define_free(AsmCodeDefine* define);
 
 #endif
