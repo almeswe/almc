@@ -1,39 +1,5 @@
-struct b {
-	c1: i32;
-	c2: i32;
-}
+fnc from("masm32", C) 
+	printf(fmt: char*, ...) : void;
+	
 
-struct a {
-	m1: i32;
-	m2: b;
-}
-
-fnc test(arg: char) : void {
-	let loc: a;
-
-	loc.m2.c2;
-}
-
-#>enum _TEST_CASES {
-	_TEST_CASE_FAILED   = 0
-	_TEST_CASE_SUCCEDED = _TEST_CASE_FAILED
-}<#
-
-#>struct test {
-	a1: forward[5];
-	b1: backward[3][6];
-	c1: i32;
-}
-
-struct backward {
-	a2: i64;
-	b2: u64;
-}
-
-enum colors {
-	red   = -0xf,
-	green = cast(i16)333,
-	blue
-}
-
-let a: i8 = cast(i8)((2123123 > 222) + 127); <#
+fnc printf() : void {}

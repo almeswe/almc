@@ -328,8 +328,8 @@ void print_var_decl(VarDecl* var_decl, const char* indent)
 
 void print_func_decl(FuncDecl* func_decl, const char* indent)
 {
-#define print_func_spec(x) func_decl->spec.x ? \
-	printf("%s%s: %d\n", indent, #x, func_decl->spec.x) : 0
+#define print_func_spec(x) func_decl->spec->x ? \
+	printf("%s%s: %d\n", indent, #x, func_decl->spec->x) : 0
 
 	printf(BOLDCYAN);
 	printf("%sfunc-decl: %s\n", indent, 
@@ -337,7 +337,8 @@ void print_func_decl(FuncDecl* func_decl, const char* indent)
 	indent = frmt("   %s", indent);
 	printf(RESET);
 	print_func_spec(is_entry);
-	print_func_spec(is_intrinsic);
+	print_func_spec(is_vararg);
+	print_func_spec(is_external);
 
 	printf(BOLDCYAN);
 	printf("%sfunc-ret-type:\n", indent);

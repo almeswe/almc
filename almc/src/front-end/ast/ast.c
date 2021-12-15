@@ -292,7 +292,7 @@ VarDecl* var_decl_new(TypeVar* type_var, Expr* init)
 }
 
 FuncDecl* func_decl_new(Idnt* name, TypeVar** params, 
-	Type* type, Block* body, FuncSpecifiers spec)
+	Type* type, Block* body, FuncSpec* spec)
 {
 	FuncDecl* func_decl = new_s(FuncDecl, func_decl);
 	func_decl->name = name;
@@ -747,6 +747,16 @@ void var_decl_free(VarDecl* var_decl)
 	}
 }
 
+void func_spec_free(FuncSpec* func_spec)
+{
+	if (func_spec)
+	{
+		if (func_spec->proto)
+			free(func_spec->proto);
+		free(func_spec);
+	}
+}
+
 void func_decl_free(FuncDecl* func_decl)
 {
 	if (func_decl)
@@ -754,6 +764,7 @@ void func_decl_free(FuncDecl* func_decl)
 		idnt_free(func_decl->name);
 		type_free(func_decl->type);
 		block_free(func_decl->body);
+		func_spec_free(func_decl->spec);
 		for (uint32_t i = 0; i < sbuffer_len(func_decl->params); i++)
 			type_var_free(func_decl->params[i]);
 		sbuffer_free(func_decl->params);

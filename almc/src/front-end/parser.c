@@ -1066,31 +1066,37 @@ Stmt* parse_var_decl_stmt(Parser* parser)
 		var_decl_new(type_var, var_init));
 }
 
-FuncSpecifiers* parse_func_specifiers(Parser* parser)
+ExternalFuncSpec* parse_func_proto_spec(Parser* parser)
 {
-	FuncSpecifiers* func_spec = 
-		cnew_s(FuncSpecifiers, func_spec, 1);
+	ExternalFuncSpec* proto = 
+		cnew_s(ExternalFuncSpec, proto, 1);
+	expect_with_skip(parser, TOKEN_KEYWORD_FROM, "from keyword");
+	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
+	proto->lib = get_curr_token(parser)->svalue;
+	expect_with_skip(parser, TOKEN_STRING, "lib name");
+	expect_with_skip(parser, TOKEN_COMMA, ",");
+	proto->convention = get_curr_token(parser)->svalue;
+	expect_with_skip(parser, TOKEN_IDNT, "calling convention");
+	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
+	return proto;
+}
+
+FuncSpec* parse_func_specifiers(Parser* parser)
+{
+	FuncSpec* spec = cnew_s(FuncSpec, spec, 1);
 	switch (get_curr_token(parser)->type)
 	{
 	case TOKEN_KEYWORD_FROM:
-		get_next_token(parser);
-		expect_with_skip(parser, TOKEN_OP_PAREN, "(");
-		if (matcht(parser, TOKEN_STRING))
-			func_spec->from = get_curr_token(parser)->svalue;
-		expect_with_skip(parser, TOKEN_STRING, "from package");
-		expect_with_skip(parser, TOKEN_CL_PAREN, ")");
-		func_spec->is_from_sdk = true;
+		spec->proto = 
+			parse_func_proto_spec(parser);
+		spec->is_external = true;
 		break;
 	case TOKEN_KEYWORD_ENTRY:
 		get_next_token(parser);
-		func_spec->is_entry = true;
-		break;
-	case TOKEN_KEYWORD_INTRINSIC:
-		get_next_token(parser);
-		func_spec->is_intrinsic = true;
+		spec->is_entry = true;
 		break;
 	}
-	return func_spec;
+	return spec;
 }
 
 Stmt* parse_func_decl_stmt(Parser* parser)
@@ -1099,7 +1105,7 @@ Stmt* parse_func_decl_stmt(Parser* parser)
 	Type* func_type = NULL;
 	Block* func_body = NULL;
 	TypeVar** func_params = NULL;
-	FuncSpecifiers* func_spec = NULL;
+	FuncSpec* func_spec = NULL;
 
 	expect_with_skip(parser, TOKEN_KEYWORD_FUNC, "fnc");
 	func_spec = parse_func_specifiers(parser);
@@ -1109,6 +1115,13 @@ Stmt* parse_func_decl_stmt(Parser* parser)
 	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
 	while (!matcht(parser, TOKEN_CL_PAREN))
 	{
+		//todo: may be do that more clearly
+		if (matcht(parser, TOKEN_TRIPLE_DOT))
+		{
+			func_spec->is_vararg = true;
+			get_next_token(parser);
+			break;
+		}
 		sbuffer_add(func_params, parse_type_var(parser));
 		if (matcht(parser, TOKEN_COMMA))
 			expect_with_skip(parser, TOKEN_COMMA, ",");
@@ -1126,8 +1139,8 @@ Stmt* parse_func_decl_stmt(Parser* parser)
 			expect_with_skip(parser, TOKEN_OP_BRACE, "{");
 		func_body = parse_block(parser)->block;
 	}
-	return stmt_new(STMT_FUNC_DECL, 
-		func_decl_new(func_name, func_params, func_type, func_body, *func_spec));
+	return stmt_new(STMT_FUNC_DECL, func_decl_new(func_name, 
+		func_params, func_type, func_body, func_spec));
 }
 
 Stmt* parse_label_decl_stmt(Parser* parser)

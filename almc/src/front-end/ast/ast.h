@@ -142,6 +142,7 @@ typedef struct FuncCall
 	Expr** args;
 	SrcArea* area;
 	const char* name;
+	bool is_external;
 } FuncCall;
 
 typedef struct Initializer
@@ -202,14 +203,20 @@ typedef struct VarDecl
 	TypeVar* type_var;
 } VarDecl;
 
-typedef struct FuncSpecifiers
+typedef struct ExternalFuncSpec
+{
+	const char* lib;
+	const char* convention;
+} ExternalFuncSpec;
+
+typedef struct FuncSpec
 {
 	bool is_entry;
-	bool is_intrinsic;
+	bool is_vararg;
 
-	bool is_from_sdk;
-	char* from;
-} FuncSpecifiers;
+	bool is_external;
+	ExternalFuncSpec* proto;
+} FuncSpec;
 
 typedef struct FuncDecl
 {
@@ -217,7 +224,7 @@ typedef struct FuncDecl
 	Type* type;
 	Block* body;
 	TypeVar** params;
-	FuncSpecifiers spec;
+	FuncSpec* spec;
 } FuncDecl;
 
 typedef struct LabelDecl
@@ -448,7 +455,7 @@ SwitchStmt* switch_stmt_new(Expr* cond, Case** cases, Block* default_case);
 
 LabelDecl* label_decl_new(Idnt* label);
 VarDecl* var_decl_new(TypeVar* type_var, Expr* init);
-FuncDecl* func_decl_new(Idnt* name, TypeVar** params, Type* type, Block* body, FuncSpecifiers spec);
+FuncDecl* func_decl_new(Idnt* name, TypeVar** params, Type* type, Block* body, FuncSpec* spec);
 
 TypeDecl* type_decl_new(TypeDeclKind type, void* type_decl_value_ptr);
 EnumDecl* enum_decl_new(EnumMember** members, const char* name);

@@ -1,21 +1,29 @@
-struct c {
-	d3: i32;
-	d2: i32;
-	d1: i8;
+fnc from("msvcrt", C) 
+	printf(fmt: char*, ...) : void;
+
+fnc from("msvcrt", C) 
+	scanf(fmt: char*, ...) : void;
+
+struct LPSYSTEMTIME {
+     wYear : u16;
+     wMonth : u16;
+     wDayOfWeek : u16;
+     wDay : u16;
+     wHour : u16;
+     wMinute : u16;
+     wSecond : u16;
+     wMilliseconds : u16;
 }
 
-struct b {
-	c1: i32;
-	c2: i16;
-	c3: c;
+fnc from("kernel32", STDCALL)
+	GetLocalTime(_s: LPSYSTEMTIME*) : void;
+
+fnc entry main1() : void {
+	let a: LPSYSTEMTIME;
+	GetLocalTime(&a);
+
+	printf("day: %i, month: %i", 
+		a.wDay, a.wMonth);
 }
 
-struct a {
-	m1: i32;
-	m2: b;
-}
-
-fnc main1(arg: char) : void {
-	let loc: a;
-	let d: i32 = loc.m2.c2;
-}
+# finish the array accessor

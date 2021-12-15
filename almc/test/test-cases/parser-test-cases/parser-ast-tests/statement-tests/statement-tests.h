@@ -25,14 +25,13 @@ inline void test_func_decl_stmts()
 
 	assert(ast->stmts[2]->kind == STMT_FUNC_DECL);
 	assert(strcmp(ast->stmts[2]->func_decl->name->svalue, "a_3") == 0);
-	assert(ast->stmts[2]->func_decl->spec.is_entry);
+	assert(ast->stmts[2]->func_decl->spec->is_entry);
 	assert(!ast->stmts[2]->func_decl->body);
 	assert(sbuffer_len(ast->stmts[2]->func_decl->params) == 0);
 	assert(IS_VOID_TYPE(ast->stmts[2]->func_decl->type));
 
 	assert(ast->stmts[3]->kind == STMT_FUNC_DECL);
 	assert(strcmp(ast->stmts[3]->func_decl->name->svalue, "a_4") == 0);
-	assert(ast->stmts[3]->func_decl->spec.is_intrinsic);
 	assert(!ast->stmts[3]->func_decl->body);
 	assert(sbuffer_len(ast->stmts[3]->func_decl->params) == 0);
 	assert(IS_VOID_TYPE(ast->stmts[3]->func_decl->type));
