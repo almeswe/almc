@@ -729,6 +729,8 @@ char* get_member_name(Expr* expr)
 
 bool is_const_expr(Expr* expr, Table* table)
 {
+	if (!expr)
+		return false;
 	switch (expr->kind)
 	{
 	case EXPR_CONST:

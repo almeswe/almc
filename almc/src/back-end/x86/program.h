@@ -102,6 +102,7 @@ typedef struct x86_AsmProgram
 	char* entry;
 	char** incs;
 	char** libs;
+	char** labels;
 	Table* table;
 	RegisterTable* regtable;
 	AsmDataSegment* data;
@@ -113,7 +114,10 @@ AsmProgram* program;
 void print_program(AsmProgram* program);
 
 AsmProgram* program_new(Table* table);
+char* program_new_label(AsmProgram* program);
+char* program_get_current_label(AsmProgram* program);
 void program_add_lib(AsmProgram* program, char* lib);
+
 AsmDataSegment* data_new();
 AsmCodeSegment* code_new();
 

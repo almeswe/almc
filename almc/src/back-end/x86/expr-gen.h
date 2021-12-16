@@ -3,17 +3,8 @@
 
 #include "program.h"
 #include "regtable.h"
-#include "x86types.h"
 #include "stack-frame.h"
-#include "instructions.h"
 #include "..\..\front-end\front-end.h"
-
-// TOPICS 
-/*
-
-https://www.plantation-productions.com/Webster/www.artofasm.com/Windows/HTML/RealArithmetica3.html
-	
-*/
 
 typedef enum x86_ExprGeneratorResult
 {
@@ -48,7 +39,6 @@ typedef struct {
 	// variant for determing the base address for offset,
 	// in case of entity is stack memory, in register case - heap
 	StackFrameEntity* entity;
-
 	_addressable_kind kind;
 } _addressable_data;
 
@@ -65,6 +55,9 @@ void gen_primary_expr32(Expr* prim_expr, int reg, StackFrame* frame);
 void gen_unary_sizeof32(UnaryExpr* expr);
 void gen_unary_lengthof32(UnaryExpr* expr);
 void gen_unary_expr32(UnaryExpr* unary_expr, StackFrame* frame);
+
+void gen_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame);
+void gen_relative_expr32(BinaryExpr* relative_expr, StackFrame* frame);
 void gen_binary_expr32(BinaryExpr* binary_expr, StackFrame* frame);
 void gen_func_call32(FuncCall* func_call, StackFrame* frame);
 

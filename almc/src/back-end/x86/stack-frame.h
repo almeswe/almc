@@ -31,8 +31,10 @@ typedef struct x86_StackFrame
 	int32_t required_space_for_locals;
 	int32_t required_space_for_arguments;
 
-	bool return_stmt_mentioned;
-	uint32_t label_counter;
+	char* return_label;
+	// needed to determine the need of jump to 
+	// origin ret by return_label
+	bool  return_declared;
 } StackFrame;
 
 StackFrame* stack_frame_new(FuncDecl* func);

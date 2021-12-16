@@ -1,18 +1,26 @@
 #include "gen.h"
 
+void declare_return_stmt(StackFrame* frame)
+{
+	if (!frame->return_declared)
+		frame->return_label = program_new_label(program),
+			frame->return_declared = true;
+}
+
 void gen_jump_stmt(JumpStmt* jump_stmt, StackFrame* frame)
 {
 	switch (jump_stmt->kind)
 	{
 	case JUMP_RETURN:
+		// check if return is last statement?
+		declare_return_stmt(frame);
 		if (jump_stmt->additional_expr)
-			gen_expr32(jump_stmt->additional_expr, frame);
-		MOV32(get_register_str(ESP), get_register_str(EBP));
-		POP32(get_register_str(EBP));
-		OUT("ret");
+			gen_expr32(jump_stmt->additional_expr, frame),
+				unreserve_register(REGISTERS, EAX);
+		PROC_CODE_LINE1(JMP, frame->return_label);
 		break;
 	case JUMP_GOTO:
-		OUT(frmt("jmp  %s", 
+		PROC_CODE_LINE1(JMP, frmt("LN_%s", 
 			jump_stmt->additional_expr->idnt->svalue));
 		break;
 	default:
@@ -47,19 +55,24 @@ void gen_var_decl_stmt(VarDecl* var_decl, StackFrame* frame)
 	}
 }
 
+void gen_label_decl_stmt(LabelDecl* label_decl)
+{
+	PROC_CODE_LINE1(_LABEL, 
+		frmt("LN_%s", label_decl->label->svalue));
+}
+
 void gen_stmt(Stmt* stmt, StackFrame* frame)
 {
 	switch (stmt->kind)
 	{
 	case STMT_EXPR:
-		gen_expr32(stmt->expr_stmt->expr, frame);
-		break;
-	/*case STMT_JUMP:
-		gen_jump_stmt(stmt->jump_stmt, frame);
-		break;*/
+		return gen_expr32(stmt->expr_stmt->expr, frame);
+	case STMT_JUMP:
+		return gen_jump_stmt(stmt->jump_stmt, frame);
 	case STMT_VAR_DECL:
-		gen_var_decl_stmt(stmt->var_decl, frame);
-		break;
+		return gen_var_decl_stmt(stmt->var_decl, frame);
+	case STMT_LABEL_DECL:
+		return gen_label_decl_stmt(stmt->label_decl);
 	/*case STMT_FUNC_DECL:
 		gen_func_decl_stmt(stmt->func_decl);
 		break;*/
@@ -116,13 +129,13 @@ void gen_func_decl_stmt(FuncDecl* func_decl)
 	// function epilogue
 	unreserve_register(REGISTERS, ESP);
 	unreserve_register(REGISTERS, EBP);
-	if (IS_VOID_TYPE(func_decl->type))
-	{
-		PROC_CODE_LINE2(MOV, get_register_str(ESP),
-			get_register_str(EBP));
-		PROC_CODE_LINE1(POP, get_register_str(EBP));
-		PROC_CODE_LINE0(RET);
-	}
+	// reference to main return routine
+	if (proc->frame->return_declared)
+		PROC_CODE_LINE1(_LABEL, proc->frame->return_label);
+	PROC_CODE_LINE2(MOV, get_register_str(ESP),
+		get_register_str(EBP));
+	PROC_CODE_LINE1(POP, get_register_str(EBP));
+	gen_callee_stack_clearing(func_decl);
 	//------------------
 }
 
@@ -134,16 +147,23 @@ AsmProgram* gen(AstRoot* ast, Table* table)
 	return program;
 }
 
+void gen_import_stmt(ImportStmt* import_stmt)
+{
+	for (size_t i = 0; i < sbuffer_len(import_stmt->ast->stmts); i++)
+		gen_global_stmt(import_stmt->ast->stmts[i]);
+}
+
 void gen_global_stmt(Stmt* stmt)
 {
 	switch (stmt->kind)
 	{
 	case STMT_EMPTY:
 	case STMT_TYPE_DECL:
-		break;
+		return;
+	case STMT_IMPORT:
+		return gen_import_stmt(stmt->import_stmt);
 	case STMT_FUNC_DECL:
-		gen_func_decl_stmt(stmt->func_decl);
-		break;
+		return gen_func_decl_stmt(stmt->func_decl);
 	default:
 		assert(0);
 	}

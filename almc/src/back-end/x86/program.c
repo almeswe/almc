@@ -20,10 +20,16 @@ void print_dataline(AsmDataLine* line)
 	}
 }
 
+void print_label(AsmCodeLine* line)
+{
+	printf("%s:\n", line->arguments[0]);
+}
+
 void print_codeline(AsmCodeLine* line)
 {
-	int count = sbuffer_len(line->arguments);
-	switch (count)
+	if (line->instruction == _LABEL)
+		return print_label(line);
+	switch (sbuffer_len(line->arguments))
 	{
 	case 0:
 		printf("\t%s\n", instr_tostr(line->instruction));
@@ -125,6 +131,22 @@ AsmProgram* program_new(Table* table)
 	return program;
 }
 
+char* program_new_label(AsmProgram* program)
+{
+	char* new_label = frmt("LN%d",
+		sbuffer_len(program->labels));
+	sbuffer_add(program->labels, new_label);
+	return new_label;
+}
+
+char* program_get_current_label(AsmProgram* program)
+{
+	if (!program->labels)
+		assert(0);
+	return program->labels[
+		sbuffer_len(program->labels)-1];
+}
+
 void program_add_lib(AsmProgram* program, char* lib)
 {
 	for (size_t i = 0; i < sbuffer_len(program->libs); i++)
@@ -189,7 +211,7 @@ AsmCodeProtoProc* proto_proc_new(FuncDecl* func_decl)
 	AsmCodeProtoProc* proc = 
 		cnew_s(AsmCodeProtoProc, proc, 1);
 	proc->lib = func_decl->spec->proto->lib;
-	proc->convention = func_decl->spec->proto->convention;
+	proc->convention = func_decl->conv->repr;
 
 	proc->name = func_decl->name->svalue;
 	proc->is_vararg = func_decl->spec->is_vararg;

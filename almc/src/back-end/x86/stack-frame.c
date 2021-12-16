@@ -75,16 +75,3 @@ StackFrameEntity* add_argument(TypeVar* argument, StackFrame* frame)
 	sbuffer_add(frame->entities, entity);
 	return entity;
 }
-
-char* get_current_label(StackFrame* frame)
-{
-	assert(0);
-	return frmt("$LN%d@%s", frame->label_counter,
-		frame->of_proc);
-}
-
-char* increase_label_counter(StackFrame* frame)
-{
-	return frame->label_counter += 1, 
-		get_current_label(frame);
-}

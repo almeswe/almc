@@ -63,6 +63,8 @@
 #define XOR     56
 #define XCHG    57
 
+#define _LABEL 0x100
+
 static char* instructions_str[] = {
 	[ADC] = "adc",
 	[ADD] = "add",
