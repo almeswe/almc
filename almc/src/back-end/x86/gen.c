@@ -76,9 +76,9 @@ void gen_block(Block* block, StackFrame* frame)
 
 void gen_stack_space_alloc(AsmCodeProc* proc)
 {
-	if (proc->frame->required_space_for_locals + 4 != 0)
+	if (proc->frame->required_space_for_locals != 0)
 		codeline_free(proc->lines[2]), proc->lines[2] = codeline_new(SUB, get_register_str(ESP),
-			frmt("%d", -(proc->frame->required_space_for_locals + 4)));
+			frmt("%d", -(proc->frame->required_space_for_locals)));
 }
 
 void gen_proto_proc(FuncDecl* func_decl)

@@ -1,5 +1,6 @@
-#include "expr-gen.h"
 #include <math.h>
+
+#include "expr-gen.h"
 
 //todo: ADD SIGNED AND UNSIGNED CHECK FOR EXPR-GEN
 //todo: struct pointing is still bad (GetLocalTime proofed that)
@@ -166,6 +167,7 @@ void gen_unary_expr32(UnaryExpr* unary_expr, StackFrame* frame)
 			eax_reg_arg);
 		break;
 	case UNARY_DEREFERENCE:
+		assert(0);
 		PROC_CODE_LINE2(MOV, eax_reg_arg,
 			frmt("dword ptr [eax]"));
 		break;
@@ -277,8 +279,8 @@ void gen_binary_accessor_expr32(BinaryExpr* expr, StackFrame* frame)
 	char* arg2 = NULL;
 	// calculating the address that will be relative to bottom of the allocate space
 	// this magic -1 is bruted for perfect fitting to the bounds of allocated space
-	data->offset = abs(data->offset - 
-		(int32_t)data->entity->type->size) - 1;
+	//data->offset = abs(data->offset - 
+	//	(int32_t)data->entity->type->size) - 1;
 	if (!data->in_reg)
 		arg2 = frmt("%s ptr %s[ebp+%d]", get_ptr_prefix(data->type),
 			data->entity->definition, data->offset);
@@ -683,10 +685,6 @@ char* addressible_data_arg(_addressable_data* data)
 		return frmt("%s ptr %s[ebp]",
 			prefix, data->entity->definition);
 	case ADDRESSABLE_ACCESSOR:
-		// calculating the address that will be relative to bottom of the allocate space
-		// this magic -1 is bruted for perfect fitting to the bounds of allocated space
-		data->offset = abs(data->offset -
-			(int32_t)data->entity->type->size) - 1;
 		if (data->in_reg)
 			return frmt("%s ptr [%s+%d]", prefix,
 				get_register_str(data->reg), data->offset);
