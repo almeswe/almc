@@ -158,6 +158,9 @@ bool is_not_aggregate_type(Type* type);
 bool is_both_primitive(Type* type1, Type* type2);
 bool is_both_are_equal_user_defined(Type* type1, Type* type2);
 
+bool is_signed_type(Type* type);
+bool is_unsigned_type(Type* type);
+
 Type* get_base_type(Type* type);
 uint32_t get_pointer_rank(Type* type);
 

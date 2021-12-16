@@ -126,6 +126,26 @@ bool is_not_aggregate_type(Type* type)
 		IS_VOID_TYPE(type);
 }
 
+bool is_signed_type(Type* type)
+{
+	if (IS_I8_TYPE(type)  ||
+		IS_I16_TYPE(type) ||
+		IS_I32_TYPE(type) ||
+		IS_I64_TYPE(type))
+			return true;
+	return false;
+}
+
+bool is_unsigned_type(Type* type)
+{
+	if (IS_U8_TYPE(type)  || IS_CHAR_TYPE(type) ||
+		IS_U16_TYPE(type) ||
+		IS_U32_TYPE(type) ||
+		IS_U64_TYPE(type))
+			return true;
+	return IS_POINTER_TYPE(type);
+}
+
 Type* get_base_type(Type* type)
 {
 	switch (type->kind)
