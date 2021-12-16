@@ -449,28 +449,92 @@ void gen_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
 
 void gen_relative_expr32(BinaryExpr* relative_expr, StackFrame* frame)
 {
-	assert(0);
+#define SIGN_BASED(sign_instr, unsign_instr, type) \
+	(is_signed_type(type) ? sign_instr, unsign_instr)
+
 	gen_expr32(relative_expr->lexpr, frame);
+	unreserve_register(REGISTERS, EAX);
 
-	int temp_reg = get_unreserved_register(REGISTERS,
-		REGSIZE_DWORD);
-	char* temp_reg_arg = get_register_str(temp_reg);
+	char* eax_reg_arg = get_register_str(EAX);
+	PROC_CODE_LINE1(PUSH, eax_reg_arg);
 	
-	switch (relative_expr->kind)
-	{
-	case BINARY_LG_OR:
-	case BINARY_LG_AND:
-	case BINARY_LG_EQ:
-	case BINARY_LG_NEQ:
+	gen_expr32(relative_expr->rexpr, frame);
+	int temp_reg = get_unreserved_register(
+		REGISTERS, REGSIZE_DWORD);
+	char* temp_reg_arg = get_register_str(temp_reg);
+	unreserve_register(REGISTERS, EAX);
+	PROC_CODE_LINE2(MOV, temp_reg_arg, eax_reg_arg);
+	PROC_CODE_LINE1(POP, eax_reg_arg);
 
-	case BINARY_LESS_THAN:
-	case BINARY_GREATER_THAN:
-	case BINARY_LESS_EQ_THAN:
-	case BINARY_GREATER_EQ_THAN:
-		break;
-	default:
-		assert(0);
+	char* label_supply = program_new_label(program);
+	char* label_final = program_new_label(program);
+
+	// exceptional case for logical and:
+	if (relative_expr->kind == BINARY_LG_AND || 
+		relative_expr->kind == BINARY_LG_OR)
+	{
+		switch (relative_expr->kind)
+		{
+		case BINARY_LG_OR:
+			PROC_CODE_LINE2(CMP, eax_reg_arg, frmt("%d", 0));
+			PROC_CODE_LINE1(JNE, label_supply);
+			PROC_CODE_LINE2(CMP, temp_reg_arg, frmt("%d", 0));
+			PROC_CODE_LINE1(JNE, label_supply);
+
+			PROC_CODE_LINE2(MOV, eax_reg_arg, frmt("%d", 0));
+			PROC_CODE_LINE1(JMP, label_final);
+			PROC_CODE_LINE1(_LABEL, label_supply);
+			PROC_CODE_LINE2(MOV, eax_reg_arg, frmt("%d", 1));
+			PROC_CODE_LINE1(_LABEL, label_final);
+			break;
+		case BINARY_LG_AND:
+			PROC_CODE_LINE2(CMP, eax_reg_arg, frmt("%d", 0));
+			PROC_CODE_LINE1(JE, label_supply);
+			PROC_CODE_LINE2(CMP, temp_reg_arg, frmt("%d", 0));
+			PROC_CODE_LINE1(JE, label_supply);
+
+			PROC_CODE_LINE2(MOV, eax_reg_arg, frmt("%d", 1));
+			PROC_CODE_LINE1(JMP, label_final);
+			PROC_CODE_LINE1(_LABEL, label_supply);
+			PROC_CODE_LINE2(MOV, eax_reg_arg, frmt("%d", 0));
+			PROC_CODE_LINE1(_LABEL, label_final);
+			break;
+		}
 	}
+	else
+	{
+		PROC_CODE_LINE2(CMP, eax_reg_arg,
+			temp_reg_arg);
+		switch (relative_expr->kind)
+		{
+		case BINARY_LESS_THAN:
+			PROC_CODE_LINE1(JL, label_supply);
+			break;
+		case BINARY_GREATER_THAN:
+			PROC_CODE_LINE1(JG, label_supply);
+			break;
+		case BINARY_LESS_EQ_THAN:
+			PROC_CODE_LINE1(JLE, label_supply);
+			break;
+		case BINARY_GREATER_EQ_THAN:
+			PROC_CODE_LINE1(JGE, label_supply);
+			break;
+		case BINARY_LG_EQ:
+			PROC_CODE_LINE1(JE, label_supply);
+			break;
+		case BINARY_LG_NEQ:
+			PROC_CODE_LINE1(JNE, label_supply);
+			break;
+		default:
+			assert(0);
+		}
+		PROC_CODE_LINE2(MOV, eax_reg_arg, frmt("%d", 0));
+		PROC_CODE_LINE1(JMP, label_final);
+		PROC_CODE_LINE1(_LABEL, label_supply);
+		PROC_CODE_LINE2(MOV, eax_reg_arg, frmt("%d", 1));
+		PROC_CODE_LINE1(_LABEL, label_final);
+	}
+	unreserve_register(REGISTERS, temp_reg);
 }
 
 void gen_binary_expr32(BinaryExpr* binary_expr, StackFrame* frame)
