@@ -217,7 +217,9 @@ void visit_func_call(FuncCall* func_call, Table* table)
 		FuncDecl* origin = get_function(
 			func_call->name, table);
 		visit_type(origin->type, table);
-		func_call->is_external = origin->spec->is_external;
+		func_call->conv = origin->conv;
+		func_call->spec = origin->spec;
+
 		// calculating count of params without vararg (...)
 		// if its declared
 		int32_t params = (int32_t)sbuffer_len(origin->params);
@@ -764,7 +766,7 @@ void visit_struct_members(Member** members)
 			members[i]->offset = 0;
 		else
 			members[i]->offset = members[i - 1]->offset +
-			members[i - 1]->type->size;
+				members[i - 1]->type->size;
 	}
 }
 
@@ -793,16 +795,35 @@ void visit_block(Block* block, Table* table)
 		visit_stmt(block->stmts[i], table);
 }
 
+void visit_func_decl_calling_convention(FuncDecl* func_decl)
+{
+	switch (func_decl->conv->kind)
+	{
+	case CALL_CONV_CDECL:
+		break;
+	case CALL_CONV_STDCALL:
+		if (func_decl->spec->is_vararg)
+			report_error("Cannot use vararg with stdcall calling convention.",
+				func_decl->name->context);
+		break;
+	}
+}
+
 bool visit_func_decl_specifiers(FuncDecl* func_decl, Table* table)
 {
 	if (func_decl->spec->is_entry)
 		visit_entry_func_stmt(func_decl, table);
 
+	visit_func_decl_calling_convention(func_decl);
+
 	//todo: also check file
-	if (func_decl->spec->is_external)
-		if (func_decl->body)
-			report_error(frmt("Function \'%s\' specified like external.",
-				func_decl->name->svalue), func_decl->name->context);
+	if (func_decl->spec->is_external && func_decl->body)
+		report_error(frmt("Function \'%s\' specified like external.",
+			func_decl->name->svalue), func_decl->name->context);
+	else if (!func_decl->spec->is_external && !func_decl->body)
+		report_error(frmt("Function \'%s\' needs body, its not external.",
+			func_decl->name->svalue), func_decl->name->context);
+
 	return func_decl->spec->is_external;
 }
 

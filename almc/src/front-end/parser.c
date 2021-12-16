@@ -1020,7 +1020,8 @@ Stmt* parse_struct_decl_stmt(Parser* parser)
 Stmt* parse_block(Parser* parser)
 {
 	Stmt** stmts = NULL;
-	char is_simple = matcht(parser, TOKEN_OP_BRACE);
+	bool is_simple = matcht(parser, TOKEN_OP_BRACE);
+
 	//todo: func decl is illegal
 	if (!is_simple)
 		sbuffer_add(stmts, parse_stmt(parser));
@@ -1066,6 +1067,35 @@ Stmt* parse_var_decl_stmt(Parser* parser)
 		var_decl_new(type_var, var_init));
 }
 
+CallConv* calling_convention_new()
+{
+	CallConv* convention =
+		cnew_s(CallConv, convention, 1);
+	convention->repr = "c";
+	convention->kind = CALL_CONV_CDECL;
+	return convention;
+}
+
+CallConv* parse_func_calling_convention(Parser* parser)
+{
+	// cdecl will be set by default
+	CallConv* convention = 
+		calling_convention_new();
+
+	char* token_str = tolower(
+		get_curr_token(parser)->svalue);
+
+	if (strcmp(token_str, "cdecl") == 0)
+		get_next_token(parser);
+	else if (strcmp(token_str, "stdcall") == 0)
+	{
+		get_next_token(parser);
+		convention->kind = CALL_CONV_STDCALL,
+			convention->repr = token_str;
+	}
+	return convention;
+}
+
 ExternalFuncSpec* parse_func_proto_spec(Parser* parser)
 {
 	ExternalFuncSpec* proto = 
@@ -1074,9 +1104,6 @@ ExternalFuncSpec* parse_func_proto_spec(Parser* parser)
 	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
 	proto->lib = get_curr_token(parser)->svalue;
 	expect_with_skip(parser, TOKEN_STRING, "lib name");
-	expect_with_skip(parser, TOKEN_COMMA, ",");
-	proto->convention = get_curr_token(parser)->svalue;
-	expect_with_skip(parser, TOKEN_IDNT, "calling convention");
 	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
 	return proto;
 }
@@ -1101,15 +1128,17 @@ FuncSpec* parse_func_specifiers(Parser* parser)
 
 Stmt* parse_func_decl_stmt(Parser* parser)
 {
-	Idnt* func_name = NULL;
-	Type* func_type = NULL;
-	Block* func_body = NULL;
-	TypeVar** func_params = NULL;
-	FuncSpec* func_spec = NULL;
+	Idnt* name = NULL;
+	Type* type = NULL;
+	Block* body = NULL;
+	TypeVar** params = NULL;
+	FuncSpec* spec = NULL;
+	CallConv* call_conv = NULL;
 
 	expect_with_skip(parser, TOKEN_KEYWORD_FUNC, "fnc");
-	func_spec = parse_func_specifiers(parser);
-	func_name = idnt_new(get_curr_token(parser)->svalue,
+	call_conv = parse_func_calling_convention(parser);
+	spec = parse_func_specifiers(parser);
+	name = idnt_new(get_curr_token(parser)->svalue,
 		get_curr_token(parser)->context);
 	expect_with_skip(parser, TOKEN_IDNT, "func name");
 	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
@@ -1118,17 +1147,17 @@ Stmt* parse_func_decl_stmt(Parser* parser)
 		//todo: may be do that more clearly
 		if (matcht(parser, TOKEN_TRIPLE_DOT))
 		{
-			func_spec->is_vararg = true;
+			spec->is_vararg = true;
 			get_next_token(parser);
 			break;
 		}
-		sbuffer_add(func_params, parse_type_var(parser));
+		sbuffer_add(params, parse_type_var(parser));
 		if (matcht(parser, TOKEN_COMMA))
 			expect_with_skip(parser, TOKEN_COMMA, ",");
 	}
 	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
 	expect_with_skip(parser, TOKEN_COLON, ":");
-	func_type = parse_type(parser);
+	type = parse_type(parser);
 	
 	// checking if function does not have any block
 	if (matcht(parser, TOKEN_SEMICOLON))
@@ -1137,15 +1166,15 @@ Stmt* parse_func_decl_stmt(Parser* parser)
 	{
 		if (!matcht(parser, TOKEN_OP_BRACE))
 			expect_with_skip(parser, TOKEN_OP_BRACE, "{");
-		func_body = parse_block(parser)->block;
+		body = parse_block(parser)->block;
 	}
-	return stmt_new(STMT_FUNC_DECL, func_decl_new(func_name, 
-		func_params, func_type, func_body, func_spec));
+	return stmt_new(STMT_FUNC_DECL, func_decl_new(name, 
+		params, type, body, spec, call_conv));
 }
 
 Stmt* parse_label_decl_stmt(Parser* parser)
 {
-	Idnt* label  = cnew_s(Idnt, label, 1);
+	Idnt* label = cnew_s(Idnt, label, 1);
 
 	expect_with_skip(parser, TOKEN_KEYWORD_LABEL, "label");
 	label->svalue = get_curr_token(parser)->svalue;

@@ -95,7 +95,7 @@ Const* const_new(ConstKind type, const char* svalue, SrcContext* context)
 
 FuncCall* func_call_new(const char* func_name, Expr** func_args)
 {
-	FuncCall* func_call = new_s(FuncCall, func_call);
+	FuncCall* func_call = cnew_s(FuncCall, func_call, 1);
 	func_call->args = func_args;
 	func_call->name = func_name;
 	func_call->type = NULL;
@@ -292,7 +292,7 @@ VarDecl* var_decl_new(TypeVar* type_var, Expr* init)
 }
 
 FuncDecl* func_decl_new(Idnt* name, TypeVar** params, 
-	Type* type, Block* body, FuncSpec* spec)
+	Type* type, Block* body, FuncSpec* spec, CallConv* conv)
 {
 	FuncDecl* func_decl = new_s(FuncDecl, func_decl);
 	func_decl->name = name;
@@ -300,6 +300,7 @@ FuncDecl* func_decl_new(Idnt* name, TypeVar** params,
 	func_decl->body = body;
 	func_decl->params = params;
 	func_decl->spec = spec;
+	func_decl->conv = conv;
 	return func_decl;
 }
 
@@ -768,6 +769,7 @@ void func_decl_free(FuncDecl* func_decl)
 		for (uint32_t i = 0; i < sbuffer_len(func_decl->params); i++)
 			type_var_free(func_decl->params[i]);
 		sbuffer_free(func_decl->params);
+		free(func_decl->conv);
 		free(func_decl);
 	}
 }

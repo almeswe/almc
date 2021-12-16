@@ -83,6 +83,34 @@ typedef enum BinaryExprKind
 	BINARY_ARR_MEMBER_ACCESSOR,
 } BinaryExprKind;
 
+typedef enum CallConvKind
+{
+	CALL_CONV_CDECL = 0,
+	CALL_CONV_STDCALL = 1
+} CallConvKind;
+
+typedef struct CallConv
+{
+	// representation of the convention
+	// in masm proto function declaration
+	char* repr;
+	CallConvKind kind;
+} CallConv;
+
+typedef struct ExternalFuncSpec
+{
+	const char* lib;
+} ExternalFuncSpec;
+
+typedef struct FuncSpec
+{
+	bool is_entry;
+	bool is_vararg;
+
+	bool is_external;
+	ExternalFuncSpec* proto;
+} FuncSpec;
+
 typedef struct BinaryExpr
 {
 	Type* type;
@@ -141,8 +169,9 @@ typedef struct FuncCall
 	Type* type;
 	Expr** args;
 	SrcArea* area;
+	FuncSpec* spec;
+	CallConv* conv;
 	const char* name;
-	bool is_external;
 } FuncCall;
 
 typedef struct Initializer
@@ -203,27 +232,14 @@ typedef struct VarDecl
 	TypeVar* type_var;
 } VarDecl;
 
-typedef struct ExternalFuncSpec
-{
-	const char* lib;
-	const char* convention;
-} ExternalFuncSpec;
-
-typedef struct FuncSpec
-{
-	bool is_entry;
-	bool is_vararg;
-
-	bool is_external;
-	ExternalFuncSpec* proto;
-} FuncSpec;
-
 typedef struct FuncDecl
 {
 	Idnt* name;
 	Type* type;
 	Block* body;
 	TypeVar** params;
+
+	CallConv* conv;
 	FuncSpec* spec;
 } FuncDecl;
 
@@ -455,7 +471,7 @@ SwitchStmt* switch_stmt_new(Expr* cond, Case** cases, Block* default_case);
 
 LabelDecl* label_decl_new(Idnt* label);
 VarDecl* var_decl_new(TypeVar* type_var, Expr* init);
-FuncDecl* func_decl_new(Idnt* name, TypeVar** params, Type* type, Block* body, FuncSpec* spec);
+FuncDecl* func_decl_new(Idnt* name, TypeVar** params, Type* type, Block* body, FuncSpec* spec, CallConv* conv);
 
 TypeDecl* type_decl_new(TypeDeclKind type, void* type_decl_value_ptr);
 EnumDecl* enum_decl_new(EnumMember** members, const char* name);

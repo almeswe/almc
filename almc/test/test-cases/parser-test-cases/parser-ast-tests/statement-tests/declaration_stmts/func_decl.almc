@@ -1,4 +1,4 @@
 fnc a_1() : void;
 fnc a_2(a: i32, b: i16) : i32;
 fnc entry a_3() : void;
-fnc from("masm32", C) a_4() : void;
+fnc cdecl from("masm32") a_4() : void;

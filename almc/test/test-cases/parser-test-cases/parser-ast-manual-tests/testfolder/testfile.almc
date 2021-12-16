@@ -1,5 +1,6 @@
-fnc from("masm32", C) 
+fnc from("msvcrt") 
 	printf(fmt: char*, ...) : void;
-	
 
-fnc printf() : void {}
+fnc cdecl test(fmt: char*, ...) : void
+{
+}

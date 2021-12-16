@@ -604,28 +604,73 @@ void gen_binary_expr32(BinaryExpr* binary_expr, StackFrame* frame)
 #undef RESERVE_TEMP_REG
 }
 
+void gen_callee_stack_clearing(FuncDecl* func_decl)
+{
+	uint32_t size = 0;
+	switch (func_decl->conv->kind)
+	{
+	case CALL_CONV_CDECL:
+		/*
+			if cdecl:
+				...
+				ret
+		*/
+		PROC_CODE_LINE0(RET);
+		break;
+	case CALL_CONV_STDCALL:
+		/*
+			if stdcall:
+				...
+				ret  xxxx <- overall size of all arguments
+		*/
+		for (size_t i = 0; i < sbuffer_len(func_decl->params); i++)
+			size += func_decl->params[i]->type->size;
+		PROC_CODE_LINE1(RET, frmt("%d", size));
+		break;
+	}
+}
+
+void gen_caller_stack_clearing(FuncCall* func_call)
+{
+	uint32_t size = 0;
+	switch (func_call->conv->kind)
+	{
+	case CALL_CONV_CDECL:
+		/*
+			if cdecl:
+				call xxxx
+				add  esp, yyyy
+		*/
+		// caching the size of each passed argument 
+		// to clear this space
+		for (size_t i = 0; i < sbuffer_len(func_call->args); i++)
+			size += retrieve_expr_type(func_call->args[i])->size;
+		PROC_CODE_LINE2(ADD, get_register_str(ESP),
+			frmt("%d", size));
+		break;
+	case CALL_CONV_STDCALL:
+		/*
+			if stdcall:
+				call xxxx
+				; nothing do here because calle will free the stack
+		*/
+		break;
+	}
+}
+
 void gen_func_call32(FuncCall* func_call, StackFrame* frame)
 {
-	uint32_t arg_stack_space = 0;
 	for (int32_t i = sbuffer_len(func_call->args) - 1; i >= 0; i--)
 	{
 		assert(func_call->args);
 		gen_expr32(func_call->args[i], frame);
 		unreserve_register(REGISTERS, EAX);
 		PROC_CODE_LINE1(PUSH, get_register_str(EAX));
-
-		// caching the size of each passed argument 
-		// to clear this space in future after call
-		arg_stack_space += retrieve_expr_type(
-			func_call->args[i], TABLE)->size;
 	}
-	if (!func_call->is_external)
-		PROC_CODE_LINE1(CALL, frmt("_%s", func_call->name));
-	else
-		PROC_CODE_LINE1(CALL, frmt("%s", func_call->name));
-	if (arg_stack_space)
-		PROC_CODE_LINE2(ADD, get_register_str(ESP), 
-			frmt("%d", arg_stack_space));
+	// if we met here the external function there will be no need to add underscore
+	PROC_CODE_LINE1(CALL, frmt(func_call->spec->is_external ? 
+		"%s" : "_%s", func_call->name));
+	gen_caller_stack_clearing(func_call);
 }
 
 char* addressible_data_arg(_addressable_data* data)
