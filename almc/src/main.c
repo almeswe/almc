@@ -1,11 +1,12 @@
 #include "..\test\test.h"
 #include "..\src\front-end\type.h"
-#include "back-end/x86/program.h"
+#include "back-end\x86\program.h"
 
 int back_end_test()
 {
 	while (1)
 	{
+		//Lexer* lexer = lexer_new("example\\time\\get_local_time.almc", FROM_FILE);
 		Lexer* lexer = lexer_new("test\\test-cases\\parser-test-cases\\parser-ast-manual-tests\\testfolder\\back_end_test.almc",
 			FROM_FILE);
 		Parser* parser = parser_new(lexer->curr_file, lex(lexer));

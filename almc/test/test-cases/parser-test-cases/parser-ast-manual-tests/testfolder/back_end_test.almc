@@ -4,36 +4,49 @@ fnc cdecl from("msvcrt")
 fnc cdecl from("msvcrt")
 	scanf(fmt: char*, ...) : void;
 
-fnc cdecl from("msvcrt")
-	malloc(_s: u32) : u8*;
-
-fnc cdecl from("msvcrt")
-	atoi(_s: char*) : i32;
-
-fnc negate(a: i32) : i32 {
-	return -a;
-}
-
-fnc square(a: i32) : i32 {
-	let mult: i32 = a * a;
-	return mult;
-}
-
-fnc toi32(string: char*) : i32 {
-	return atoi(string);
-}
-
-fnc entry main1() : void {
-	#let b: u8* = malloc(sizeof(i64));
-	#let a: i32 = 2;
+#>fnc goto_stmt_test() : void {
 	goto a;
 	printf("not a");
 	label a:
 	printf("a");
-	#printf("%d", toi32("123"));
-
-	#printf("%d", negate(square(a)) * negate(square(a)));
 }
 
-# add relative operators
+fnc relative_expr_test() : void {
+	let a: i32 = 2;
+	let b: i32 = 5;
+
+	printf("%d < %d = %d\n", a, b, a < b);
+	printf("%d < %d = %d\n", b, a, b < a);
+
+	printf("%d > %d = %d\n", a, b, a > b);
+	printf("%d > %d = %d\n", b, a, b > a);
+
+	printf("%d >= %d = %d\n", a, b, a >= b);
+	printf("%d >= %d = %d\n", b, a, b >= a);
+
+	printf("%d <= %d = %d\n", a, b, a <= b);
+	printf("%d <= %d = %d\n", b, a, b <= a);
+
+	printf("%d == %d = %d\n", a, b, a == b);
+	printf("%d == %d = %d\n", b, a, b == a);
+
+	printf("%d != %d = %d\n", a, b, a != b);
+	printf("%d != %d = %d\n", b, a, b != a);
+
+	printf("%d || %d = %d\n", a, b, a || b);
+	printf("%d || %d = %d\n", b, a, b || a);
+
+	printf("%d && %d = %d\n", a, b, a && b);
+	printf("%d && %d = %d\n", b, a, b && a);
+}<#
+
+fnc entry main1() : void {
+	# goto_stmt_test();
+	#relative_expr_test();
+
+	#printf("1\n2\t345\r6");
+
+	let a: i32 = -(12+31231*2312/312+31293+1*23-12+3);
+}
+
 # finish the array accessor
