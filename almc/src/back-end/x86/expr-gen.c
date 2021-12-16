@@ -68,9 +68,26 @@ void gen_idnt32(Idnt* idnt, int reg, StackFrame* frame)
 
 void gen_string32(Str* str, int reg)
 {
+	char* value = frmt("\"");
+	char* prev = NULL;
 	char** values = NULL;
-	sbuffer_add(values, frmt("\"%s\"", str->svalue));
-	sbuffer_add(values, frmt("0h"));
+	size_t len = strlen(str->svalue);
+
+	for (size_t i = 0; i < len; i++)
+	{
+		if (!isescape(str->svalue[i]))
+			value = frmt("%s%c", prev = value, str->svalue[i]),
+				free(prev);
+		else
+		{
+			value = frmt("%s\"", prev = value),
+				free(prev);
+			sbuffer_add(values, value);
+			sbuffer_add(values, frmt("%02xh", (int)str->svalue[i]));
+			value = frmt("\"");
+		}
+	}
+	sbuffer_add(values, frmt("00h"));
 
 	AsmDataLine* line = dataline_new("db", NULL,
 		values, DATA_INITIALIZED_STRING);
