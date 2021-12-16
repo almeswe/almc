@@ -87,6 +87,10 @@
     <Text Include="test\test-cases\lexer-test-cases\TOKENS.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="example\time\get_local_time.almc" />
+    <None Include="example\hello world\hello_world.almc" />
+    <None Include="example\localstd\time.almc" />
+    <None Include="example\localstd\io.almc" />
     <None Include="src\back-end\x86\instructions_gen.py" />
     <None Include="test\test-cases\lexer-test-cases\gen.py" />
     <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\b.almc" />

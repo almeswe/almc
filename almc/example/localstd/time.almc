@@ -1,0 +1,13 @@
+struct LPSYSTEMTIME {
+     wYear         : u16;
+     wMonth		   : u16;
+     wDayOfWeek	   : u16;
+     wDay		   : u16;
+     wHour		   : u16;
+     wMinute	   : u16;
+     wSecond       : u16;
+     wMilliseconds : u16;
+}
+
+fnc stdcall from("kernel32") 
+	GetLocalTime(_t: LPSYSTEMTIME*) : void;

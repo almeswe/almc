@@ -1,0 +1,11 @@
+import ../localstd/time;
+
+from ../localstd/io import printf;
+
+fnc entry main() : void {
+	let a: LPSYSTEMTIME;
+	GetLocalTime(&a);
+
+	printf("adasd year: %i, month: %i, day: %i",
+		a.wYear, a.wMonth, a.wDay);
+}
