@@ -450,8 +450,7 @@ void gen_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
 	default:
 		// case when its not simple assign
 		// first of all cache the address value in temp_reg
-		//PROC_CODE_LINE2(MOV, temp_reg_arg, addr_arg);
-		gen_mov_reg_to32(temp_reg, addr_arg,
+		gen_mov_to_reg32(temp_reg, addr_arg,
 			retrieve_expr_type(assign_expr->lexpr));
 		switch (assign_expr->kind)
 		{
@@ -522,7 +521,7 @@ void gen_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
 		if (data->in_reg && data->reg == EAX)
 			PROC_CODE_LINE1(POP, get_register_str(EAX));
 		// assign calculated value to addressable expr (storage)
-		gen_mov_reg_to32(EAX, addr_arg,
+		gen_mov_reg_to32(temp_reg, addr_arg,
 			retrieve_expr_type(assign_expr->lexpr));
 		//PROC_CODE_LINE2(MOV, addr_arg, temp_reg_arg);
 		break;
