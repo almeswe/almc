@@ -9,6 +9,9 @@
 #define TABLE     program->table
 #define REGISTERS program->regtable
 
+#define NEW_LABEL(name) \
+	char* name = program_new_label(program)
+
 #define PROGRAM_ADD_PROC(proc) \
 	sbuffer_add(program->code->procs, proc)
 #define PROGRAM_ADD_PROTO_PROC(proto) \

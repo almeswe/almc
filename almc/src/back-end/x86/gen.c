@@ -49,6 +49,52 @@ void gen_if_stmt(IfStmt* if_stmt, StackFrame* frame)
 	sbuffer_free(labels_elif_branches_end);
 }
 
+void gen_loop_stmt(LoopStmt* loop_stmt, StackFrame* frame)
+{
+	switch (loop_stmt->kind)
+	{
+	case LOOP_WHILE:
+		return gen_while_loop_stmt(loop_stmt->while_loop, frame);
+	default:
+		assert(0);
+	}
+}
+
+void loop_init_frame_labels(char* label_break,
+	char* label_continue, StackFrame* frame)
+{
+	frame->loop_break_label = label_break;
+	frame->loop_continue_label = label_continue;
+}
+
+void loop_free_frame_labels(StackFrame* frame)
+{
+	frame->loop_break_label =
+		frame->loop_continue_label = NULL;
+}
+
+void gen_while_loop_stmt(WhileLoop* while_loop, StackFrame* frame)
+{
+	NEW_LABEL(label_loop_start);
+	NEW_LABEL(label_loop_body_end);
+	NEW_LABEL(label_loop_end);
+	loop_init_frame_labels(label_loop_end, 
+		label_loop_body_end, frame);
+	
+	char* eax_reg_arg = get_register_str(EAX);
+
+	PROC_CODE_LINE1(_LABEL, label_loop_start);
+	gen_expr32(while_loop->cond, frame);
+	unreserve_register(REGISTERS, EAX);
+	PROC_CODE_LINE2(CMP, eax_reg_arg, frmt("%d", 0));
+	PROC_CODE_LINE1(JE, label_loop_end);
+	gen_block(while_loop->body, frame);
+	PROC_CODE_LINE1(_LABEL, label_loop_body_end);
+	PROC_CODE_LINE1(JMP, label_loop_start);
+	PROC_CODE_LINE1(_LABEL, label_loop_end);
+	loop_free_frame_labels(frame);
+}
+
 void declare_return_stmt(StackFrame* frame)
 {
 	if (!frame->return_declared)
@@ -71,6 +117,12 @@ void gen_jump_stmt(JumpStmt* jump_stmt, StackFrame* frame)
 	case JUMP_GOTO:
 		PROC_CODE_LINE1(JMP, frmt("LN_%s", 
 			jump_stmt->additional_expr->idnt->svalue));
+		break;
+	case JUMP_BREAK:
+		PROC_CODE_LINE1(JMP, frame->loop_break_label);
+		break;
+	case JUMP_CONTINUE:
+		PROC_CODE_LINE1(JMP, frame->loop_continue_label);
 		break;
 	default:
 		assert(0);
@@ -122,6 +174,8 @@ void gen_stmt(Stmt* stmt, StackFrame* frame)
 		return gen_if_stmt(stmt->if_stmt, frame);
 	case STMT_VAR_DECL:
 		return gen_var_decl_stmt(stmt->var_decl, frame);
+	case STMT_LOOP:
+		return gen_loop_stmt(stmt->loop_stmt, frame);
 	case STMT_EMPTY:
 	case STMT_TYPE_DECL:
 		return;

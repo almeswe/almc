@@ -8,6 +8,8 @@
 #include "..\..\utils\common.h"
 
 void gen_if_stmt(IfStmt* if_stmt, StackFrame* frame);
+void gen_loop_stmt(LoopStmt* loop_stmt, StackFrame* frame);
+void gen_while_loop_stmt(WhileLoop* while_loop, StackFrame* frame);
 void gen_jump_stmt(JumpStmt* jump_stmt, StackFrame* frame);
 
 void gen_var_decl_stmt(VarDecl* var_decl, StackFrame* frame);

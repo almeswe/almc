@@ -31,6 +31,9 @@ typedef struct x86_StackFrame
 	int32_t required_space_for_locals;
 	int32_t required_space_for_arguments;
 
+	char* loop_break_label;
+	char* loop_continue_label;
+
 	char* return_label;
 	// needed to determine the need of jump to 
 	// origin ret by return_label

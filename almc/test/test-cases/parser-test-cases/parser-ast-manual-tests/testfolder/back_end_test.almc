@@ -2,7 +2,13 @@ fnc cdecl from("msvcrt")
 	printf(fmt: char*, ...) : void;
 
 fnc cdecl from("msvcrt")
-	scanf(fmt: char*, ...) : void;
+	scanf(fmt: char*, ...) : i32;
+
+fnc cdecl from("msvcrt")
+	malloc(_s: u32) : u8*;
+
+fnc cdecl from("msvcrt")
+	free(_p: u8*) : void;
 
 #>fnc goto_stmt_test() : void {
 	goto a;
@@ -40,13 +46,64 @@ fnc relative_expr_test() : void {
 	printf("%d && %d = %d\n", b, a, b && a);
 }<#
 
-fnc entry main1() : void {
-	# goto_stmt_test();
-	#relative_expr_test();
+#>fnc binary_ptr_accessor_test() : void {
+	struct b {
+		a: i16;
+		b: i32;
+	}
+	
+	struct a {
+		a: i16;
+		c: i32;
+		b: b*;
+	}
 
-	#printf("1\n2\t345\r6");
+	let var: a* = cast(a*)
+		malloc(1u*sizeof(a));
+	#var->c = 2;
+	#var->b->b = 3;
+	let a: b;
+	a.a = cast(i16)4;
+	#printf("%d; %d", var->c, var->b.b);
+	#free(cast(u8*)var);
+}<#
 
-	let a: i32 = -(12+31231*2312/312+31293+1*23-12+3);
+#>fnc recursion(a: i32) : i32 {
+	if (a > 100)
+		return a;
+	printf("%d", a);
+	return recursion(a+1);
+}<#
+
+#>fnc while_loop_test() {
+	let i: i32 = 0;
+	let j: i32 = 0; 
+
+	while (i != 0xf)
+	{
+		j = 0;
+		while (j != 0xf)
+			printf("%d:%d\n", i, j += 1);
+		i += 1;
+	}
+
+	while (1) {
+		printf("%d\n", i);
+		if ((i += 1) == 10)
+			break;
+	}
+	printf("Ended!\n"); 
+
+	while (i != 100) {
+		if ((i += 1) % 2 != 0)
+			continue;
+		printf("%d\n", i);
+	}
+	printf("Ended!\n");
+}<#
+
+fnc entry main() : void {
+
 }
 
 # finish the array accessor
