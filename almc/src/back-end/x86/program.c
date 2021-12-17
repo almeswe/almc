@@ -1,5 +1,7 @@
 #include "program.h"
 
+//todo: add dbility of putting commentaries in code
+
 void print_define(StackFrameEntity* entity)
 {
 	printf("%s\t= %d\n", entity->definition, entity->offset);

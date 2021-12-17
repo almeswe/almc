@@ -1,5 +1,54 @@
 #include "gen.h"
 
+void gen_elif_stmt(ElseIf* elseif_stmt, char* label_elif_end, 
+	char* label_final, StackFrame* frame)
+{
+	gen_expr32(elseif_stmt->cond, frame);
+	unreserve_register(REGISTERS, EAX);
+	char* eax_reg_arg = get_register_str(EAX);
+
+	// structure of elif is the same as if part
+	PROC_CODE_LINE2(CMP, eax_reg_arg, frmt("%d", 0));
+	PROC_CODE_LINE1(JE, label_elif_end);
+	gen_block(elseif_stmt->body, frame);
+	PROC_CODE_LINE1(JMP, label_final);
+	PROC_CODE_LINE1(_LABEL, label_elif_end);
+}
+
+void gen_if_stmt(IfStmt* if_stmt, StackFrame* frame)
+{
+	gen_expr32(if_stmt->cond, frame);
+	unreserve_register(REGISTERS, EAX);
+
+	char* eax_reg_arg = get_register_str(EAX);
+
+	// reserving label which maps to the end of the if body
+	char* label_if_branch_end = program_new_label(program);
+	// reserving labels for each elif's body ending
+	char** labels_elif_branches_end = NULL;
+	for (size_t i = 0; i < sbuffer_len(if_stmt->elifs); i++)
+		sbuffer_add(labels_elif_branches_end, 
+			program_new_label(program));
+	// reserving label which maps to the end of all if statement
+	char* label_final = program_new_label(program);
+
+	// if part
+	PROC_CODE_LINE2(CMP, eax_reg_arg, frmt("%d", 0));
+	PROC_CODE_LINE1(JE, label_if_branch_end);
+	gen_block(if_stmt->body, frame);
+	PROC_CODE_LINE1(JMP, label_final);
+	PROC_CODE_LINE1(_LABEL, label_if_branch_end);
+	// elifs part ?
+	for (size_t i = 0; i < sbuffer_len(if_stmt->elifs); i++)
+		gen_elif_stmt(if_stmt->elifs[i], labels_elif_branches_end[i], 
+			label_final, frame);
+	// else part ?
+	if (if_stmt->else_body)
+		gen_block(if_stmt->else_body, frame);
+	PROC_CODE_LINE1(_LABEL, label_final);
+	sbuffer_free(labels_elif_branches_end);
+}
+
 void declare_return_stmt(StackFrame* frame)
 {
 	if (!frame->return_declared)
@@ -69,13 +118,15 @@ void gen_stmt(Stmt* stmt, StackFrame* frame)
 		return gen_expr32(stmt->expr_stmt->expr, frame);
 	case STMT_JUMP:
 		return gen_jump_stmt(stmt->jump_stmt, frame);
+	case STMT_IF:
+		return gen_if_stmt(stmt->if_stmt, frame);
 	case STMT_VAR_DECL:
 		return gen_var_decl_stmt(stmt->var_decl, frame);
+	case STMT_EMPTY:
+	case STMT_TYPE_DECL:
+		return;
 	case STMT_LABEL_DECL:
 		return gen_label_decl_stmt(stmt->label_decl);
-	/*case STMT_FUNC_DECL:
-		gen_func_decl_stmt(stmt->func_decl);
-		break;*/
 	default:
 		assert(0);
 	}

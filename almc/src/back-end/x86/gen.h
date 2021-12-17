@@ -7,9 +7,13 @@
 #include "program.h"
 #include "..\..\utils\common.h"
 
+void gen_if_stmt(IfStmt* if_stmt, StackFrame* frame);
+void gen_jump_stmt(JumpStmt* jump_stmt, StackFrame* frame);
+
 void gen_var_decl_stmt(VarDecl* var_decl, StackFrame* frame);
 void gen_func_decl_stmt(FuncDecl* func_decl);
 void gen_stmt(Stmt* stmt, StackFrame* frame);
+void gen_block(Block* block, StackFrame* frame);
 
 AsmProgram* gen(AstRoot* ast, Table* table);
 void gen_global_stmt(Stmt* stmt);
