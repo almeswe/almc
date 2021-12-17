@@ -32,6 +32,8 @@ loop
 mov
 movsb
 movsw
+movsx
+movzx
 mul
 neg
 nop

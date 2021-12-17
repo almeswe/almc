@@ -38,30 +38,32 @@
 #define MOV     31
 #define MOVSB   32
 #define MOVSW   33
-#define MUL     34
-#define NEG     35
-#define NOP     36
-#define NOT     37
-#define OR      38
-#define POP     39
-#define PUSH    40
-#define PUSHA   41
-#define POPA    42
-#define RCL     43
-#define RCR     44
-#define RET     45
-#define ROL     46
-#define ROR     47
-#define SAL     48
-#define SAR     49
-#define SHL     50
-#define SHR     51
-#define STOSB   52
-#define STOSW   53
-#define SUB     54
-#define TEST    55
-#define XOR     56
-#define XCHG    57
+#define MOVSX   34
+#define MOVZX   35
+#define MUL     36
+#define NEG     37
+#define NOP     38
+#define NOT     39
+#define OR      40
+#define POP     41
+#define PUSH    42
+#define PUSHA   43
+#define POPA    44
+#define RCL     45
+#define RCR     46
+#define RET     47
+#define ROL     48
+#define ROR     49
+#define SAL     50
+#define SAR     51
+#define SHL     52
+#define SHR     53
+#define STOSB   54
+#define STOSW   55
+#define SUB     56
+#define TEST    57
+#define XOR     58
+#define XCHG    59
 
 #define _LABEL 0x100
 
@@ -100,6 +102,8 @@ static char* instructions_str[] = {
 	[MOV] = "mov",
 	[MOVSB] = "movsb",
 	[MOVSW] = "movsw",
+	[MOVSX] = "movsx",
+	[MOVZX] = "movzx",
 	[MUL] = "mul",
 	[NEG] = "neg",
 	[NOP] = "nop",
