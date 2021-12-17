@@ -46,7 +46,7 @@ _addressable_data* gen_addressable_data(Expr* expr, StackFrame* frame);
 
 _addressable_data* addressable_data_new();
 void addressable_data_free(_addressable_data* data);
-char* addressible_data_arg(_addressable_data* data);
+char* addressable_data_arg(_addressable_data* data);
 
 void gen_expr32(Expr* expr, StackFrame* frame);
 void gen_idnt32(Idnt* idnt, int reg, StackFrame* frame);
