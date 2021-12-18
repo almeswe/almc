@@ -397,17 +397,20 @@ _addressable_data* gen_addressable_data_for_accessor(
 		addr_reg_arg = get_register_str(data->reg);
 		if (data->in_reg)
 		{
-			PROC_CODE_LINE2(MOV, addr_reg_arg, frmt("dword ptr [%s+%d]",
-				addr_reg_arg, data->offset));
-			addr_arg = frmt("dword ptr [%s]", addr_reg_arg);
+			PROC_CODE_LINE2(MOV, addr_reg_arg,
+				frmt("dword ptr [%s]", addr_reg_arg));
 		}
 		else
 		{
 			data->in_reg = true;
-			addr_arg = frmt("dword ptr %s[ebp]",
-				data->entity->definition);
+			PROC_CODE_LINE2(MOV, addr_reg_arg, frmt("dword ptr %s[ebp]",
+				data->entity->definition));
+			//PROC_CODE_LINE2(MOV, addr_reg_arg,
+			//	frmt("dword ptr [%s]", addr_reg_arg));
 		}
-		PROC_CODE_LINE2(MOV, addr_reg_arg, addr_arg);
+		if (data->offset)
+			PROC_CODE_LINE2(ADD, addr_reg_arg, 
+				frmt("%d", data->offset));
 		break;
 	}
 	return data;
