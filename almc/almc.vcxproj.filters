@@ -197,6 +197,7 @@
     <Text Include="test\test-cases\lexer-test-cases\COMMENTS-TEST.txt" />
     <Text Include="test\test-cases\lexer-test-cases\gen-output.txt" />
     <Text Include="src\back-end\x86\instructions_list.txt" />
+    <Text Include="example\localstd\memory.almc" />
   </ItemGroup>
   <ItemGroup>
     <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\b.almc" />
@@ -230,5 +231,8 @@
     <None Include="example\localstd\time.almc" />
     <None Include="example\hello world\hello_world.almc" />
     <None Include="example\time\get_local_time.almc" />
+    <None Include="example\dynamic allocation\dynalloc.almc" />
+    <None Include="example\linked_list\list.almc" />
+    <None Include="example\linked_list\list_test.almc" />
   </ItemGroup>
 </Project>

@@ -1,0 +1,15 @@
+import ../localstd/time;
+from ../localstd/io import printf;
+from ../localstd/memory import free, malloc;
+
+fnc entry main() : void {
+	#>let o: LPSYSTEMTIME* = cast(LPSYSTEMTIME*)
+		malloc(1u*sizeof(LPSYSTEMTIME));
+	GetLocalTime(o);<#
+
+	let o: LPSYSTEMTIME;
+	GetLocalTime(&o);
+
+	printf("year = %d\nmonth = %d", o.wYear, o.wMonth);
+	#free(cast(u8*)o);
+}

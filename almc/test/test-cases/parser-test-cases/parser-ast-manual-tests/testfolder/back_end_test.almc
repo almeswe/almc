@@ -8,6 +8,9 @@ fnc cdecl from("msvcrt")
 	malloc(_s: u32) : u8*;
 
 fnc cdecl from("msvcrt")
+	calloc(_n: u32, _s: u32) : u8*;
+
+fnc cdecl from("msvcrt")
 	free(_p: u8*) : void;
 
 #>fnc goto_stmt_test() : void {
@@ -100,9 +103,70 @@ fnc relative_expr_test() : void {
 		printf("%d\n", i);
 	}
 	printf("Ended!\n");
-}<#
+}
 
-fnc entry main() : void {
+fnc do_loop_test() {
+	let i: i32 = 0;
+	
+	do {
+		printf("In body\n");
+	} while (0);
+	printf("Ended!");
+
+	i = 0;
+	do {
+		if ((i += 1) % 2 == 0)
+			continue;
+		printf("%d\n", i);
+	} while(i < 100);
+
+	i = 0;
+	do {
+		if ((i += 1) == 100)
+			break;
+		printf("%d\n", i);
+	} while(1);
+}
+
+fnc for_loop_test() {
+	let size: i32 = 10;
+
+	for (let i: i32 = 0; i < size; i += 1)
+		for (let j: i32 = i+1; j < size; j += 1)
+			printf("1. %d:%d\n", i, j);
+
+	for (let z: i32 = 0; z < 20;)
+		printf("2. %d\n", z += 3);
+	
+	for (let f: i32 = 0; ; f += 1) {
+		if (f > 100)
+			break;
+		if (f % 2 == 0)
+			continue;
+		printf("5. %d\n", f);
+	}
+
+	for (;;) {
+		printf("4. %d\n", size += 1);
+		if (size == 1000)
+			break;
+	}
+}
+
+fnc unary_lg_not_test() {
+	let a: i32;
+	while (1) {
+		scanf("%d", &a);
+		printf("\n%d\n", !a);
+	}
+} <#
+
+fnc entry main() : void {	
+	struct object {
+		m1: i32;
+		m2: i32;
+	}
+
 
 }
 

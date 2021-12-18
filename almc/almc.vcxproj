@@ -77,6 +77,7 @@
     <ClInclude Include="test\test.h" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="example\localstd\memory.almc" />
     <Text Include="src\back-end\x86\instructions_list.txt" />
     <Text Include="test\syntax.txt" />
     <Text Include="test\test-cases\lexer-test-cases\COMMENTS-TEST.txt" />
@@ -87,6 +88,9 @@
     <Text Include="test\test-cases\lexer-test-cases\TOKENS.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="example\dynamic allocation\dynalloc.almc" />
+    <None Include="example\linked_list\list.almc" />
+    <None Include="example\linked_list\list_test.almc" />
     <None Include="example\time\get_local_time.almc" />
     <None Include="example\hello world\hello_world.almc" />
     <None Include="example\localstd\time.almc" />
