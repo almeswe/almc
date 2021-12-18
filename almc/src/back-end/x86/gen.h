@@ -9,6 +9,8 @@
 
 void gen_if_stmt(IfStmt* if_stmt, StackFrame* frame);
 void gen_loop_stmt(LoopStmt* loop_stmt, StackFrame* frame);
+void gen_do_loop_stmt(DoLoop* do_loop, StackFrame* frame);
+void gen_for_loop_stmt(ForLoop* for_loop, StackFrame* frame);
 void gen_while_loop_stmt(WhileLoop* while_loop, StackFrame* frame);
 void gen_jump_stmt(JumpStmt* jump_stmt, StackFrame* frame);
 

@@ -23,14 +23,13 @@ void gen_if_stmt(IfStmt* if_stmt, StackFrame* frame)
 	char* eax_reg_arg = get_register_str(EAX);
 
 	// reserving label which maps to the end of the if body
-	char* label_if_branch_end = program_new_label(program);
+	NEW_LABEL(label_if_branch_end);
 	// reserving labels for each elif's body ending
 	char** labels_elif_branches_end = NULL;
 	for (size_t i = 0; i < sbuffer_len(if_stmt->elifs); i++)
-		sbuffer_add(labels_elif_branches_end, 
-			program_new_label(program));
+		ADD_NEW_LABEL(labels_elif_branches_end);
 	// reserving label which maps to the end of all if statement
-	char* label_final = program_new_label(program);
+	NEW_LABEL(label_final);
 
 	// if part
 	PROC_CODE_LINE2(CMP, eax_reg_arg, frmt("%d", 0));
@@ -53,6 +52,10 @@ void gen_loop_stmt(LoopStmt* loop_stmt, StackFrame* frame)
 {
 	switch (loop_stmt->kind)
 	{
+	case LOOP_DO:
+		return gen_do_loop_stmt(loop_stmt->do_loop, frame);
+	case LOOP_FOR:
+		return gen_for_loop_stmt(loop_stmt->for_loop, frame);
 	case LOOP_WHILE:
 		return gen_while_loop_stmt(loop_stmt->while_loop, frame);
 	default:
@@ -73,6 +76,57 @@ void loop_free_frame_labels(StackFrame* frame)
 		frame->loop_continue_label = NULL;
 }
 
+void gen_do_loop_stmt(DoLoop* do_loop, StackFrame* frame)
+{
+	NEW_LABEL(label_loop_start);
+	NEW_LABEL(label_loop_body_end);
+	NEW_LABEL(label_loop_end);
+	loop_init_frame_labels(label_loop_end,
+		label_loop_body_end, frame);
+
+	char* eax_reg_arg = get_register_str(EAX);
+
+	PROC_CODE_LINE1(_LABEL, label_loop_start);
+	gen_block(do_loop->body, frame);
+	PROC_CODE_LINE1(_LABEL, label_loop_body_end);
+	gen_expr32(do_loop->cond, frame);
+	unreserve_register(REGISTERS, EAX);
+	PROC_CODE_LINE2(CMP, eax_reg_arg, frmt("%d", 0));
+	PROC_CODE_LINE1(JE, label_loop_end);
+	PROC_CODE_LINE1(JMP, label_loop_start);
+	PROC_CODE_LINE1(_LABEL, label_loop_end);
+	loop_free_frame_labels(frame);
+}
+
+void gen_for_loop_stmt(ForLoop* for_loop, StackFrame* frame)
+{
+	if (for_loop->init)
+		gen_var_decl_stmt(for_loop->init, frame);
+	NEW_LABEL(label_loop_start);
+	NEW_LABEL(label_loop_body_end);
+	NEW_LABEL(label_loop_end);
+	loop_init_frame_labels(label_loop_end,
+		label_loop_body_end, frame);
+	char* eax_reg_arg = get_register_str(EAX);
+
+	PROC_CODE_LINE1(_LABEL, label_loop_start);
+	if (for_loop->cond)
+	{
+		gen_expr32(for_loop->cond, frame),
+			unreserve_register(REGISTERS, EAX);
+		PROC_CODE_LINE2(CMP, eax_reg_arg, frmt("%d", 0));
+		PROC_CODE_LINE1(JE, label_loop_end);
+	}
+	gen_block(for_loop->body, frame);
+	PROC_CODE_LINE1(_LABEL, label_loop_body_end);
+	if (for_loop->step)
+		gen_expr32(for_loop->step, frame), 
+			unreserve_register(REGISTERS, EAX);
+	PROC_CODE_LINE1(JMP, label_loop_start);
+	PROC_CODE_LINE1(_LABEL, label_loop_end);
+	loop_free_frame_labels(frame);
+}
+
 void gen_while_loop_stmt(WhileLoop* while_loop, StackFrame* frame)
 {
 	NEW_LABEL(label_loop_start);
@@ -80,7 +134,6 @@ void gen_while_loop_stmt(WhileLoop* while_loop, StackFrame* frame)
 	NEW_LABEL(label_loop_end);
 	loop_init_frame_labels(label_loop_end, 
 		label_loop_body_end, frame);
-	
 	char* eax_reg_arg = get_register_str(EAX);
 
 	PROC_CODE_LINE1(_LABEL, label_loop_start);

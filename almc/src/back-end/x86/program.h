@@ -11,6 +11,8 @@
 
 #define NEW_LABEL(name) \
 	char* name = program_new_label(program)
+#define ADD_NEW_LABEL(to) \
+	sbuffer_add(to, program_new_label(program))
 
 #define PROGRAM_ADD_PROC(proc) \
 	sbuffer_add(program->code->procs, proc)
