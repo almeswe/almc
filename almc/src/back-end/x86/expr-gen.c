@@ -55,6 +55,7 @@ void gen_expr32(Expr* expr, StackFrame* frame)
 			gen_string32(expr->str, EAX);
 			break;
 		case EXPR_UNARY_EXPR:
+			reserve_register(REGISTERS, EAX);
 			gen_unary_expr32(expr->unary_expr, frame);
 			break;
 		case EXPR_BINARY_EXPR:
@@ -92,25 +93,28 @@ void gen_string32(Str* str, int reg)
 	char* value = frmt("\"");
 	char* prev = NULL;
 	char** values = NULL;
+	bool value_is_not_empty = false;
 	size_t len = strlen(str->svalue);
 
 	for (size_t i = 0; i < len; i++)
 	{
 		if (!isescape(str->svalue[i]))
-			value = frmt("%s%c", prev = value, str->svalue[i]),
-				free(prev);
+		{
+			value = frmt("%s%c", prev = value, str->svalue[i]), free(prev);
+			value_is_not_empty = true;
+		}
 		else
 		{
-			value = frmt("%s\"", prev = value),
-				free(prev);
-			sbuffer_add(values, value);
+			value = frmt("%s\"", prev = value), free(prev);
+			if (value_is_not_empty)
+				sbuffer_add(values, value);
 			sbuffer_add(values, frmt("%02xh", (int)str->svalue[i]));
 			value = frmt("\"");
+			value_is_not_empty = false;
 		}
 	}
-	if (prev = value)
-		sbuffer_add(values, value = frmt("%s\"", value)),
-			free(prev);
+	if ((prev = value) && value_is_not_empty)
+		sbuffer_add(values, value = frmt("%s\"", value)), free(prev);
 	sbuffer_add(values, frmt("00h"));
 
 	AsmDataLine* line = dataline_new("db", NULL,
@@ -173,10 +177,34 @@ void gen_unary_address32(UnaryExpr* expr, StackFrame* frame)
 	addressable_data_free(data);
 }
 
+void gen_unary_dereference32(UnaryExpr* expr, StackFrame* frame)
+{
+	_addressable_data* data =
+		gen_addressable_data(expr->expr, frame);
+	char* data_arg = addressable_data_arg(data);
+	PROC_CODE_LINE2(MOV, get_register_str(EAX),
+		data_arg);
+	addressable_data_free(data);
+}
+
+void gen_unary_lg_not32(UnaryExpr* expr)
+{
+	char* eax_reg_arg = get_register_str(EAX);
+	NEW_LABEL(label_true);
+	NEW_LABEL(label_end);
+
+	PROC_CODE_LINE2(CMP, eax_reg_arg, frmt("%d", 0));
+	PROC_CODE_LINE1(JE, label_true);
+	PROC_CODE_LINE2(MOV, eax_reg_arg, frmt("%d", 0));
+	PROC_CODE_LINE1(JMP, label_end);
+	PROC_CODE_LINE1(_LABEL, label_true);
+	PROC_CODE_LINE2(MOV, eax_reg_arg, frmt("%d", 1));
+	PROC_CODE_LINE1(_LABEL, label_end);
+}
+
 void gen_unary_expr32(UnaryExpr* unary_expr, StackFrame* frame)
 {
 	char* eax_reg_arg = get_register_str(EAX);
-
 	switch (unary_expr->kind)
 	{
 	case UNARY_SIZEOF:
@@ -187,6 +215,8 @@ void gen_unary_expr32(UnaryExpr* unary_expr, StackFrame* frame)
 		return gen_expr32(unary_expr->expr, frame);
 	case UNARY_ADDRESS:
 		return gen_unary_address32(unary_expr, frame);
+	case UNARY_DEREFERENCE:
+		return gen_unary_dereference32(unary_expr, frame);
 	}
 
 	if (!IS_PRIMARY_EXPR(unary_expr->expr))
@@ -207,105 +237,12 @@ void gen_unary_expr32(UnaryExpr* unary_expr, StackFrame* frame)
 		PROC_CODE_LINE1(NOT,
 			eax_reg_arg);
 		break;
-	case UNARY_DEREFERENCE:
-		assert(0);
-		PROC_CODE_LINE2(MOV, eax_reg_arg,
-			frmt("dword ptr [eax]"));
+	case UNARY_LG_NOT:
+		gen_unary_lg_not32(unary_expr);
 		break;
 	default:
 		assert(0);
 	}
-}
-
-_addressable_data* gen_accessor_data(BinaryExpr* expr, StackFrame* frame)
-{
-	_addressable_data* data = NULL;
-	if (expr->lexpr->kind != EXPR_IDNT)
-		data = gen_accessor_data(expr->lexpr->binary_expr, frame);
-	else
-	{
-		data = cnew_s(_addressable_data, data, 1);
-		data->type = expr->lexpr->idnt->type;
-		data->in_reg = false;
-		data->entity = get_entity_by_name(
-			expr->lexpr->idnt->svalue, frame);
-	}
-
-	char* arg1 = NULL;
-	char* arg2 = NULL;
-	int temp_reg = 0;
-	char* member_name = NULL;
-
-	switch (expr->kind)
-	{
-	case BINARY_PTR_MEMBER_ACCESSOR:
-		// if we met the -> operator,
-		// it means that we need to get value stored in address
-		// which will vary according stored_in_accumulator flag
-		// if itss true, it means that the needed address aleady stored in eax,
-		// and no need to calculate offsets based on stack variable, need to calculate it based on eax
-		arg1 = get_register_str(EAX);
-		if (data->in_reg)
-			arg2 = frmt("%s ptr [eax+%d]",
-				get_ptr_prefix(data->type), data->offset);
-		else
-		{
-			data->in_reg = true;
-			arg2 = frmt("%s ptr %s[ebp+%d]", get_ptr_prefix(data->type),
-				data->entity->definition, data->offset);
-		}
-		data->offset = 0;
-		PROC_CODE_LINE2(LEA, arg1, arg2);
-		// getting true type of variable (not pointer)
-		// need only one dereference, because -> operator only works
-		// with single pointer values by the left side
-		data->type = dereference_type(data->type);
-		// continuing the process in case BINARY_MEMBER_ACCESSOR
-
-	case BINARY_MEMBER_ACCESSOR:
-		assert(IS_STRUCT_TYPE(data->type));
-		member_name = expr->rexpr->idnt->svalue;
-		for (size_t i = 0; i < sbuffer_len(data->type->members); i++)
-			if (strcmp(data->type->members[i]->name, member_name) == 0)
-				return data->offset += data->type->members[i]->offset,
-					data->type = data->type->members[i]->type, data;
-		assert(0);
-		break;
-
-	case BINARY_ARR_MEMBER_ACCESSOR:
-		assert(0);
-		if (data->in_reg)
-		{
-			arg1 = get_register_str(temp_reg = 
-				get_unreserved_register(REGISTERS, REGSIZE_DWORD));
-			PROC_CODE_LINE2(MOV, arg1, get_register_str(EAX));
-		}
-
-		// generate index first
-		gen_expr32(expr->rexpr, frame);
-
-		// after calculate the offset based on index and array's base type
-		// value of index will stored in eax register
-		// reserving free register for multilication
-		arg1 = get_register_str(EAX);
-		if (data->in_reg)
-		{
-			arg2 = frmt("%s ptr [%s+eax*%d]", get_ptr_prefix(data->type->base),
-				get_register_str(temp_reg), data->type->base->size);
-			unreserve_register(REGISTERS, temp_reg);
-		}
-		else
-		{
-			data->in_reg = true;
-			arg2 = frmt("%s ptr %s[ebp+eax*%d]", get_ptr_prefix(data->type->base),
-				data->entity->definition, data->type->base->size);
-		}
-		PROC_CODE_LINE2(LEA, arg1, arg2);
-		data->offset = 0; // ?
-		data->type = dereference_type(data->type);
-		break;
-	}
-	return data;
 }
 
 void gen_binary_accessor_expr32(BinaryExpr* expr, StackFrame* frame)
@@ -321,13 +258,13 @@ void gen_binary_accessor_expr32(BinaryExpr* expr, StackFrame* frame)
 	addressable_data_free(data), free(wrapper);
 }
 
-void gen_clear_reg(int reg)
+void gen_reg_clear(int reg)
 {
 	PROC_CODE_LINE2(XOR, get_register_str(reg),
 		get_register_str(reg));
 }
 
-void gen_clear_reg_arg(char* reg_arg)
+void gen_reg_arg_clear(char* reg_arg)
 {
 	PROC_CODE_LINE2(XOR, reg_arg, reg_arg);
 }
@@ -496,14 +433,14 @@ void gen_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
 		// so mov the result to it (also edx clearing required)
 		case BINARY_MUL_ASSIGN:
 			reserve_register(REGISTERS, EDX);
-			gen_clear_reg(EDX);
+			gen_reg_clear(EDX);
 			PROC_CODE_LINE1(MUL, temp_reg_arg);
 			PROC_CODE_LINE2(MOV, temp_reg_arg, eax_reg_arg);
 			unreserve_register(REGISTERS, EDX);
 			break;
 		case BINARY_DIV_ASSIGN:
 			reserve_register(REGISTERS, EDX);
-			gen_clear_reg(EDX);
+			gen_reg_clear(EDX);
 			// put xchg here because we carry about the operators order
 			PROC_CODE_LINE2(XCHG, temp_reg_arg, eax_reg_arg);
 			PROC_CODE_LINE1(DIV, temp_reg_arg);
@@ -512,7 +449,7 @@ void gen_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
 			break;
 		case BINARY_MOD_ASSIGN:
 			reserve_register(REGISTERS, EDX);
-			gen_clear_reg(EDX);
+			gen_reg_clear(EDX);
 			PROC_CODE_LINE2(XCHG, temp_reg_arg, eax_reg_arg);
 			PROC_CODE_LINE1(DIV, temp_reg_arg);
 			// modulus value stored in edx
@@ -537,13 +474,13 @@ void gen_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
 	unreserve_register(REGISTERS, temp_reg);
 }
 
-void gen_relative_expr32(BinaryExpr* relative_expr, StackFrame* frame)
+void gen_binary_relative_expr32(BinaryExpr* relative_expr, StackFrame* frame)
 {
 #define SIGN_BASED(sign_instr, unsign_instr, type) \
 	(is_signed_type(type) ? sign_instr, unsign_instr)
 
 	gen_expr32(relative_expr->lexpr, frame);
-	unreserve_register(REGISTERS, EAX);
+	//unreserve_register(REGISTERS, EAX);
 
 	char* eax_reg_arg = get_register_str(EAX);
 	PROC_CODE_LINE1(PUSH, eax_reg_arg);
@@ -552,7 +489,6 @@ void gen_relative_expr32(BinaryExpr* relative_expr, StackFrame* frame)
 	int temp_reg = get_unreserved_register(
 		REGISTERS, REGSIZE_DWORD);
 	char* temp_reg_arg = get_register_str(temp_reg);
-	unreserve_register(REGISTERS, EAX);
 	PROC_CODE_LINE2(MOV, temp_reg_arg, eax_reg_arg);
 	PROC_CODE_LINE1(POP, eax_reg_arg);
 
@@ -652,7 +588,7 @@ void gen_binary_expr32(BinaryExpr* binary_expr, StackFrame* frame)
 	case BINARY_GREATER_THAN:
 	case BINARY_LESS_EQ_THAN:
 	case BINARY_GREATER_EQ_THAN:
-		return gen_relative_expr32(binary_expr, frame);
+		return gen_binary_relative_expr32(binary_expr, frame);
 
 	case BINARY_ASSIGN:
 	case BINARY_ADD_ASSIGN:
@@ -734,7 +670,7 @@ void gen_binary_expr32(BinaryExpr* binary_expr, StackFrame* frame)
 		break;
 	case BINARY_MOD:
 		reserve_register(REGISTERS, EDX);
-		gen_clear_reg(EDX);
+		gen_reg_clear(EDX);
 		PROC_CODE_LINE1(DIV, temp_reg_arg);
 		PROC_CODE_LINE2(MOV, eax_reg_arg, 
 			get_register_str(EDX));
@@ -742,13 +678,13 @@ void gen_binary_expr32(BinaryExpr* binary_expr, StackFrame* frame)
 		break;
 	case BINARY_DIV:
 		reserve_register(REGISTERS, EDX);
-		gen_clear_reg(EDX);
+		gen_reg_clear(EDX);
 		PROC_CODE_LINE1(DIV, temp_reg_arg);
 		unreserve_register(REGISTERS, EDX);
 		break;
 	case BINARY_MULT:
 		reserve_register(REGISTERS, EDX);
-		gen_clear_reg(EDX);
+		gen_reg_clear(EDX);
 		PROC_CODE_LINE1(MUL, temp_reg_arg);
 		unreserve_register(REGISTERS, EDX);
 		break;
@@ -801,8 +737,9 @@ void gen_caller_stack_clearing(FuncCall* func_call)
 		// to clear this space
 		for (size_t i = 0; i < sbuffer_len(func_call->args); i++)
 			size += retrieve_expr_type(func_call->args[i])->size;
-		PROC_CODE_LINE2(ADD, get_register_str(ESP),
-			frmt("%d", size));
+		if (size)
+			PROC_CODE_LINE2(ADD, get_register_str(ESP),
+				frmt("%d", size));
 		break;
 	case CALL_CONV_STDCALL:
 		/*
@@ -845,8 +782,8 @@ char* addressable_data_arg(_addressable_data* data)
 			return frmt("%s ptr %s[ebp+%d]", prefix,
 				data->entity->definition, data->offset);
 	case ADDRESSABLE_PTR_ACCESSOR:
-		return frmt("%s ptr [%s+%d]", prefix, 
-			get_register_str(data->reg), data->offset);
+		return frmt("%s ptr [%s]", prefix, 
+			get_register_str(data->reg));
 	default:
 		assert(0);
 	}
@@ -874,8 +811,9 @@ _addressable_data* gen_addressable_data(Expr* expr, StackFrame* frame)
 		case BINARY_ARR_MEMBER_ACCESSOR:
 			return gen_addressable_data_for_accessor(
 				expr->binary_expr, frame);
+		default:
+			assert(0);
 		}
-		assert(0);
 		break;
 	default:
 		assert(0);
