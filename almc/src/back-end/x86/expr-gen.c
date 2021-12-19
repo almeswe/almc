@@ -353,14 +353,14 @@ _addressable_data* gen_addressable_data_for_accessor(
 	return data;
 }
 
-void gen_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
+void gen_binary_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
 {
 	_addressable_data* data = NULL;
 	char* addr_arg = addressable_data_arg(data =
 		gen_addressable_data(assign_expr->lexpr, frame));
 	char* eax_reg_arg = get_register_str(EAX);
 	// if we have address in register and it is EAX, 
-	// we need to save it because we'll need it for storing value on left side
+	// we need to save it because we'll need it for storing value of left side
 	if (data->in_reg && data->reg == EAX)
 		PROC_CODE_LINE1(PUSH, get_register_str(EAX));
 	// right expression in eax
@@ -414,18 +414,19 @@ void gen_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
 			PROC_CODE_LINE2(AND,
 				temp_reg_arg, eax_reg_arg);
 			break;
-		case BINARY_BW_NOT_ASSIGN:
-			PROC_CODE_LINE1(NOT, temp_reg_arg);
-			break;
 		case BINARY_LSHIFT_ASSIGN:
-			//PROC_CODE_LINE2(SHL,
-			//	temp_reg_arg, eax_reg_arg);
-			//break;
 		case BINARY_RSHIFT_ASSIGN:
-			//todo: figure out the shift operators
-			assert(0);
-			PROC_CODE_LINE2(SHR,
-				temp_reg_arg, eax_reg_arg);
+			PROC_CODE_LINE2(XCHG, temp_reg_arg, eax_reg_arg);
+			if (temp_reg != ECX)
+			{
+				reserve_register(REGISTERS, ECX);
+				PROC_CODE_LINE2(MOV, get_register_str(ECX), 
+					temp_reg_arg);
+				unreserve_register(REGISTERS, ECX);
+			}
+			PROC_CODE_LINE2(assign_expr->kind == BINARY_LSHIFT_ASSIGN ?
+				SHL : SHR, eax_reg_arg, get_register_str(CL));
+			PROC_CODE_LINE2(MOV, temp_reg_arg, eax_reg_arg);
 			break;
 
 		// result of following operators will be stored in eax:edx
@@ -566,7 +567,8 @@ void gen_binary_relative_expr32(BinaryExpr* relative_expr, StackFrame* frame)
 void gen_binary_expr32(BinaryExpr* binary_expr, StackFrame* frame)
 {
 	#define RESERVE_TEMP_REG  \
-		temp_reg = get_unreserved_register(REGISTERS, REGSIZE_DWORD)
+		temp_reg = get_unreserved_register(\
+			REGISTERS, REGSIZE_DWORD)
 
 	int temp_reg = 0;
 	char* eax_reg_arg = NULL;
@@ -599,10 +601,9 @@ void gen_binary_expr32(BinaryExpr* binary_expr, StackFrame* frame)
 	case BINARY_LSHIFT_ASSIGN:
 	case BINARY_RSHIFT_ASSIGN:
 	case BINARY_BW_OR_ASSIGN:
-	case BINARY_BW_NOT_ASSIGN:
 	case BINARY_BW_AND_ASSIGN:
 	case BINARY_BW_XOR_ASSIGN:
-		return gen_assign_expr32(binary_expr, frame);
+		return gen_binary_assign_expr32(binary_expr, frame);
 	}
 
 	if (!IS_PRIMARY_EXPR(binary_expr->lexpr) &&
@@ -652,9 +653,18 @@ void gen_binary_expr32(BinaryExpr* binary_expr, StackFrame* frame)
 		PROC_CODE_LINE2(SUB, eax_reg_arg,
 			temp_reg_arg);
 		break;
+	// the second operator need to be in cl register for shift operators
 	case BINARY_LSHIFT:
 	case BINARY_RSHIFT:
-		assert(0);
+		if (temp_reg != ECX)
+		{
+			reserve_register(REGISTERS, ECX);
+			PROC_CODE_LINE2(MOV, 
+				get_register_str(ECX), temp_reg_arg);
+			unreserve_register(REGISTERS, ECX);
+		}
+		PROC_CODE_LINE2(binary_expr->kind == BINARY_LSHIFT ? SHL : SHR,
+			eax_reg_arg, get_register_str(CL));
 		break;
 	case BINARY_BW_OR:
 		PROC_CODE_LINE2(OR, eax_reg_arg,

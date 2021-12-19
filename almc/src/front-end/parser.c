@@ -805,8 +805,6 @@ Expr* parse_assignment_expr(Parser* parser)
 			type = BINARY_LSHIFT_ASSIGN; break;
 		case TOKEN_RSHIFT_ASSIGN:
 			type = BINARY_RSHIFT_ASSIGN; break;
-		case TOKEN_BW_NOT_ASSIGN:
-			type = BINARY_BW_NOT_ASSIGN; break;
 		case TOKEN_BW_OR_ASSIGN:
 			type = BINARY_BW_OR_ASSIGN; break;
 		case TOKEN_BW_AND_ASSIGN:
