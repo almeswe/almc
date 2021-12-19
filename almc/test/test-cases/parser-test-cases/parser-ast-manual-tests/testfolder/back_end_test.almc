@@ -159,15 +159,22 @@ fnc unary_lg_not_test() {
 		scanf("%d", &a);
 		printf("\n%d\n", !a);
 	}
-} <#
+} 
 
-fnc entry main() : void {	
-	struct object {
-		m1: i32;
-		m2: i32;
+fnc ternary_expr_test() : void {
+	let a: i32;
+	while (1) {
+		if (scanf("%d", &a))
+			printf(a ? "true\n" : "false\n");
 	}
+}
 
+fnc binary_comma_expr_test() : i32 {
+	let a: i32;
+	return printf("comma expr test"), a = 2, a;
+}<#
 
+fnc entry main() : void {
 }
 
 # finish the array accessor
