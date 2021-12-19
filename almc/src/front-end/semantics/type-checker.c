@@ -355,14 +355,11 @@ Type* get_ternary_expr_type(TernaryExpr* ternary_expr, Table* table)
 	Type* ltype = get_and_set_expr_type(ternary_expr->lexpr, table);
 	Type* rtype = get_and_set_expr_type(ternary_expr->rexpr, table);
 	Type* ctype = get_and_set_expr_type(ternary_expr->cond, table);
-
-	if (!is_numeric_type(ctype) && !IS_POINTER_TYPE(ctype))
-			report_error2("Cannot determine the type of condition in ternary expression.", 
-				get_expr_area(ternary_expr->cond));
-		else 
-			report_error2(frmt("Expected numeric or pointer type in "
-				"condition of ternary expression, type met: \'%s\'",
-					type_tostr_plain(ctype)), get_expr_area(ternary_expr->cond));
+	
+	if (!is_numeric_type(ctype) && !is_pointer_like_type(ctype))
+		report_error2(frmt("Expected numeric or pointer-like type in "
+			"condition of ternary expression, type met: \'%s\'",
+				type_tostr_plain(ctype)), get_expr_area(ternary_expr->cond));
 
 	if (can_cast_implicitly(ltype, rtype))
 		return cast_implicitly(ltype, rtype, ternary_expr->area);

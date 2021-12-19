@@ -394,7 +394,7 @@ void visit_array_member_accessor(BinaryExpr* arr_accessor_expr, Table* table)
 void visit_condition(Expr* condition, Table* table)
 {
 	visit_expr(condition, table);
-	Type* type = get_expr_type(condition, table);
+	Type* type = retrieve_expr_type(condition, table);
 	if (!is_numeric_type(type) && !is_pointer_like_type(type))
 		report_error2(frmt("Condition expression must have numeric type, not \'%s\'",
 			type_tostr_plain(type)), get_expr_area(condition));

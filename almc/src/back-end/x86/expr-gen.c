@@ -40,30 +40,27 @@ void gen_mov_to_reg32(int reg, char* data, Type* datatype)
 void gen_expr32(Expr* expr, StackFrame* frame)
 {
 	if (is_const_expr(expr, TABLE))
-		gen_const_expr32(expr);
+		return gen_const_expr32(expr);
 	else
 	{
 		switch (expr->kind)
 		{
 		case EXPR_IDNT:
 		case EXPR_CONST:
-			reserve_register(REGISTERS, EAX);
-			gen_primary_expr32(expr, EAX, frame);
-			break;
+			return reserve_register(REGISTERS, EAX),
+				gen_primary_expr32(expr, EAX, frame);
 		case EXPR_STRING:
-			reserve_register(REGISTERS, EAX);
-			gen_string32(expr->str, EAX);
-			break;
+			return reserve_register(REGISTERS, EAX),
+				gen_string32(expr->str, EAX);
 		case EXPR_UNARY_EXPR:
-			reserve_register(REGISTERS, EAX);
-			gen_unary_expr32(expr->unary_expr, frame);
-			break;
+			return reserve_register(REGISTERS, EAX), 
+				gen_unary_expr32(expr->unary_expr, frame);
 		case EXPR_BINARY_EXPR:
-			gen_binary_expr32(expr->binary_expr, frame);
-			break;
+			return gen_binary_expr32(expr->binary_expr, frame);
+		case EXPR_TERNARY_EXPR:
+			return gen_ternary_expr(expr->ternary_expr, frame);
 		case EXPR_FUNC_CALL:
-			gen_func_call32(expr->func_call, frame);
-			break;
+			return gen_func_call32(expr->func_call, frame);
 		default:
 			assert(0);
 		}
@@ -79,7 +76,6 @@ void gen_idnt32(Idnt* idnt, int reg, StackFrame* frame)
 	assert(!IS_AGGREGATE_TYPE(idnt->type));
 
 	assert(idnt->type);
-
 	char* reg_arg = get_register_str(
 		get_part_of_reg(reg, idnt->type->size * 8));
 	char* entity_arg = frmt("%s ptr %s[ebp]", 
@@ -147,8 +143,7 @@ void gen_primary_expr32(Expr* prim_expr, int reg, StackFrame* frame)
 		}
 		break;
 	case EXPR_IDNT:
-		gen_idnt32(prim_expr->idnt, reg, frame);
-		break;
+		return gen_idnt32(prim_expr->idnt, reg, frame);
 	default:
 		assert(0);
 	}
@@ -193,12 +188,15 @@ void gen_unary_lg_not32(UnaryExpr* expr)
 	NEW_LABEL(label_true);
 	NEW_LABEL(label_end);
 
-	PROC_CODE_LINE2(CMP, eax_reg_arg, frmt("%d", 0));
+	PROC_CODE_LINE2(CMP, eax_reg_arg, 
+		LOGICAL_FALSE_ARG);
 	PROC_CODE_LINE1(JE, label_true);
-	PROC_CODE_LINE2(MOV, eax_reg_arg, frmt("%d", 0));
+	PROC_CODE_LINE2(MOV, eax_reg_arg, 
+		LOGICAL_FALSE_ARG);
 	PROC_CODE_LINE1(JMP, label_end);
 	PROC_CODE_LINE1(_LABEL, label_true);
-	PROC_CODE_LINE2(MOV, eax_reg_arg, frmt("%d", 1));
+	PROC_CODE_LINE2(MOV, eax_reg_arg, 
+		LOGICAL_TRUE_ARG);
 	PROC_CODE_LINE1(_LABEL, label_end);
 }
 
@@ -280,6 +278,16 @@ _addressable_data* gen_addressable_data_for_idnt(
 	return data;
 }
 
+/*_addressable_data* gen_addressable_data_for_array_accessor(
+	_addressable_data* data, BinaryExpr* expr, StackFrame* frame)
+{
+	uint32_t base_offset = get_base_type(data->type)->size *
+		evaluate_expr_itype(expr->rexpr);
+	uint32_t capacity = IS_ARRAY_TYPE(data->type->base) ?
+		evaluate_expr_itype(data->type->base->dimension) : 1;
+	base_offset *= capacity;
+}*/
+
 _addressable_data* gen_addressable_data_for_accessor(
 	BinaryExpr* expr, StackFrame* frame)
 {
@@ -333,17 +341,13 @@ _addressable_data* gen_addressable_data_for_accessor(
 			data->reg = get_unreserved_register(REGISTERS, REGSIZE_DWORD);
 		addr_reg_arg = get_register_str(data->reg);
 		if (data->in_reg)
-		{
 			PROC_CODE_LINE2(MOV, addr_reg_arg,
 				frmt("dword ptr [%s]", addr_reg_arg));
-		}
 		else
 		{
 			data->in_reg = true;
 			PROC_CODE_LINE2(MOV, addr_reg_arg, frmt("dword ptr %s[ebp]",
 				data->entity->definition));
-			//PROC_CODE_LINE2(MOV, addr_reg_arg,
-			//	frmt("dword ptr [%s]", addr_reg_arg));
 		}
 		if (data->offset)
 			PROC_CODE_LINE2(ADD, addr_reg_arg, 
@@ -351,6 +355,13 @@ _addressable_data* gen_addressable_data_for_accessor(
 		break;
 	}
 	return data;
+}
+
+void gen_binary_comma_expr32(BinaryExpr* expr, StackFrame* frame)
+{
+	gen_expr32(expr->lexpr, frame);
+	unreserve_register(REGISTERS, EAX);
+	gen_expr32(expr->rexpr, frame);
 }
 
 void gen_binary_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
@@ -503,27 +514,35 @@ void gen_binary_relative_expr32(BinaryExpr* relative_expr, StackFrame* frame)
 		switch (relative_expr->kind)
 		{
 		case BINARY_LG_OR:
-			PROC_CODE_LINE2(CMP, eax_reg_arg, frmt("%d", 0));
+			PROC_CODE_LINE2(CMP, eax_reg_arg, 
+				LOGICAL_FALSE_ARG);
 			PROC_CODE_LINE1(JNE, label_supply);
-			PROC_CODE_LINE2(CMP, temp_reg_arg, frmt("%d", 0));
+			PROC_CODE_LINE2(CMP, temp_reg_arg, 
+				LOGICAL_FALSE_ARG);
 			PROC_CODE_LINE1(JNE, label_supply);
 
-			PROC_CODE_LINE2(MOV, eax_reg_arg, frmt("%d", 0));
+			PROC_CODE_LINE2(MOV, eax_reg_arg, 
+				LOGICAL_FALSE_ARG);
 			PROC_CODE_LINE1(JMP, label_final);
 			PROC_CODE_LINE1(_LABEL, label_supply);
-			PROC_CODE_LINE2(MOV, eax_reg_arg, frmt("%d", 1));
+			PROC_CODE_LINE2(MOV, eax_reg_arg, 
+				LOGICAL_TRUE_ARG);
 			PROC_CODE_LINE1(_LABEL, label_final);
 			break;
 		case BINARY_LG_AND:
-			PROC_CODE_LINE2(CMP, eax_reg_arg, frmt("%d", 0));
+			PROC_CODE_LINE2(CMP, eax_reg_arg, 
+				LOGICAL_FALSE_ARG);
 			PROC_CODE_LINE1(JE, label_supply);
-			PROC_CODE_LINE2(CMP, temp_reg_arg, frmt("%d", 0));
+			PROC_CODE_LINE2(CMP, temp_reg_arg, 
+				LOGICAL_FALSE_ARG);
 			PROC_CODE_LINE1(JE, label_supply);
 
-			PROC_CODE_LINE2(MOV, eax_reg_arg, frmt("%d", 1));
+			PROC_CODE_LINE2(MOV, eax_reg_arg, 
+				LOGICAL_TRUE_ARG);
 			PROC_CODE_LINE1(JMP, label_final);
 			PROC_CODE_LINE1(_LABEL, label_supply);
-			PROC_CODE_LINE2(MOV, eax_reg_arg, frmt("%d", 0));
+			PROC_CODE_LINE2(MOV, eax_reg_arg, 
+				LOGICAL_FALSE_ARG);
 			PROC_CODE_LINE1(_LABEL, label_final);
 			break;
 		}
@@ -555,10 +574,12 @@ void gen_binary_relative_expr32(BinaryExpr* relative_expr, StackFrame* frame)
 		default:
 			assert(0);
 		}
-		PROC_CODE_LINE2(MOV, eax_reg_arg, frmt("%d", 0));
+		PROC_CODE_LINE2(MOV, eax_reg_arg, 
+			LOGICAL_FALSE_ARG);
 		PROC_CODE_LINE1(JMP, label_final);
 		PROC_CODE_LINE1(_LABEL, label_supply);
-		PROC_CODE_LINE2(MOV, eax_reg_arg, frmt("%d", 1));
+		PROC_CODE_LINE2(MOV, eax_reg_arg, 
+			LOGICAL_TRUE_ARG);
 		PROC_CODE_LINE1(_LABEL, label_final);
 	}
 	unreserve_register(REGISTERS, temp_reg);
@@ -585,7 +606,6 @@ void gen_binary_expr32(BinaryExpr* binary_expr, StackFrame* frame)
 	case BINARY_LG_AND:
 	case BINARY_LG_EQ:
 	case BINARY_LG_NEQ:
-
 	case BINARY_LESS_THAN:
 	case BINARY_GREATER_THAN:
 	case BINARY_LESS_EQ_THAN:
@@ -604,6 +624,9 @@ void gen_binary_expr32(BinaryExpr* binary_expr, StackFrame* frame)
 	case BINARY_BW_AND_ASSIGN:
 	case BINARY_BW_XOR_ASSIGN:
 		return gen_binary_assign_expr32(binary_expr, frame);
+	
+	case BINARY_COMMA:
+		return gen_binary_comma_expr32(binary_expr, frame);
 	}
 
 	if (!IS_PRIMARY_EXPR(binary_expr->lexpr) &&
@@ -704,6 +727,26 @@ void gen_binary_expr32(BinaryExpr* binary_expr, StackFrame* frame)
 	unreserve_register(REGISTERS, temp_reg);
 
 #undef RESERVE_TEMP_REG
+}
+
+void gen_ternary_expr(TernaryExpr* ternary_expr, StackFrame* frame)
+{
+	// condition:
+	gen_expr32(ternary_expr->cond, frame);
+	unreserve_register(REGISTERS, EAX);
+	NEW_LABEL(label_false_branch);
+	NEW_LABEL(label_end);
+
+	char* eax_reg_arg = get_register_str(EAX);
+	PROC_CODE_LINE2(CMP, eax_reg_arg, LOGICAL_FALSE_ARG);
+	PROC_CODE_LINE1(JE, label_false_branch);
+	gen_expr32(ternary_expr->lexpr, frame);
+	unreserve_register(REGISTERS, EAX);
+	PROC_CODE_LINE1(JMP, label_end);
+	PROC_CODE_LINE1(_LABEL, label_false_branch);
+	gen_expr32(ternary_expr->rexpr, frame);
+	unreserve_register(REGISTERS, EAX);
+	PROC_CODE_LINE1(_LABEL, label_end);
 }
 
 void gen_callee_stack_clearing(FuncDecl* func_decl)

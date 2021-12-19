@@ -56,9 +56,11 @@ void gen_unary_sizeof32(UnaryExpr* expr);
 void gen_unary_lengthof32(UnaryExpr* expr);
 void gen_unary_expr32(UnaryExpr* unary_expr, StackFrame* frame);
 
+void gen_binary_comma_expr32(BinaryExpr* expr, StackFrame* frame);
 void gen_binary_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame);
 void gen_binary_relative_expr32(BinaryExpr* relative_expr, StackFrame* frame);
 void gen_binary_expr32(BinaryExpr* binary_expr, StackFrame* frame);
+void gen_ternary_expr(TernaryExpr* ternary_expr, StackFrame* frame);
 void gen_func_call32(FuncCall* func_call, StackFrame* frame);
 
 void gen_callee_stack_clearing(FuncDecl* func_decl);

@@ -11,6 +11,10 @@
 
 #define NEW_LABEL(name) \
 	char* name = program_new_label(program)
+
+#define LOGICAL_TRUE_ARG  frmt("%d", 1)
+#define LOGICAL_FALSE_ARG frmt("%d", 0)
+
 #define ADD_NEW_LABEL(to) \
 	sbuffer_add(to, program_new_label(program))
 
