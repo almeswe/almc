@@ -1,8 +1,14 @@
-#include <math.h>
-
 #include "expr-gen.h"
 
 //todo: ADD SIGNED AND UNSIGNED CHECK FOR EXPR-GEN
+//todo: prettify code for accessors
+//todo: add function which will check for idnt in unary expressions, like: *(a+1)
+//todo: add interface for compiler + add autocompilation
+//todo: rewrite some macroses to functions to avoid warnings
+
+//todo: do global clean-up for back-end
+//todo: finish visit_array_accessor function
+//todo: error with register collision in functions which was declared earlier
 
 #define IS_PRIMARY_EXPR(expr)      \
 	((expr->kind == EXPR_CONST) || \
@@ -252,6 +258,7 @@ void gen_binary_accessor_expr32(BinaryExpr* expr, StackFrame* frame)
 	_addressable_data* data = NULL;
 	char* addr_arg = addressable_data_arg(data =
 		gen_addressable_data(wrapper, frame));
+	reserve_register(REGISTERS, EAX);
 	gen_mov_to_reg32(EAX, addr_arg, data->type);
 	addressable_data_free(data), free(wrapper);
 }
@@ -273,20 +280,76 @@ _addressable_data* gen_addressable_data_for_idnt(
 	_addressable_data* data = addressable_data_new();
 	data->entity = get_entity_by_name(idnt->svalue, frame);
 	assert(data->entity);
+	data->capacity = 1;
 	data->kind = ADDRESSABLE_ENTITY;
-	data->type = data->entity->type;
+	data->type = data->origin = data->entity->type;
+	data->dimension = get_array_dimensions(data->type);
 	return data;
 }
 
-/*_addressable_data* gen_addressable_data_for_array_accessor(
+_addressable_data* gen_addressable_data_for_array_accessor(
 	_addressable_data* data, BinaryExpr* expr, StackFrame* frame)
 {
-	uint32_t base_offset = get_base_type(data->type)->size *
-		evaluate_expr_itype(expr->rexpr);
-	uint32_t capacity = IS_ARRAY_TYPE(data->type->base) ?
-		evaluate_expr_itype(data->type->base->dimension) : 1;
-	base_offset *= capacity;
-}*/
+	gen_expr32(expr->rexpr, frame);
+
+	Type* ltype = retrieve_expr_type(expr->lexpr);
+	uint32_t capacity = IS_ARRAY_TYPE(ltype) ? evaluate_expr_itype(
+		get_array_dimension(ltype, data->dimension)) : 1;
+	uint32_t typesize = get_array_base_type(ltype)->size;
+
+	if (!data->in_reg)
+		data->reg = get_unreserved_register(
+			REGISTERS, REGSIZE_DWORD);
+
+	int scalar_reg = get_unreserved_register(
+		REGISTERS, REGSIZE_DWORD);
+
+	char* addr_arg = NULL;
+	char* eax_reg_arg = get_register_str(EAX);
+	char* temp_reg_arg = get_register_str(data->reg);
+	char* scalar_reg_arg = get_register_str(scalar_reg);
+
+	if (data->in_reg)
+	{
+		// the formula of [reg+eax*scalar_reg] is not used here 
+		// because it requires more logic for check tje scalar_reg (it accepts 2,4 or 8)
+		// in this case just reserve new reg on which we will multiply value stored in eax, then use it 
+		// for array member access
+		PROC_CODE_LINE2(MOV, scalar_reg_arg, 
+			frmt("%d", typesize * data->capacity));
+		PROC_CODE_LINE1(MUL, scalar_reg_arg);
+		addr_arg = frmt("dword ptr [%s+eax]",
+			temp_reg_arg);
+	}
+	else
+	{
+		data->in_reg = true;
+		PROC_CODE_LINE2(MOV, scalar_reg_arg,
+			frmt("%d", typesize * data->capacity));
+		PROC_CODE_LINE1(MUL, scalar_reg_arg);
+		if (data->offset)
+			// adding offset if there was any
+			PROC_CODE_LINE2(ADD, eax_reg_arg,
+				frmt("%d", data->offset)), data->offset = 0;
+		addr_arg = frmt("dword ptr %s[ebp+eax]",
+			data->entity->definition);
+		if (IS_POINTER_TYPE(ltype))
+		{
+			PROC_CODE_LINE2(MOV, temp_reg_arg, frmt("dword ptr %s[ebp]",
+				data->entity->definition));
+			free(addr_arg), addr_arg = frmt("dword ptr [%s+eax]",
+				temp_reg_arg);
+		}
+	}
+	PROC_CODE_LINE2(LEA, temp_reg_arg, addr_arg);
+	unreserve_register(REGISTERS, EAX);
+	unreserve_register(REGISTERS, scalar_reg);
+
+	data->dimension -= 1;
+	data->capacity *= capacity;
+	data->kind = ADDRESSABLE_ARR_ACCESSOR;
+	return data->type = ltype->base, data;
+}
 
 _addressable_data* gen_addressable_data_for_accessor(
 	BinaryExpr* expr, StackFrame* frame)
@@ -295,6 +358,8 @@ _addressable_data* gen_addressable_data_for_accessor(
 	char* addr_arg = NULL;
 	char* addr_reg_arg = NULL;
 	_addressable_data* data = NULL;
+
+	uint32_t prev_offset;
 
 	if (expr->lexpr->kind != EXPR_IDNT)
 		data = gen_addressable_data_for_accessor(
@@ -314,8 +379,12 @@ _addressable_data* gen_addressable_data_for_accessor(
 					data->type = data->type->members[i]->type, data;
 		assert(0);
 		break;
+	case BINARY_ARR_MEMBER_ACCESSOR:
+		return gen_addressable_data_for_array_accessor(
+			data, expr, frame);
 	case BINARY_PTR_MEMBER_ACCESSOR:
 		data->kind = ADDRESSABLE_PTR_ACCESSOR;
+		prev_offset = data->offset;
 		// getting true type of variable (not pointer)
 		// need only one dereference, because -> operator only works
 		// with single pointer values by the left side
@@ -346,8 +415,8 @@ _addressable_data* gen_addressable_data_for_accessor(
 		else
 		{
 			data->in_reg = true;
-			PROC_CODE_LINE2(MOV, addr_reg_arg, frmt("dword ptr %s[ebp]",
-				data->entity->definition));
+			PROC_CODE_LINE2(MOV, addr_reg_arg, frmt("dword ptr %s[ebp+%d]",
+				data->entity->definition, prev_offset));
 		}
 		if (data->offset)
 			PROC_CODE_LINE2(ADD, addr_reg_arg, 
@@ -391,10 +460,8 @@ void gen_binary_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
 			PROC_CODE_LINE1(POP, get_register_str(EAX));
 			gen_mov_reg_to32(temp_reg, addr_arg, 
 				retrieve_expr_type(assign_expr->lexpr));
-			//PROC_CODE_LINE2(MOV, addr_arg, temp_reg_arg);
 		}
 		else
-			//PROC_CODE_LINE2(MOV, addr_arg, eax_reg_arg);
 			gen_mov_reg_to32(EAX, addr_arg,
 				retrieve_expr_type(assign_expr->lexpr));
 		break;
@@ -475,7 +542,6 @@ void gen_binary_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
 		// assign calculated value to addressable expr (storage)
 		gen_mov_reg_to32(temp_reg, addr_arg,
 			retrieve_expr_type(assign_expr->lexpr));
-		//PROC_CODE_LINE2(MOV, addr_arg, temp_reg_arg);
 		break;
 	}
 	// return in eax, or in one of its lower parts
@@ -492,7 +558,6 @@ void gen_binary_relative_expr32(BinaryExpr* relative_expr, StackFrame* frame)
 	(is_signed_type(type) ? sign_instr, unsign_instr)
 
 	gen_expr32(relative_expr->lexpr, frame);
-	//unreserve_register(REGISTERS, EAX);
 
 	char* eax_reg_arg = get_register_str(EAX);
 	PROC_CODE_LINE1(PUSH, eax_reg_arg);
@@ -834,6 +899,7 @@ char* addressable_data_arg(_addressable_data* data)
 		else
 			return frmt("%s ptr %s[ebp+%d]", prefix,
 				data->entity->definition, data->offset);
+	case ADDRESSABLE_ARR_ACCESSOR:
 	case ADDRESSABLE_PTR_ACCESSOR:
 		return frmt("%s ptr [%s]", prefix, 
 			get_register_str(data->reg));

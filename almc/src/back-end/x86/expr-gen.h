@@ -39,6 +39,14 @@ typedef struct {
 	// variant for determing the base address for offset,
 	// in case of entity is stack memory, in register case - heap
 	StackFrameEntity* entity;
+
+	struct _related_to_array
+	{
+		Type* origin;
+		int32_t dimension;
+		uint32_t capacity;
+	};
+
 	_addressable_kind kind;
 } _addressable_data;
 

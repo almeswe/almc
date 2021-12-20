@@ -15,6 +15,8 @@ char* get_ptr_prefix(Type* type)
 		return "dword";
 	else
 	{
+		if (IS_ARRAY_TYPE(type))
+			type = type->base;
 		switch (type->size)
 		{
 		case I8_SIZE:

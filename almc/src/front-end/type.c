@@ -157,6 +157,16 @@ Type* get_base_type(Type* type)
 	return type;
 }
 
+Type* get_array_base_type(Type* type)
+{
+	switch (type->kind)
+	{
+	case TYPE_ARRAY:
+		return get_array_base_type(type->base);
+	}
+	return type;
+}
+
 uint32_t get_pointer_rank(Type* type)
 {
 	switch (type->kind)
@@ -172,6 +182,22 @@ bool can_be_freed(Type* type)
 {
 	return is_pointer_like_type(type) ||
 		IS_STRUCT_OR_UNION_TYPE(type);
+}
+
+Expr* get_array_dimension(Type* type, uint32_t dimension)
+{
+	if (!IS_ARRAY_TYPE(type->base))
+		return type->dimension;
+	if (dimension == 1)
+		return type->dimension;
+	return get_array_dimension(type->base, dimension - 1);
+}
+
+uint32_t get_array_dimensions(Type* type)
+{
+	if (IS_ARRAY_TYPE(type))
+		return get_array_dimensions(type->base) + 1;
+	return 0;
 }
 
 void type_free(Type* type)

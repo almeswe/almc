@@ -162,7 +162,10 @@ bool is_signed_type(Type* type);
 bool is_unsigned_type(Type* type);
 
 Type* get_base_type(Type* type);
+Type* get_array_base_type(Type* type);
 uint32_t get_pointer_rank(Type* type);
+uint32_t get_array_dimensions(Type* type);
+Expr* get_array_dimension(Type* type, uint32_t dimension);
 
 void type_free(Type* type);
 
