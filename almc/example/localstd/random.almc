@@ -1,0 +1,8 @@
+fnc cdecl from("msvcrt") 
+	_time(_time_t: u32*) : i32;
+
+fnc cdecl from("msvcrt")
+	srand(_seed: u32) : void;
+
+fnc cdecl from("msvcrt")
+	rand() : u32;

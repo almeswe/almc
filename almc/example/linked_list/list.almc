@@ -44,9 +44,6 @@ fnc linked_list_add(list: linked_list*, data: i32) : void {
 }
 
 fnc print_linked_list(list: linked_list*) : void {
-	let item: linked_list_item* = list->head;
-	while (item != 0) {
+	for (let item: linked_list_item* = list->head; item; item = item->next)
 		printf("%d\n", item->data);
-		item = item->next;
-	}
 }
