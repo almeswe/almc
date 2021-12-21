@@ -13,6 +13,9 @@ fnc cdecl from("msvcrt")
 fnc cdecl from("msvcrt")
 	free(_p: u8*) : void;
 
+fnc cdecl from("msvcrt") 
+	assert(_expr: i32) : void;
+
 #>fnc goto_stmt_test() : void {
 	goto a;
 	printf("not a");
@@ -172,6 +175,114 @@ fnc ternary_expr_test() : void {
 fnc binary_comma_expr_test() : i32 {
 	let a: i32;
 	return printf("comma expr test"), a = 2, a;
+}
+
+struct object {
+	a: i32;
+	b: i32;
+}
+
+fnc array_test() : void {
+	let a: i32[1][2][3];
+	a[0][0][0] = 1; 
+	a[0][1][0] = 2; 
+	a[0][0][1] = 3; 
+	a[0][1][1] = 4;
+	a[0][0][2] = 5;
+	a[0][1][2] = 6;
+	
+	let b: i16[2][2][2];
+	b[0][0][0] = cast(i16)1;
+	b[1][0][0] = cast(i16)2;
+	b[0][1][0] = cast(i16)3;
+	b[1][1][0] = cast(i16)4;
+	b[0][0][1] = cast(i16)5;
+	b[1][0][1] = cast(i16)6;
+	b[0][1][1] = cast(i16)7;
+	b[1][1][1] = cast(i16)8;
+}
+
+fnc array_test2() {
+	let array: i32[4][5];
+	for (let i: i32 = 0; i < 4; i += 1)
+		for (let j: i32 = 0; j < 5; j += 1)
+			array[i][j] = i * j, 
+				printf("%d:%d %d\n", i, j, array[i][j]); 
+}<#
+
+#>
+fnc array_test3() : void {
+	struct type2 {
+		m3: i32[2][3];
+	}
+
+	struct type {
+		m1: i32;
+		m2: type2;
+	}
+
+	let var: type;
+	#var.m1 = 2;
+	
+	for (let i: i32 = 0; i < 2; i += 1)
+		for (let j: i32 = 0; j < 3; j += 1)
+			var.m2.m3[i][j] = i+j, 
+				printf("%d:%d %d\n", i, j, var.m2.m3[i][j]);
+}<#
+
+#>
+fnc array_test4() : void {
+	struct type2 {
+		m3: i32[2][3];
+	}
+	
+	struct type {
+		m1: i32;
+		m2: type2*;
+	}
+
+	let var: type* = cast(type*)malloc(1u*sizeof(type));
+	var->m2 = cast(type2*)malloc(1u*sizeof(type2));
+
+
+	for (let i: i32 = 0; i < 2; i += 1)
+		for (let j: i32 = 0; j < 3; j += 1)
+			var->m2->m3[i][j] = i + j,
+				printf("%d:%d %d\n", i, j, var->m2->m3[i][j]);
+}
+<#
+
+#>
+fnc array_test5() : void {
+	let size: i32 = 10;
+	let var: i16* = calloc(10u, sizeof(i16));
+	var[5] = cast(i16)2;
+}
+<#
+
+#>fnc union_test1() {
+	union a {
+		m1: i16;
+		m2: i32;
+	}
+
+	let a: a;
+	a.m2 = 4;
+
+	printf("m1: %d, m2: %d", a.m1, a.m2);
+}<#
+
+#>fnc enum_test() : void {
+	enum {
+		SIZE = 10
+	}
+
+	let a: i32[SIZE];
+
+	for (let i: i32 = 0; i < SIZE; i += 1)
+		a[i] = i+1, printf("%d\n", i);
+
+	printf("%d", SIZE * SIZE);
 }<#
 
 fnc entry main() : void {
