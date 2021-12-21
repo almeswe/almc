@@ -59,11 +59,14 @@ void print_type(Type* type, const char* indent)
 void print_idnt(Idnt* idnt, const char* indent)
 {
 	printf(BOLDWHITE);
+
 	if (idnt->type)
 		printf("%sidnt: %s (%s)\n", indent, idnt->svalue,
 			type_tostr_plain(idnt->type));
 	else
 		printf("%sidnt: %s\n", indent, idnt->svalue);
+	if (idnt->is_enum_member)
+		printf("%s   is_enum_member: 1\n", indent);
 	printf(RESET);
 }
 

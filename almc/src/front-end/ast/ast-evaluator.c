@@ -29,7 +29,6 @@ int64_t evaluate_const_itype(Const* cnst)
 	Type* type;
 	double value;
 
-
 	switch (cnst->kind)
 	{
 	case CONST_INT:
@@ -136,6 +135,11 @@ int64_t evaluate_expr_itype(Expr* expr)
 {
 	switch (expr->kind)
 	{
+	case EXPR_IDNT:
+		if (expr->idnt->is_enum_member)
+			return evaluate_expr_itype(
+				expr->idnt->enum_member_value);
+		break;
 	case EXPR_CONST:
 		return evaluate_const_itype(expr->cnst);
 	case EXPR_UNARY_EXPR:
@@ -240,6 +244,11 @@ double evaluate_expr_ftype(Expr* expr)
 {
 	switch (expr->kind)
 	{
+	case EXPR_IDNT:
+		if (expr->idnt->is_enum_member)
+			return evaluate_expr_ftype(
+				expr->idnt->enum_member_value);
+		break;
 	case EXPR_CONST:
 		return evaluate_const_ftype(expr->cnst);
 	case EXPR_UNARY_EXPR:

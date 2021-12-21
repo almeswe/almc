@@ -140,6 +140,12 @@ typedef struct Idnt
 	Type* type;
 	const char* svalue;
 	SrcContext* context;
+
+	struct _enum_member_data
+	{
+		bool is_enum_member;
+		Expr* enum_member_value;
+	};
 } Idnt;
 
 typedef enum ConstKind

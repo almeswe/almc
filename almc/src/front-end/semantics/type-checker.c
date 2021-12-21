@@ -103,8 +103,8 @@ Type* get_fvalue_type(double value)
 
 Type* get_idnt_type(Idnt* idnt, Table* table)
 {
-	if (is_enum_member(idnt->svalue, table))
-		return get_enum_member_type(idnt->svalue, table);
+	if (idnt->is_enum_member)
+		return get_expr_type(idnt->enum_member_value, table);
 	if (!is_variable_declared(idnt->svalue, table) &&
 		!is_function_param_passed(idnt->svalue, table))
 			return &unknown_type;
@@ -827,14 +827,4 @@ int is_addressable_value(Expr* expr, Table* table)
 			return is_addressable_value(expr->ternary_expr->rexpr, table);*/
 	}
 	return 0;
-}
-
-Type* get_enum_member_type(const char* member, Table* table)
-{
-	for (Table* parent = table; parent; parent = parent->parent)
-		for (size_t i = 0; i < sbuffer_len(parent->enums); i++)
-			for (size_t j = 0; j < sbuffer_len(parent->enums[i]->members); j++)
-				if (strcmp(member, parent->enums[i]->members[j]->name) == 0)
-					return get_expr_type(parent->enums[i]->members[j]->value, table);
-	return &unknown_type;
 }

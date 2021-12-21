@@ -85,6 +85,9 @@ void visit_type(Type* type, Table* table)
 			!is_enum_declared(type->repr, table))
 				report_error2(frmt("Undefined type \'%s\' met.",
 					type->repr), type->area);
+	if (IS_ARRAY_TYPE(type))
+		visit_expr(type->dimension, table), 
+			visit_type(type->base, table);
 	if (is_pointer_like_type(type))
 		visit_pointer_like_type(type, table);
 	if (IS_INCOMPLETE_TYPE(base))
@@ -189,22 +192,41 @@ void visit_expr(Expr* expr, Table* table)
 
 void visit_idnt(Idnt* idnt, Table* table, int is_in_assign)
 {
-	// checking if identifier is not a function parameter
-	if (!is_enum_member(idnt->svalue, table) && 
-		!is_function_param_passed(idnt->svalue, table))
+	if (is_enum_member(idnt->svalue, table))
+		visit_enum_member(idnt, table);
+	else
 	{
-		// and check if declared and initialized
-		if (!is_variable_declared(idnt->svalue, table))
-			report_error(frmt("Variable \'%s\' is not declared.",
-				idnt->svalue), idnt->context);
-		if (is_in_assign && !is_variable_initialized(idnt->svalue, table))
-			add_initialized_variable(idnt->svalue, table);
+		// checking if identifier is not a function parameter
+		if (!is_function_param_passed(idnt->svalue, table))
+		{
+			// and check if declared and initialized
+			if (!is_variable_declared(idnt->svalue, table))
+				report_error(frmt("Variable \'%s\' is not declared.",
+					idnt->svalue), idnt->context);
+			if (is_in_assign && !is_variable_initialized(idnt->svalue, table))
+				add_initialized_variable(idnt->svalue, table);
 
-		//todo: comeback here later
-		//if (!is_variable_initialized(idnt->svalue, table))
-		//	report_error(frmt("Variable \'%s\' is not initialized in current scope.",
-		//		idnt->svalue), idnt->context);
+			//todo: comeback here later
+			//if (!is_variable_initialized(idnt->svalue, table))
+			//	report_error(frmt("Variable \'%s\' is not initialized in current scope.",
+			//		idnt->svalue), idnt->context);
+		}
 	}
+
+}
+
+void visit_enum_member(Idnt* idnt, Table* table)
+{
+	Expr* value = NULL;
+
+	for (Table* parent = table; parent; parent = parent->parent)
+		for (size_t i = 0; i < sbuffer_len(parent->enums); i++)
+			for (size_t j = 0; j < sbuffer_len(parent->enums[i]->members); j++)
+				if (strcmp(idnt->svalue, parent->enums[i]->members[j]->name) == 0)
+					value = parent->enums[i]->members[j]->value;
+	if (value)
+		idnt->is_enum_member = true,
+			idnt->enum_member_value = value;
 }
 
 void visit_func_call(FuncCall* func_call, Table* table)
@@ -371,24 +393,21 @@ void visit_ternary_expr(TernaryExpr* ternary_expr, Table* table)
 
 void visit_array_member_accessor(BinaryExpr* arr_accessor_expr, Table* table)
 {
+	/*Type* expr_type = get_binary_expr_type(
+		arr_accessor_expr, table);
 	Expr* rexpr = arr_accessor_expr->rexpr;
-	Expr* lexpr = arr_accessor_expr->lexpr;
-	Type* ltype = get_expr_type(lexpr, table);
 
-	if (IS_ARRAY_TYPE(ltype))
-	{
-		//ltype->capacity = evaluate_expr_itype(
-		//	ltype->dimension);
+	expr_type->capacity = evaluate_expr_itype(
+		expr_type->dimension);
 
-		// in this case we cannot evaluate expression, so do nothing
-		if (!is_const_expr(rexpr, table))
-			return;
+	// in this case we cannot evaluate expression, so do nothing
+	if (!is_const_expr(rexpr, table))
+		return;
 
-		int32_t index = evaluate_expr_itype(rexpr);
-		if (index >= ltype->capacity)
-			report_error2(frmt("Array accessor index does not fits in current dimension's capacity. (size: %d, index: %d)",
-				ltype->capacity, index), get_expr_area(rexpr));
-	}
+	int32_t index = evaluate_expr_itype(rexpr);
+	if (index >= expr_type->capacity)
+		report_error2(frmt("Array accessor index does not fits in current dimension's capacity. (size: %d, index: %d)",
+			expr_type->capacity, index), get_expr_area(rexpr));*/
 }
 
 void visit_condition(Expr* condition, Table* table)
@@ -683,8 +702,15 @@ void visit_enum(EnumDecl* enum_decl, Table* table)
 								report_error(frmt("Enum member \'%s\' is already declared in \'%s\' enum.",
 									enum_decl->members[i]->name, parent->enums[j]->name),
 										enum_decl->members[i]->context);
-		// checking value type
 		
+		// set type to enum identifier
+		Type* value_type = get_expr_type(enum_decl->members[i]->value, table);
+		if (!is_integral_type(value_type) || value_type->size > i32_type.size)
+			report_error2(frmt("Enum's member \'%s\' has incompatible \'%s\' type in \'%s\' enum.",
+				enum_decl->members[i]->name, type_tostr_plain(value_type), enum_decl->name),
+					get_expr_area(enum_decl->members[i]->value));
+
+		// checking value type
 		// evaluating the value to get the proper type of it
 		// and then compare with 4 byte type
 		// enum identifier's value must be less equal than 4 bytes
@@ -693,13 +719,6 @@ void visit_enum(EnumDecl* enum_decl, Table* table)
 		if (const_expr_type->size >= i32_type.size)
 			report_error2(frmt("Enum member \'%s\' must have value type less equal than 4 bytes, in \'%s\' enum.",
 				enum_decl->members[i]->name, enum_decl->name),
-					get_expr_area(enum_decl->members[i]->value));
-
-		// set type to enum identifier
-		Type* value_type = get_expr_type(enum_decl->members[i]->value, table);
-		if (!is_integral_type(value_type) || value_type->size > i32_type.size)
-			report_error2(frmt("Enum's member \'%s\' has incompatible \'%s\' type in \'%s\' enum.",
-				enum_decl->members[i]->name, type_tostr_plain(value_type), enum_decl->name),
 					get_expr_area(enum_decl->members[i]->value));
 
 		// checking for any duplicated names in current enum

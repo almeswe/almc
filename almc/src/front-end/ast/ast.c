@@ -37,7 +37,7 @@ Str* str_new(const char* string, SrcContext* context)
 	Str* str = new_s(Str, str);
 	str->svalue = string;
 	str->context = context;
-	str->type = NULL;
+	str->type = &unknown_type;
 	return str;
 }
 
@@ -46,7 +46,9 @@ Idnt* idnt_new(const char* idnt, SrcContext* context)
 	Idnt* identifier = new_s(Idnt, identifier);
 	identifier->svalue = idnt;
 	identifier->context = context;
-	identifier->type = NULL;
+	identifier->type = &unknown_type;
+	identifier->is_enum_member = 0;
+	identifier->enum_member_value = NULL;
 	return identifier;
 }
 
@@ -74,7 +76,7 @@ Const* const_new(ConstKind type, const char* svalue, SrcContext* context)
 	}
 
 	Const* cnst = new_s(Const, cnst);
-	cnst->type = NULL;
+	cnst->type = &unknown_type;
 	cnst->context = context;
 
 	switch (cnst->kind = type)
@@ -98,7 +100,7 @@ FuncCall* func_call_new(const char* func_name, Expr** func_args)
 	FuncCall* func_call = cnew_s(FuncCall, func_call, 1);
 	func_call->args = func_args;
 	func_call->name = func_name;
-	func_call->type = NULL;
+	func_call->type = &unknown_type;
 	func_call->area = NULL;
 	return func_call;
 }
@@ -108,7 +110,7 @@ UnaryExpr* unary_expr_new(UnaryExprKind type, Expr* expr)
 	UnaryExpr* unary_expr = new_s(UnaryExpr, unary_expr);
 	unary_expr->kind = type;
 	unary_expr->expr = expr;
-	unary_expr->type = NULL;
+	unary_expr->type = &unknown_type;
 	unary_expr->area = NULL;
 	unary_expr->cast_type = NULL;
 	return unary_expr;
@@ -120,7 +122,7 @@ BinaryExpr* binary_expr_new(BinaryExprKind type, Expr* lexpr, Expr* rexpr)
 	binary_expr->kind = type;
 	binary_expr->lexpr = lexpr;
 	binary_expr->rexpr = rexpr;
-	binary_expr->type = NULL;
+	binary_expr->type = &unknown_type;
 	binary_expr->area = NULL;
 	return binary_expr;
 }
@@ -132,7 +134,7 @@ TernaryExpr* ternary_expr_new(Expr* cond, Expr* lexpr, Expr* rexpr)
 	ternary_expr->cond = cond;
 	ternary_expr->lexpr = lexpr;
 	ternary_expr->rexpr = rexpr;
-	ternary_expr->type = NULL;
+	ternary_expr->type = &unknown_type;
 	ternary_expr->area = NULL;
 	return ternary_expr;
 }
@@ -142,7 +144,7 @@ Initializer* initializer_new(Expr** values)
 	Initializer* initializer = 
 		new_s(Initializer, initializer);
 	initializer->area = NULL;
-	initializer->type = NULL;
+	initializer->type = &unknown_type;
 	initializer->values = values;
 	return initializer;
 }
