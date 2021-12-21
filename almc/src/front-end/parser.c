@@ -74,6 +74,7 @@ void parser_free(Parser* parser)
 		for (int i = 0; i < sbuffer_len(parser->tokens); i++)
 			token_free(parser->tokens[i]);
 		sbuffer_free(parser->tokens);
+		clear_imported_modules();
 		free(parser);
 	}
 }

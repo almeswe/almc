@@ -1,3 +1,4 @@
+#include "argv.h"
 #include "..\test\test.h"
 #include "..\src\front-end\type.h"
 #include "back-end\x86\program.h"
@@ -6,9 +7,8 @@ int back_end_test()
 {
 	while (1)
 	{
-		//Lexer* lexer = lexer_new("example\\time\\get_local_time.almc", FROM_FILE);
-		Lexer* lexer = lexer_new("test\\test-cases\\parser-test-cases\\parser-ast-manual-tests\\testfolder\\back_end_test.almc",
-			FROM_FILE);
+		Lexer* lexer = lexer_new("example\\time\\get_local_time.almc", FROM_FILE);
+		//Lexer* lexer = lexer_new("test\\test-cases\\parser-test-cases\\parser-ast-manual-tests\\testfolder\\back_end_test.almc",FROM_FILE);
 		Parser* parser = parser_new(lexer->curr_file, lex(lexer));
 		AstRoot* ast = parse(parser);
 		Visitor* visitor = visitor_new();
@@ -16,6 +16,7 @@ int back_end_test()
 
 		AsmProgram* program = gen(ast, visitor->global);
 		print_program(program);
+		//print_program_to_file(program);
 		program_free(program);
 		char c = getchar();
 		system("cls");
@@ -48,11 +49,41 @@ void cast_type_test()
 	return;
 }
 
+void assemble_and_link()
+{
+	system(frmt("%s /c /Zd /coff %s", options->masm_ml_path,
+		options->asm_path), SW_HIDE);
+	if (file_exists(options->obj_path))
+		system(frmt("%s /SUBSYSTEM:CONSOLE %s", options->linker_path,
+			options->obj_path), SW_HIDE);
+}
+
+void compile()
+{
+	Lexer* lexer = lexer_new(
+		options->target_path, FROM_FILE);
+	Parser* parser = parser_new(options->target_path,
+		lex(lexer));
+	AstRoot* ast = parse(parser);
+	Visitor* visitor = visitor_new();
+	visit(ast, visitor);
+	AsmProgram* program = gen(ast, visitor->global);
+	print_program_to_file(program);
+	lexer_free(lexer);
+	ast_free(ast);
+	parser_free(parser);
+	visitor_free(visitor);
+	program_free(program);
+	options_free(options);
+}
+
 int main(int argc, char** argv)
 {
+	//options = parse_options(argv, argc);
+	//compile();
+	//assemble_and_link();
+	//compile_and_link();
 	back_end_test();
-	
-	//printf("%s%-*iX\n", text, 50 - (int)strlen(text), num);
-	run_tests();
+	//run_tests();
 	return 0;
 }
