@@ -120,6 +120,133 @@ void print_program(AsmProgram* program)
 	printf("\nend %s\n", program->entry);
 }
 
+//------------------------------------------------------------
+
+void print_define_to_file(StackFrameEntity* entity, FILE* file)
+{
+	fputs(frmt("%s\t= %d\n", entity->definition, entity->offset), file);
+}
+
+void print_dataline_to_file(AsmDataLine* line, FILE* file)
+{
+	switch (line->spec)
+	{
+	case DATA_INITIALIZED_STRING:
+		fputs(frmt("\t%s\t%s ", line->name, line->size), file);
+		for (size_t i = 0; i < sbuffer_len(line->values); i++)
+			fputs(i != 0 ? ", " : "", file), fputs(line->values[i], file);
+		fputs("\n", file);
+		break;
+	default:
+		assert(0);
+	}
+}
+
+void print_label_to_file(AsmCodeLine* line, FILE* file)
+{
+	fputs(frmt("%s:\n", line->arguments[0]), file);
+}
+
+void print_codeline_to_file(AsmCodeLine* line, FILE* file)
+{
+	if (line->instruction == _LABEL)
+		return print_label_to_file(line, file);
+	switch (sbuffer_len(line->arguments))
+	{
+	case 0:
+		fputs(frmt("\t%s\n", instr_tostr(line->instruction)), file);
+		break;
+	case 1:
+		fputs(frmt("\t%s\t%s\n", instr_tostr(line->instruction),
+			line->arguments[0]), file);
+		break;
+	case 2:
+		fputs(frmt("\t%s\t%s, %s\n", instr_tostr(line->instruction),
+			line->arguments[0], line->arguments[1]), file);
+		break;
+	}
+}
+
+void print_proc_to_file(AsmCodeProc* proc, FILE* file)
+{
+	for (size_t i = 0; i < sbuffer_len(proc->frame->entities); i++)
+		print_define_to_file(proc->frame->entities[i], file);
+	fputs(frmt("%s proc\n", proc->name), file);
+	for (size_t i = 0; i < sbuffer_len(proc->lines); i++)
+		print_codeline_to_file(proc->lines[i], file);
+	fputs(frmt("%s endp\n\n", proc->name), file);
+}
+
+void print_proto_procs_to_file(AsmCodeSegment* codeseg, FILE* file)
+{
+	for (size_t i = 0; i < sbuffer_len(codeseg->proto_procs); i++)
+	{
+		fputs(frmt("%s proto %s ", codeseg->proto_procs[i]->name,
+			codeseg->proto_procs[i]->convention), file);
+		for (size_t j = 0; j < sbuffer_len(codeseg->proto_procs[i]->types); j++)
+			fputs(j ? ", " : "", file), fputs(frmt(":%s", 
+				get_ptr_prefix(codeseg->proto_procs[i]->types[j])), file);
+		if (codeseg->proto_procs[i]->is_vararg)
+			fputs(", :vararg", file);
+		fputs("\n", file);
+	}
+}
+
+void print_data_to_file(AsmDataSegment* dataseg, FILE* file)
+{
+	fputs(".data\n\n", file);
+	for (size_t i = 0; i < sbuffer_len(dataseg->lines); i++)
+		print_dataline_to_file(dataseg->lines[i], file);
+}
+
+void print_code_to_file(AsmCodeSegment* codeseg, FILE* file)
+{
+	fputs(".code\n\n", file);
+	print_proto_procs_to_file(program->code, file);
+	fputs("\n", file);
+	for (size_t i = 0; i < sbuffer_len(codeseg->procs); i++)
+		print_proc_to_file(codeseg->procs[i], file);
+}
+
+void print_includes_to_file(AsmProgram* program, FILE* file)
+{
+	for (size_t i = 0; i < sbuffer_len(program->incs); i++)
+		fputs(frmt("include    %s\\%s.inc\n",
+			options->incpath, program->incs[i]), file);
+	for (size_t i = 0; i < sbuffer_len(program->libs); i++)
+		fputs(frmt("includelib %s\\%s.lib\n",
+			options->libpath, program->libs[i]), file);
+}
+
+void print_program_to_file(AsmProgram* program)
+{
+	FILE* file = NULL;
+	fopen_s(&file, options->asm_path, "w");	
+
+	if (!file)
+		report_error("Cannot open file for writing the program.", NULL);
+	else
+	{
+		fputs(".386\n", file);
+		fputs(".model flat, stdcall\n\n", file);
+
+		//includes
+		print_includes_to_file(program, file);
+		//
+
+		// .data segment
+		print_data_to_file(program->data, file);
+		//
+
+		// .code segment
+		print_code_to_file(program->code, file);
+		//
+
+		fputs(frmt("\nend %s\n", program->entry), file);
+		fclose(file);
+	}
+}
+
 AsmProgram* program_new(Table* table)
 {
 	AsmProgram* program = 

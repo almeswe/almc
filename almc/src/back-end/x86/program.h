@@ -118,6 +118,7 @@ typedef struct x86_AsmProgram
 AsmProgram* program;
 
 void print_program(AsmProgram* program);
+void print_program_to_file(AsmProgram* program);
 
 AsmProgram* program_new(Table* table);
 char* program_new_label(AsmProgram* program);
