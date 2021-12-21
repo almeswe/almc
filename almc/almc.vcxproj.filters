@@ -101,6 +101,12 @@
     <ClCompile Include="src\back-end\x86\program.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\argv.h">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\argv.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\utils\context.h">

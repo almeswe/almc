@@ -19,6 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\argv.c" />
+    <ClCompile Include="src\argv.h" />
     <ClCompile Include="src\back-end\x86\expr-gen.c" />
     <ClCompile Include="src\back-end\x86\gen.c" />
     <ClCompile Include="src\back-end\x86\program.c" />
