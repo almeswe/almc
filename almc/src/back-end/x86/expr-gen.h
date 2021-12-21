@@ -40,21 +40,20 @@ typedef struct {
 	// in case of entity is stack memory, in register case - heap
 	StackFrameEntity* entity;
 
+	// data which refers to the array accessor
 	struct _related_to_array
 	{
+		// origin type is the type which was assigned when the addressable data was created
 		Type* origin;
+		// current dimension of the array accessor, needed for recognizing the current capacity
 		int32_t dimension;
+		// is the value which contains the size of the dimension, needed for calculating the offsets
+		// for array elements in case of multidimensional arrays
 		uint32_t capacity;
 	};
 
 	_addressable_kind kind;
 } _addressable_data;
-
-_addressable_data* gen_addressable_data(Expr* expr, StackFrame* frame);
-
-_addressable_data* addressable_data_new();
-void addressable_data_free(_addressable_data* data);
-char* addressable_data_arg(_addressable_data* data);
 
 void gen_expr32(Expr* expr, StackFrame* frame);
 void gen_idnt32(Idnt* idnt, int reg, StackFrame* frame);
@@ -73,5 +72,25 @@ void gen_func_call32(FuncCall* func_call, StackFrame* frame);
 
 void gen_callee_stack_clearing(FuncDecl* func_decl);
 void gen_caller_stack_clearing(FuncCall* func_call);
+
+int* cache_general_purpose_registers();
+void restore_general_purpose_registers(int* regs);
+
+_addressable_data* addressable_data_new();
+void addressable_data_free(_addressable_data* data);
+char* addressable_data_arg(_addressable_data* data);
+
+_addressable_data* gen_addressable_data(
+	Expr* expr, StackFrame* frame);
+_addressable_data* gen_addressable_data_for_idnt(
+	Idnt* idnt, StackFrame* frame);
+_addressable_data* gen_addressable_data_for_accessor(
+	BinaryExpr* expr, StackFrame* frame);
+_addressable_data* gen_addressable_data_for_array_accessor(
+	_addressable_data* data, BinaryExpr* expr, StackFrame* frame);
+_addressable_data* gen_addressable_data_for_struct_accessor(
+	_addressable_data* data, BinaryExpr* expr, StackFrame* frame);
+_addressable_data* gen_addressable_data_for_struct_ptr_accessor(
+	_addressable_data* data, BinaryExpr* expr, StackFrame* frame);
 
 #endif 

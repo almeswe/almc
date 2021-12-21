@@ -39,7 +39,7 @@ RegisterTable* regtable_new()
 	RegisterTable* regtable = new_s(RegisterTable, regtable);
 	for (int i = 0; i < REGISTERS_COUNT; i++)
 		regtable->reg_table[i] = REGISTER_FREE;
-	return regtable->ret_reg = -1, regtable;
+	return regtable;
 }
 
 const char* get_register_str(int reg)

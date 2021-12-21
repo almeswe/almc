@@ -1,6 +1,7 @@
 #include "program.h"
 
 //todo: add dbility of putting commentaries in code
+//todo: add registration for labels (needed for proper freeing the user-declared labels)
 
 void print_define(StackFrameEntity* entity)
 {
@@ -230,6 +231,75 @@ AsmCodeDefine* define_new(char* name, char* value)
 	define->name = name;
 	define->value = value;
 	return define;
+}
+
+void proc_code_line0(AsmCodeProc* proc, int instr)
+{
+	if (!proc)
+		report_error("Cannot add code line to procedure,"
+			" because proc is NULL. in proc_code_line0", NULL);
+	else
+	{
+		AsmCodeLine* codeline =
+			codeline_new(instr, NULL, NULL);
+		if (!codeline)
+			report_error("Created codeline was NULL,"
+				" in proc_code_line0", NULL);
+		sbuffer_add(proc->lines, codeline);
+	}
+}
+
+void proc_code_line1(AsmCodeProc* proc, int instr, char* arg1)
+{
+	if (!proc)
+		report_error("Cannot add code line to procedure,"
+			" because proc is NULL. in proc_code_line1", NULL);
+	else
+	{
+		AsmCodeLine* codeline =
+			codeline_new(instr, arg1, NULL);
+		if (!codeline)
+			report_error("Created codeline was NULL,"
+				" in proc_code_line1", NULL);
+		sbuffer_add(proc->lines, codeline);
+	}
+}
+
+void proc_code_line2(AsmCodeProc* proc, int instr, char* arg1, char* arg2)
+{
+	if (!proc)
+		report_error("Cannot add code line to procedure,"
+			" because proc is NULL. in proc_code_line2", NULL);
+	else
+	{
+		AsmCodeLine* codeline =
+			codeline_new(instr, arg1, arg2);
+		if (!codeline)
+			report_error("Created codeline was NULL,"
+				" in proc_code_line2", NULL);
+		sbuffer_add(proc->lines, codeline);
+	}
+}
+
+void proc_data_line(AsmProgram* program, AsmDataLine* dataline)
+{
+	if (!program || !program->data)
+		report_error("Cannot add data line to program,"
+			" because its NULL. in proc_data_line", NULL);
+	else
+		sbuffer_add(program->data->lines, dataline);
+}
+
+AsmCodeProc* get_current_proc(AsmProgram* program)
+{
+	if (!program->code || !program->data || sbuffer_len(program->code->procs) == 0)
+		report_error("There are no procedures in program yet. in get_current_proc", NULL);
+	else
+	{
+		return program->code->procs[
+			sbuffer_len(program->code->procs) - 1];
+	}
+	return NULL;
 }
 
 void program_free(AsmProgram* program)

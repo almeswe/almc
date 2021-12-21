@@ -1,14 +1,12 @@
 #include "expr-gen.h"
 
 //todo: ADD SIGNED AND UNSIGNED CHECK FOR EXPR-GEN
-//todo: prettify code for accessors
 //todo: add function which will check for idnt in unary expressions, like: *(a+1)
 //todo: add interface for compiler + add autocompilation
-//todo: rewrite some macroses to functions to avoid warnings
 
 //todo: do global clean-up for back-end
 //todo: finish visit_array_accessor function
-//todo: error with register collision in functions which was declared earlier
+//todo: add support for enums
 
 #define IS_PRIMARY_EXPR(expr)      \
 	((expr->kind == EXPR_CONST) || \
@@ -68,30 +66,36 @@ void gen_expr32(Expr* expr, StackFrame* frame)
 		case EXPR_FUNC_CALL:
 			return gen_func_call32(expr->func_call, frame);
 		default:
-			assert(0);
+			report_error("Unknown expression kind met."
+			 " in gen_expr32", NULL);
 		}
 	}
 }
 
 void gen_idnt32(Idnt* idnt, int reg, StackFrame* frame)
 {
-	//todo: check for enum idnt
-	StackFrameEntity* entity = 
-		get_entity_by_name(idnt->svalue, frame);
-	assert(entity);
-	assert(!IS_AGGREGATE_TYPE(idnt->type));
+	if (idnt->is_enum_member)
+		gen_expr32(idnt->enum_member_value, frame);
+	else
+	{
+		StackFrameEntity* entity =
+			get_entity_by_name(idnt->svalue, frame);
+		assert(entity);
+		assert(!IS_AGGREGATE_TYPE(idnt->type));
 
-	assert(idnt->type);
-	char* reg_arg = get_register_str(
-		get_part_of_reg(reg, idnt->type->size * 8));
-	char* entity_arg = frmt("%s ptr %s[ebp]", 
-		get_ptr_prefix(idnt->type), entity->definition);
+		assert(idnt->type);
+		char* reg_arg = get_register_str(
+			get_part_of_reg(reg, idnt->type->size * 8));
+		char* entity_arg = frmt("%s ptr %s[ebp]",
+			get_ptr_prefix(idnt->type), entity->definition);
 
-	PROC_CODE_LINE2(MOV, reg_arg, entity_arg);
+		PROC_CODE_LINE2(MOV, reg_arg, entity_arg);
+	}
 }
 
 void gen_string32(Str* str, int reg)
 {
+	//todo: refactor gen_string32
 	char* value = frmt("\"");
 	char* prev = NULL;
 	char** values = NULL;
@@ -127,8 +131,6 @@ void gen_string32(Str* str, int reg)
 
 void gen_primary_expr32(Expr* prim_expr, int reg, StackFrame* frame)
 {
-	assert(reg >= EAX && reg <= ESI);
-
 	char* reg_arg = get_register_str(reg);
 	
 	switch (prim_expr->kind)
@@ -144,14 +146,21 @@ void gen_primary_expr32(Expr* prim_expr, int reg, StackFrame* frame)
 			PROC_CODE_LINE2(MOV, reg_arg,
 				frmt("%i", prim_expr->cnst->uvalue));
 			break;
+		case CONST_CHAR:
+			PROC_CODE_LINE2(MOVZX, reg_arg,
+				frmt("%d", (char)prim_expr->cnst->ivalue));
+			break;
 		default:
+			report_error("Unknown const kind met."
+				" in gen_primary_expr32", NULL);
 			break;
 		}
 		break;
 	case EXPR_IDNT:
 		return gen_idnt32(prim_expr->idnt, reg, frame);
 	default:
-		assert(0);
+		report_error("Unknown primary expression kind met."
+		 " in gen_primary_expr32", NULL);
 	}
 }
 
@@ -242,10 +251,10 @@ void gen_unary_expr32(UnaryExpr* unary_expr, StackFrame* frame)
 			eax_reg_arg);
 		break;
 	case UNARY_LG_NOT:
-		gen_unary_lg_not32(unary_expr);
-		break;
+		return gen_unary_lg_not32(unary_expr);
 	default:
-		assert(0);
+		report_error("Unknown unary expression kind met." 
+			" in gen_unary_expr32", NULL);
 	}
 }
 
@@ -272,158 +281,6 @@ void gen_reg_clear(int reg)
 void gen_reg_arg_clear(char* reg_arg)
 {
 	PROC_CODE_LINE2(XOR, reg_arg, reg_arg);
-}
-
-_addressable_data* gen_addressable_data_for_idnt(
-	Idnt* idnt, StackFrame* frame)
-{
-	_addressable_data* data = addressable_data_new();
-	data->entity = get_entity_by_name(idnt->svalue, frame);
-	assert(data->entity);
-	data->capacity = 1;
-	data->kind = ADDRESSABLE_ENTITY;
-	data->type = data->origin = data->entity->type;
-	data->dimension = get_array_dimensions(data->type);
-	return data;
-}
-
-_addressable_data* gen_addressable_data_for_array_accessor(
-	_addressable_data* data, BinaryExpr* expr, StackFrame* frame)
-{
-	gen_expr32(expr->rexpr, frame);
-
-	Type* ltype = retrieve_expr_type(expr->lexpr);
-	uint32_t capacity = IS_ARRAY_TYPE(ltype) ? evaluate_expr_itype(
-		get_array_dimension(ltype, data->dimension)) : 1;
-	uint32_t typesize = get_array_base_type(ltype)->size;
-
-	if (!data->in_reg)
-		data->reg = get_unreserved_register(
-			REGISTERS, REGSIZE_DWORD);
-
-	int scalar_reg = get_unreserved_register(
-		REGISTERS, REGSIZE_DWORD);
-
-	char* addr_arg = NULL;
-	char* eax_reg_arg = get_register_str(EAX);
-	char* temp_reg_arg = get_register_str(data->reg);
-	char* scalar_reg_arg = get_register_str(scalar_reg);
-
-	if (data->in_reg)
-	{
-		// the formula of [reg+eax*scalar_reg] is not used here 
-		// because it requires more logic for check tje scalar_reg (it accepts 2,4 or 8)
-		// in this case just reserve new reg on which we will multiply value stored in eax, then use it 
-		// for array member access
-		PROC_CODE_LINE2(MOV, scalar_reg_arg, 
-			frmt("%d", typesize * data->capacity));
-		PROC_CODE_LINE1(MUL, scalar_reg_arg);
-		addr_arg = frmt("dword ptr [%s+eax]",
-			temp_reg_arg);
-	}
-	else
-	{
-		data->in_reg = true;
-		PROC_CODE_LINE2(MOV, scalar_reg_arg,
-			frmt("%d", typesize * data->capacity));
-		PROC_CODE_LINE1(MUL, scalar_reg_arg);
-		if (data->offset)
-			// adding offset if there was any
-			PROC_CODE_LINE2(ADD, eax_reg_arg,
-				frmt("%d", data->offset)), data->offset = 0;
-		addr_arg = frmt("dword ptr %s[ebp+eax]",
-			data->entity->definition);
-		if (IS_POINTER_TYPE(ltype))
-		{
-			PROC_CODE_LINE2(MOV, temp_reg_arg, frmt("dword ptr %s[ebp]",
-				data->entity->definition));
-			free(addr_arg), addr_arg = frmt("dword ptr [%s+eax]",
-				temp_reg_arg);
-		}
-	}
-	PROC_CODE_LINE2(LEA, temp_reg_arg, addr_arg);
-	unreserve_register(REGISTERS, EAX);
-	unreserve_register(REGISTERS, scalar_reg);
-
-	data->dimension -= 1;
-	data->capacity *= capacity;
-	data->kind = ADDRESSABLE_ARR_ACCESSOR;
-	return data->type = ltype->base, data;
-}
-
-_addressable_data* gen_addressable_data_for_accessor(
-	BinaryExpr* expr, StackFrame* frame)
-{
-	int addr_reg = 0;
-	char* addr_arg = NULL;
-	char* addr_reg_arg = NULL;
-	_addressable_data* data = NULL;
-
-	uint32_t prev_offset;
-
-	if (expr->lexpr->kind != EXPR_IDNT)
-		data = gen_addressable_data_for_accessor(
-			expr->lexpr->binary_expr, frame);
-	else
-		data = gen_addressable_data_for_idnt(
-			expr->lexpr->idnt, frame);
-
-	switch (expr->kind)
-	{
-	case BINARY_MEMBER_ACCESSOR:
-		data->kind = ADDRESSABLE_ACCESSOR;
-		assert(IS_STRUCT_TYPE(data->type));
-		for (size_t i = 0; i < sbuffer_len(data->type->members); i++)
-			if (strcmp(data->type->members[i]->name, expr->rexpr->idnt->svalue) == 0)
-				return data->offset += data->type->members[i]->offset,
-					data->type = data->type->members[i]->type, data;
-		assert(0);
-		break;
-	case BINARY_ARR_MEMBER_ACCESSOR:
-		return gen_addressable_data_for_array_accessor(
-			data, expr, frame);
-	case BINARY_PTR_MEMBER_ACCESSOR:
-		data->kind = ADDRESSABLE_PTR_ACCESSOR;
-		prev_offset = data->offset;
-		// getting true type of variable (not pointer)
-		// need only one dereference, because -> operator only works
-		// with single pointer values by the left side
-		data->type = dereference_type(data->type);
-		for (size_t i = 0; i < sbuffer_len(data->type->members); i++)
-		{
-			if (strcmp(data->type->members[i]->name, expr->rexpr->idnt->svalue) == 0)
-			{
-				// recaching the offset because now it will be relative to address
-				// stored in address register
-				data->offset = data->type->members[i]->offset;
-				data->type = data->type->members[i]->type;
-				break;
-			}
-		}
-
-		// if we met the '->' operator,
-		// it means that we need to get value stored in address
-		// which will vary according in_reg flag
-		// if itss true, it means that the needed address aleady stored in reg,
-		// and no need to calculate offsets based on stack variable, need to calculate it based on this reg
-		if (!data->in_reg)
-			data->reg = get_unreserved_register(REGISTERS, REGSIZE_DWORD);
-		addr_reg_arg = get_register_str(data->reg);
-		if (data->in_reg)
-			PROC_CODE_LINE2(MOV, addr_reg_arg,
-				frmt("dword ptr [%s]", addr_reg_arg));
-		else
-		{
-			data->in_reg = true;
-			PROC_CODE_LINE2(MOV, addr_reg_arg, frmt("dword ptr %s[ebp+%d]",
-				data->entity->definition, prev_offset));
-		}
-		if (data->offset)
-			PROC_CODE_LINE2(ADD, addr_reg_arg, 
-				frmt("%d", data->offset));
-		break;
-	}
-	return data;
 }
 
 void gen_binary_comma_expr32(BinaryExpr* expr, StackFrame* frame)
@@ -536,6 +393,9 @@ void gen_binary_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
 				get_register_str(EDX));
 			unreserve_register(REGISTERS, EDX);
 			break;
+		default:
+			report_error("Unknown binary assign expression kind met."
+			" in gen_binary_assign_expr32", NULL);
 		}
 		if (data->in_reg && data->reg == EAX)
 			PROC_CODE_LINE1(POP, get_register_str(EAX));
@@ -787,7 +647,8 @@ void gen_binary_expr32(BinaryExpr* binary_expr, StackFrame* frame)
 		unreserve_register(REGISTERS, EDX);
 		break;
 	default:
-		assert(0);
+		report_error("Unknown binary expression kind met." 
+			" in gen_binary_expr32()", NULL);
 	}
 	unreserve_register(REGISTERS, temp_reg);
 
@@ -871,6 +732,7 @@ void gen_caller_stack_clearing(FuncCall* func_call)
 
 void gen_func_call32(FuncCall* func_call, StackFrame* frame)
 {
+	int* registers = cache_general_purpose_registers();
 	for (int32_t i = sbuffer_len(func_call->args) - 1; i >= 0; i--)
 	{
 		assert(func_call->args);
@@ -882,10 +744,46 @@ void gen_func_call32(FuncCall* func_call, StackFrame* frame)
 	PROC_CODE_LINE1(CALL, frmt(func_call->spec->is_external ? 
 		"%s" : "_%s", func_call->name));
 	gen_caller_stack_clearing(func_call);
+	restore_general_purpose_registers(registers);
+}
+
+int* cache_general_purpose_registers()
+{
+	int* regs = NULL;
+	for (size_t reg = EBX; reg <= EDX; reg += 3)
+		if (REGISTERS->reg_table[reg] == REGISTER_RESERVED)
+			sbuffer_add(regs, reg), PROC_CODE_LINE1(PUSH, 
+				get_register_str(reg));
+	return regs;
+}
+
+void restore_general_purpose_registers(int* regs)
+{
+	for (size_t reg = 0; reg < sbuffer_len(regs); reg++)
+		PROC_CODE_LINE1(POP, get_register_str(regs[reg]));
+	sbuffer_free(regs);
+}
+
+_addressable_data* addressable_data_new()
+{
+	_addressable_data* data =
+		cnew_s(_addressable_data, data, 1);
+	return data;
+}
+
+void addressable_data_free(_addressable_data* data)
+{
+	if (data->in_reg)
+		unreserve_register(REGISTERS, data->reg);
+	free(data);
 }
 
 char* addressable_data_arg(_addressable_data* data)
 {
+	/*
+		Function that converts addressable data to
+		argument for using in PROC_CODE_LINEx
+	*/
 	char* prefix = get_ptr_prefix(data->type);
 	switch (data->kind)
 	{
@@ -901,10 +799,11 @@ char* addressable_data_arg(_addressable_data* data)
 				data->entity->definition, data->offset);
 	case ADDRESSABLE_ARR_ACCESSOR:
 	case ADDRESSABLE_PTR_ACCESSOR:
-		return frmt("%s ptr [%s]", prefix, 
+		return frmt("%s ptr [%s]", prefix,
 			get_register_str(data->reg));
 	default:
-		assert(0);
+		report_error("Unsupported addressable data kind met."
+			" in addressable_data_arg.", NULL);
 	}
 }
 
@@ -939,16 +838,206 @@ _addressable_data* gen_addressable_data(Expr* expr, StackFrame* frame)
 	}
 }
 
-_addressable_data* addressable_data_new()
+_addressable_data* gen_addressable_data_for_idnt(
+	Idnt* idnt, StackFrame* frame)
 {
-	_addressable_data* data =
-		cnew_s(_addressable_data, data, 1);
+	_addressable_data* data = addressable_data_new();
+	data->entity = get_entity_by_name(idnt->svalue, frame);
+	assert(data->entity);
+	data->capacity = 1;
+	data->kind = ADDRESSABLE_ENTITY;
+	data->type = data->origin = data->entity->type;
+	data->dimension = get_array_dimensions(data->type);
 	return data;
 }
 
-void addressable_data_free(_addressable_data* data)
+_addressable_data* gen_addressable_data_for_accessor(
+	BinaryExpr* expr, StackFrame* frame)
 {
+	_addressable_data* data = NULL;
+
+	//todo: add more proper check here
+	if (expr->lexpr->kind != EXPR_IDNT)
+		data = gen_addressable_data_for_accessor(
+			expr->lexpr->binary_expr, frame);
+	else
+		data = gen_addressable_data_for_idnt(
+			expr->lexpr->idnt, frame);
+
+	switch (expr->kind)
+	{
+	case BINARY_ARR_MEMBER_ACCESSOR:
+		return gen_addressable_data_for_array_accessor(
+			data, expr, frame);
+	case BINARY_MEMBER_ACCESSOR:
+		return gen_addressable_data_for_struct_accessor(
+			data, expr, frame);
+	case BINARY_PTR_MEMBER_ACCESSOR:
+		return gen_addressable_data_for_struct_ptr_accessor(
+			data, expr, frame);
+	default:
+		report_error("Passed expression is not the accessor actually."
+			" in gen...for_accessor", NULL);
+	}
+	return data;
+}
+
+_addressable_data* gen_addressable_data_for_array_accessor(
+	_addressable_data* data, BinaryExpr* expr, StackFrame* frame)
+{
+	gen_expr32(expr->rexpr, frame);
+
+	data->kind = ADDRESSABLE_ARR_ACCESSOR;
+	Type* ltype = retrieve_expr_type(expr->lexpr);
+	uint32_t capacity = IS_ARRAY_TYPE(ltype) ? evaluate_expr_itype(
+		get_array_dimension(ltype, data->dimension)) : 1;
+	uint32_t typesize = IS_POINTER_TYPE(ltype) ? 
+		ltype->base->size : get_array_base_type(ltype)->size;
+
+	if (!data->in_reg)
+		data->reg = get_unreserved_register(
+			REGISTERS, REGSIZE_DWORD);
+
+	int scalar_reg = get_unreserved_register(
+		REGISTERS, REGSIZE_DWORD);
+
+	char* addr_arg = NULL;
+	char* eax_reg_arg = get_register_str(EAX);
+	char* temp_reg_arg = get_register_str(data->reg);
+	char* scalar_reg_arg = get_register_str(scalar_reg);
+
 	if (data->in_reg)
-		unreserve_register(REGISTERS, data->reg);
-	free(data);
+	{
+		// the formula of [reg+eax*scalar_reg] is not used here 
+		// because it requires more logic for check tje scalar_reg (it accepts 2,4 or 8)
+		// in this case just reserve new reg on which we will multiply value stored in eax, then use it 
+		// for array member access
+		PROC_CODE_LINE2(MOV, scalar_reg_arg,
+			frmt("%d", typesize * data->capacity));
+		PROC_CODE_LINE1(MUL, scalar_reg_arg);
+		addr_arg = frmt("dword ptr [%s+eax]",
+			temp_reg_arg);
+	}
+	else
+	{
+		data->in_reg = true;
+		PROC_CODE_LINE2(MOV, scalar_reg_arg,
+			frmt("%d", typesize * data->capacity));
+		PROC_CODE_LINE1(MUL, scalar_reg_arg);
+		if (data->offset)
+			// adding offset if there was any
+			PROC_CODE_LINE2(ADD, eax_reg_arg,
+				frmt("%d", data->offset)), data->offset = 0;
+		addr_arg = frmt("dword ptr %s[ebp+eax]",
+			data->entity->definition);
+		if (IS_POINTER_TYPE(ltype))
+		{
+			PROC_CODE_LINE2(MOV, temp_reg_arg, frmt("dword ptr %s[ebp]",
+				data->entity->definition));
+			free(addr_arg), addr_arg = frmt("dword ptr [%s+eax]",
+				temp_reg_arg);
+		}
+	}
+	PROC_CODE_LINE2(LEA, temp_reg_arg, addr_arg);
+	unreserve_register(REGISTERS, EAX);
+	unreserve_register(REGISTERS, scalar_reg);
+
+	data->dimension -= 1;
+	data->capacity *= capacity;
+	return data->type = ltype->base, data;
+}
+
+_addressable_data* gen_addressable_data_for_struct_accessor(
+	_addressable_data* data, BinaryExpr* expr, StackFrame* frame)
+{
+	/*
+		This function calculates and accumulates the offset between
+		the struct's member relative to the beginning of this struct
+	*/
+
+	data->kind = ADDRESSABLE_ACCESSOR;
+	// if its not struct type, then we cannot actually found the offset...
+	if (!IS_STRUCT_OR_UNION_TYPE(data->type))
+		report_error("Cannot find offset of member in not struct or union type."
+			"in gen...data_for_struct_accessor()", NULL);
+	for (size_t i = 0; i < sbuffer_len(data->type->members); i++)
+	{
+		if (strcmp(data->type->members[i]->name, expr->rexpr->idnt->svalue) == 0)
+		{
+			//todo: test this
+			// if the specified type is union, we won't add any offset (its not tested yet)
+			data->offset += !IS_UNION_TYPE(data->type) ?
+				data->type->members[i]->offset : 0;
+			return data->type = data->type->members[i]->type, data;
+		}
+	}
+
+	// if we appeared in this code flow it means that ther was no 
+	// struct member found, potentially it is not possible because
+	// this issue is resolved in visitor
+	report_error("There are no corresponding struct member found,"
+		" it is a bug actually. in gen...data_for_struct_accessor().", NULL);
+}
+
+_addressable_data* gen_addressable_data_for_struct_ptr_accessor(
+	_addressable_data* data, BinaryExpr* expr, StackFrame* frame)
+{
+	/*
+		Function calculates the offset for -> accessor,
+		first, it calculates it relative to local variable using ebp register (if its not
+		located in temp register), then it will calculate it based on reserved temp register
+		all other accessor function will process that
+	*/
+
+	char* addr_reg_arg = NULL;
+	// caching the current data->offset, 
+	// because we will change it in nearest for-loop
+	uint32_t cached_offset = data->offset;
+	data->kind = ADDRESSABLE_PTR_ACCESSOR;
+
+	// getting true type of variable (not pointer)
+	// need only one dereference, because -> operator only works
+	// with single pointer values by the left side
+	Type* type = data->type = dereference_type(data->type);
+	for (size_t i = 0; i < sbuffer_len(type->members); i++)
+	{
+		if (strcmp(type->members[i]->name, expr->rexpr->idnt->svalue) == 0)
+		{
+			// recaching the offset because now it will be relative to address
+			// stored in address register
+			data->type = type->members[i]->type;
+			data->offset = type->members[i]->offset;
+			break;
+		}
+	}
+
+	// if we met the '->' operator,
+	// it means that we need to get value stored in address
+	// which will vary according in_reg flag
+	// if itss true, it means that the needed address aleady stored in reg,
+	// and no need to calculate offsets based on stack variable, need to calculate it based on this reg
+	if (!data->in_reg)
+		data->reg = get_unreserved_register(REGISTERS, REGSIZE_DWORD);
+	addr_reg_arg = get_register_str(data->reg);
+	if (data->in_reg)
+		PROC_CODE_LINE2(MOV, addr_reg_arg,
+			frmt("dword ptr [%s]", addr_reg_arg));
+	else
+	{
+		data->in_reg = true;
+		// just to make asm more clearly (without useless +0)
+		char* addr_with_cached_offset = NULL;
+		if (!cached_offset)
+			addr_with_cached_offset = frmt("dword ptr %s[ebp]",
+				data->entity->definition);
+		else
+			addr_with_cached_offset = frmt("dword ptr %s[ebp+%d]",
+				data->entity->definition, cached_offset);
+		PROC_CODE_LINE2(MOV, addr_reg_arg, addr_with_cached_offset);
+	}
+	// adding the actual offset for a member
+	if (data->offset)
+		PROC_CODE_LINE2(ADD, addr_reg_arg,
+			frmt("%d", data->offset));
+	return data;
 }

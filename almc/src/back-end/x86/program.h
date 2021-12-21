@@ -26,15 +26,12 @@
 #define PROGRAM_SET_ENTRY(name) \
 	program->entry = name
 
-#define GET_CURR_PROC \
-	program->code->procs[sbuffer_len(program->code->procs)-1]
-
 #define PROC_CODE_LINE0(c) \
-	sbuffer_add(GET_CURR_PROC->lines, codeline_new(c, NULL, NULL))
+	proc_code_line0(get_current_proc(program), c)
 #define PROC_CODE_LINE1(c, arg1) \
-	sbuffer_add(GET_CURR_PROC->lines, codeline_new(c, arg1, NULL))
+	proc_code_line1(get_current_proc(program), c, arg1)
 #define PROC_CODE_LINE2(c, arg1, arg2) \
-	sbuffer_add(GET_CURR_PROC->lines, codeline_new(c, arg1, arg2))
+	proc_code_line2(get_current_proc(program), c, arg1, arg2)
 
 #define PROC_DATA_LINE(dataline) \
 	sbuffer_add(program->data->lines, dataline)
@@ -139,6 +136,12 @@ AsmCodeProtoProc* proto_proc_new(FuncDecl* func_decl);
 
 AsmCodeDefine* define_new(char* name, char* value);
 
+void proc_code_line0(AsmCodeProc* proc, int instr);
+void proc_code_line1(AsmCodeProc* proc, int instr, char* arg1);
+void proc_code_line2(AsmCodeProc* proc, int instr, char* arg1, char* arg2);
+void proc_data_line(AsmProgram* proc, AsmDataLine* dataline);
+AsmCodeProc* get_current_proc(AsmProgram* program);
+
 void program_free(AsmProgram* program);
 void data_free(AsmDataSegment* data);
 void code_free(AsmCodeSegment* code);
@@ -150,6 +153,7 @@ void codeline_free(AsmCodeLine* codeline);
 
 void proc_free(AsmCodeProc* proc);
 void proto_proc_free(AsmCodeProtoProc* proto_proc);
+
 void define_free(AsmCodeDefine* define);
 
 #endif

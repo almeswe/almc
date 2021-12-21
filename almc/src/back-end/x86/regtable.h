@@ -53,7 +53,6 @@ typedef enum x86_RegisterSize
 
 typedef struct x86_RegisterTable
 {
-	int ret_reg;
 	int reg_table[REGISTERS_COUNT];
 } RegisterTable;
 
