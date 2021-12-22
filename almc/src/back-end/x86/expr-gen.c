@@ -1,12 +1,12 @@
 #include "expr-gen.h"
 
 //todo: ADD SIGNED AND UNSIGNED CHECK FOR EXPR-GEN
+//todo: add support for variable with the same name in different scopes
 //todo: add function which will check for idnt in unary expressions, like: *(a+1)
 //todo: add interface for compiler + add autocompilation
 
 //todo: do global clean-up for back-end
 //todo: finish visit_array_accessor function
-//todo: add support for enums
 
 #define IS_PRIMARY_EXPR(expr)      \
 	((expr->kind == EXPR_CONST) || \
