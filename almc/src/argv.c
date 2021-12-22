@@ -1,47 +1,54 @@
 #include "argv.h"
 
-#define MASM_COMPILER "ml"
-#define MASM_LINKER "link"
-
-#define MASM_SDK_BIN_FOLDER "masm32\\bin"
-#define MASM_SDK_LIB_FOLDER "masm32\\lib"
-#define MASM_SDK_INC_FOLDER "masm32\\includes"
-
-ComplilationOptions* options_new(char* argv0)
+ComplilationOptions* options_new()
 {
-	ComplilationOptions* options = cnew_s(ComplilationOptions,
+	return cnew_s(ComplilationOptions,
 		options, 1);
-	options->root = get_dir_parent(argv0);
-	if (!options->root)
-		options->root = "";
-	return options;
+}
+
+void parse_compiler_roots(ComplilationOptions* options)
+{
+	// setting up the compiler's root folder
+	char* buffer[MAX_PATH];
+	GetModuleFileNameA(NULL, buffer, MAX_PATH);
+	options->compiler.root = get_dir_parent(buffer);
+	// setting up paths to linker and masm compiler
+	options->compiler.ml_path = frmt("%s\\%s",
+		options->compiler.root, MASM_COMPILER);
+	options->compiler.link_path = frmt("%s\\%s",
+		options->compiler.root, MASM_LINKER);
+	// setting up paths to lib and inc folders
+	options->compiler.inc_path = frmt("%s\\%s",
+		options->compiler.root, MASM_SDK_INC_FOLDER);
+	options->compiler.lib_path = frmt("%s\\%s",
+		options->compiler.root, MASM_SDK_LIB_FOLDER);
+}
+
+void parse_target_roots(ComplilationOptions* options, 
+	char* target_path, char* output_name)
+{
+	// setting up the root folder of source file
+	options->target.root = 
+		get_dir_parent(target_path);
+	// setting up paths to target source file, and its outputs
+	options->target.target_path = target_path;
+	options->target.asm_path = frmt("%s\\%s.asm", 
+		options->target.root, output_name);
+	options->target.object_path = frmt("%s\\%s.obj",
+		options->compiler.root, output_name);
 }
 
 ComplilationOptions* parse_options(char** argv, int argc)
 {
-	ComplilationOptions* options = options_new(argv[0]);
+	ComplilationOptions* options = 
+		options_new();
 
 	if (argc != 3)
 		report_error(frmt("Wrong argument count passed: %d, expected: %d arguments", 
 			argc, 3), NULL);
 
-	options->target_path = frmt(argv[1]);
-
-	// creating the path for obj and asm files
-	options->asm_path = frmt("%s\\%s.asm",
-		options->root, argv[2]);
-	options->obj_path = frmt("%s\\%s.obj",
-		options->root, argv[2]);
-	// setting the masm sdk path to libs and includes?
-	options->libpath = frmt("%s\\%s", 
-		options->root, MASM_SDK_LIB_FOLDER);
-	options->incpath = frmt("%s\\%s", 
-		options->root, MASM_SDK_INC_FOLDER);
-	// swtting linker and compiler of masm
-	options->linker_path = frmt("%s\\%s\\%s", 
-		options->root, MASM_SDK_BIN_FOLDER, MASM_LINKER);
-	options->masm_ml_path = frmt("%s\\%s\\%s",
-		options->root, MASM_SDK_BIN_FOLDER, MASM_COMPILER);
+	parse_compiler_roots(options);
+	parse_target_roots(options, argv[1], argv[2]);
 	return options;
 }
 
