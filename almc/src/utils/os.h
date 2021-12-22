@@ -10,6 +10,7 @@
 
 char* get_drives();
 char* get_curr_dir();
+char* get_curr_module();
 char* get_root(const char* path);
 char* get_dir_parent(const char* dir);
 

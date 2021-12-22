@@ -12,9 +12,16 @@ char* get_drives()
 
 char* get_curr_dir()
 {
-	char dir[MAX_PATH];
-	GetCurrentDirectoryA(MAX_PATH, dir);
-	return dir;
+	char* buffer[MAX_PATH];
+	GetCurrentDirectoryA(MAX_PATH, buffer);
+	return buffer;
+}
+
+char* get_curr_module()
+{
+	char* buffer[MAX_PATH];
+	GetModuleFileNameA(NULL, buffer, MAX_PATH);
+	return buffer;
 }
 
 char* get_root(const char* path)
