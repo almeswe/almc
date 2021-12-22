@@ -194,7 +194,7 @@ void print_proto_procs_to_file(AsmCodeSegment* codeseg, FILE* file)
 
 void print_data_to_file(AsmDataSegment* dataseg, FILE* file)
 {
-	fputs(".data\n\n", file);
+	fputs(".data\n", file);
 	for (size_t i = 0; i < sbuffer_len(dataseg->lines); i++)
 		print_dataline_to_file(dataseg->lines[i], file);
 }
@@ -212,16 +212,17 @@ void print_includes_to_file(AsmProgram* program, FILE* file)
 {
 	for (size_t i = 0; i < sbuffer_len(program->incs); i++)
 		fputs(frmt("include    %s\\%s.inc\n",
-			options->incpath, program->incs[i]), file);
+			options->compiler.inc_path, program->incs[i]), file);
 	for (size_t i = 0; i < sbuffer_len(program->libs); i++)
 		fputs(frmt("includelib %s\\%s.lib\n",
-			options->libpath, program->libs[i]), file);
+			options->compiler.lib_path, program->libs[i]), file);
+	fputs("\n", file);
 }
 
 void print_program_to_file(AsmProgram* program)
 {
 	FILE* file = NULL;
-	fopen_s(&file, options->asm_path, "w");	
+	fopen_s(&file, options->target.asm_path, "w");	
 
 	if (!file)
 		report_error("Cannot open file for writing the program.", NULL);

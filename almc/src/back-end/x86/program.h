@@ -36,9 +36,6 @@
 #define PROC_DATA_LINE(dataline) \
 	sbuffer_add(program->data->lines, dataline)
 
-#define MASM_SDK_LIB_FOLDER "e:\\masm32\\lib"
-#define MASM_SDK_INC_FOLDER "e:\\masm32\\includes"
-
 typedef struct FuncDecl FuncDecl;
 
 typedef struct x86_AsmCodeDefine
