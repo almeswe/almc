@@ -9,7 +9,7 @@ ComplilationOptions* options_new()
 void parse_compiler_roots(ComplilationOptions* options)
 {
 	// setting up the compiler's root folder
-	char* buffer[MAX_PATH];
+	char buffer[MAX_PATH];
 	GetModuleFileNameA(NULL, buffer, MAX_PATH);
 	options->compiler.root = get_dir_parent(buffer);
 	// setting up paths to linker and masm compiler
@@ -36,6 +36,13 @@ void parse_target_roots(ComplilationOptions* options,
 		options->target.root, output_name);
 	options->target.object_path = frmt("%s\\%s.obj",
 		options->compiler.root, output_name);
+	options->target.binary_path = frmt("%s\\%s.exe",
+		options->compiler.root, output_name);
+
+	options->target.src_object_path = frmt("%s\\%s.obj",
+		options->target.root, output_name);
+	options->target.src_binary_path = frmt("%s\\%s.exe",
+		options->target.root, output_name);
 }
 
 ComplilationOptions* parse_options(char** argv, int argc)
@@ -54,5 +61,20 @@ ComplilationOptions* parse_options(char** argv, int argc)
 
 void options_free(ComplilationOptions* options)
 {
-	return;
+	if (options)
+	{
+		free(options->target.root);
+		free(options->target.asm_path);
+		free(options->target.binary_path);
+		free(options->target.object_path);
+		free(options->target.src_binary_path);
+		free(options->target.src_object_path);
+
+		free(options->compiler.root);
+		free(options->compiler.ml_path);
+		free(options->compiler.link_path);
+		free(options->compiler.inc_path);
+		free(options->compiler.lib_path);
+		free(options);
+	}
 }

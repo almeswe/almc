@@ -30,6 +30,10 @@ struct TargetRoots
 	char* asm_path;
 	char* target_path;
 	char* object_path;
+	char* binary_path;
+
+	char* src_object_path;
+	char* src_binary_path;
 };
 
 typedef struct {
