@@ -54,8 +54,20 @@ void assemble_and_link()
 	system(frmt("%s /c /Zd /coff %s", options->compiler.ml_path,
 		options->target.asm_path));
 	if (file_exists(options->target.object_path))
+	{
 		system(frmt("%s /SUBSYSTEM:CONSOLE %s", options->compiler.link_path,
 			options->target.object_path));
+		//replace .obj .exe file to source folder 
+		system(frmt("replace %s %s %s", options->target.object_path,
+			file_exists(options->target.src_object_path) ? "/s" : "/a"), 
+				options->target.root);
+		system(frmt("replace %s %s %s", options->target.binary_path,
+			file_exists(options->target.src_binary_path) ? "/s" : "/a"),
+				options->target.root);
+		
+		system(frmt("del %s", options->target.binary_path));
+		system(frmt("del %s", options->target.object_path));
+	}	
 }
 
 void compile()
@@ -74,7 +86,6 @@ void compile()
 	parser_free(parser);
 	visitor_free(visitor);
 	program_free(program);
-	//options_free(options);
 }
 
 int main(int argc, char** argv)
@@ -82,6 +93,7 @@ int main(int argc, char** argv)
 	options = parse_options(argv, argc);
 	compile();
 	assemble_and_link();
+	options_free(options);
 	//back_end_test();
 	//run_tests();
 	return 0;
