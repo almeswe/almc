@@ -30,6 +30,7 @@ int64_t evaluate_const_itype(Const* cnst)
 	{
 	case CONST_INT:
 	case CONST_UINT:
+	case CONST_CHAR:
 		return cnst->ivalue;
 	}
 	return 1;
@@ -157,6 +158,7 @@ double evaluate_const_ftype(Const* cnst)
 	{
 	case CONST_INT:
 	case CONST_UINT:
+	case CONST_CHAR:
 		return (double)cnst->ivalue;
 	case CONST_FLOAT:
 		return cnst->fvalue;

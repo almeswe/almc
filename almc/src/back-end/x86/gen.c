@@ -323,6 +323,6 @@ void gen_global_stmt(Stmt* stmt)
 	case STMT_FUNC_DECL:
 		return gen_func_decl_stmt(stmt->func_decl);
 	default:
-		assert(0);
+		report_error("This kind of statement is not allowed in global scope.", NULL);
 	}
 }
