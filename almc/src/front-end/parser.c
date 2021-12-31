@@ -1081,8 +1081,7 @@ CallConv* parse_func_calling_convention(Parser* parser)
 	CallConv* convention = 
 		calling_convention_new();
 
-	char* token_str = tolower(
-		get_curr_token(parser)->svalue);
+	char* token_str = get_curr_token(parser)->svalue;
 
 	if (strcmp(token_str, "cdecl") == 0)
 		get_next_token(parser);

@@ -1,5 +1,5 @@
-#ifndef ALMC_BACK_END_STACK_FRAME
-#define ALMC_BACK_END_STACK_FRAME
+#ifndef ALMC_BACK_END_STACK_FRAME_H
+#define ALMC_BACK_END_STACK_FRAME_H
 
 #include "x86types.h"
 #include "regtable.h"

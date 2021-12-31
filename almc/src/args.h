@@ -1,5 +1,5 @@
-#ifndef ALMC_COMPILATION_OPTIONS
-#define ALMC_COMPILATION_OPTIONS
+#ifndef ALMC_COMPILATION_OPTIONS_H
+#define ALMC_COMPILATION_OPTIONS_H
 
 #include "error.h"
 #include "utils/os.h"

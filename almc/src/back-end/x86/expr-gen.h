@@ -1,5 +1,5 @@
-#ifndef ALMC_BACK_END_EXPR_GENERATOR
-#define ALMC_BACK_END_EXPR_GENERATOR
+#ifndef ALMC_BACK_END_x86_EXPR_GENERATOR_H
+#define ALMC_BACK_END_x86_EXPR_GENERATOR_H
 
 #include "program.h"
 #include "regtable.h"

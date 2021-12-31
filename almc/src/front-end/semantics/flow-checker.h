@@ -1,5 +1,5 @@
-#ifndef ALMC_RETURN_FLOW_CHECKER_H
-#define ALMC_RETURN_FLOW_CHECKER_H
+#ifndef ALMC_FRONT_END_FLOW_CHECKER_H
+#define ALMC_FRONT_END_FLOW_CHECKER_H
 
 /*
 	Module responsible for checking that the all code paths

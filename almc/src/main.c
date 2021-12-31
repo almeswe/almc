@@ -1,7 +1,5 @@
-#include "argv.h"
+#include "almc.h"
 #include "..\test\test.h"
-#include "..\src\front-end\type.h"
-#include "back-end\x86\program.h"
 
 int back_end_test()
 {

@@ -1,5 +1,5 @@
-#ifndef ALMC_BACK_END_x86_REGISTERS
-#define ALMC_BACK_END_x86_REGISTERS
+#ifndef ALMC_BACK_END_x86_REGISTERS_H
+#define ALMC_BACK_END_x86_REGISTERS_H
 
 #define EAX	0x00
 #define AX	0x01
@@ -43,6 +43,7 @@
 #define REGISTER_ENUMERATOR_SCALAR 0x3
 
 #include "instructions.h"
+#include "..\..\utils\common.h"
 
 typedef enum x86_RegisterSize
 {

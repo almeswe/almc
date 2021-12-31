@@ -1,5 +1,5 @@
-#ifndef ALMC_BACK_END_STMT_GENERATOR
-#define ALMC_BACK_END_STMT_GENERATOR
+#ifndef ALMC_BACK_END_x86_STMT_GENERATOR_H
+#define ALMC_BACK_END_x86_STMT_GENERATOR_H
 
 #include <stdio.h>
 #include <assert.h>

@@ -26,9 +26,6 @@
 
 int64_t evaluate_const_itype(Const* cnst)
 {
-	Type* type;
-	double value;
-
 	switch (cnst->kind)
 	{
 	case CONST_INT:
@@ -289,6 +286,5 @@ bool value_in_bounds_of_type(Type* type, double value)
 		if (IS_F32_TYPE(type))
 			return IN_BOUNDS_OF(FLT_MAX, FLT_MIN, value);
 	}
-	else
-		return false;
+	return false;
 }
