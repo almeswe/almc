@@ -67,7 +67,8 @@ StackFrameEntity* add_argument(TypeVar* argument, StackFrame* frame)
 	StackFrameEntity* entity = stack_frame_entity_new(argument->type,
 		frame->required_space_for_arguments, definition, STACK_FRAME_ENTITY_ARGUMENT);
 	entity->offset = frame->required_space_for_arguments
-		+= argument->type->size;
+		+= IS_AGGREGATE_TYPE(argument->type) ? 
+			MACHINE_WORD :argument->type->size;
 	sbuffer_add(frame->entities, entity);
 	return entity;
 }

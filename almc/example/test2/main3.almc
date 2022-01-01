@@ -1,0 +1,17 @@
+from ../localstd/io import printf;
+
+fnc create_array() : i32* {
+    let array: i32[5];
+    for (let i: i32 = 0; i < 5; i += 1)
+        array[i] = i+1;
+    return array;
+}
+
+fnc entry main() : i32 {
+    let array: i32* = create_array();
+    # their will be not actual array values because
+    # stack was cleared
+    for (let i: i32 = 0; i < 5; i += 1)
+        printf("%d) %d\n", i+1, array[i]);
+    return 0;
+}

@@ -81,15 +81,14 @@ void gen_idnt32(Idnt* idnt, int reg, StackFrame* frame)
 		StackFrameEntity* entity =
 			get_entity_by_name(idnt->svalue, frame);
 		assert(entity);
-		assert(!IS_AGGREGATE_TYPE(idnt->type));
-
 		assert(idnt->type);
 		char* reg_arg = get_register_str(
 			get_part_of_reg(reg, idnt->type->size * 8));
 		char* entity_arg = frmt("%s ptr %s[ebp]",
 			get_ptr_prefix(idnt->type), entity->definition);
 
-		PROC_CODE_LINE2(MOV, reg_arg, entity_arg);
+		PROC_CODE_LINE2(IS_AGGREGATE_TYPE(idnt->type) ? LEA : MOV, 
+			reg_arg, entity_arg);
 	}
 }
 
@@ -695,7 +694,11 @@ void gen_callee_stack_clearing(FuncDecl* func_decl)
 				ret  xxxx <- overall size of all arguments
 		*/
 		for (size_t i = 0; i < sbuffer_len(func_decl->params); i++)
-			size += func_decl->params[i]->type->size;
+		{
+			Type* type = func_decl->params[i]->type;
+			assert(type);
+			size += IS_AGGREGATE_TYPE(type) ? MACHINE_WORD : type->size;
+		}
 		PROC_CODE_LINE1(RET, frmt("%d", size));
 		break;
 	}
@@ -715,7 +718,13 @@ void gen_caller_stack_clearing(FuncCall* func_call)
 		// caching the size of each passed argument 
 		// to clear this space
 		for (size_t i = 0; i < sbuffer_len(func_call->args); i++)
-			size += retrieve_expr_type(func_call->args[i])->size;
+		{
+			Type* type = retrieve_expr_type(func_call->args[i]);
+			// array struct or union types passed by reference, not by value
+			// like pointer but which points to stack.
+			assert(type);
+			size += IS_AGGREGATE_TYPE(type) ? MACHINE_WORD : type->size;
+		}
 		if (size)
 			PROC_CODE_LINE2(ADD, get_register_str(ESP),
 				frmt("%d", size));
@@ -788,8 +797,11 @@ char* addressable_data_arg(_addressable_data* data)
 	switch (data->kind)
 	{
 	case ADDRESSABLE_ENTITY:
-		return frmt("%s ptr %s[ebp]",
-			prefix, data->entity->definition);
+		if (data->in_reg)
+			return frmt("%s", data->reg);
+		else
+			return frmt("%s ptr %s[ebp]",
+				prefix, data->entity->definition);
 	case ADDRESSABLE_ACCESSOR:
 		if (data->in_reg)
 			return frmt("%s ptr [%s+%d]", prefix,
@@ -842,12 +854,33 @@ _addressable_data* gen_addressable_data_for_idnt(
 	Idnt* idnt, StackFrame* frame)
 {
 	_addressable_data* data = addressable_data_new();
+	data->capacity = 1;
 	data->entity = get_entity_by_name(idnt->svalue, frame);
 	assert(data->entity);
-	data->capacity = 1;
 	data->kind = ADDRESSABLE_ENTITY;
 	data->type = data->origin = data->entity->type;
 	data->dimension = get_array_dimensions(data->type);
+
+	switch (data->entity->kind)
+	{
+	// if we met the aggregate type as passed argument
+	// it means that the reference is stored in this ceil, not actual
+	// struct, union or array
+	// so need to put this address in to the register
+	case STACK_FRAME_ENTITY_ARGUMENT:
+		if (IS_AGGREGATE_TYPE(data->entity->type))
+		{
+			data->in_reg = true;
+			data->reg = get_unreserved_register(
+				REGISTERS, REGSIZE_DWORD);
+			PROC_CODE_LINE2(MOV, get_register_str(data->reg),
+				frmt("dword ptr %s[ebp]", data->entity->definition));
+		}
+		break;
+	default:
+		data->in_reg = false;
+		break;
+	}
 	return data;
 }
 

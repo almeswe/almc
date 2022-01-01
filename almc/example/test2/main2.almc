@@ -1,0 +1,44 @@
+from ../localstd/io import printf;
+
+struct object {
+    a: i32;
+    b: i32;
+}
+
+fnc pass_struct(o: object) : void {
+    printf("Struct passed as struct.\n");
+    printf("a: %d\n", o.a), printf("b: %d\n", o.b);
+}
+
+fnc pass_struct_as_ptr(o: object*) : void {
+    printf("Struct passed as pointer to stack.\n");
+    printf("a: %d\n", o->a), printf("b: %d\n", o->b);
+}
+
+fnc pass_array(array: i32[10]) : void {
+    printf("Array passed as array.\n");
+    for (let i: i32 = 0; i < 10; i += 1)
+        printf("%d) %d\n", i+1, array[i]);
+}
+
+fnc pass_array_as_ptr(array: i32*) : void {
+    printf("Array passed as pointer to stack.\n");
+    for (let i: i32 = 0; i < 10; i += 1)
+        printf("%d) %d\n", i+1, array[i]);
+}
+
+fnc entry main() : i32 {
+    let array: i32[10];
+    for (let i: i32 = 0; i < 10; i += 1)
+        array[i] = i+1;
+
+    pass_array(array);
+    pass_array_as_ptr(array);
+
+    let obj: object;
+    obj.a = 1, obj.b = 2;
+
+    pass_struct(obj);
+    pass_struct_as_ptr(&obj);
+    return 0;
+}
