@@ -25,7 +25,7 @@ fnc linked_list_item_new(data: i32) : linked_list_item* {
 }
 
 fnc linked_list_add(list: linked_list*, data: i32) : void {
-	let item: linked_list_item* = 
+	let item: linked_list_item* =
 		linked_list_item_new(data);
 
 	printf("head:%d\n tile:%d\n\n", list->head, list->tile);

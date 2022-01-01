@@ -3,5 +3,3 @@ from ../localstd/io import printf;
 fnc entry main() : void {
 	printf("Hello world!");
 }
-
-import std/network;

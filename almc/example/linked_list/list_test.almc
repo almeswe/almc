@@ -1,5 +1,7 @@
 import list;
 
+from ../localstd/io import scanf;
+
 fnc entry main() : i32 {
 	let l: linked_list* = linked_list_new();
 
@@ -8,5 +10,6 @@ fnc entry main() : i32 {
 	}
 
 	print_linked_list(l);
+	for (;;);
 	return 0;
 }

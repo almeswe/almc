@@ -25,7 +25,7 @@ fnc entry main() : i32 {
 			if (array[i] < array[j])	
 				buffer = array[i], array[i] = array[j],
 					array[j] = buffer;
-
+	printf("\n");
 	for (let f: i32 = 0; f < 10; f += 1)
 		printf("%d) %d\n", f+1, array[f]); 
 	return 0;
