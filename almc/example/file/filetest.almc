@@ -1,0 +1,49 @@
+import ../localstd/io;
+import ../localstd/file;
+
+fnc file_read_test() : void {
+	printf("File read test\n");
+
+	let handle: FILE* = fopen(
+		"test.txt", "r");
+	let a: char[5];
+
+	if (handle == 0)
+		return;
+
+	let character: i32 = 0;
+	while ((character = fgetc(handle)) != -1)
+		printf("%c", character);
+
+	fseek(handle, 0u, 0); # 1 is SEEK_SET const
+
+	printf("\n\n");
+
+	while (!feof(handle))
+		printf("%c", fgetc(handle));
+
+	fclose(handle);
+}
+
+fnc file_write_test() : void {
+	printf("File write test\n");
+
+	let handle: FILE* = fopen("test2.txt", "w");
+
+	if (handle == 0)
+		return;
+
+	for (let i: i32 = 'a'; i < 'z'; i += 1)
+		fputc(i, handle), fputc('\n', handle);
+
+	fputs("this is test of fputs function!\n", handle);
+	fputs("\thello world\n", handle);
+
+	fclose(handle);
+}
+
+fnc entry main() : i32 {
+	file_read_test();
+	file_write_test();
+	return 0;
+}

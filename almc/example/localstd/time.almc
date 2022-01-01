@@ -10,4 +10,6 @@ struct LPSYSTEMTIME {
 }
 
 fnc stdcall from("kernel32")
-	GetLocalTime(_t: LPSYSTEMTIME*) : void;
+	GetLocalTime(
+		_t: LPSYSTEMTIME*
+	) : void;

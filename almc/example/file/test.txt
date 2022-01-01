@@ -1,0 +1,78 @@
+<expression> ::= <comma-expression>
+
+<comma-expression> ::= <assignment-expression>,
+  [ ',' <comma-expression> ]
+
+<assignment-expression> ::= <conditional-expression>,
+  [ <assignment-operator> <assignment-expression> ]
+
+<assignment-operator> ::= "=" | "+=" | "-=" | "*=" | "/=" |
+  "%=" | "<<=" | ">>=" | "~=" | "|=" | "&=" | "^="
+
+<conditional-expression> ::= <logical-or-expression>,
+  [ '?' <expression> ':' <conditional-expression> ]
+
+<logical-or-expression> ::= <logical-and-expression>,
+  { '||' <logical-and-expression> }
+
+<logical-and-expression> ::= <bitwise-or-expression>,
+  { '&&' <bitwise-or-expression> }
+
+<bitwise-or-expression> ::= <bitwise-xor-expression>,
+  { '|' <bitwise-xor-expression> }
+
+<bitwise-xor-expression> ::= <bitwise-and-expression>,
+  { '^' <bitwise-and-expression> }
+
+<bitwise-and-expression> ::= <equality-expression>,
+  { '&' <equality-expression> }
+
+<equality-expression> ::= <relational-expression>,
+  { <equality-operator> <relational-expression> }
+
+<equality-operator> ::= '==' | '!='
+
+<relational-expression> ::= <shift-expression>,
+  { <relational-operator> <shift-expression> }
+
+<relational-operator> ::= '<=' | '>=' | '>' | '<'
+
+<shift-expression> ::= <additive-expression>,
+  { <shift-operator> <additive-expression> }
+
+<shift-operator> ::= '>>' | '<<'
+
+<additive-expression> ::= <multiplicative-expression>,
+  { <additive-operator> <multiplicative-expression> }
+
+<additive-operator> ::= '+' | '-'
+
+<multiplicative-expression> ::= <cast-expression>,
+  { <multiplicative-operator> <cast-expression> }
+
+<multiplicative-operator> ::= '*' | '/' | '%'
+
+<cast-expression> ::= <unary-expression> |
+  'cast' '(' <type-name> ')' <cast-expression>
+
+<unary-expression> ::= <postfix-expression>
+   | '++' <unary-expression>
+   | '--' <unary-expression>
+   | <unary-operator> <cast-expression>
+   | <sizeof-expression>
+   | <lengthof-expression>
+
+<unary-operator> ::= '&' | '*' | '+' | '-' | '~' | '!'
+
+<sizeof-expression> ::= 'sizeof' '(' <type-name> ')'
+
+<lengthof-expression> ::= 'lengthof' <unary-expression>
+
+<postfix-expression> ::= <primary-expression>,
+   {  '['  <expression> ']'
+    | '.'  <identifier>
+    | '->' <identifier>
+    | '++'
+    | '--' }
+
+'let' <identifier> ':' <type-declaration> ['=' <expression>] ';'

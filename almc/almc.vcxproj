@@ -92,9 +92,10 @@
     <Text Include="test\test-cases\lexer-test-cases\TOKENS.txt" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="example\dynamic allocation\dynalloc.almc" />
+    <None Include="example\file\filetest.almc" />
     <None Include="example\linked_list\list.almc" />
     <None Include="example\linked_list\list_test.almc" />
+    <None Include="example\localstd\file.almc" />
     <None Include="example\localstd\random.almc" />
     <None Include="example\sort\selection_sort.almc" />
     <None Include="example\time\get_local_time.almc" />

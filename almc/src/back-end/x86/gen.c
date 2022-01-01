@@ -248,8 +248,14 @@ void gen_block(Block* block, StackFrame* frame)
 void gen_stack_space_alloc(AsmCodeProc* proc)
 {
 	if (proc->frame->required_space_for_locals != 0)
-		codeline_free(proc->lines[2]), proc->lines[2] = codeline_new(SUB, get_register_str(ESP),
-			frmt("%d", -(proc->frame->required_space_for_locals)));
+	{
+		int space = -(proc->frame->required_space_for_locals);
+		// rounding the needed space to nearest divisor of 4
+		while (space % MACHINE_WORD != 0)
+			space += 1;
+		codeline_free(proc->lines[2]), proc->lines[2] = 
+			codeline_new(SUB, get_register_str(ESP), frmt("%d", space));
+	}
 }
 
 void gen_proto_proc(FuncDecl* func_decl)

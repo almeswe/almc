@@ -4,7 +4,7 @@
     <ShowAllFiles>true</ShowAllFiles>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LocalDebuggerCommandArguments>C:\Users\almeswe\source\repos\almc\almc\example\sort\selection_sort.almc sort</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>C:\Users\HP\source\repos\almc\almc\example\simple-calc\simple_calc.almc calc</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>

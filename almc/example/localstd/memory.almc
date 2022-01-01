@@ -1,3 +1,15 @@
-fnc cdecl from("msvcrt") malloc(_size: u32) : u8*;
-fnc cdecl from("msvcrt") calloc(_n: u32, _size: u32) : u8*;
-fnc cdecl from("msvcrt") free(_memory: u8*) : void; 
+fnc cdecl from("msvcrt") 
+	malloc(
+		_size: u32
+	) : u8*;
+
+fnc cdecl from("msvcrt") 
+	calloc(
+		_count: u32,
+		_size: u32
+	) : u8*;
+
+fnc cdecl from("msvcrt") 
+	free(
+		_block: u8*
+	) : void; 
