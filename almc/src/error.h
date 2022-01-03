@@ -3,10 +3,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
 #include <string.h>
 
 #include "utils\context.h"
+#include "utils\console\colors.h"
 
 char** create_spell_lines(SrcContext* context);
 

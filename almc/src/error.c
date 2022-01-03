@@ -1,18 +1,15 @@
 #include "error.h"
 
-// todo: create header that will be responsive for colorized prints
-
-#define TABSIZE 8
-#define RESET_COLOR \
-	printf("\033[0m");
-#define PRINTF_YELLOW(text) \
-	printf("\033[33m"), printf(text), RESET_COLOR
-#define PRINTF_CRIMSON(text) \
-	printf("\033[1m\033[31m"), printf(text), RESET_COLOR
+#define TABSIZE						0x08
+#define ALMC_ERROR_FORECOLOR		ALMC_CONSOLE_RED
+#define ALMC_WARNING_FORECOLOR		ALMC_CONSOLE_YELLOW
+#define ALMC_CONTENT_FORECOLOR		ALMC_CONSOLE_GRAY
 
 void report_warning(const char* message, SrcContext* context)
 {
-	PRINTF_YELLOW("WARNING: "); printf(message);
+	printfc(ALMC_WARNING_FORECOLOR, "WARNING: "); 
+	printf(message);
+
 	if (!context)
 		printf("\n");
 	else
@@ -26,7 +23,9 @@ void report_warning(const char* message, SrcContext* context)
 
 void report_warning2(const char* message, SrcArea* area)
 {
-	PRINTF_YELLOW("WARNING: "); printf(message);
+	printfc(ALMC_WARNING_FORECOLOR, "WARNING: "); 
+	printf(message);
+
 	if (!area)
 		printf("\n");
 	else
@@ -40,7 +39,9 @@ void report_warning2(const char* message, SrcArea* area)
 
 void report_error(const char* message, SrcContext* context)
 {
-	PRINTF_CRIMSON("ERROR: "); printf(message);
+	printfc(ALMC_ERROR_FORECOLOR, "ERROR: "); 
+	printf(message);
+
 	if (!context)
 		printf("\n");
 	else
@@ -55,7 +56,9 @@ void report_error(const char* message, SrcContext* context)
 
 void report_error2(const char* message, SrcArea* area)
 {
-	PRINTF_CRIMSON("ERROR: "); printf(message);
+	printfc(ALMC_ERROR_FORECOLOR, "ERROR: "); 
+	printf(message);
+
 	if (!area)
 		printf("\n");
 	else

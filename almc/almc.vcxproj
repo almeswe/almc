@@ -69,6 +69,7 @@
     <ClInclude Include="src\front-end\type.h" />
     <ClInclude Include="src\front-end\token.h" />
     <ClInclude Include="src\utils\common.h" />
+    <ClInclude Include="src\utils\console\colors.h" />
     <ClInclude Include="src\utils\context.h" />
     <ClInclude Include="src\error.h" />
     <ClInclude Include="src\front-end\parser.h" />

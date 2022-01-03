@@ -199,6 +199,9 @@
     <ClInclude Include="src\back-end\back-end.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\utils\console\colors.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="test\syntax.txt" />
