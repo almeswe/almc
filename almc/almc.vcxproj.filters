@@ -95,9 +95,6 @@
     <ClCompile Include="src\back-end\x86\stack-frame.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\back-end\x86\x86types.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\back-end\x86\program.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -188,9 +185,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\back-end\x86\stack-frame.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\back-end\x86\x86types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\almc.h">

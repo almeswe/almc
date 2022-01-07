@@ -118,6 +118,8 @@ AsmProgram* program;
 void print_program(AsmProgram* program);
 void print_program_to_file(AsmProgram* program);
 
+char* get_ptr_prefix(Type* type);
+
 AsmProgram* program_new(Table* table);
 char* program_new_label(AsmProgram* program);
 char* program_get_current_label(AsmProgram* program);

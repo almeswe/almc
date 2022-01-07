@@ -1,6 +1,6 @@
 #include "program.h"
 
-//todo: add dbility of putting commentaries in code
+//todo: add ability of putting commentaries in code
 //todo: add registration for labels (needed for proper freeing the user-declared labels)
 
 void print_define(StackFrameEntity* entity)
@@ -246,6 +246,27 @@ void print_program_to_file(AsmProgram* program)
 		fputs(frmt("\nend %s\n", program->entry), file);
 		fclose(file);
 	}
+}
+
+char* get_ptr_prefix(Type* type)
+{
+	assert(!is_real_type(type));
+	if (IS_AGGREGATE_TYPE(type))
+		return "dword";
+	else
+	{
+		switch (type->size)
+		{
+		case I8_SIZE:
+			return "byte";
+		case I16_SIZE:
+			return "word";
+		case I32_SIZE:
+			return is_real_type(type) ?
+				"real4" : "dword";
+		}
+	}
+	assert(0);
 }
 
 AsmProgram* program_new(Table* table)

@@ -26,7 +26,6 @@
     <ClCompile Include="src\back-end\x86\program.c" />
     <ClCompile Include="src\back-end\x86\regtable.c" />
     <ClCompile Include="src\back-end\x86\stack-frame.c" />
-    <ClCompile Include="src\back-end\x86\x86types.c" />
     <ClCompile Include="src\front-end\ast\ast-evaluator.c" />
     <ClCompile Include="src\front-end\ast\ast-evaluator.h" />
     <ClCompile Include="src\front-end\ast\ast.c" />
@@ -57,7 +56,6 @@
     <ClInclude Include="src\back-end\x86\program.h" />
     <ClInclude Include="src\back-end\x86\regtable.h" />
     <ClInclude Include="src\back-end\x86\stack-frame.h" />
-    <ClInclude Include="src\back-end\x86\x86types.h" />
     <ClInclude Include="src\front-end\ast\ast.h" />
     <ClInclude Include="src\front-end\ast\ast-printer.h" />
     <ClInclude Include="src\front-end\front-end.h" />
