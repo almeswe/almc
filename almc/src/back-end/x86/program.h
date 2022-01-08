@@ -1,9 +1,8 @@
 #ifndef ALMC_BACK_END_x86_ASM_PROGRAM_H
 #define ALMC_BACK_END_x86_ASM_PROGRAM_H
 
-#include "x86types.h"
+#include <assert.h>
 #include "regtable.h"
-
 #include "stack-frame.h"
 #include "..\..\front-end\front-end.h"
 
