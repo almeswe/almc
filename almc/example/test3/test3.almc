@@ -1,0 +1,26 @@
+import ../localstd/memory, ../localstd/io;
+
+fnc entry array_test4() : void {
+	struct type2 {
+		m3: i32[2][3];
+	}
+
+	struct type {
+		m1: i32;
+		m3: i32;
+		m2: type2*;
+	}
+
+	let var: type* = cast(type*)malloc(1u*sizeof(type));
+	var->m2 = cast(type2*)malloc(1u*sizeof(type2));
+
+	for (let i: i32 = 0; i < 2; i += 1)
+		for (let j: i32 = 0; j < 3; j += 1)
+			var->m2->m3[i][j] = i + j,
+				printf("%d:%d %d\n", i, j, var->m2->m3[i][j]);
+
+	let c: char* = "asdasd";
+
+	free(cast(u8*)var->m2);
+	free(cast(u8*)var);
+}

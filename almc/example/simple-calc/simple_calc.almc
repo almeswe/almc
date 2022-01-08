@@ -1,7 +1,6 @@
 import ../localstd/io;
 
 fnc entry main() : i32 {
-
     let a: i32;
     let b: i32;
     let op: char;
@@ -20,6 +19,5 @@ fnc entry main() : i32 {
         printf("%d", a/b);
     else
         printf("Unknown operation met: \'%c\', code: %d", op, cast(i32)op);
-
     return 0;
 }

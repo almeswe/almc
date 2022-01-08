@@ -43,7 +43,7 @@ fnc file_write_test() : void {
 }
 
 fnc entry main() : i32 {
-	file_read_test();
+	# file_read_test();
 	file_write_test();
 	return 0;
 }

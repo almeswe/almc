@@ -1,5 +1,9 @@
 fnc cdecl from("msvcrt")
-	printf(_f: char*, ...) : void;
+	printf(
+		_format: char*,
+		...) : void;
 
 fnc cdecl from("msvcrt") 
-	scanf(_f: char*, ...) : void;
+	scanf(
+		_format: char*, 
+		...) : void;
