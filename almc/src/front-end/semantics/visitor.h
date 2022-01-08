@@ -4,6 +4,8 @@
 #include "type-checker.h"
 #include "flow-checker.h"
 
+//todo: mark functions and variables that in use, either they will be not generated
+
 typedef struct Visitor
 {
 	Table* global;

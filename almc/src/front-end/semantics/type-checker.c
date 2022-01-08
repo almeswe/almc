@@ -474,10 +474,8 @@ Type* cast_explicitly_when_const_expr(Expr* const_expr, Type* to, Type* const_ex
 		if (is_integral_type(const_expr_type) || is_pointer_like_type(const_expr_type))
 		{
 			value = evaluate_expr_itype(const_expr);
-			if (is_real_type(to))
-				const_expr_type_new = get_fvalue_type(value);
-			else
-				const_expr_type_new = get_ivalue_type((int64_t)value);
+			const_expr_type_new = is_real_type(to) ?
+				get_fvalue_type(value) : get_ivalue_type((int64_t)value);
 		}
 		else if (is_real_type(const_expr_type))
 		{
@@ -735,6 +733,12 @@ bool is_const_expr(Expr* expr, Table* table)
 		return is_enum_member(expr->idnt->svalue,
 			table);
 	case EXPR_UNARY_EXPR:
+		switch (expr->unary_expr->kind)
+		{
+		case UNARY_SIZEOF:
+		case UNARY_LENGTHOF:
+			return true;
+		}
 		return is_const_expr(expr->unary_expr->expr, table);
 	case EXPR_BINARY_EXPR:
 		return is_const_expr(expr->binary_expr->lexpr, table) &&

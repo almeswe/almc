@@ -1,6 +1,6 @@
 #include "ast-evaluator.h"
 
-#define CAST(value, type)            \
+#define static_eval_cast(value, type) \
 	if (IS_CHAR_TYPE(type))          \
 		return (char)value;          \
 	else if (IS_I8_TYPE(type))       \
@@ -24,6 +24,13 @@
 	else if (IS_F64_TYPE(type))      \
 		return (double)value;
 
+double evaluate_expr(Expr* expr)
+{
+	if (is_real_type(retrieve_expr_type(expr)))
+		return evaluate_expr_ftype(expr);
+	return evaluate_expr_itype(expr);
+}
+
 int64_t evaluate_const_itype(Const* cnst)
 {
 	switch (cnst->kind)
@@ -38,8 +45,8 @@ int64_t evaluate_const_itype(Const* cnst)
 
 int64_t evaluate_ternary_expr_itype(TernaryExpr* ternary_expr)
 {
-	return evaluate_expr_itype(ternary_expr->cond) ?
-		evaluate_expr_itype(ternary_expr->lexpr) : evaluate_expr_itype(ternary_expr->rexpr);
+	return (int64_t)evaluate_expr(ternary_expr->cond) ?
+		(int64_t)evaluate_expr(ternary_expr->lexpr) : (int64_t)evaluate_expr(ternary_expr->rexpr);
 }
 
 int64_t evaluate_binary_expr_itype(BinaryExpr* binary_expr)
@@ -47,83 +54,81 @@ int64_t evaluate_binary_expr_itype(BinaryExpr* binary_expr)
 	switch (binary_expr->kind)
 	{
 	case BINARY_ADD:
-		return (evaluate_expr_itype(binary_expr->lexpr)
-			+ evaluate_expr_itype(binary_expr->rexpr));
+		return ((int64_t)evaluate_expr(binary_expr->lexpr)
+			+ (int64_t)evaluate_expr(binary_expr->rexpr));
 	case BINARY_SUB:
-		return (evaluate_expr_itype(binary_expr->lexpr)
-			- evaluate_expr_itype(binary_expr->rexpr));
+		return ((int64_t)evaluate_expr(binary_expr->lexpr)
+			- (int64_t)evaluate_expr(binary_expr->rexpr));
 	case BINARY_MULT:
-		return (evaluate_expr_itype(binary_expr->lexpr)
-			* evaluate_expr_itype(binary_expr->rexpr));
+		return ((int64_t)evaluate_expr(binary_expr->lexpr)
+			* (int64_t)evaluate_expr(binary_expr->rexpr));
 	case BINARY_DIV:
-		return (evaluate_expr_itype(binary_expr->lexpr)
-			/ evaluate_expr_itype(binary_expr->rexpr));
+		return ((int64_t)evaluate_expr(binary_expr->lexpr)
+			/ (int64_t)evaluate_expr(binary_expr->rexpr));
 	case BINARY_MOD:
-		return (evaluate_expr_itype(binary_expr->lexpr)
-			% evaluate_expr_itype(binary_expr->rexpr));
+		return ((int64_t)evaluate_expr(binary_expr->lexpr)
+			% (int64_t)evaluate_expr(binary_expr->rexpr));
 	case BINARY_BW_AND:
-		return (evaluate_expr_itype(binary_expr->lexpr)
-			& evaluate_expr_itype(binary_expr->rexpr));
+		return ((int64_t)evaluate_expr(binary_expr->lexpr)
+			& (int64_t)evaluate_expr(binary_expr->rexpr));
 	case BINARY_BW_OR:
-		return (evaluate_expr_itype(binary_expr->lexpr)
-			| evaluate_expr_itype(binary_expr->rexpr));
+		return ((int64_t)evaluate_expr(binary_expr->lexpr)
+			| (int64_t)evaluate_expr(binary_expr->rexpr));
 	case BINARY_BW_XOR:
-		return (evaluate_expr_itype(binary_expr->lexpr)
-			^ evaluate_expr_itype(binary_expr->rexpr));
+		return ((int64_t)evaluate_expr(binary_expr->lexpr)
+			^ (int64_t)evaluate_expr(binary_expr->rexpr));
 	case BINARY_LSHIFT:
-		return (evaluate_expr_itype(binary_expr->lexpr)
-			<< evaluate_expr_itype(binary_expr->rexpr));
+		return ((int64_t)evaluate_expr(binary_expr->lexpr)
+			<< (int64_t)evaluate_expr(binary_expr->rexpr));
 	case BINARY_RSHIFT:
-		return (evaluate_expr_itype(binary_expr->lexpr)
-			>> evaluate_expr_itype(binary_expr->rexpr));
+		return ((int64_t)evaluate_expr(binary_expr->lexpr)
+			>> (int64_t)evaluate_expr(binary_expr->rexpr));
 	case BINARY_LG_AND:
-		return (evaluate_expr_itype(binary_expr->lexpr)
-			&& evaluate_expr_itype(binary_expr->rexpr));
+		return ((int64_t)evaluate_expr(binary_expr->lexpr)
+			&& (int64_t)evaluate_expr(binary_expr->rexpr));
 	case BINARY_LG_OR:
-		return (evaluate_expr_itype(binary_expr->lexpr)
-			|| evaluate_expr_itype(binary_expr->rexpr));
+		return ((int64_t)evaluate_expr(binary_expr->lexpr)
+			|| (int64_t)evaluate_expr(binary_expr->rexpr));
 	case BINARY_LG_EQ:
-		return (evaluate_expr_itype(binary_expr->lexpr)
-			== evaluate_expr_itype(binary_expr->rexpr));
+		return ((int64_t)evaluate_expr(binary_expr->lexpr)
+			== (int64_t)evaluate_expr(binary_expr->rexpr));
 	case BINARY_LG_NEQ:
-		return (evaluate_expr_itype(binary_expr->lexpr)
-			!= evaluate_expr_itype(binary_expr->rexpr));
+		return ((int64_t)evaluate_expr(binary_expr->lexpr)
+			!= (int64_t)evaluate_expr(binary_expr->rexpr));
 	case BINARY_LESS_THAN:
-		return (evaluate_expr_itype(binary_expr->lexpr)
-			< evaluate_expr_itype(binary_expr->rexpr));
+		return ((int64_t)evaluate_expr(binary_expr->lexpr)
+			< (int64_t)evaluate_expr(binary_expr->rexpr));
 	case BINARY_GREATER_THAN:
-		return (evaluate_expr_itype(binary_expr->lexpr)
-			> evaluate_expr_itype(binary_expr->rexpr));
+		return ((int64_t)evaluate_expr(binary_expr->lexpr)
+			> (int64_t)evaluate_expr(binary_expr->rexpr));
 	case BINARY_LESS_EQ_THAN:
-		return (evaluate_expr_itype(binary_expr->lexpr)
-			<= evaluate_expr_itype(binary_expr->rexpr));
+		return ((int64_t)evaluate_expr(binary_expr->lexpr)
+			<= (int64_t)evaluate_expr(binary_expr->rexpr));
 	case BINARY_GREATER_EQ_THAN:
-		return (evaluate_expr_itype(binary_expr->lexpr)
-			>= evaluate_expr_itype(binary_expr->rexpr));
+		return ((int64_t)evaluate_expr(binary_expr->lexpr)
+			>= (int64_t)evaluate_expr(binary_expr->rexpr));
 	}
 	return 1;
 }
 
 int64_t evaluate_unary_expr_itype(UnaryExpr* unary_expr)
 {
-	int64_t sizeof_value;
 	switch (unary_expr->kind)
 	{
 	case UNARY_PLUS:
-		return evaluate_expr_itype(unary_expr->expr);
+		return (int64_t)evaluate_expr(unary_expr->expr);
 	case UNARY_MINUS:
-		return -evaluate_expr_itype(unary_expr->expr);
+		return -(int64_t)evaluate_expr(unary_expr->expr);
 	case UNARY_BW_NOT:
-		return ~evaluate_expr_itype(unary_expr->expr);
+		return ~(int64_t)evaluate_expr(unary_expr->expr);
 	case UNARY_LG_NOT:
-		return !evaluate_expr_itype(unary_expr->expr);
+		return !(int64_t)evaluate_expr(unary_expr->expr);
 	case UNARY_SIZEOF:
 		return unary_expr->cast_type->size;
 	case UNARY_LENGTHOF:
-		sizeof_value = evaluate_expr_itype(unary_expr->expr);
-		return (int64_t)(sizeof(sizeof_value));
+		return retrieve_expr_type(unary_expr->expr)->size;
 	case UNARY_CAST:
-		CAST(evaluate_expr_ftype(unary_expr->expr),
+		static_eval_cast(evaluate_expr(unary_expr->expr),
 			unary_expr->cast_type);
 	}
 	return 1;
@@ -168,8 +173,8 @@ double evaluate_const_ftype(Const* cnst)
 
 double evaluate_ternary_expr_ftype(TernaryExpr* ternary_expr)
 {
-	return evaluate_expr_ftype(ternary_expr->cond) ?
-		evaluate_expr_ftype(ternary_expr->lexpr) : evaluate_expr_ftype(ternary_expr->rexpr);
+	return evaluate_expr(ternary_expr->cond) ?
+		evaluate_expr(ternary_expr->lexpr) : evaluate_expr(ternary_expr->rexpr);
 }
 
 double evaluate_binary_expr_ftype(BinaryExpr* binary_expr)
@@ -177,63 +182,61 @@ double evaluate_binary_expr_ftype(BinaryExpr* binary_expr)
 	switch (binary_expr->kind)
 	{
 	case BINARY_ADD:
-		return (evaluate_expr_ftype(binary_expr->lexpr)
-			+ evaluate_expr_ftype(binary_expr->rexpr));
+		return (evaluate_expr(binary_expr->lexpr)
+			+ evaluate_expr(binary_expr->rexpr));
 	case BINARY_SUB:
-		return (evaluate_expr_ftype(binary_expr->lexpr)
-			- evaluate_expr_ftype(binary_expr->rexpr));
+		return (evaluate_expr(binary_expr->lexpr)
+			- evaluate_expr(binary_expr->rexpr));
 	case BINARY_MULT:
-		return (evaluate_expr_ftype(binary_expr->lexpr)
-			* evaluate_expr_ftype(binary_expr->rexpr));
+		return (evaluate_expr(binary_expr->lexpr)
+			* evaluate_expr(binary_expr->rexpr));
 	case BINARY_DIV:
-		return (evaluate_expr_ftype(binary_expr->lexpr)
-			/ evaluate_expr_ftype(binary_expr->rexpr));
+		return (evaluate_expr(binary_expr->lexpr)
+			/ evaluate_expr(binary_expr->rexpr));
 	case BINARY_LG_AND:
-		return (evaluate_expr_ftype(binary_expr->lexpr)
-			&& evaluate_expr_ftype(binary_expr->rexpr));
+		return (evaluate_expr(binary_expr->lexpr)
+			&& evaluate_expr(binary_expr->rexpr));
 	case BINARY_LG_OR:
-		return (evaluate_expr_ftype(binary_expr->lexpr)
-			|| evaluate_expr_ftype(binary_expr->rexpr));
+		return (evaluate_expr(binary_expr->lexpr)
+			|| evaluate_expr(binary_expr->rexpr));
 	case BINARY_LG_EQ:
-		return (evaluate_expr_ftype(binary_expr->lexpr)
-			== evaluate_expr_ftype(binary_expr->rexpr));
+		return (evaluate_expr(binary_expr->lexpr)
+			== evaluate_expr(binary_expr->rexpr));
 	case BINARY_LG_NEQ:
-		return (evaluate_expr_ftype(binary_expr->lexpr)
-			!= evaluate_expr_ftype(binary_expr->rexpr));
+		return (evaluate_expr(binary_expr->lexpr)
+			!= evaluate_expr(binary_expr->rexpr));
 	case BINARY_LESS_THAN:
-		return (evaluate_expr_ftype(binary_expr->lexpr)
-			< evaluate_expr_ftype(binary_expr->rexpr));
+		return (evaluate_expr(binary_expr->lexpr)
+			< evaluate_expr(binary_expr->rexpr));
 	case BINARY_GREATER_THAN:
-		return (evaluate_expr_ftype(binary_expr->lexpr)
-			> evaluate_expr_ftype(binary_expr->rexpr));
+		return (evaluate_expr(binary_expr->lexpr)
+			> evaluate_expr(binary_expr->rexpr));
 	case BINARY_LESS_EQ_THAN:
-		return (evaluate_expr_ftype(binary_expr->lexpr)
-			<= evaluate_expr_ftype(binary_expr->rexpr));
+		return (evaluate_expr(binary_expr->lexpr)
+			<= evaluate_expr(binary_expr->rexpr));
 	case BINARY_GREATER_EQ_THAN:
-		return (evaluate_expr_ftype(binary_expr->lexpr)
-			>= evaluate_expr_ftype(binary_expr->rexpr));
+		return (evaluate_expr(binary_expr->lexpr)
+			>= evaluate_expr(binary_expr->rexpr));
 	}
 	return 1.0f;
 }
 
 double evaluate_unary_expr_ftype(UnaryExpr* unary_expr)
 {
-	double sizeof_value;
 	switch (unary_expr->kind)
 	{
 	case UNARY_PLUS:
-		return evaluate_expr_ftype(unary_expr->expr);
+		return evaluate_expr(unary_expr->expr);
 	case UNARY_MINUS:
-		return -evaluate_expr_ftype(unary_expr->expr);
+		return -evaluate_expr(unary_expr->expr);
 	case UNARY_LG_NOT:
-		return !evaluate_expr_ftype(unary_expr->expr);
+		return !evaluate_expr(unary_expr->expr);
 	case UNARY_SIZEOF:
 		return unary_expr->cast_type->size;
 	case UNARY_LENGTHOF:
-		sizeof_value = evaluate_expr_ftype(unary_expr->expr);
-		return (double)(sizeof(sizeof_value));
+		return (double)retrieve_expr_type(unary_expr->expr)->size;
 	case UNARY_CAST:
-		CAST(evaluate_expr_ftype(unary_expr->expr),
+		static_eval_cast(evaluate_expr(unary_expr->expr),
 			unary_expr->cast_type);
 	}
 	return 1.0f;
@@ -287,6 +290,8 @@ bool value_in_bounds_of_type(Type* type, double value)
 	{
 		if (IS_F32_TYPE(type))
 			return IN_BOUNDS_OF(FLT_MAX, FLT_MIN, value);
+		if (IS_F64_TYPE(type))
+			return IN_BOUNDS_OF(DBL_MAX, DBL_MIN, value);
 	}
 	return false;
 }
