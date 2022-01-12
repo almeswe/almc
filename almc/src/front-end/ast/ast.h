@@ -98,7 +98,7 @@ typedef struct CallConv
 
 typedef struct ExternalFuncSpec
 {
-	const char* lib;
+	char* lib;
 } ExternalFuncSpec;
 
 typedef struct FuncSpec

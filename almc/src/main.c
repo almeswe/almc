@@ -57,11 +57,11 @@ void assemble_and_link()
 			options->target.object_path));
 		//replace .obj .exe file to source folder 
 		system(frmt("replace %s %s %s", options->target.object_path,
-			file_exists(options->target.src_object_path) ? "/s" : "/a"), 
-				options->target.root);
+			file_exists(options->target.src_object_path) ? "/s" : "/a", 
+			options->target.root));
 		system(frmt("replace %s %s %s", options->target.binary_path,
-			file_exists(options->target.src_binary_path) ? "/s" : "/a"),
-				options->target.root);
+			file_exists(options->target.src_binary_path) ? "/s" : "/a",
+				options->target.root));
 		
 		system(frmt("del %s", options->target.binary_path));
 		system(frmt("del %s", options->target.object_path));

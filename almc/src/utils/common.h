@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include <stdbool.h>
 
 #define new(type)			   (type*)malloc(sizeof(type))        

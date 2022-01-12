@@ -3,7 +3,7 @@
 void print_ast(AstRoot* ast)
 {
 	printf("ast-root:\n");
-	for (int i = 0; i < sbuffer_len(ast->stmts); i++)
+	for (size_t i = 0; i < sbuffer_len(ast->stmts); i++)
 		print_stmt(ast->stmts[i], "");
 }
 
@@ -115,7 +115,7 @@ void print_func_call(FuncCall* func_call, const char* indent)
 		printfc(ALMC_CONSOLE_GREEN, "%sfunc-call: %s(args: %d)\n",
 			indent, func_call->name, len);
 	if (len)
-		for (int i = 0; i < len; i++)
+		for (size_t i = 0; i < len; i++)
 			print_expr(func_call->args[i], indent);
 	else
 		printf("%s   no-args\n", indent);
@@ -238,7 +238,7 @@ void print_initializer(Initializer* initializer, const char* indent)
 	printfc(ALMC_CONSOLE_GREEN, "%sinitializer:\n", indent);
 	indent = frmt("%s   ", indent);
 
-	for (int i = 0; i < sbuffer_len(initializer->values); i++)
+	for (size_t i = 0; i < sbuffer_len(initializer->values); i++)
 		printf("%sitem %d:\n", indent, i + 1), 
 			print_expr(initializer->values[i], indent);
 }
@@ -297,7 +297,7 @@ void print_block(Block* block, const char* indent)
 	printfc(ALMC_CONSOLE_CYAN, "%sblock:\n", indent);
 	if (!sbuffer_len(block->stmts))
 		printf("%s   empty-block\n", indent);
-	for (int i = 0; i < sbuffer_len(block->stmts); i++)
+	for (size_t i = 0; i < sbuffer_len(block->stmts); i++)
 		print_stmt(block->stmts[i], indent);
 }
 
@@ -333,7 +333,7 @@ void print_func_decl(FuncDecl* func_decl, const char* indent)
 	printfc(ALMC_CONSOLE_CYAN, "%sfunc-params:\n", indent);
 	if (!sbuffer_len(func_decl->params))
 		printf("%s   no-params\n", indent);
-	for (int i = 0; i < sbuffer_len(func_decl->params); i++)
+	for (size_t i = 0; i < sbuffer_len(func_decl->params); i++)
 		print_type_var(func_decl->params[i], frmt("   %s", indent));
 
 	if (func_decl->body)
@@ -366,7 +366,7 @@ void print_enum_decl(EnumDecl* enum_decl, const char* indent)
 {
 	printfc(ALMC_CONSOLE_MAGENTA, "%senum-decl: %s{idnts: %d}\n",
 		indent, enum_decl->name, sbuffer_len(enum_decl->members));
-	for (int i = 0; i < sbuffer_len(enum_decl->members); i++)
+	for (size_t i = 0; i < sbuffer_len(enum_decl->members); i++)
 		print_enum_member(enum_decl->members[i], indent);
 }
 
@@ -374,7 +374,7 @@ void print_union_decl(UnionDecl* union_decl, const char* indent)
 {
 	printfc(ALMC_CONSOLE_MAGENTA, "%sunion-decl: %s{mmbrs: %d}\n", 
 		indent, union_decl->name, sbuffer_len(union_decl->members));
-	for (int i = 0; i < sbuffer_len(union_decl->members); i++)
+	for (size_t i = 0; i < sbuffer_len(union_decl->members); i++)
 		print_member(union_decl->members[i], frmt("   %s", indent));
 }
 
@@ -382,7 +382,7 @@ void print_struct_decl(StructDecl* struct_decl, const char* indent)
 {
 	printfc(ALMC_CONSOLE_MAGENTA, "%sstruct-decl: %s{mmbrs: %d}\n", 
 		indent, struct_decl->name, sbuffer_len(struct_decl->members));
-	for (int i = 0; i < sbuffer_len(struct_decl->members); i++)
+	for (size_t i = 0; i < sbuffer_len(struct_decl->members); i++)
 		print_member(struct_decl->members[i], frmt("   %s", indent));
 }
 
@@ -485,7 +485,7 @@ void print_if_stmt(IfStmt* if_stmt, const char* indent)
 	printfc(ALMC_CONSOLE_CYAN, "%sif-body:\n", indent2);
 	print_block(if_stmt->body, frmt("   %s", indent2));
 
-	for (int i = 0; i < sbuffer_len(if_stmt->elifs); i++)
+	for (size_t i = 0; i < sbuffer_len(if_stmt->elifs); i++)
 	{
 		printfc(ALMC_CONSOLE_MAGENTA, "%selif-stmt:\n", indent);
 
@@ -550,7 +550,7 @@ void print_switch_stmt(SwitchStmt* switch_stmt, const char* indent)
 	printfc(ALMC_CONSOLE_MAGENTA, "%sswitch-cond:\n", indent);
 	print_expr(switch_stmt->cond, indent);
 
-	for (int i = 0; i < sbuffer_len(switch_stmt->cases); i++)
+	for (size_t i = 0; i < sbuffer_len(switch_stmt->cases); i++)
 		print_case_stmt(switch_stmt->cases[i], frmt("%s   ", indent));
 
 	if (switch_stmt->default_case)
@@ -563,7 +563,7 @@ void print_switch_stmt(SwitchStmt* switch_stmt, const char* indent)
 void print_import_stmt(ImportStmt* import_stmt, const char* indent)
 {
 	printfc(ALMC_CONSOLE_RED, "%simport-stmt:\n", indent);
-	for (int i = 0; i < sbuffer_len(import_stmt->ast->stmts); i++)
+	for (size_t i = 0; i < sbuffer_len(import_stmt->ast->stmts); i++)
 		print_stmt(import_stmt->ast->stmts[i], indent);
 }
 

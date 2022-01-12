@@ -42,6 +42,7 @@
 // just multiply on current index
 #define REGISTER_ENUMERATOR_SCALAR 0x3
 
+
 #include "instructions.h"
 #include "..\..\utils\common.h"
 
@@ -59,7 +60,7 @@ typedef struct x86_RegisterTable
 
 RegisterTable* regtable_new();
 
-const char* get_register_str(int reg);
+char* get_register_str(int reg);
 int reserve_register(RegisterTable* table, int reg);
 int unreserve_register(RegisterTable* table, int reg);
 int get_unreserved_register(RegisterTable* table, RegisterSize size);

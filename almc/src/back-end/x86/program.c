@@ -31,20 +31,23 @@ void print_label(AsmCodeLine* line)
 void print_codeline(AsmCodeLine* line)
 {
 	if (line->instruction == _LABEL)
-		return print_label(line);
-	switch (sbuffer_len(line->arguments))
+		print_label(line);
+	else
 	{
-	case 0:
-		printf("\t%s\n", instr_tostr(line->instruction));
-		break;
-	case 1:
-		printf("\t%s\t%s\n", instr_tostr(line->instruction),
-			line->arguments[0]);
-		break;
-	case 2:
-		printf("\t%s\t%s, %s\n", instr_tostr(line->instruction),
-			line->arguments[0], line->arguments[1]);
-		break;
+		switch (sbuffer_len(line->arguments))
+		{
+		case 0:
+			printf("\t%s\n", instr_tostr(line->instruction));
+			break;
+		case 1:
+			printf("\t%s\t%s\n", instr_tostr(line->instruction),
+				line->arguments[0]);
+			break;
+		case 2:
+			printf("\t%s\t%s, %s\n", instr_tostr(line->instruction),
+				line->arguments[0], line->arguments[1]);
+			break;
+		}
 	}
 }
 
@@ -150,20 +153,23 @@ void print_label_to_file(AsmCodeLine* line, FILE* file)
 void print_codeline_to_file(AsmCodeLine* line, FILE* file)
 {
 	if (line->instruction == _LABEL)
-		return print_label_to_file(line, file);
-	switch (sbuffer_len(line->arguments))
+		print_label_to_file(line, file);
+	else
 	{
-	case 0:
-		fputs(frmt("\t%s\n", instr_tostr(line->instruction)), file);
-		break;
-	case 1:
-		fputs(frmt("\t%s\t%s\n", instr_tostr(line->instruction),
-			line->arguments[0]), file);
-		break;
-	case 2:
-		fputs(frmt("\t%s\t%s, %s\n", instr_tostr(line->instruction),
-			line->arguments[0], line->arguments[1]), file);
-		break;
+		switch (sbuffer_len(line->arguments))
+		{
+		case 0:
+			fputs(frmt("\t%s\n", instr_tostr(line->instruction)), file);
+			break;
+		case 1:
+			fputs(frmt("\t%s\t%s\n", instr_tostr(line->instruction),
+				line->arguments[0]), file);
+			break;
+		case 2:
+			fputs(frmt("\t%s\t%s, %s\n", instr_tostr(line->instruction),
+				line->arguments[0], line->arguments[1]), file);
+			break;
+		}
 	}
 }
 

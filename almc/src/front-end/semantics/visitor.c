@@ -212,7 +212,6 @@ void visit_idnt(Idnt* idnt, Table* table, int is_in_assign)
 			//		idnt->svalue), idnt->context);
 		}
 	}
-
 }
 
 void visit_enum_member(Idnt* idnt, Table* table)
@@ -413,7 +412,7 @@ void visit_array_member_accessor(BinaryExpr* arr_accessor_expr, Table* table)
 void visit_condition(Expr* condition, Table* table)
 {
 	visit_expr(condition, table);
-	Type* type = retrieve_expr_type(condition, table);
+	Type* type = retrieve_expr_type(condition);
 	if (!is_numeric_type(type) && !is_pointer_like_type(type))
 		report_error2(frmt("Condition expression must have numeric type, not \'%s\'",
 			type_tostr_plain(type)), get_expr_area(condition));
@@ -440,7 +439,7 @@ void check_for_conjuction_collisions(SwitchStmt* switch_stmt)
 {
 	int collision_resolved = 1;
 	int cases_count = sbuffer_len(switch_stmt->cases);
-	for (size_t i = 0; i < cases_count; i++)
+	for (int i = 0; i < cases_count; i++)
 		collision_resolved = !switch_stmt->cases[i]->is_conjucted;
 	if (!collision_resolved)
 		report_error2("Expected body for this case statement.",
@@ -492,7 +491,7 @@ void visit_switch_stmt(SwitchStmt* switch_stmt, Table* table)
 		report_error2(frmt("Condition of switch statement must be of integral type, not \'%s\'", 
 			type_tostr_plain(switch_cond_type)), get_expr_area(switch_stmt->cond));
 
-	check_for_conjuction_collisions(switch_stmt, table);
+	check_for_conjuction_collisions(switch_stmt);
 	check_for_duplicated_case_conditions(switch_stmt, table);
 
 	for (size_t i = 0; i < sbuffer_len(switch_stmt->cases); i++)
@@ -505,7 +504,7 @@ void visit_switch_stmt(SwitchStmt* switch_stmt, Table* table)
 				visit_block(switch_stmt->cases[i]->body, local);
 
 		switch_case_type = get_expr_type(switch_stmt->cases[i]->value, local);
-		if (!can_cast_implicitly(switch_cond_type, switch_case_type, local))
+		if (!can_cast_implicitly(switch_cond_type, switch_case_type))
 			report_error2(frmt("Cannot use case statement with type \'%s\' when switch's condition has type \'%s\'",
 				type_tostr_plain(switch_case_type), type_tostr_plain(switch_cond_type)),
 					get_expr_area(switch_stmt->cases[i]->value));
@@ -966,11 +965,11 @@ uint32_t get_size_of_aggregate_type(Type* type, Table* table)
 			buffer = get_size_of_type(type->members[i]->type, table),
 				size = max(size, buffer);
 	else if (IS_ARRAY_TYPE(type))
-		size = get_size_of_type(type->base, table) *
+		size = (int32_t)get_size_of_type(type->base, table) *
 			evaluate_expr_itype(type->dimension);
 	else
 		report_error(frmt("Passed type \'%s\' is not aggregate, "
-			"in get_user_type_size_in_bytes()"), type_tostr_plain(type), NULL);
+			"in get_user_type_size_in_bytes()", type_tostr_plain(type)), NULL);
 	return size;
 }
 

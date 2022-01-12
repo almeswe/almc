@@ -56,19 +56,19 @@ Const* const_new(ConstKind type, const char* svalue, SrcContext* context)
 {
 #define CONST_CONVERSION(to, type, func)	   \
 	if (strlen(svalue) <= 1)				   \
-		cnst->to = atof(svalue);			   \
+		cnst->to = (type)atof(svalue);		   \
 	else									   \
 	{								           \
 		switch (tolower(svalue[1]))		       \
 		{									   \
 		case 'x':							   \
-			cnst->to = func(svalue + 2, NULL, 16);\
+			cnst->to = (type)func(svalue + 2, NULL, 16);\
 			break;							   \
 		case 'o':							   \
-			cnst->to = func(svalue + 2, NULL, 8); \
+			cnst->to = (type)func(svalue + 2, NULL, 8); \
 			break;							   \
 		case 'b':							   \
-			cnst->to = func(svalue + 2, NULL, 2); \
+			cnst->to = (type)func(svalue + 2, NULL, 2); \
 			break;							   \
 		default:						       \
 			cnst->to = (type)atof(svalue);	   \

@@ -28,7 +28,7 @@ double evaluate_expr(Expr* expr)
 {
 	if (is_real_type(retrieve_expr_type(expr)))
 		return evaluate_expr_ftype(expr);
-	return evaluate_expr_itype(expr);
+	return (double)evaluate_expr_itype(expr);
 }
 
 int64_t evaluate_const_itype(Const* cnst)
@@ -124,9 +124,9 @@ int64_t evaluate_unary_expr_itype(UnaryExpr* unary_expr)
 	case UNARY_LG_NOT:
 		return !(int64_t)evaluate_expr(unary_expr->expr);
 	case UNARY_SIZEOF:
-		return unary_expr->cast_type->size;
+		return (int64_t)unary_expr->cast_type->size;
 	case UNARY_LENGTHOF:
-		return retrieve_expr_type(unary_expr->expr)->size;
+		return (int64_t)retrieve_expr_type(unary_expr->expr)->size;
 	case UNARY_CAST:
 		static_eval_cast(evaluate_expr(unary_expr->expr),
 			unary_expr->cast_type);

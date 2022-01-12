@@ -15,13 +15,13 @@
 void gen_const_expr32(Expr* expr)
 {
 	reserve_register(REGISTERS, EAX);
-	PROC_CODE_LINE2(MOV, get_register_str(EAX),
+	PROC_CODE_LINE2(MOV, get_register_str(EAX), 
 		frmt("%d", evaluate_expr_itype(expr)));
 }
 
 void gen_mov_reg_to32(int reg, char* data, Type* datatype)
 {
-	char* reg_part = get_part_of_reg(reg, 
+	int reg_part = get_part_of_reg(reg, 
 		datatype->size * 8);
 	char* reg_arg = get_register_str(reg_part);
 	PROC_CODE_LINE2(MOV, data, get_register_str(reg_part));
@@ -44,27 +44,33 @@ void gen_mov_to_reg32(int reg, char* data, Type* datatype)
 void gen_expr32(Expr* expr, StackFrame* frame)
 {
 	if (is_const_expr(expr, TABLE))
-		return gen_const_expr32(expr);
+		gen_const_expr32(expr);
 	else
 	{
 		switch (expr->kind)
 		{
 		case EXPR_IDNT:
 		case EXPR_CONST:
-			return reserve_register(REGISTERS, EAX),
+			reserve_register(REGISTERS, EAX),
 				gen_primary_expr32(expr, EAX, frame);
+			break;
 		case EXPR_STRING:
-			return reserve_register(REGISTERS, EAX),
+			reserve_register(REGISTERS, EAX),
 				gen_string32(expr->str, EAX);
+			break;
 		case EXPR_UNARY_EXPR:
-			return reserve_register(REGISTERS, EAX), 
+			reserve_register(REGISTERS, EAX), 
 				gen_unary_expr32(expr->unary_expr, frame);
+			break;
 		case EXPR_BINARY_EXPR:
-			return gen_binary_expr32(expr->binary_expr, frame);
+			gen_binary_expr32(expr->binary_expr, frame);
+			break;
 		case EXPR_TERNARY_EXPR:
-			return gen_ternary_expr(expr->ternary_expr, frame);
+			gen_ternary_expr(expr->ternary_expr, frame);
+			break;
 		case EXPR_FUNC_CALL:
-			return gen_func_call32(expr->func_call, frame);
+			gen_func_call32(expr->func_call, frame);
+			break;
 		default:
 			report_error("Unknown expression kind met."
 			 " in gen_expr32", NULL);
@@ -131,7 +137,7 @@ void gen_string32(Str* str, int reg)
 void gen_primary_expr32(Expr* prim_expr, int reg, StackFrame* frame)
 {
 	char* reg_arg = get_register_str(reg);
-	
+
 	switch (prim_expr->kind)
 	{
 	case EXPR_CONST:
@@ -156,7 +162,8 @@ void gen_primary_expr32(Expr* prim_expr, int reg, StackFrame* frame)
 		}
 		break;
 	case EXPR_IDNT:
-		return gen_idnt32(prim_expr->idnt, reg, frame);
+		gen_idnt32(prim_expr->idnt, reg, frame);
+		break;
 	default:
 		report_error("Unknown primary expression kind met."
 		 " in gen_primary_expr32", NULL);
@@ -220,15 +227,20 @@ void gen_unary_expr32(UnaryExpr* unary_expr, StackFrame* frame)
 	switch (unary_expr->kind)
 	{
 	case UNARY_SIZEOF:
-		return gen_unary_sizeof32(unary_expr);
+		gen_unary_sizeof32(unary_expr);
+		break;
 	case UNARY_LENGTHOF:
-		return gen_unary_lengthof32(unary_expr);
+		gen_unary_lengthof32(unary_expr);
+		break;
 	case UNARY_CAST:
-		return gen_expr32(unary_expr->expr, frame);
+		gen_expr32(unary_expr->expr, frame);
+		break;
 	case UNARY_ADDRESS:
-		return gen_unary_address32(unary_expr, frame);
+		gen_unary_address32(unary_expr, frame);
+		break;
 	case UNARY_DEREFERENCE:
-		return gen_unary_dereference32(unary_expr, frame);
+		gen_unary_dereference32(unary_expr, frame);
+		break;
 	}
 
 	if (!IS_PRIMARY_EXPR(unary_expr->expr))
@@ -250,7 +262,8 @@ void gen_unary_expr32(UnaryExpr* unary_expr, StackFrame* frame)
 			eax_reg_arg);
 		break;
 	case UNARY_LG_NOT:
-		return gen_unary_lg_not32(unary_expr);
+		gen_unary_lg_not32(unary_expr);
+		break;
 	default:
 		report_error("Unknown unary expression kind met." 
 			" in gen_unary_expr32", NULL);
@@ -524,7 +537,8 @@ void gen_binary_expr32(BinaryExpr* binary_expr, StackFrame* frame)
 	case BINARY_MEMBER_ACCESSOR:
 	case BINARY_PTR_MEMBER_ACCESSOR:
 	case BINARY_ARR_MEMBER_ACCESSOR:
-		return gen_binary_accessor_expr32(binary_expr, frame);
+		gen_binary_accessor_expr32(binary_expr, frame);
+		break;
 
 	case BINARY_LG_OR:
 	case BINARY_LG_AND:
@@ -534,7 +548,8 @@ void gen_binary_expr32(BinaryExpr* binary_expr, StackFrame* frame)
 	case BINARY_GREATER_THAN:
 	case BINARY_LESS_EQ_THAN:
 	case BINARY_GREATER_EQ_THAN:
-		return gen_binary_relative_expr32(binary_expr, frame);
+		gen_binary_relative_expr32(binary_expr, frame);
+		break;
 
 	case BINARY_ASSIGN:
 	case BINARY_ADD_ASSIGN:
@@ -547,10 +562,12 @@ void gen_binary_expr32(BinaryExpr* binary_expr, StackFrame* frame)
 	case BINARY_BW_OR_ASSIGN:
 	case BINARY_BW_AND_ASSIGN:
 	case BINARY_BW_XOR_ASSIGN:
-		return gen_binary_assign_expr32(binary_expr, frame);
+		gen_binary_assign_expr32(binary_expr, frame);
+		break;
 	
 	case BINARY_COMMA:
-		return gen_binary_comma_expr32(binary_expr, frame);
+		gen_binary_comma_expr32(binary_expr, frame);
+		break;
 	}
 
 	if (!IS_PRIMARY_EXPR(binary_expr->lexpr) &&
@@ -817,6 +834,7 @@ char* addressable_data_arg(_addressable_data* data)
 		report_error("Unsupported addressable data kind met."
 			" in addressable_data_arg.", NULL);
 	}
+	return NULL;
 }
 
 _addressable_data* gen_addressable_data(Expr* expr, StackFrame* frame)
@@ -848,6 +866,7 @@ _addressable_data* gen_addressable_data(Expr* expr, StackFrame* frame)
 	default:
 		assert(0);
 	}
+	return NULL;
 }
 
 _addressable_data* gen_addressable_data_for_idnt(
@@ -922,7 +941,10 @@ _addressable_data* gen_addressable_data_for_array_accessor(
 
 	data->kind = ADDRESSABLE_ARR_ACCESSOR;
 	Type* ltype = retrieve_expr_type(expr->lexpr);
-	uint32_t capacity = IS_ARRAY_TYPE(ltype) ? evaluate_expr_itype(
+	if (!ltype)
+		report_error("Cannot retrieve ltype"
+			" in gen_addressable_data_for_array_accessor()", NULL);
+	uint32_t capacity = IS_ARRAY_TYPE(ltype) ? (uint32_t)evaluate_expr_itype(
 		get_array_dimension(ltype, data->dimension)) : 1;
 	uint32_t typesize = IS_POINTER_TYPE(ltype) ? 
 		ltype->base->size : get_array_base_type(ltype)->size;
@@ -1010,6 +1032,7 @@ _addressable_data* gen_addressable_data_for_struct_accessor(
 	// this issue is resolved in visitor
 	report_error("There are no corresponding struct member found,"
 		" it is a bug actually. in gen...data_for_struct_accessor().", NULL);
+	return NULL;
 }
 
 _addressable_data* gen_addressable_data_for_struct_ptr_accessor(

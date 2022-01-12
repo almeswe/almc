@@ -201,8 +201,7 @@ Type* parse_type(Parser* parser)
 		ASSIGN_TYPE(f32_type);
 	case TOKEN_KEYWORD_FLOAT64:
 		ASSIGN_TYPE(f64_type);
-	case TOKEN_KEYWORD_STRING:
-		assert(0);
+	//case TOKEN_KEYWORD_STRING:
 	case TOKEN_IDNT:
 		type = type_new(token->svalue);
 		break;
@@ -1372,16 +1371,16 @@ AstRoot* parse_module(const char* module_path)
 	return module;
 }
 
-char is_stmt_for_import(Stmt* stmt)
+bool is_stmt_for_import(Stmt* stmt)
 {
 	switch (stmt->kind)
 	{
 	case STMT_TYPE_DECL:
 	case STMT_VAR_DECL:
 	case STMT_FUNC_DECL:
-		return 1;
+		return true;
 	}
-	return 0;
+	return false;
 }
 
 char* get_stmt_for_import_name(Stmt* stmt)

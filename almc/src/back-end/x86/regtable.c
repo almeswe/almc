@@ -42,7 +42,7 @@ RegisterTable* regtable_new()
 	return regtable;
 }
 
-const char* get_register_str(int reg)
+char* get_register_str(int reg)
 {
 	return (reg < 0 || reg > REGISTERS_COUNT) ?
 		NULL : registers_str[reg];
@@ -51,7 +51,7 @@ const char* get_register_str(int reg)
 int get_unreserved_register(RegisterTable* table, RegisterSize size)
 {
 	// this value would map to the needed register size depending on size
-	int offset;
+	int offset = 0;
 	switch (size)
 	{
 	case REGSIZE_BYTE:

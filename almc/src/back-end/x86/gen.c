@@ -53,11 +53,14 @@ void gen_loop_stmt(LoopStmt* loop_stmt, StackFrame* frame)
 	switch (loop_stmt->kind)
 	{
 	case LOOP_DO:
-		return gen_do_loop_stmt(loop_stmt->do_loop, frame);
+		gen_do_loop_stmt(loop_stmt->do_loop, frame);
+		break;
 	case LOOP_FOR:
-		return gen_for_loop_stmt(loop_stmt->for_loop, frame);
+		gen_for_loop_stmt(loop_stmt->for_loop, frame);
+		break;
 	case LOOP_WHILE:
-		return gen_while_loop_stmt(loop_stmt->while_loop, frame);
+		gen_while_loop_stmt(loop_stmt->while_loop, frame);
+		break;
 	default:
 		assert(0);
 	}
@@ -220,20 +223,26 @@ void gen_stmt(Stmt* stmt, StackFrame* frame)
 	switch (stmt->kind)
 	{
 	case STMT_EXPR:
-		return gen_expr32(stmt->expr_stmt->expr, frame);
+		gen_expr32(stmt->expr_stmt->expr, frame);
+		break;
 	case STMT_JUMP:
-		return gen_jump_stmt(stmt->jump_stmt, frame);
+		gen_jump_stmt(stmt->jump_stmt, frame);
+		break;
 	case STMT_IF:
-		return gen_if_stmt(stmt->if_stmt, frame);
+		gen_if_stmt(stmt->if_stmt, frame);
+		break;
 	case STMT_VAR_DECL:
-		return gen_var_decl_stmt(stmt->var_decl, frame);
+		gen_var_decl_stmt(stmt->var_decl, frame);
+		break;
 	case STMT_LOOP:
-		return gen_loop_stmt(stmt->loop_stmt, frame);
+		gen_loop_stmt(stmt->loop_stmt, frame);
+		break;
 	case STMT_EMPTY:
 	case STMT_TYPE_DECL:
-		return;
+		break;
 	case STMT_LABEL_DECL:
-		return gen_label_decl_stmt(stmt->label_decl);
+		gen_label_decl_stmt(stmt->label_decl);
+		break;
 	default:
 		assert(0);
 	}
@@ -268,39 +277,41 @@ void gen_proto_proc(FuncDecl* func_decl)
 void gen_func_decl_stmt(FuncDecl* func_decl)
 {
 	if (func_decl->spec->is_external)
-		return gen_proto_proc(func_decl);
+		gen_proto_proc(func_decl);
+	else
+	{
+		AsmCodeProc* proc = proc_new(func_decl);
+		PROGRAM_ADD_PROC(proc);
 
-	AsmCodeProc* proc = proc_new(func_decl);
-	PROGRAM_ADD_PROC(proc);
+		// function prologue
+		reserve_register(REGISTERS, ESP);
+		reserve_register(REGISTERS, EBP);
+		PROC_CODE_LINE1(PUSH, get_register_str(EBP));
+		PROC_CODE_LINE2(MOV, get_register_str(EBP),
+			get_register_str(ESP));
 
-	// function prologue
-	reserve_register(REGISTERS, ESP);
-	reserve_register(REGISTERS, EBP);
-	PROC_CODE_LINE1(PUSH, get_register_str(EBP));
-	PROC_CODE_LINE2(MOV,  get_register_str(EBP), 
-		get_register_str(ESP));
+		// require space for stack allocation command
+		PROC_CODE_LINE0(NOP);
+		//------------------
+		if (func_decl->spec->is_entry)
+			PROGRAM_SET_ENTRY(proc->name);
+		gen_block(func_decl->body, proc->frame);
 
-	// require space for stack allocation command
-	PROC_CODE_LINE0(NOP);
-	//------------------
-	if (func_decl->spec->is_entry)
-		PROGRAM_SET_ENTRY(proc->name);
-	gen_block(func_decl->body, proc->frame);
-	
-	// insert command for stack allocation
-	gen_stack_space_alloc(proc);
+		// insert command for stack allocation
+		gen_stack_space_alloc(proc);
 
-	// function epilogue
-	unreserve_register(REGISTERS, ESP);
-	unreserve_register(REGISTERS, EBP);
-	// reference to main return routine
-	if (proc->frame->return_declared)
-		PROC_CODE_LINE1(_LABEL, proc->frame->return_label);
-	PROC_CODE_LINE2(MOV, get_register_str(ESP),
-		get_register_str(EBP));
-	PROC_CODE_LINE1(POP, get_register_str(EBP));
-	gen_callee_stack_clearing(func_decl);
-	//------------------
+		// function epilogue
+		unreserve_register(REGISTERS, ESP);
+		unreserve_register(REGISTERS, EBP);
+		// reference to main return routine
+		if (proc->frame->return_declared)
+			PROC_CODE_LINE1(_LABEL, proc->frame->return_label);
+		PROC_CODE_LINE2(MOV, get_register_str(ESP),
+			get_register_str(EBP));
+		PROC_CODE_LINE1(POP, get_register_str(EBP));
+		gen_callee_stack_clearing(func_decl);
+		//------------------
+	}
 }
 
 AsmProgram* gen(AstRoot* ast, Table* table)
@@ -323,11 +334,13 @@ void gen_global_stmt(Stmt* stmt)
 	{
 	case STMT_EMPTY:
 	case STMT_TYPE_DECL:
-		return;
+		break;
 	case STMT_IMPORT:
-		return gen_import_stmt(stmt->import_stmt);
+		gen_import_stmt(stmt->import_stmt);
+		break;
 	case STMT_FUNC_DECL:
-		return gen_func_decl_stmt(stmt->func_decl);
+		gen_func_decl_stmt(stmt->func_decl);
+		break;
 	default:
 		report_error("This kind of statement is not allowed in global scope.", NULL);
 	}
