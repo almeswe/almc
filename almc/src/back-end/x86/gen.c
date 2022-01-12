@@ -237,6 +237,9 @@ void gen_stmt(Stmt* stmt, StackFrame* frame)
 	case STMT_LOOP:
 		gen_loop_stmt(stmt->loop_stmt, frame);
 		break;
+	case STMT_BLOCK:
+		gen_block(stmt->block, frame);
+		break;
 	case STMT_EMPTY:
 	case STMT_TYPE_DECL:
 		break;

@@ -26,34 +26,58 @@ StackFrameEntity* stack_frame_entity_new(Type* type, uint32_t offset, char* defi
 
 StackFrameEntity* get_entity_by_name(const char* name, StackFrame* frame)
 {
+	long suitable_count = 1;
+	bool suitable_found = false;
+	StackFrameEntity* suitable = NULL;
 	char* definition = frmt("_%s$", name);
-	for (size_t i = 0; i < sbuffer_len(frame->entities); i++)
-		if (strcmp(frame->entities[i]->definition, definition) == 0)
-			return free(definition), frame->entities[i];
-	return free(definition), NULL;
+
+	/*
+		The reason why loop located here is because in case of variables with the same
+		name but in different scopes (of the same level of course) and with the same parent scope,
+		creates the problem of local's name collision.
+		To solve it we need to append the number to the end of local variable, and then when we need
+		to retrieve the entity by name, we list all variables available in this scope,
+		with appropriate number at the end. (which we increment inside loop)
+		The last suitable entity will be which we wanted.
+	*/
+
+	while (!suitable_found)
+	{
+		suitable_found = true;
+		for (size_t i = 0; i < sbuffer_len(frame->entities); i++)
+			if (strcmp(frame->entities[i]->definition, definition) == 0)
+				suitable_count++, suitable_found = false, suitable = frame->entities[i],
+					free(definition), definition = frmt("_%s%d$", name, suitable_count);
+	}
+
+	return free(definition), suitable;
 }
 
-StackFrameEntity* get_local_by_name(const char* name, StackFrame* frame)
+char* get_local_definition(VarDecl* local, StackFrame* frame)
 {
-	char* definition = frmt("_%s$", name);
-	for (size_t i = 0; i < sbuffer_len(frame->entities); i++)
-		if (strcmp(frame->entities[i]->definition, definition) == 0)
-			return free(definition), frame->entities[i];
-	return free(definition), NULL;
-}
+	long suitable_count = 1;
+	bool suitable_found = false;
+	char* definition = frmt("_%s$", local->type_var->var);
 
-StackFrameEntity* get_argument_by_name(const char* name, StackFrame* frame)
-{
-	char* definition = frmt("_%s$", name);
-	for (size_t i = 0; i < sbuffer_len(frame->entities); i++)
-		if (strcmp(frame->entities[i]->definition, name) == 0)
-			return free(definition), frame->entities[i];
-	return free(definition), NULL;
+	/*
+		The same reason of why loop located here like in get_entity_by_name.
+		But here we just return the definition, not entity.
+	*/
+
+	while (!suitable_found)
+	{
+		suitable_found = true;
+		for (size_t i = 0; i < sbuffer_len(frame->entities); i++)
+			if (strcmp(frame->entities[i]->definition, definition) == 0)
+				suitable_count++, suitable_found = false, free(definition),
+					definition = frmt("_%s%d$", local->type_var->var, suitable_count);
+	}
+	return definition;
 }
 
 StackFrameEntity* add_local(VarDecl* local, StackFrame* frame)
 {
-	char* definition = frmt("_%s$", local->type_var->var);
+	char* definition = get_local_definition(local, frame);
 	StackFrameEntity* entity = stack_frame_entity_new(local->type_var->type, 
 		frame->required_space_for_locals, definition, STACK_FRAME_ENTITY_LOCAL);
 	frame->required_space_for_locals -= local->type_var->type->size;

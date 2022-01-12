@@ -246,5 +246,7 @@
     <None Include="example\sort\selection_sort.almc" />
     <None Include="example\localstd\file.almc" />
     <None Include="example\file\filetest.almc" />
+    <None Include="example\test\test.almc" />
+    <None Include="example\test\scope_test\locals.almc" />
   </ItemGroup>
 </Project>

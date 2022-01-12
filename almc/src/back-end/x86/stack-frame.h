@@ -45,8 +45,6 @@ StackFrameEntity* stack_frame_entity_new(Type* type, uint32_t offset,
 
 StackFrameEntity* get_entity_by_name(const char* name, StackFrame* frame);
 
-StackFrameEntity* get_local_by_name(const char* name, StackFrame* frame);
-StackFrameEntity* get_argument_by_name(const char* name, StackFrame* frame);
 
 StackFrameEntity* add_local(VarDecl* local, StackFrame* frame);
 StackFrameEntity* add_argument(TypeVar* argument, StackFrame* frame);
