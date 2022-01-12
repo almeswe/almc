@@ -4,7 +4,7 @@
     <ShowAllFiles>true</ShowAllFiles>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LocalDebuggerCommandArguments>C:\Users\HP\source\repos\almc\almc\example\linked_list\list_test.almc calc</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>C:\Users\HP\source\repos\almc\almc\example\test\test.almc test</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>

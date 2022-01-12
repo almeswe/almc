@@ -1,0 +1,16 @@
+from ../../localstd/io import printf;
+
+fnc entry main() : i32 {
+
+	{
+		let i: i32 = 2;
+		printf("i from first scope: %d\n", i);
+	};
+
+	{
+		let i: char* = "\'second i\'";
+		printf("i from second scope: %s\n", i);
+	};
+
+	return 0;
+}
