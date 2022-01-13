@@ -23,20 +23,32 @@ typedef struct x86_StackFrameEntity
 
 typedef struct x86_StackFrame
 {
-	StackFrameEntity** entities;
+	struct _stack_frame_data
+	{
+		StackFrameEntity** entities;
+		int32_t required_space_for_locals;
+		int32_t required_space_for_arguments;
+	};
 
-	AsmCodeProc* of_proc;
+	struct _stack_frame_references
+	{
+		// the reference to procedure which body 
+		// is described by this instance of StackFrame
+		AsmCodeProc* of_proc;
+		
+		struct _stack_frame_label_references
+		{
+			// describes the label on which program
+			// should jmp if break, continue or return statement met
+			char* loop_break_label;
+			char* loop_continue_label;
+			char* proc_return_label;
+		};
+		// needed to determine the need of jump to 
+		// origin ret by proc_return_label
+		bool jump_to_ret;
+	};
 
-	int32_t required_space_for_locals;
-	int32_t required_space_for_arguments;
-
-	char* loop_break_label;
-	char* loop_continue_label;
-
-	char* return_label;
-	// needed to determine the need of jump to 
-	// origin ret by return_label
-	bool  return_declared;
 } StackFrame;
 
 StackFrame* stack_frame_new(FuncDecl* func);
@@ -44,7 +56,6 @@ StackFrameEntity* stack_frame_entity_new(Type* type, uint32_t offset,
 	char* definition, StackFrameEntityKind kind);
 
 StackFrameEntity* get_entity_by_name(const char* name, StackFrame* frame);
-
 
 StackFrameEntity* add_local(VarDecl* local, StackFrame* frame);
 StackFrameEntity* add_argument(TypeVar* argument, StackFrame* frame);

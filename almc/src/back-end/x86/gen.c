@@ -153,9 +153,9 @@ void gen_while_loop_stmt(WhileLoop* while_loop, StackFrame* frame)
 
 void declare_return_stmt(StackFrame* frame)
 {
-	if (!frame->return_declared)
-		frame->return_label = program_new_label(program),
-			frame->return_declared = true;
+	if (!frame->jump_to_ret)
+		frame->proc_return_label = program_new_label(program),
+			frame->jump_to_ret = true;
 }
 
 void gen_jump_stmt(JumpStmt* jump_stmt, StackFrame* frame)
@@ -168,7 +168,7 @@ void gen_jump_stmt(JumpStmt* jump_stmt, StackFrame* frame)
 		if (jump_stmt->additional_expr)
 			gen_expr32(jump_stmt->additional_expr, frame),
 				unreserve_register(REGISTERS, EAX);
-		PROC_CODE_LINE1(JMP, frame->return_label);
+		PROC_CODE_LINE1(JMP, frame->proc_return_label);
 		break;
 	case JUMP_GOTO:
 		PROC_CODE_LINE1(JMP, frmt("LN_%s", 
@@ -307,8 +307,8 @@ void gen_func_decl_stmt(FuncDecl* func_decl)
 		unreserve_register(REGISTERS, ESP);
 		unreserve_register(REGISTERS, EBP);
 		// reference to main return routine
-		if (proc->frame->return_declared)
-			PROC_CODE_LINE1(_LABEL, proc->frame->return_label);
+		if (proc->frame->jump_to_ret)
+			PROC_CODE_LINE1(_LABEL, proc->frame->proc_return_label);
 		PROC_CODE_LINE2(MOV, get_register_str(ESP),
 			get_register_str(EBP));
 		PROC_CODE_LINE1(POP, get_register_str(EBP));
