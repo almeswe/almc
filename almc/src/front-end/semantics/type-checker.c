@@ -110,8 +110,8 @@ Type* get_idnt_type(Idnt* idnt, Table* table)
 			return &unknown_type;
 
 	Type* type = is_function_param_passed(idnt->svalue, table) ? 
-		get_function_param(idnt->svalue, table)->type : 
-			get_variable(idnt->svalue, table)->type_var->type;
+		get_function_param(idnt->svalue, table)->parameter->type : 
+			get_variable(idnt->svalue, table)->local->type_var->type;
 	return type;
 }
 
@@ -124,7 +124,7 @@ Type* get_string_type(Str* str)
 Type* get_func_call_type(FuncCall* func_call, Table* table)
 {
 	// also checking type of each function's argument with type of passed value
-	FuncDecl* origin = get_function(func_call->name, table);
+	FuncDecl* origin = get_function(func_call->name, table)->function;
 	for (size_t i = 0; i < sbuffer_len(origin->params); i++)
 		cast_implicitly(origin->params[i]->type, get_expr_type(func_call->args[i], table),
 			get_expr_area(func_call->args[i]));
@@ -730,8 +730,7 @@ bool is_const_expr(Expr* expr, Table* table)
 	case EXPR_CONST:
 		return true;
 	case EXPR_IDNT:
-		return is_enum_member(expr->idnt->svalue,
-			table);
+		return expr->idnt->is_enum_member;
 	case EXPR_UNARY_EXPR:
 		switch (expr->unary_expr->kind)
 		{
@@ -772,10 +771,10 @@ bool is_const_expr(Expr* expr, Table* table)
 
 bool is_enum_member(const char* var, Table* table)
 {
-	for (Table* parent = table; parent; parent = parent->parent)
+	for (Table* parent = table; parent; parent = parent->nested_in)
 		for (size_t i = 0; i < sbuffer_len(parent->enums); i++)
-			for (size_t j = 0; j < sbuffer_len(parent->enums[i]->members); j++)
-				if (strcmp(var, parent->enums[i]->members[j]->name) == 0)
+			for (size_t j = 0; j < sbuffer_len(parent->enums[i]->enum_decl->members); j++)
+				if (strcmp(var, parent->enums[i]->enum_decl->members[j]->name) == 0)
 					return true;
 	return false;
 }
@@ -787,8 +786,7 @@ int is_addressable_value(Expr* expr, Table* table)
 	switch (expr->kind)
 	{
 	case EXPR_IDNT:
-		return !is_enum_member(
-			expr->idnt->svalue, table);
+		return !expr->idnt->is_enum_member;
 	case EXPR_UNARY_EXPR:
 		switch (expr->unary_expr->kind)
 		{

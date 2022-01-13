@@ -248,5 +248,9 @@
     <None Include="example\file\filetest.almc" />
     <None Include="example\test\test.almc" />
     <None Include="example\test\scope_test\locals.almc" />
+    <None Include="example\test\enum_test\enum_error1.almc" />
+    <None Include="example\test\enum_test\enum_error2.almc" />
+    <None Include="example\test\enum_test\enum_tests.almc" />
+    <None Include="example\test\enum_test\enum_error3.almc" />
   </ItemGroup>
 </Project>

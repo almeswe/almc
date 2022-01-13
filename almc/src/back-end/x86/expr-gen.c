@@ -241,32 +241,32 @@ void gen_unary_expr32(UnaryExpr* unary_expr, StackFrame* frame)
 	case UNARY_DEREFERENCE:
 		gen_unary_dereference32(unary_expr, frame);
 		break;
-	}
-
-	if (!IS_PRIMARY_EXPR(unary_expr->expr))
-		gen_expr32(unary_expr->expr, frame);
-	else
-		reserve_register(REGISTERS, EAX),
+	default:
+		if (!IS_PRIMARY_EXPR(unary_expr->expr))
+			gen_expr32(unary_expr->expr, frame);
+		else
+			reserve_register(REGISTERS, EAX),
 			gen_primary_expr32(unary_expr->expr, EAX, frame);
 
-	switch (unary_expr->kind)
-	{
-	case UNARY_PLUS:
-		break;
-	case UNARY_MINUS:
-		PROC_CODE_LINE1(NEG,
-			eax_reg_arg);
-		break;
-	case UNARY_BW_NOT:
-		PROC_CODE_LINE1(NOT,
-			eax_reg_arg);
-		break;
-	case UNARY_LG_NOT:
-		gen_unary_lg_not32(unary_expr);
-		break;
-	default:
-		report_error("Unknown unary expression kind met." 
-			" in gen_unary_expr32", NULL);
+		switch (unary_expr->kind)
+		{
+		case UNARY_PLUS:
+			break;
+		case UNARY_MINUS:
+			PROC_CODE_LINE1(NEG,
+				eax_reg_arg);
+			break;
+		case UNARY_BW_NOT:
+			PROC_CODE_LINE1(NOT,
+				eax_reg_arg);
+			break;
+		case UNARY_LG_NOT:
+			gen_unary_lg_not32(unary_expr);
+			break;
+		default:
+			report_error("Unknown unary expression kind met."
+				" in gen_unary_expr32", NULL);
+		}
 	}
 }
 
@@ -568,105 +568,106 @@ void gen_binary_expr32(BinaryExpr* binary_expr, StackFrame* frame)
 	case BINARY_COMMA:
 		gen_binary_comma_expr32(binary_expr, frame);
 		break;
-	}
 
-	if (!IS_PRIMARY_EXPR(binary_expr->lexpr) &&
-		IS_PRIMARY_EXPR(binary_expr->rexpr))
-	{
-		gen_expr32(binary_expr->lexpr, frame);
-		RESERVE_TEMP_REG;
-		gen_primary_expr32(binary_expr->rexpr, temp_reg, frame);
-	}
-	else if (IS_PRIMARY_EXPR(binary_expr->lexpr) &&
-		IS_PRIMARY_EXPR(binary_expr->rexpr))
-	{
-		reserve_register(REGISTERS, EAX);
-		gen_primary_expr32(binary_expr->lexpr, EAX, frame);
-		RESERVE_TEMP_REG;
-		gen_primary_expr32(binary_expr->rexpr, temp_reg, frame);
-	}
-	else if (IS_PRIMARY_EXPR(binary_expr->lexpr) &&
-		!IS_PRIMARY_EXPR(binary_expr->rexpr))
-	{
-		gen_expr32(binary_expr->rexpr, frame);
-		RESERVE_TEMP_REG;
-		gen_primary_expr32(binary_expr->lexpr, temp_reg, frame);
-	}
-	else
-	{
-		gen_expr32(binary_expr->lexpr, frame);
-		PROC_CODE_LINE1(PUSH, get_register_str(EAX));
-		unreserve_register(REGISTERS, EAX);
-		gen_expr32(binary_expr->rexpr, frame);
-		RESERVE_TEMP_REG;
-		PROC_CODE_LINE2(MOV, get_register_str(temp_reg),
-			get_register_str(EAX));
-		PROC_CODE_LINE1(POP, get_register_str(EAX));
-	}
-
-	eax_reg_arg = get_register_str(EAX);
-	temp_reg_arg = get_register_str(temp_reg);
-	
-	switch (binary_expr->kind)
-	{
-	case BINARY_ADD:
-		PROC_CODE_LINE2(ADD, eax_reg_arg,
-			temp_reg_arg);
-		break;
-	case BINARY_SUB:
-		PROC_CODE_LINE2(SUB, eax_reg_arg,
-			temp_reg_arg);
-		break;
-	// the second operator need to be in cl register for shift operators
-	case BINARY_LSHIFT:
-	case BINARY_RSHIFT:
-		if (temp_reg != ECX)
-		{
-			reserve_register(REGISTERS, ECX);
-			PROC_CODE_LINE2(MOV, 
-				get_register_str(ECX), temp_reg_arg);
-			unreserve_register(REGISTERS, ECX);
-		}
-		PROC_CODE_LINE2(binary_expr->kind == BINARY_LSHIFT ? SHL : SHR,
-			eax_reg_arg, get_register_str(CL));
-		break;
-	case BINARY_BW_OR:
-		PROC_CODE_LINE2(OR, eax_reg_arg,
-			temp_reg_arg);
-		break;
-	case BINARY_BW_AND:
-		PROC_CODE_LINE2(AND, eax_reg_arg,
-			temp_reg_arg);
-		break;
-	case BINARY_BW_XOR:
-		PROC_CODE_LINE2(XOR, eax_reg_arg,
-			temp_reg_arg);
-		break;
-	case BINARY_MOD:
-		reserve_register(REGISTERS, EDX);
-		gen_reg_clear(EDX);
-		PROC_CODE_LINE1(DIV, temp_reg_arg);
-		PROC_CODE_LINE2(MOV, eax_reg_arg, 
-			get_register_str(EDX));
-		unreserve_register(REGISTERS, EDX);
-		break;
-	case BINARY_DIV:
-		reserve_register(REGISTERS, EDX);
-		gen_reg_clear(EDX);
-		PROC_CODE_LINE1(DIV, temp_reg_arg);
-		unreserve_register(REGISTERS, EDX);
-		break;
-	case BINARY_MULT:
-		reserve_register(REGISTERS, EDX);
-		gen_reg_clear(EDX);
-		PROC_CODE_LINE1(MUL, temp_reg_arg);
-		unreserve_register(REGISTERS, EDX);
-		break;
 	default:
-		report_error("Unknown binary expression kind met." 
-			" in gen_binary_expr32()", NULL);
+		if (!IS_PRIMARY_EXPR(binary_expr->lexpr) &&
+			IS_PRIMARY_EXPR(binary_expr->rexpr))
+		{
+			gen_expr32(binary_expr->lexpr, frame);
+			RESERVE_TEMP_REG;
+			gen_primary_expr32(binary_expr->rexpr, temp_reg, frame);
+		}
+		else if (IS_PRIMARY_EXPR(binary_expr->lexpr) &&
+			IS_PRIMARY_EXPR(binary_expr->rexpr))
+		{
+			reserve_register(REGISTERS, EAX);
+			gen_primary_expr32(binary_expr->lexpr, EAX, frame);
+			RESERVE_TEMP_REG;
+			gen_primary_expr32(binary_expr->rexpr, temp_reg, frame);
+		}
+		else if (IS_PRIMARY_EXPR(binary_expr->lexpr) &&
+			!IS_PRIMARY_EXPR(binary_expr->rexpr))
+		{
+			gen_expr32(binary_expr->rexpr, frame);
+			RESERVE_TEMP_REG;
+			gen_primary_expr32(binary_expr->lexpr, temp_reg, frame);
+		}
+		else
+		{
+			gen_expr32(binary_expr->lexpr, frame);
+			PROC_CODE_LINE1(PUSH, get_register_str(EAX));
+			unreserve_register(REGISTERS, EAX);
+			gen_expr32(binary_expr->rexpr, frame);
+			RESERVE_TEMP_REG;
+			PROC_CODE_LINE2(MOV, get_register_str(temp_reg),
+				get_register_str(EAX));
+			PROC_CODE_LINE1(POP, get_register_str(EAX));
+		}
+
+		eax_reg_arg = get_register_str(EAX);
+		temp_reg_arg = get_register_str(temp_reg);
+
+		switch (binary_expr->kind)
+		{
+		case BINARY_ADD:
+			PROC_CODE_LINE2(ADD, eax_reg_arg,
+				temp_reg_arg);
+			break;
+		case BINARY_SUB:
+			PROC_CODE_LINE2(SUB, eax_reg_arg,
+				temp_reg_arg);
+			break;
+			// the second operator need to be in cl register for shift operators
+		case BINARY_LSHIFT:
+		case BINARY_RSHIFT:
+			if (temp_reg != ECX)
+			{
+				reserve_register(REGISTERS, ECX);
+				PROC_CODE_LINE2(MOV,
+					get_register_str(ECX), temp_reg_arg);
+				unreserve_register(REGISTERS, ECX);
+			}
+			PROC_CODE_LINE2(binary_expr->kind == BINARY_LSHIFT ? SHL : SHR,
+				eax_reg_arg, get_register_str(CL));
+			break;
+		case BINARY_BW_OR:
+			PROC_CODE_LINE2(OR, eax_reg_arg,
+				temp_reg_arg);
+			break;
+		case BINARY_BW_AND:
+			PROC_CODE_LINE2(AND, eax_reg_arg,
+				temp_reg_arg);
+			break;
+		case BINARY_BW_XOR:
+			PROC_CODE_LINE2(XOR, eax_reg_arg,
+				temp_reg_arg);
+			break;
+		case BINARY_MOD:
+			reserve_register(REGISTERS, EDX);
+			gen_reg_clear(EDX);
+			PROC_CODE_LINE1(DIV, temp_reg_arg);
+			PROC_CODE_LINE2(MOV, eax_reg_arg,
+				get_register_str(EDX));
+			unreserve_register(REGISTERS, EDX);
+			break;
+		case BINARY_DIV:
+			reserve_register(REGISTERS, EDX);
+			gen_reg_clear(EDX);
+			PROC_CODE_LINE1(DIV, temp_reg_arg);
+			unreserve_register(REGISTERS, EDX);
+			break;
+		case BINARY_MULT:
+			reserve_register(REGISTERS, EDX);
+			gen_reg_clear(EDX);
+			PROC_CODE_LINE1(MUL, temp_reg_arg);
+			unreserve_register(REGISTERS, EDX);
+			break;
+		default:
+			report_error("Unknown binary expression kind met."
+				" in gen_binary_expr32()", NULL);
+		}
+		unreserve_register(REGISTERS, temp_reg);
 	}
-	unreserve_register(REGISTERS, temp_reg);
 
 #undef RESERVE_TEMP_REG
 }

@@ -1,0 +1,7 @@
+enum {
+	test3
+}
+
+let test3: i32 = 1;
+
+fnc test(test3: i32) : i32 { return 1; }

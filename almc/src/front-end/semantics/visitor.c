@@ -3,12 +3,6 @@
 //todo: check type referrings to each other (for freeing)
 //todo: add enum identifiers to is_const_expression
 
-#define IS_USER_TYPE_ALREADY_DECLARED(typedec, typestr) \
-	if (is_##typedec##_declared(stmts[i]->type_decl->##typedec##_decl->name, table)) \
-		report_error(frmt("\'%s\' type \'%s\' is already declared.",				 \
-			typestr, stmts[i]->type_decl->##typedec##_decl->name), NULL);		     \
-	add_##typedec##(stmts[i]->type_decl->##typedec##_decl, table);					 \
-
 Visitor* visitor_new()
 {
 	Visitor* visitor = new_s(Visitor, visitor);
@@ -129,13 +123,22 @@ void visit_scope(Stmt** stmts, Table* table)
 			switch (stmts[i]->type_decl->kind)
 			{
 			case TYPE_DECL_ENUM:
-				IS_USER_TYPE_ALREADY_DECLARED(enum, "Enum");
+				if (is_enum_declared(stmts[i]->type_decl->enum_decl->name, table))
+					report_error(frmt("\'Enum\' type \'%s\' is already declared.",
+						stmts[i]->type_decl->enum_decl->name), NULL);
+				add_enum(stmts[i]->type_decl->enum_decl, table);
 				break;
 			case TYPE_DECL_UNION:
-				IS_USER_TYPE_ALREADY_DECLARED(union, "Union");
+				if (is_union_declared(stmts[i]->type_decl->union_decl->name, table)) 
+					report_error(frmt("\'Union\' type \'%s\' is already declared.", 
+						stmts[i]->type_decl->union_decl->name), NULL);		     
+				add_union(stmts[i]->type_decl->union_decl, table);					 
 				break;
 			case TYPE_DECL_STRUCT:
-				IS_USER_TYPE_ALREADY_DECLARED(struct, "Struct");
+				if (is_struct_declared(stmts[i]->type_decl->struct_decl->name, table))
+					report_error(frmt("\'Struct\' type \'%s\' is already declared.",
+						stmts[i]->type_decl->struct_decl->name), NULL);
+				add_struct(stmts[i]->type_decl->struct_decl, table);
 				break;
 			}
 			break;
@@ -217,12 +220,12 @@ void visit_idnt(Idnt* idnt, Table* table, int is_in_assign)
 void visit_enum_member(Idnt* idnt, Table* table)
 {
 	Expr* value = NULL;
-
-	for (Table* parent = table; parent; parent = parent->parent)
+	for (Table* parent = table; parent; parent = parent->nested_in)
 		for (size_t i = 0; i < sbuffer_len(parent->enums); i++)
-			for (size_t j = 0; j < sbuffer_len(parent->enums[i]->members); j++)
-				if (strcmp(idnt->svalue, parent->enums[i]->members[j]->name) == 0)
-					value = parent->enums[i]->members[j]->value;
+			for (size_t j = 0; j < sbuffer_len(parent->enums[i]->enum_decl->members); j++)
+				if (strcmp(idnt->svalue, parent->enums[i]->enum_decl->members[j]->name) == 0)
+					value = parent->enums[i]->enum_decl->members[j]->value;
+
 	if (value)
 		idnt->is_enum_member = true,
 			idnt->enum_member_value = value;
@@ -236,7 +239,7 @@ void visit_func_call(FuncCall* func_call, Table* table)
 	else
 	{
 		FuncDecl* origin = get_function(
-			func_call->name, table);
+			func_call->name, table)->function;
 		visit_type(origin->type, table);
 		func_call->conv = origin->conv;
 		func_call->spec = origin->spec;
@@ -290,7 +293,7 @@ void visit_unary_expr(UnaryExpr* unary_expr, Table* table)
 		if (!is_addressable_value(unary_expr->expr, table))
 			report_error2("Addressable value expected for this unary operator.", 
 				get_expr_area(unary_expr->expr));
-		if (is_enum_member(unary_expr->expr->idnt->svalue, table))
+		if (unary_expr->expr->idnt->is_enum_member)
 			report_error2("Cannot use enum member with this unary operator.",
 				get_expr_area(unary_expr->expr));
 		visit_expr(unary_expr->expr, table);
@@ -456,7 +459,7 @@ void check_for_duplicated_case_conditions(SwitchStmt* switch_stmt, Table* table)
 		switch (case_value->kind)
 		{
 		case EXPR_IDNT:
-			if (!is_enum_member(case_value->idnt->svalue, table))
+			if (!case_value->idnt->is_enum_member)
 				report_error2("Only enum members is allowed for case condition.",
 					get_expr_area(case_value));
 			for (size_t j = 0; j < sbuffer_len(conditions); j++)
@@ -692,14 +695,14 @@ void visit_enum(EnumDecl* enum_decl, Table* table)
 						get_expr_area(enum_decl->members[j]->value));
 
 		// iterating through all members of all enums (except current enum)
-		for (Table* parent = table; parent != NULL; parent = parent->parent)                        // each scope from above scope
-			for (size_t j = 0; j < sbuffer_len(parent->enums); j++)                                 // each enum in iterating scope
-				if (strcmp(parent->enums[j]->name, enum_decl->name) != 0)                 // if iterating enum != current enum
-					for (size_t z = 0; z < sbuffer_len(parent->enums[j]->members); z++)          // each member in iterating enum
-						if (strcmp(parent->enums[j]->members[z]->name,
+		for (Table* parent = table; parent != NULL; parent = parent->nested_in)                      // each scope from above scope
+			for (size_t j = 0; j < sbuffer_len(parent->enums); j++)                                  // each enum in iterating scope
+				if (strcmp(parent->enums[j]->enum_decl->name, enum_decl->name) != 0)                 // if iterating enum != current enum
+					for (size_t z = 0; z < sbuffer_len(parent->enums[j]->enum_decl->members); z++)   // each member in iterating enum
+						if (strcmp(parent->enums[j]->enum_decl->members[z]->name,
 							enum_decl->members[i]->name) == 0)
 								report_error(frmt("Enum member \'%s\' is already declared in \'%s\' enum.",
-									enum_decl->members[i]->name, parent->enums[j]->name),
+									enum_decl->members[i]->name, parent->enums[j]->enum_decl->name),
 										enum_decl->members[i]->context);
 		
 		// set type to enum identifier
@@ -920,17 +923,17 @@ void check_entry_func_params(FuncDecl* func_decl)
 
 void visit_entry_func_stmt(FuncDecl* func_decl, Table* table)
 {
-	if (func_decl->spec->is_entry && table->parent)
+	if (func_decl->spec->is_entry && table->nested_in)
 		report_error(frmt("Cannot create entry function \'%s\' not in global scope.",
 			func_decl->name->svalue), func_decl->name->context);
 
 	if (func_decl->spec->is_entry)
 		for (size_t i = 0; i < sbuffer_len(table->functions); i++)
-			if (table->functions[i]->spec->is_entry &&
-				table->functions[i] != func_decl)
+			if (table->functions[i]->function->spec->is_entry &&
+				table->functions[i]->function != func_decl)
 				report_error(frmt("Cannot specify function \'%s\' as entry,"
 					" entry function \'%s\' is already mentioned.", func_decl->name->svalue, 
-						table->functions[i]->name->svalue), func_decl->name->context);
+						table->functions[i]->function->name->svalue), func_decl->name->context);
 
 	check_entry_func_params(func_decl);
 }
@@ -998,14 +1001,14 @@ void complete_type(Type* type, Table* table)
 		Completes the missing information in type structure
 		if its struct or union type + gets size of it
 	*/
-	StructDecl* user_type = NULL;
+	TableEntity* user_type = NULL;
 	Type* base = get_base_type(type);
 	if (user_type = get_struct(base->repr, table))
 		base->kind = TYPE_STRUCT,
-			base->members = user_type->members;
+			base->members = user_type->struct_decl->members;
 	else if (get_enum(base->repr, table))
 		base->kind = TYPE_ENUM;
 	else if (user_type = get_union(base->repr, table))
 		base->kind = TYPE_UNION,
-			base->members = user_type->members;
+			base->members = user_type->union_decl->members;
 }

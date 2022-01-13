@@ -1,0 +1,5 @@
+enum {
+	test1 = 2
+}
+
+test1->a = 2;
