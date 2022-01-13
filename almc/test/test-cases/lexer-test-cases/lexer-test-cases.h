@@ -118,9 +118,9 @@ inline void lexer_comment_test()
 	// comment1, comment3, eof
 	assert(sbuffer_len(tokens) == 3);
 	assert(tokens[0]->type == TOKEN_IDNT);
-	assert(strcmp(tokens[0]->svalue, "comment1") == 0);
+	assert(strcmp(tokens[0]->lexeme, "comment1") == 0);
 	assert(tokens[1]->type == TOKEN_IDNT);
-	assert(strcmp(tokens[1]->svalue, "comment3") == 0);
+	assert(strcmp(tokens[1]->lexeme, "comment3") == 0);
 	lexer_free(lexer);
 }
 
@@ -132,71 +132,71 @@ inline void lexer_recognition_test()
 	Token** tokens = lex(lexer);
 	assert(sbuffer_len(tokens) == 31);
 	assert(tokens[0]->type == TOKEN_INT_CONST);
-	assert(strcmp(tokens[0]->svalue, "1E+5") == 0);
+	assert(strcmp(tokens[0]->lexeme, "1E+5") == 0);
 	assert(tokens[1]->type == TOKEN_INT_CONST);
-	assert(strcmp(tokens[1]->svalue, "123e-5") == 0);
+	assert(strcmp(tokens[1]->lexeme, "123e-5") == 0);
 	assert(tokens[2]->type == TOKEN_FLOAT_CONST);
-	assert(strcmp(tokens[2]->svalue, "1.123e-1") == 0);
+	assert(strcmp(tokens[2]->lexeme, "1.123e-1") == 0);
 	assert(tokens[3]->type == TOKEN_FLOAT_CONST);
-	assert(strcmp(tokens[3]->svalue, "1.33E+3") == 0);
+	assert(strcmp(tokens[3]->lexeme, "1.33E+3") == 0);
 
 	assert(tokens[4]->type == TOKEN_INT_CONST);
-	assert(strcmp(tokens[4]->svalue, "255") == 0);
+	assert(strcmp(tokens[4]->lexeme, "255") == 0);
 	assert(tokens[5]->type == TOKEN_INT_CONST);
-	assert(strcmp(tokens[5]->svalue, "0") == 0);
+	assert(strcmp(tokens[5]->lexeme, "0") == 0);
 	assert(tokens[6]->type == TOKEN_FLOAT_CONST);
-	assert(strcmp(tokens[6]->svalue, "1.11") == 0);
+	assert(strcmp(tokens[6]->lexeme, "1.11") == 0);
 	assert(tokens[7]->type == TOKEN_FLOAT_CONST);
-	assert(strcmp(tokens[7]->svalue, "0.00333") == 0);
+	assert(strcmp(tokens[7]->lexeme, "0.00333") == 0);
 
 	assert(tokens[8]->type == TOKEN_INT_CONST);
-	assert(strcmp(tokens[8]->svalue, "0xff") == 0);
+	assert(strcmp(tokens[8]->lexeme, "0xff") == 0);
 	assert(tokens[9]->type == TOKEN_INT_CONST);
-	assert(strcmp(tokens[9]->svalue, "0XFF") == 0);
+	assert(strcmp(tokens[9]->lexeme, "0XFF") == 0);
 	assert(tokens[10]->type == TOKEN_INT_CONST);
-	assert(strcmp(tokens[10]->svalue, "0x123") == 0);
+	assert(strcmp(tokens[10]->lexeme, "0x123") == 0);
 
 	assert(tokens[11]->type == TOKEN_INT_CONST);
-	assert(strcmp(tokens[11]->svalue, "0b0011") == 0);
+	assert(strcmp(tokens[11]->lexeme, "0b0011") == 0);
 	assert(tokens[12]->type == TOKEN_INT_CONST);
-	assert(strcmp(tokens[12]->svalue, "0B0111") == 0);
+	assert(strcmp(tokens[12]->lexeme, "0B0111") == 0);
 	assert(tokens[13]->type == TOKEN_INT_CONST);
-	assert(strcmp(tokens[13]->svalue, "0b00001") == 0);
+	assert(strcmp(tokens[13]->lexeme, "0b00001") == 0);
 
 	assert(tokens[14]->type == TOKEN_INT_CONST);
-	assert(strcmp(tokens[14]->svalue, "0o123") == 0);
+	assert(strcmp(tokens[14]->lexeme, "0o123") == 0);
 	assert(tokens[15]->type == TOKEN_INT_CONST);
-	assert(strcmp(tokens[15]->svalue, "0O333") == 0);
+	assert(strcmp(tokens[15]->lexeme, "0O333") == 0);
 	assert(tokens[16]->type == TOKEN_INT_CONST);
-	assert(strcmp(tokens[16]->svalue, "0o222") == 0);
+	assert(strcmp(tokens[16]->lexeme, "0o222") == 0);
 
 	assert(tokens[17]->type == TOKEN_STRING);
-	assert(strcmp(tokens[17]->svalue, "hello world!") == 0);
+	assert(strcmp(tokens[17]->lexeme, "hello world!") == 0);
 	assert(tokens[18]->type == TOKEN_STRING);
-	assert(strcmp(tokens[18]->svalue, "hello world\'\"\\") == 0);
+	assert(strcmp(tokens[18]->lexeme, "hello world\'\"\\") == 0);
 
 	assert(tokens[19]->type == TOKEN_CHARACTER);
-	assert(tokens[19]->cvalue == '\n');
+	assert(tokens[19]->lexeme[0] == '\n');
 	assert(tokens[20]->type == TOKEN_CHARACTER);
-	assert(tokens[20]->cvalue == '\r');
+	assert(tokens[20]->lexeme[0] == '\r');
 	assert(tokens[21]->type == TOKEN_CHARACTER);
-	assert(tokens[21]->cvalue == '\'');
+	assert(tokens[21]->lexeme[0] == '\'');
 	assert(tokens[22]->type == TOKEN_CHARACTER);
-	assert(tokens[22]->cvalue == '\"');
+	assert(tokens[22]->lexeme[0] == '\"');
 	assert(tokens[23]->type == TOKEN_CHARACTER);
-	assert(tokens[23]->cvalue == '\0');
+	assert(tokens[23]->lexeme[0] == '\0');
 	assert(tokens[24]->type == TOKEN_CHARACTER);
-	assert(tokens[24]->cvalue == '\t');
+	assert(tokens[24]->lexeme[0] == '\t');
 	assert(tokens[25]->type == TOKEN_CHARACTER);
-	assert(tokens[25]->cvalue == '\f');
+	assert(tokens[25]->lexeme[0] == '\f');
 	assert(tokens[26]->type == TOKEN_CHARACTER);
-	assert(tokens[26]->cvalue == '\a');
+	assert(tokens[26]->lexeme[0] == '\a');
 	assert(tokens[27]->type == TOKEN_CHARACTER);
-	assert(tokens[27]->cvalue == '\\');
+	assert(tokens[27]->lexeme[0] == '\\');
 	assert(tokens[28]->type == TOKEN_CHARACTER);
-	assert(tokens[28]->cvalue == '\b');
+	assert(tokens[28]->lexeme[0] == '\b');
 	assert(tokens[29]->type == TOKEN_CHARACTER);
-	assert(tokens[29]->cvalue == '\v');
+	assert(tokens[29]->lexeme[0] == '\v');
 	lexer_free(lexer);
 }
 
