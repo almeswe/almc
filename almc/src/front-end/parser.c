@@ -203,7 +203,7 @@ Type* parse_type(Parser* parser)
 		ASSIGN_TYPE(f64_type);
 	//case TOKEN_KEYWORD_STRING:
 	case TOKEN_IDNT:
-		type = type_new(token->svalue);
+		type = type_new(token->lexeme);
 		break;
 	default:
 		report_error(frmt("Type expected, but met: %s",
@@ -230,7 +230,7 @@ Expr* parse_func_call_expr(Parser* parser)
 {
 	Expr** func_args = NULL;
 	const char* func_name = 
-		get_curr_token(parser)->svalue;
+		get_curr_token(parser)->lexeme;
 
 	context_starts(parser, context);
 	expect_with_skip(parser, TOKEN_IDNT, "func name");
@@ -264,7 +264,7 @@ Expr* parse_idnt_ambiguity(Parser* parser)
 	{
 		unget_curr_token(parser);
 		return expr_new(EXPR_IDNT,
-			idnt_new(get_curr_token(parser)->svalue,
+			idnt_new(get_curr_token(parser)->lexeme,
 				get_curr_token(parser)->context));
 	}
 }
@@ -277,15 +277,15 @@ Expr* parse_primary_expr(Parser* parser)
 	{
 	case TOKEN_INT_CONST:
 		expr = expr_new(EXPR_CONST,
-			const_new(CONST_INT, token->svalue, token->context));
+			const_new(CONST_INT, token->lexeme, token->context));
 		break;
 	case TOKEN_UINT_CONST:
 		expr = expr_new(EXPR_CONST,
-			const_new(CONST_UINT, token->svalue, token->context));
+			const_new(CONST_UINT, token->lexeme, token->context));
 		break;
 	case TOKEN_FLOAT_CONST:
 		expr = expr_new(EXPR_CONST,
-			const_new(CONST_FLOAT, token->svalue, token->context));
+			const_new(CONST_FLOAT, token->lexeme, token->context));
 		break;
 	case TOKEN_IDNT:
 		expr = parse_idnt_ambiguity(parser);
@@ -294,11 +294,12 @@ Expr* parse_primary_expr(Parser* parser)
 		break;
 	case TOKEN_STRING:
 		expr = expr_new(EXPR_STRING,
-			str_new(token->svalue, token->context));
+			str_new(token->lexeme, token->context));
 		break;
 	case TOKEN_CHARACTER:
 		expr = expr_new(EXPR_CONST,
-			const_new(CONST_CHAR, frmt("%u", (uint32_t)token->cvalue), token->context));
+			const_new(CONST_CHAR, frmt("%u", 
+				(uint32_t)token->lexeme[0]), token->context));
 		break;
 	case TOKEN_OP_PAREN:
 		return parse_paren_expr(parser);
@@ -368,7 +369,7 @@ Expr* parse_member_accessor_expr(Parser* parser, Expr* rexpr, TokenKind accessor
 		get_next_token(parser);
 		member_accessor = expr_new(EXPR_BINARY_EXPR, 
 			binary_expr_new(accessor_type == TOKEN_DOT ? BINARY_MEMBER_ACCESSOR : BINARY_PTR_MEMBER_ACCESSOR,
-				rexpr, expr_new(EXPR_IDNT, idnt_new(token->svalue, token->context))));
+				rexpr, expr_new(EXPR_IDNT, idnt_new(token->lexeme, token->context))));
 		context_ends(parser, context, member_accessor->binary_expr);
 		return member_accessor;
 	default:
@@ -926,12 +927,12 @@ Stmt* parse_enum_decl_stmt(Parser* parser)
 	expect_with_skip(parser, TOKEN_KEYWORD_ENUM, "enum");
 	// enum can be no-name
 	if (matcht(parser, TOKEN_IDNT))
-		name = get_curr_token(parser)->svalue,
+		name = get_curr_token(parser)->lexeme,
 			expect_with_skip(parser, TOKEN_IDNT, "enum name");
 	expect_with_skip(parser, TOKEN_OP_BRACE, "{");
 	while (!matcht(parser, TOKEN_CL_BRACE))
 	{
-		member_name = get_curr_token(parser)->svalue;
+		member_name = get_curr_token(parser)->lexeme;
 		member_context = get_curr_token(parser)->context;
 		expect_with_skip(parser, TOKEN_IDNT, "enum's member's name");
 
@@ -976,7 +977,7 @@ Stmt* parse_union_decl_stmt(Parser* parser)
 	TypeVar* typevar = NULL;
 
 	expect_with_skip(parser, TOKEN_KEYWORD_UNION, "union");
-	name = get_curr_token(parser)->svalue;
+	name = get_curr_token(parser)->lexeme;
 	expect_with_skip(parser, TOKEN_IDNT, "union name");
 	expect_with_skip(parser, TOKEN_OP_BRACE, "{");
 	while (!matcht(parser, TOKEN_CL_BRACE))
@@ -999,7 +1000,7 @@ Stmt* parse_struct_decl_stmt(Parser* parser)
 	Member** members = NULL;
 
 	expect_with_skip(parser, TOKEN_KEYWORD_STRUCT, "struct");
-	name = get_curr_token(parser)->svalue;
+	name = get_curr_token(parser)->lexeme;
 	expect_with_skip(parser, TOKEN_IDNT, "struct name");
 	expect_with_skip(parser, TOKEN_OP_BRACE, "{");
 	while (!matcht(parser, TOKEN_CL_BRACE))
@@ -1080,7 +1081,7 @@ CallConv* parse_func_calling_convention(Parser* parser)
 	CallConv* convention = 
 		calling_convention_new();
 
-	char* token_str = get_curr_token(parser)->svalue;
+	char* token_str = get_curr_token(parser)->lexeme;
 
 	if (strcmp(token_str, "cdecl") == 0)
 		get_next_token(parser);
@@ -1099,7 +1100,7 @@ ExternalFuncSpec* parse_func_proto_spec(Parser* parser)
 		cnew_s(ExternalFuncSpec, proto, 1);
 	expect_with_skip(parser, TOKEN_KEYWORD_FROM, "from keyword");
 	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
-	proto->lib = get_curr_token(parser)->svalue;
+	proto->lib = get_curr_token(parser)->lexeme;
 	expect_with_skip(parser, TOKEN_STRING, "lib name");
 	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
 	return proto;
@@ -1135,7 +1136,7 @@ Stmt* parse_func_decl_stmt(Parser* parser)
 	expect_with_skip(parser, TOKEN_KEYWORD_FUNC, "fnc");
 	call_conv = parse_func_calling_convention(parser);
 	spec = parse_func_specifiers(parser);
-	name = idnt_new(get_curr_token(parser)->svalue,
+	name = idnt_new(get_curr_token(parser)->lexeme,
 		get_curr_token(parser)->context);
 	expect_with_skip(parser, TOKEN_IDNT, "func name");
 	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
@@ -1174,7 +1175,7 @@ Stmt* parse_label_decl_stmt(Parser* parser)
 	Idnt* label = cnew_s(Idnt, label, 1);
 
 	expect_with_skip(parser, TOKEN_KEYWORD_LABEL, "label");
-	label->svalue = get_curr_token(parser)->svalue;
+	label->svalue = get_curr_token(parser)->lexeme;
 	label->context = get_curr_token(parser)->context;
 	expect_with_skip(parser, TOKEN_IDNT, "label name");
 	expect_with_skip(parser, TOKEN_COLON, ":");
@@ -1471,13 +1472,13 @@ char* parse_import_path_desc(Parser* parser)
 	{
 	case TOKEN_IDNT:
 	continue_building_relative_path:
-		filename = get_curr_token(parser)->svalue;
+		filename = get_curr_token(parser)->lexeme;
 		expect_with_skip(parser, TOKEN_IDNT, "module name");
 		assign_new_path(path_combine(path, filename));
 		while (matcht(parser, TOKEN_SLASH))
 		{
 			expect_with_skip(parser, TOKEN_SLASH, "path separator");
-			filename = get_curr_token(parser)->svalue;
+			filename = get_curr_token(parser)->lexeme;
 			assign_new_path(path_combine(path, filename));
 			expect_with_skip(parser, TOKEN_IDNT, "module name");
 		}
@@ -1492,7 +1493,7 @@ char* parse_import_path_desc(Parser* parser)
 		goto continue_building_relative_path;
 		break;
 	case TOKEN_STRING:
-		assign_new_path(get_curr_token(parser)->svalue);
+		assign_new_path(get_curr_token(parser)->lexeme);
 		expect_with_skip(parser, TOKEN_STRING, "absolute path");
 		break;
 	case TOKEN_NAV_CURR_DIR:
@@ -1545,7 +1546,7 @@ Stmt* parse_from_import_stmt(Parser* parser)
 			expect_with_skip(parser, TOKEN_COMMA, ",");
 		// concatenating module_path with name of member (separated by '?')
 		char* module_path_with_member = frmt("%s?%s", 
-			module_path, get_curr_token(parser)->svalue);
+			module_path, get_curr_token(parser)->lexeme);
 		if (is_module_imported(module_path_with_member))
 		{
 			// if this member already imported, free this new string, and skip member name token
@@ -1581,7 +1582,7 @@ Stmt* parse_from_import_member_stmt(Parser* parser, AstRoot* import_module)
 {
 	Stmt* wanted = NULL;
 	Token* token = get_curr_token(parser);
-	char* member_name = token->svalue;
+	char* member_name = token->lexeme;
 
 	expect_with_skip(parser, TOKEN_IDNT, "member name");
 	for (int i = 0; i < sbuffer_len(import_module->stmts); i++)
@@ -1606,7 +1607,7 @@ Stmt* parse_jump_stmt(Parser* parser)
 	case TOKEN_KEYWORD_GOTO:
 		type = JUMP_GOTO;
 		expect_with_skip(parser, TOKEN_KEYWORD_GOTO, "goto");
-		goto_label->svalue = get_curr_token(parser)->svalue;
+		goto_label->svalue = get_curr_token(parser)->lexeme;
 		expect_with_skip(parser, TOKEN_IDNT, "goto label");
 		additional_expr = expr_new(EXPR_IDNT, goto_label);
 		break;
@@ -1639,7 +1640,7 @@ TypeVar* parse_type_var(Parser* parser)
 {
 	Type* type = NULL;
 	const char* var = 
-		get_curr_token(parser)->svalue;
+		get_curr_token(parser)->lexeme;
 	TypeVar* type_var = NULL;
 
 	context_starts(parser, context);

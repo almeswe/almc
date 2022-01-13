@@ -14,7 +14,7 @@
 #define matchc(lexer, c) (get_curr_char(lexer) == c)
 #define matchc_in(lexer, c1, c2) ((get_curr_char(lexer)) >= (c1) && (get_curr_char(lexer)) <= (c2))
 
-#define STR_BUILDER_BUFFER_SIZE 512
+#define STR_BUILDER_BUFFER_SIZE 128
 
 #define str_builder_create_buffer(buffer) \
 	char* buffer = newc_s(char, buffer, STR_BUILDER_BUFFER_SIZE)
@@ -25,8 +25,8 @@
 		 buffer = temp;								  \
 	buffer[size] = '\0';
 
-#define str_builder_err										\
-	report_error(frmt("Number size should be less than %d", \
+#define str_builder_err										    \
+	report_error(frmt("Identifier size should be less than %d", \
 		STR_BUILDER_BUFFER_SIZE), NULL)
 
 #define str_builder_add(buffer, digit, index)			      \
@@ -184,7 +184,7 @@ Token** lex(Lexer* lexer)
 	while (!eos(lexer))
 	{
 		char curr_char = get_curr_char(lexer);
-		if (!matchc_in(lexer, 0, 255))
+		if (!matchc_in(lexer, CHAR_MIN, CHAR_MAX))
 			report_error(frmt("Cannot process char with code: %d", curr_char), 
 				src_context_new(lexer->curr_file, lexer->curr_line_offset, 1, lexer->curr_line));
 		if (isdigit(curr_char))
@@ -380,7 +380,7 @@ Token* get_eof_token(Lexer* lexer)
 {
 	Token* token = token_new(TOKEN_EOF, src_context_new(
 		lexer->curr_file, lexer->curr_line_offset+1, 1, lexer->curr_line));
-	token->svalue = "EOF";
+	token->lexeme = "EOF";
 	return token;
 }
 
@@ -445,7 +445,7 @@ Token* get_bin_num_token(Lexer* lexer)
 	str_builder_reduce_buffer(temp, buffer, size);
 	Token* token = token_new(TOKEN_INT_CONST,
 		src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
-	token->svalue = buffer;
+	token->lexeme = buffer;
 	return token;
 }
 
@@ -465,7 +465,7 @@ Token* get_oct_num_token(Lexer* lexer)
 	str_builder_reduce_buffer(temp, buffer, size);
 	Token* token = token_new(TOKEN_INT_CONST,
 		src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
-	token->svalue = buffer;
+	token->lexeme = buffer;
 	return token;
 }
 
@@ -485,7 +485,7 @@ Token* get_hex_num_token(Lexer* lexer)
 	str_builder_reduce_buffer(temp, buffer, size);
 	Token* token = token_new(TOKEN_INT_CONST,
 		src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
-	token->svalue = buffer;
+	token->lexeme = buffer;
 	return token;
 }
 
@@ -509,7 +509,7 @@ Token* get_dec_num_token(Lexer* lexer)
 	str_builder_reduce_buffer(temp, buffer, size);
 	Token* token = token_new(TOKEN_INT_CONST,
 		src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
-	token->svalue = buffer;
+	token->lexeme = buffer;
 	return token;
 }
 
@@ -534,7 +534,7 @@ Token* get_dec_fnum_token(Lexer* lexer, char* buffer, uint32_t size)
 	str_builder_reduce_buffer(temp, buffer, size);
 	Token* token = token_new(TOKEN_FLOAT_CONST,
 		src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
-	token->svalue = buffer;
+	token->lexeme = buffer;
 	return token;
 }
 
@@ -563,7 +563,7 @@ Token* get_dec_expnum_token(Lexer* lexer, char* buffer, uint32_t size, char is_f
 	str_builder_reduce_buffer(temp, buffer, size);
 	Token* token = token_new(is_float ? TOKEN_FLOAT_CONST : TOKEN_INT_CONST,
 		src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
-	token->svalue = buffer;
+	token->lexeme = buffer;
 	return token;
 }
 
@@ -583,7 +583,7 @@ Token* get_idnt_token(Lexer* lexer)
 	int order = iskeyword(idnt);
 	Token* token = (order >= 0) ? get_keyword_token(lexer, order) :
 		token_new(TOKEN_IDNT, src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
-	token->svalue = idnt;
+	token->lexeme = idnt;
 	return token;
 }
 
@@ -591,6 +591,8 @@ Token* get_char_token(Lexer* lexer)
 {
 	char character;
 	char is_escape;
+	str_builder_create_buffer(str);
+
 	get_next_char(lexer);
 	character = ((is_escape = is_escape_sequence(lexer)) >= 0) ?
 		is_escape : get_curr_char(lexer);
@@ -598,10 +600,11 @@ Token* get_char_token(Lexer* lexer)
 	if (!matchc(lexer, '\''))
 		report_error(frmt("Expected single quote, but met (code %d): \'%c\'", (int)get_curr_char(lexer), get_curr_char(lexer)),
 			src_context_new(lexer->curr_file, lexer->curr_line_offset, is_escape > 0 ? 4 : 3, lexer->curr_line));
-
+	str_builder_add(str, character, 0);
+	str_builder_reduce_buffer(temp, str, 2);
 	Token* token = token_new(TOKEN_CHARACTER,
 		src_context_new(lexer->curr_file, lexer->curr_line_offset, is_escape > 0 ? 4 : 3, lexer->curr_line));
-	token->cvalue = character;
+	token->lexeme = str;
 	return token;
 }
 
@@ -628,7 +631,7 @@ Token* get_string_token(Lexer* lexer)
 	str_builder_reduce_buffer(temp, str, index);
 	Token* token = token_new(TOKEN_STRING,
 		src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
-	token->svalue = str;
+	token->lexeme = str;
 	return token;
 }
 
@@ -637,7 +640,7 @@ Token* get_keyword_token(Lexer* lexer, int order)
 	char* keyword = keywords[order];
 	Token* token = token_new(order + KEYWORD_IN_TOKEN_ENUM_OFFSET,
 		src_context_new(lexer->curr_file, lexer->curr_line_offset, strlen(keyword), lexer->curr_line));
-	token->svalue = keyword;
+	token->lexeme = keyword;
 	return token;
 }
 
@@ -666,7 +669,7 @@ Token* get_keychar_token(Lexer* lexer, int order)
 	str_builder_reduce_buffer(temp, str, size);
 	Token* token = token_new(strlen(str) == 1 ? (order + CHARS_IN_TOKEN_ENUM_OFFSET) : (type + EXT_CHARS_IN_TOKEN_ENUM_OFFSET),
 		src_context_new(lexer->curr_file, lexer->curr_line_offset, strlen(str), lexer->curr_line));
-	token->svalue = str;
+	token->lexeme = str;
 	return token;
 }
 

@@ -118,13 +118,12 @@ typedef enum TokenKind
 
 typedef struct Token
 {
+	char* lexeme;
 	TokenKind type;
-	SrcContext* context;
-	union
+
+	struct _token_attributes
 	{
-		char cvalue;
-		char* svalue;
-		uint64_t uvalue;
+		SrcContext* context;
 	};
 } Token;
 

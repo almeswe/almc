@@ -113,7 +113,7 @@ char* tokens_str[] = {
 Token* token_new(TokenKind type, SrcContext* context)
 {
 	Token* t = new_s(Token, t);
-	t->svalue = 0; // union's initialization here
+	t->lexeme = 0; // union's initialization here
 	t->type = type;
 	t->context = context;
 	return t;
@@ -123,6 +123,7 @@ void token_free(Token* token)
 {
 	if (token)
 	{
+		//todo: if its not keyword, than lexeme can be cleared
 		src_context_free(token->context);
 		free(token);
 	}
@@ -130,7 +131,7 @@ void token_free(Token* token)
 
 char* token_tostr(Token* token)
 {
-	char* str = frmt("%s: %s", token_type_tostr(token->type), token->svalue);
+	char* str = frmt("%s: %s", token_type_tostr(token->type), token->lexeme);
 	return frmt("%s %s", str, src_context_tostr(token->context));
 }
 
