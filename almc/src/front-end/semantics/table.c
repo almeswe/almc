@@ -61,7 +61,7 @@ void table_entity_free(TableEntity* entity)
 
 void table_entities_free(TableEntity** entities)
 {
-	for (size_t i = 0; sbuffer_len(entities); i++)
+	for (size_t i = 0; i < sbuffer_len(entities); i++)
 		table_entity_free(entities[i]);
 	sbuffer_free(entities);
 }

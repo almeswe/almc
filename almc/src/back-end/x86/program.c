@@ -127,7 +127,7 @@ void print_program(AsmProgram* program)
 
 void print_define_to_file(StackFrameEntity* entity, FILE* file)
 {
-	fputs(frmt("%s\t= %d\n", entity->definition, entity->offset), file);
+	fprintf(file, "%-12s= %d\n", entity->definition, entity->offset);
 }
 
 void print_dataline_to_file(AsmDataLine* line, FILE* file)
@@ -135,7 +135,7 @@ void print_dataline_to_file(AsmDataLine* line, FILE* file)
 	switch (line->spec)
 	{
 	case DATA_INITIALIZED_STRING:
-		fputs(frmt("\t%s\t%s ", line->name, line->size), file);
+		fprintf(file, "\t%-8s %s ", line->name, line->size);
 		for (size_t i = 0; i < sbuffer_len(line->values); i++)
 			fputs(i != 0 ? ", " : "", file), fputs(line->values[i], file);
 		fputs("\n", file);
@@ -162,12 +162,12 @@ void print_codeline_to_file(AsmCodeLine* line, FILE* file)
 			fputs(frmt("\t%s\n", instr_tostr(line->instruction)), file);
 			break;
 		case 1:
-			fputs(frmt("\t%s\t%s\n", instr_tostr(line->instruction),
-				line->arguments[0]), file);
+			fprintf(file, "\t%-8s %s\n", instr_tostr(line->instruction),
+				line->arguments[0]);
 			break;
 		case 2:
-			fputs(frmt("\t%s\t%s, %s\n", instr_tostr(line->instruction),
-				line->arguments[0], line->arguments[1]), file);
+			fprintf(file, "\t%-8s %s, %s\n", instr_tostr(line->instruction),
+				line->arguments[0], line->arguments[1]);
 			break;
 		}
 	}
@@ -187,8 +187,8 @@ void print_proto_procs_to_file(AsmCodeSegment* codeseg, FILE* file)
 {
 	for (size_t i = 0; i < sbuffer_len(codeseg->proto_procs); i++)
 	{
-		fputs(frmt("%s proto %s ", codeseg->proto_procs[i]->name,
-			codeseg->proto_procs[i]->convention), file);
+		fprintf(file, "%-15s proto %-8s ", codeseg->proto_procs[i]->name,
+			codeseg->proto_procs[i]->convention);
 		for (size_t j = 0; j < sbuffer_len(codeseg->proto_procs[i]->types); j++)
 			fputs(j ? ", " : "", file), fputs(frmt(":%s", 
 				get_ptr_prefix(codeseg->proto_procs[i]->types[j])), file);
