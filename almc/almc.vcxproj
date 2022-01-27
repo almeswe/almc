@@ -97,6 +97,7 @@
     <None Include="example\localstd\file.almc" />
     <None Include="example\localstd\random.almc" />
     <None Include="example\sort\selection_sort.almc" />
+    <None Include="example\test4\test.almc" />
     <None Include="example\test\enum_test\enum_error1.almc" />
     <None Include="example\test\enum_test\enum_error2.almc" />
     <None Include="example\test\enum_test\enum_error3.almc" />

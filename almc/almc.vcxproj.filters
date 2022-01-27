@@ -252,5 +252,6 @@
     <None Include="example\test\enum_test\enum_error2.almc" />
     <None Include="example\test\enum_test\enum_tests.almc" />
     <None Include="example\test\enum_test\enum_error3.almc" />
+    <None Include="example\test4\test.almc" />
   </ItemGroup>
 </Project>

@@ -1,0 +1,26 @@
+import ../localstd/memory, ../localstd/io;
+
+fnc func() : i32* {
+	let ptr: i32* = cast(i32*)malloc(sizeof(i32)*3u);
+	for (let i: i32 = 0; i < 3; i += 1)
+		ptr[i] = i;
+	return ptr;
+}
+
+fnc entry test4() : i32 {
+	let test: i32 = 2;
+	test = 4;
+	printf("test: %d\n", test);
+
+	let test2: i32* = cast(i32*)malloc(sizeof(i32) * 3u);
+	
+	test2[1] = 2;
+	printf("test2[1]: %d\n", test2[1]);
+
+	*(test2 + sizeof(i32)*2) = 1;
+	printf("*(test2 + sizeof(i32)*2): %d\n", *(test2 + sizeof(i32)*2));
+
+	#printf("func()[2]: %d\n", func()[2]);
+
+	return 0;
+}
