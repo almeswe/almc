@@ -781,52 +781,108 @@ bool is_enum_member(const char* var, Table* table)
 
 int is_addressable_value(Expr* expr, Table* table)
 {
+	return is_localable_value(expr);
+	//if (!expr)
+	//	return 0;
+	//switch (expr->kind)
+	//{
+	//case EXPR_IDNT:
+	//	return !expr->idnt->is_enum_member;
+	//case EXPR_UNARY_EXPR:
+	//	switch (expr->unary_expr->kind)
+	//	{
+	//	case UNARY_PREFIX_INC:
+	//	case UNARY_PREFIX_DEC:
+	//	case UNARY_POSTFIX_INC:
+	//	case UNARY_POSTFIX_DEC:
+	//		return is_addressable_value(expr->unary_expr->expr, table);
+
+	//	case UNARY_DEREFERENCE:
+	//		switch (expr->unary_expr->expr->kind)
+	//		{
+	//		case EXPR_IDNT:
+	//			return 1;
+	//		case EXPR_UNARY_EXPR:
+	//			return is_addressable_value(expr->unary_expr->expr, table);
+	//		case EXPR_BINARY_EXPR:
+	//			return is_addressable_value(expr->unary_expr->expr->binary_expr->lexpr, table) ||
+	//				is_addressable_value(expr->unary_expr->expr->binary_expr->rexpr, table);
+	//		default:
+	//			return 0;
+	//		}
+	//		break;
+	//	}
+	//	break;
+	//case EXPR_BINARY_EXPR:
+	//	switch (expr->binary_expr->kind)
+	//	{
+	//	case BINARY_MEMBER_ACCESSOR:
+	//	case BINARY_PTR_MEMBER_ACCESSOR:
+	//		return is_addressable_value(expr->binary_expr->lexpr, table) &&
+	//			is_addressable_value(expr->binary_expr->rexpr, table);
+	//	case BINARY_ARR_MEMBER_ACCESSOR:
+	//		return is_addressable_value(expr->binary_expr->lexpr, table);
+	//	default:
+	//		return 0;
+	//	}
+	//	break;
+	//	/*case EXPR_TERNARY_EXPR:
+	//		return is_addressable_value(expr->ternary_expr->rexpr, table);*/
+	//}
+	//return 0;
+}
+
+bool is_localable_value(Expr* expr)
+{
 	if (!expr)
-		return 0;
+		return false;
 	switch (expr->kind)
 	{
+	case EXPR_CONST:
+	case EXPR_STRING:
+	case EXPR_INITIALIZER:
+	case EXPR_TERNARY_EXPR:
+		return false;
+
 	case EXPR_IDNT:
+		// in case of idnt we need to be sure that
+		// the idnt is variable, not enum member
 		return !expr->idnt->is_enum_member;
 	case EXPR_UNARY_EXPR:
 		switch (expr->unary_expr->kind)
 		{
-		case UNARY_PREFIX_INC:
-		case UNARY_PREFIX_DEC:
-		case UNARY_POSTFIX_INC:
-		case UNARY_POSTFIX_DEC:
-			return is_addressable_value(expr->unary_expr->expr, table);
-
 		case UNARY_DEREFERENCE:
-			switch (expr->unary_expr->expr->kind)
-			{
-			case EXPR_IDNT:
-				return 1;
-			case EXPR_UNARY_EXPR:
-				return is_addressable_value(expr->unary_expr->expr, table);
-			case EXPR_BINARY_EXPR:
-				return is_addressable_value(expr->unary_expr->expr->binary_expr->lexpr, table) ||
-					is_addressable_value(expr->unary_expr->expr->binary_expr->rexpr, table);
-			default:
-				return 0;
-			}
-			break;
+			return true;
+		default:
+			return false;
 		}
 		break;
 	case EXPR_BINARY_EXPR:
 		switch (expr->binary_expr->kind)
 		{
+		case BINARY_ASSIGN:
+		case BINARY_ADD_ASSIGN:
+		case BINARY_SUB_ASSIGN:
+		case BINARY_MUL_ASSIGN:
+		case BINARY_DIV_ASSIGN:
+		case BINARY_MOD_ASSIGN:
+		case BINARY_LSHIFT_ASSIGN:
+		case BINARY_RSHIFT_ASSIGN:
+
+		case BINARY_BW_OR_ASSIGN:
+		case BINARY_BW_AND_ASSIGN:
+		case BINARY_BW_XOR_ASSIGN:
+
 		case BINARY_MEMBER_ACCESSOR:
 		case BINARY_PTR_MEMBER_ACCESSOR:
-			return is_addressable_value(expr->binary_expr->lexpr, table) &&
-				is_addressable_value(expr->binary_expr->rexpr, table);
 		case BINARY_ARR_MEMBER_ACCESSOR:
-			return is_addressable_value(expr->binary_expr->lexpr, table);
+			return true;
 		default:
-			return 0;
+			return false;
 		}
 		break;
-		/*case EXPR_TERNARY_EXPR:
-			return is_addressable_value(expr->ternary_expr->rexpr, table);*/
+	default:
+		return false;
 	}
-	return 0;
+	return false;
 }
