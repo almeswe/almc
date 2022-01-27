@@ -1,9 +1,8 @@
 #include "expr-gen.h"
 
 //todo: ADD SIGNED AND UNSIGNED CHECK FOR EXPR-GEN
-//todo: add support for variable with the same name in different scopes
+//todo: add support for labels with the same name in different scopes
 //todo: add function which will check for idnt in unary expressions, like: *(a+1)
-//todo: add interface for compiler + add autocompilation
 
 //todo: do global clean-up for back-end
 //todo: finish visit_array_accessor function
@@ -195,12 +194,8 @@ void gen_unary_address32(UnaryExpr* expr, StackFrame* frame)
 
 void gen_unary_dereference32(UnaryExpr* expr, StackFrame* frame)
 {
-	_addressable_data* data =
-		gen_addressable_data(expr->expr, frame);
-	char* data_arg = addressable_data_arg(data);
-	PROC_CODE_LINE2(MOV, get_register_str(EAX),
-		data_arg);
-	addressable_data_free(data);
+	gen_expr32(expr->expr, frame);
+	PROC_CODE_LINE2(MOV, get_register_str(EAX), frmt("[eax]"));
 }
 
 void gen_unary_lg_not32(UnaryExpr* expr)
@@ -831,6 +826,8 @@ char* addressable_data_arg(_addressable_data* data)
 	case ADDRESSABLE_PTR_ACCESSOR:
 		return frmt("%s ptr [%s]", prefix,
 			get_register_str(data->reg));
+	case ADDRESSABLE_DEREFERENCE:
+		return frmt("dword ptr [%s]", get_register_str(data->reg));
 	default:
 		report_error("Unsupported addressable data kind met."
 			" in addressable_data_arg.", NULL);
@@ -852,6 +849,16 @@ _addressable_data* gen_addressable_data(Expr* expr, StackFrame* frame)
 	case EXPR_IDNT:
 		return gen_addressable_data_for_idnt(
 			expr->idnt, frame);
+	case EXPR_UNARY_EXPR:
+		switch (expr->unary_expr->kind)
+		{
+		case UNARY_DEREFERENCE:
+			return gen_addressable_data_for_dereference(
+				expr->unary_expr, frame);
+		default:
+			assert(0);
+		}
+		break;
 	case EXPR_BINARY_EXPR:
 		switch (expr->binary_expr->kind)
 		{
@@ -901,6 +908,18 @@ _addressable_data* gen_addressable_data_for_idnt(
 		data->in_reg = false;
 		break;
 	}
+	return data;
+}
+
+_addressable_data* gen_addressable_data_for_dereference(
+	UnaryExpr* expr, StackFrame* frame)
+{
+	_addressable_data* data = addressable_data_new();
+	gen_expr32(expr->expr, frame);
+	data->reg = EAX;
+	data->in_reg = true;
+	data->type = expr->type;
+	data->kind = ADDRESSABLE_DEREFERENCE;
 	return data;
 }
 

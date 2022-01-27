@@ -19,6 +19,7 @@ typedef enum
 	ADDRESSABLE_UNKNOWN,
 	ADDRESSABLE_ENTITY,
 	ADDRESSABLE_ACCESSOR,
+	ADDRESSABLE_DEREFERENCE,
 	ADDRESSABLE_ARR_ACCESSOR,
 	ADDRESSABLE_PTR_ACCESSOR
 } _addressable_kind;
@@ -84,6 +85,8 @@ _addressable_data* gen_addressable_data(
 	Expr* expr, StackFrame* frame);
 _addressable_data* gen_addressable_data_for_idnt(
 	Idnt* idnt, StackFrame* frame);
+_addressable_data* gen_addressable_data_for_dereference(
+	UnaryExpr* expr, StackFrame* frame);
 _addressable_data* gen_addressable_data_for_accessor(
 	BinaryExpr* expr, StackFrame* frame);
 _addressable_data* gen_addressable_data_for_array_accessor(
