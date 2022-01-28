@@ -1,5 +1,11 @@
 import ../localstd/memory, ../localstd/io;
 
+struct test_type {
+	a: i32;
+	b: i32*;
+	c: i32[4];
+}
+
 fnc func() : i32* {
 	let ptr: i32* = cast(i32*)malloc(sizeof(i32)*3u);
 	for (let i: i32 = 0; i < 3; i += 1)
@@ -11,6 +17,8 @@ fnc entry test4() : i32 {
 	let test: i32 = 2;
 	test = 4;
 	printf("test: %d\n", test);
+	
+	#----------------------------------------------------------------------------
 
 	let test2: i32* = cast(i32*)malloc(sizeof(i32) * 3u);
 	
@@ -20,7 +28,30 @@ fnc entry test4() : i32 {
 	*(test2 + sizeof(i32)*2) = 1;
 	printf("*(test2 + sizeof(i32)*2): %d\n", *(test2 + sizeof(i32)*2));
 
-	#printf("func()[2]: %d\n", func()[2]);
+	#----------------------------------------------------------------------------
+
+	let test3: test_type[3];
+	test3[2].a = 3;
+
+	printf("test3[2].a: %d\n", test3[2].a);
+
+	(*(test3 + sizeof(test_type) * 2)).a = 10;
+	printf("(*(test3 + sizeof(test_type) * 2)).a: %d\n",
+		(*(test3 + sizeof(test_type) * 2)).a);
+
+	#----------------------------------------------------------------------------
+
+	let test4: test_type* = 
+		cast(test_type*)malloc(sizeof(test_type));
+	test4->a = 0xf;
+
+	printf("test4->a: %d\n", test4->a);
+
+	(*(test4)).a = 0xd;
+
+	printf("(*(test4)).a: %d\n", (*(test4)).a);
+
+	#----------------------------------------------------------------------------
 
 	return 0;
 }

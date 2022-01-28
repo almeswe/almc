@@ -70,4 +70,8 @@ uint32_t get_size_of_type(Type* type, Table* table);
 void complete_size(Type* type, Table* table);
 void complete_type(Type* type, Table* table);
 
+bool is_addressable_value(Expr* expr);
+bool is_const_expr(Expr* expr, Table* table);
+bool is_enum_member(const char* var, Table* table);
+
 #endif

@@ -1012,3 +1012,97 @@ void complete_type(Type* type, Table* table)
 		base->kind = TYPE_UNION,
 			base->members = user_type->union_decl->members;
 }
+
+bool is_const_expr(Expr* expr, Table* table)
+{
+	if (!expr)
+		return false;
+	switch (expr->kind)
+	{
+	case EXPR_CONST:
+		return true;
+	case EXPR_IDNT:
+		return expr->idnt->is_enum_member;
+	case EXPR_UNARY_EXPR:
+		switch (expr->unary_expr->kind)
+		{
+		case UNARY_SIZEOF:
+		case UNARY_LENGTHOF:
+			return true;
+		}
+		return is_const_expr(expr->unary_expr->expr, table);
+	case EXPR_BINARY_EXPR:
+		return is_const_expr(expr->binary_expr->lexpr, table) &&
+			is_const_expr(expr->binary_expr->rexpr, table);
+	case EXPR_TERNARY_EXPR:
+		return is_const_expr(expr->ternary_expr->lexpr, table) &&
+			is_const_expr(expr->ternary_expr->rexpr, table) &&
+			is_const_expr(expr->ternary_expr->cond, table);
+	}
+	return false;
+}
+
+bool is_enum_member(const char* var, Table* table)
+{
+	for (Table* parent = table; parent; parent = parent->nested_in)
+		for (size_t i = 0; i < sbuffer_len(parent->enums); i++)
+			for (size_t j = 0; j < sbuffer_len(parent->enums[i]->enum_decl->members); j++)
+				if (strcmp(var, parent->enums[i]->enum_decl->members[j]->name) == 0)
+					return true;
+	return false;
+}
+
+bool is_addressable_value(Expr* expr)
+{
+	if (!expr)
+		return false;
+	switch (expr->kind)
+	{
+	case EXPR_CONST:
+	case EXPR_STRING:
+	case EXPR_INITIALIZER:
+	case EXPR_TERNARY_EXPR:
+		return false;
+
+	case EXPR_IDNT:
+		// in case of idnt we need to be sure that
+		// the idnt is variable, not enum member
+		return !expr->idnt->is_enum_member;
+	case EXPR_UNARY_EXPR:
+		switch (expr->unary_expr->kind)
+		{
+		case UNARY_DEREFERENCE:
+			return true;
+		default:
+			return false;
+		}
+		break;
+	case EXPR_BINARY_EXPR:
+		switch (expr->binary_expr->kind)
+		{
+		case BINARY_ASSIGN:
+		case BINARY_ADD_ASSIGN:
+		case BINARY_SUB_ASSIGN:
+		case BINARY_MUL_ASSIGN:
+		case BINARY_DIV_ASSIGN:
+		case BINARY_MOD_ASSIGN:
+		case BINARY_LSHIFT_ASSIGN:
+		case BINARY_RSHIFT_ASSIGN:
+
+		case BINARY_BW_OR_ASSIGN:
+		case BINARY_BW_AND_ASSIGN:
+		case BINARY_BW_XOR_ASSIGN:
+
+		case BINARY_MEMBER_ACCESSOR:
+		case BINARY_PTR_MEMBER_ACCESSOR:
+		case BINARY_ARR_MEMBER_ACCESSOR:
+			return true;
+		default:
+			return false;
+		}
+		break;
+	default:
+		return false;
+	}
+	return false;
+}

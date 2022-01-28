@@ -52,13 +52,4 @@ bool can_cast_implicitly(Type* to, Type* type);
 SrcArea* get_expr_area(Expr* expr);
 char* get_member_name(Expr* expr);
 
-// todo: replace methods to visitor.h
-bool is_const_expr(Expr* expr, Table* table);
-bool is_enum_member(const char* var, Table* table);
-int is_addressable_value(Expr* expr, Table* table);
-
-bool is_localable_value(Expr* expr);
-
-Type* get_enum_member_type(const char* member, Table* table);
-
 #endif

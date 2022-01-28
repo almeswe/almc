@@ -2,7 +2,6 @@
 
 //todo: ADD SIGNED AND UNSIGNED CHECK FOR EXPR-GEN
 //todo: add support for labels with the same name in different scopes
-//todo: add function which will check for idnt in unary expressions, like: *(a+1)
 
 //todo: do global clean-up for back-end
 //todo: finish visit_array_accessor function
@@ -926,15 +925,8 @@ _addressable_data* gen_addressable_data_for_dereference(
 _addressable_data* gen_addressable_data_for_accessor(
 	BinaryExpr* expr, StackFrame* frame)
 {
-	_addressable_data* data = NULL;
-
-	//todo: add more proper check here
-	if (expr->lexpr->kind != EXPR_IDNT)
-		data = gen_addressable_data_for_accessor(
-			expr->lexpr->binary_expr, frame);
-	else
-		data = gen_addressable_data_for_idnt(
-			expr->lexpr->idnt, frame);
+	_addressable_data* data = gen_addressable_data(
+		expr->lexpr, frame);
 
 	switch (expr->kind)
 	{
