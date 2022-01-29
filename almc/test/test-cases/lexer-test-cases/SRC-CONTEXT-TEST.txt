@@ -7,18 +7,18 @@ Token* get_dec_fnum_token(Lexer* lexer, char* buffer, uint32_t size)
 {
 	if (!matchc(lexer, '.'))
 		report_error(frmt("Expected dot character for float number representation!"), NULL);
-	str_builder_add(buffer, get_curr_char(lexer), size); size++;
+	str_builder_add(buffer, get_curr_char(lexer), size); size += 1;
 	get_next_char(lexer);
 	if (!matchc_in(lexer, '0', '9'))
 		report_error(frmt("Expected at least one digit after \'.\'!"), 
 			src_context_new(lexer->curr_file, lexer->curr_line_offset, size, lexer->curr_line));
-	str_builder_add(buffer, get_curr_char(lexer), size); size++;
+	str_builder_add(buffer, get_curr_char(lexer), size); size += 1;
 	while (isdigit_fext(get_next_char(lexer)))
 	{
 		if (matchc(lexer, 'e') || matchc(lexer, 'E'))
 			return get_dec_expnum_token(lexer, buffer, size, 1);
 		str_builder_add(buffer, get_curr_char(lexer), size);
-		size++;
+		size += 1;
 	}
 	unget_curr_char(lexer);
 	str_builder_reduce_buffer(temp, buffer, size);
@@ -37,7 +37,7 @@ Token* get_idnt_token(Lexer* lexer)
 	while (isidnt_ext(get_next_char(lexer)))
 	{
 		str_builder_add(idnt, get_curr_char(lexer), size);
-		size++;
+		size += 1;
 	}
 	unget_curr_char(lexer);
 	str_builder_reduce_buffer(temp, idnt, size);

@@ -150,10 +150,6 @@ Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 	//-----------------------------
 	// operators that can be applied only with integral types & pointers
 	case UNARY_BW_NOT:
-	case UNARY_PREFIX_INC:
-	case UNARY_PREFIX_DEC:
-	case UNARY_POSTFIX_INC:
-	case UNARY_POSTFIX_DEC:
 		if (is_integral_type(type))
 			return type;
 		report_error2("Cannot use this operator with this operand type.",
@@ -689,18 +685,6 @@ char* get_member_name(Expr* expr)
 	{
 	case EXPR_IDNT:
 		return expr->idnt->svalue;
-	case EXPR_UNARY_EXPR:
-		switch (expr->unary_expr->kind)
-		{
-		case UNARY_POSTFIX_DEC:
-		case UNARY_POSTFIX_INC:
-			return get_member_name(expr->unary_expr->expr);
-		default:
-			report_error2("Cannot get member name from unary expression.", 
-				expr->unary_expr->area);
-			break;
-		}
-		break;
 	case EXPR_BINARY_EXPR:
 		switch (expr->binary_expr->kind)
 		{

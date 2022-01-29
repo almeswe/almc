@@ -286,10 +286,6 @@ void visit_unary_expr(UnaryExpr* unary_expr, Table* table)
 		break;
 
 	case UNARY_ADDRESS:
-	case UNARY_PREFIX_INC:
-	case UNARY_PREFIX_DEC:
-	case UNARY_POSTFIX_INC:
-	case UNARY_POSTFIX_DEC:
 		if (!is_addressable_value(unary_expr->expr, table))
 			report_error2("Addressable value expected for this unary operator.", 
 				get_expr_area(unary_expr->expr));
@@ -391,6 +387,25 @@ void visit_ternary_expr(TernaryExpr* ternary_expr, Table* table)
 	visit_condition(ternary_expr->cond, table);
 	visit_expr(ternary_expr->lexpr, table);
 	visit_expr(ternary_expr->rexpr, table);
+}
+
+typedef struct 
+{
+	Type* general;
+	int32_t dimension;
+} _array_member_visitor_data;
+
+_array_member_visitor_data* visit_array_member_accessor2(
+	BinaryExpr* arr_accessor_expr, Table* table)
+{
+	_array_member_visitor_data* data = NULL;
+	if (arr_accessor_expr->lexpr->kind == EXPR_IDNT)
+	{
+		data = cnew_s(_array_member_visitor_data, data, 1);
+	}
+	else
+		data = visit_array_member_accessor2(
+			arr_accessor_expr->lexpr->binary_expr, table);
 }
 
 void visit_array_member_accessor(BinaryExpr* arr_accessor_expr, Table* table)

@@ -18,15 +18,9 @@ typedef enum UnaryExprKind
 	UNARY_LG_NOT,
 	UNARY_BW_NOT,
 
-	UNARY_PREFIX_INC,
-	UNARY_PREFIX_DEC,
-
 	UNARY_CAST,
 	UNARY_SIZEOF,
 	UNARY_LENGTHOF,
-
-	UNARY_POSTFIX_INC,
-	UNARY_POSTFIX_DEC,
 } UnaryExprKind;
 
 typedef struct UnaryExpr

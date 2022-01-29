@@ -1,5 +1,7 @@
 #include "parser.h"
 
+//todo: add error recovering.
+
 #define matcht(parser, t) (get_curr_token(parser)->type == (t))
 #define expect_with_skip(parser, type, str) expect(parser, type, str), get_next_token(parser)
 #define token_index_fits(parser) (parser->token_index >= 0 && parser->token_index < sbuffer_len(parser->tokens))
@@ -318,28 +320,6 @@ Expr* parse_primary_expr(Parser* parser)
 	return expr;
 }
 
-Expr* parse_postfix_xxcrement_expr(Parser* parser, Expr* expr, TokenKind xxcrmt_type)
-{
-	Expr* uexpr = NULL;
-	context_starts(parser, context);
-	Token* token = get_curr_token(parser);
-
-	switch (token->type)
-	{
-	case TOKEN_INC:
-	case TOKEN_DEC:
-		uexpr = expr_new(EXPR_UNARY_EXPR,
-			unary_expr_new(xxcrmt_type == TOKEN_INC ? 
-				UNARY_POSTFIX_INC : UNARY_POSTFIX_DEC, expr));
-		get_next_token(parser);
-		context_ends(parser, context, uexpr->unary_expr);
-		return uexpr;
-	default:
-		report_error(frmt("Expected postfix (in/de)crement, but met: %s",
-			token_type_tostr(token->type)), token->context);
-	}
-}
-
 Expr* parse_array_accessor_expr(Parser* parser, Expr* rexpr)
 {
 	context_starts(parser, context);
@@ -383,9 +363,7 @@ Expr* parse_postfix_expr(Parser* parser)
 	Expr* postfix_expr = NULL;
 	Expr* primary_expr = parse_primary_expr(parser);
 
-	while (matcht(parser, TOKEN_INC)
-		|| matcht(parser, TOKEN_DEC)
-		|| matcht(parser, TOKEN_DOT)
+	while (matcht(parser, TOKEN_DOT)
 		|| matcht(parser, TOKEN_ARROW)
 		|| matcht(parser, TOKEN_OP_BRACKET))
 	{
@@ -394,11 +372,6 @@ Expr* parse_postfix_expr(Parser* parser)
 
 		switch (get_curr_token(parser)->type)
 		{
-		case TOKEN_INC:
-		case TOKEN_DEC:
-			postfix_expr = parse_postfix_xxcrement_expr(parser,
-				rexpr, get_curr_token(parser)->type);
-			break;
 		case TOKEN_DOT:
 		case TOKEN_ARROW:
 			postfix_expr = parse_member_accessor_expr(parser,
@@ -432,12 +405,6 @@ Expr* parse_unary_expr(Parser* parser)
 
 	switch (get_curr_token(parser)->type)
 	{
-	case TOKEN_INC:
-		unary_unary_case(parser, UNARY_PREFIX_INC);
-		return expr;
-	case TOKEN_DEC:
-		unary_unary_case(parser, UNARY_PREFIX_DEC);
-		return expr;
 	case TOKEN_PLUS:
 		unary_cast_case(parser, UNARY_PLUS);
 		return expr;
@@ -1376,8 +1343,8 @@ bool is_stmt_for_import(Stmt* stmt)
 {
 	switch (stmt->kind)
 	{
-	case STMT_TYPE_DECL:
 	case STMT_VAR_DECL:
+	case STMT_TYPE_DECL:
 	case STMT_FUNC_DECL:
 		return true;
 	}

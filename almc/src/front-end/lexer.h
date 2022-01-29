@@ -15,7 +15,7 @@
 #include "..\utils\context.h"
 #include "..\utils\data-structures\sbuffer.h"
 
-#define EXT_CHARS 26
+#define EXT_CHARS 24
 #define EXT_CHARS_IN_TOKEN_ENUM_OFFSET TOKEN_RIGHT_ANGLE + 1
 
 #define CHARS 26
