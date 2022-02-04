@@ -57,8 +57,9 @@ typedef struct {
 } _addressable_data;
 
 void gen_expr32(Expr* expr, StackFrame* frame);
-void gen_idnt32(Idnt* idnt, int reg, StackFrame* frame);
 void gen_string32(Str* str, int reg);
+void gen_const32(Const* cnst, int reg);
+void gen_idnt32(Idnt* idnt, int reg, StackFrame* frame);
 void gen_primary_expr32(Expr* prim_expr, int reg, StackFrame* frame);
 void gen_unary_sizeof32(UnaryExpr* expr);
 void gen_unary_lengthof32(UnaryExpr* expr);
@@ -68,12 +69,14 @@ void gen_binary_comma_expr32(BinaryExpr* expr, StackFrame* frame);
 void gen_binary_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame);
 void gen_binary_relative_expr32(BinaryExpr* relative_expr, StackFrame* frame);
 void gen_binary_expr32(BinaryExpr* binary_expr, StackFrame* frame);
-void gen_ternary_expr(TernaryExpr* ternary_expr, StackFrame* frame);
+void gen_ternary_expr32(TernaryExpr* ternary_expr, StackFrame* frame);
 void gen_func_call32(FuncCall* func_call, StackFrame* frame);
 
 void gen_callee_stack_clearing(FuncDecl* func_decl);
 void gen_caller_stack_clearing(FuncCall* func_call);
 
+void cache_register(int reg);
+void restore_register(int reg);
 int* cache_general_purpose_registers();
 void restore_general_purpose_registers(int* regs);
 

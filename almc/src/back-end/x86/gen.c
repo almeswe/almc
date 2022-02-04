@@ -204,7 +204,7 @@ void gen_var_decl_stmt(VarDecl* var_decl, StackFrame* frame)
 			char* arg1 = frmt("%s ptr %s[ebp]",
 				get_ptr_prefix(type), local->definition);
 			char* arg2 = get_register_str(
-				reg = get_part_of_reg(EAX, type->size * 8));
+				reg = get_subregister(EAX, type->size * 8));
 
 			PROC_CODE_LINE2(MOV, arg1, arg2);
 			unreserve_register(REGISTERS, reg);
@@ -223,7 +223,7 @@ void gen_stmt(Stmt* stmt, StackFrame* frame)
 	switch (stmt->kind)
 	{
 	case STMT_EXPR:
-		gen_expr32(stmt->expr_stmt->expr, frame);
+		gen_expr_stmt(stmt->expr_stmt, frame);
 		break;
 	case STMT_JUMP:
 		gen_jump_stmt(stmt->jump_stmt, frame);
@@ -249,6 +249,12 @@ void gen_stmt(Stmt* stmt, StackFrame* frame)
 	default:
 		assert(0);
 	}
+}
+
+void gen_expr_stmt(ExprStmt* expr_stmt, StackFrame* frame)
+{
+	gen_expr32(expr_stmt->expr, frame);
+	unreserve_register(REGISTERS, EAX);
 }
 
 void gen_block(Block* block, StackFrame* frame)

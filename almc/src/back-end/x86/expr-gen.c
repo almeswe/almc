@@ -6,10 +6,6 @@
 //todo: do global clean-up for back-end
 //todo: finish visit_array_accessor function
 
-#define IS_PRIMARY_EXPR(expr)      \
-	((expr->kind == EXPR_CONST) || \
-	 (expr->kind == EXPR_IDNT))
-
 void gen_const_expr32(Expr* expr)
 {
 	reserve_register(REGISTERS, EAX);
@@ -19,7 +15,7 @@ void gen_const_expr32(Expr* expr)
 
 void gen_mov_reg_to32(int reg, char* data, Type* datatype)
 {
-	int reg_part = get_part_of_reg(reg, 
+	int reg_part = get_subregister(reg, 
 		datatype->size * 8);
 	char* reg_arg = get_register_str(reg_part);
 	PROC_CODE_LINE2(MOV, data, get_register_str(reg_part));
@@ -41,58 +37,35 @@ void gen_mov_to_reg32(int reg, char* data, Type* datatype)
 
 void gen_expr32(Expr* expr, StackFrame* frame)
 {
-	if (is_const_expr(expr, TABLE))
-		gen_const_expr32(expr);
-	else
+	switch (expr->kind)
 	{
-		switch (expr->kind)
-		{
-		case EXPR_IDNT:
-		case EXPR_CONST:
-			reserve_register(REGISTERS, EAX),
-				gen_primary_expr32(expr, EAX, frame);
-			break;
-		case EXPR_STRING:
-			reserve_register(REGISTERS, EAX),
-				gen_string32(expr->str, EAX);
-			break;
-		case EXPR_UNARY_EXPR:
-			reserve_register(REGISTERS, EAX), 
-				gen_unary_expr32(expr->unary_expr, frame);
-			break;
-		case EXPR_BINARY_EXPR:
+	case EXPR_IDNT:
+	case EXPR_CONST:
+		reserve_register(REGISTERS, EAX),
+			gen_primary_expr32(expr, EAX, frame);
+		break;
+	case EXPR_STRING:
+		reserve_register(REGISTERS, EAX),
+			gen_string32(expr->str, EAX);
+		break;
+	case EXPR_UNARY_EXPR:
+		is_const_expr(expr) ? gen_const_expr32(expr) :
+			gen_unary_expr32(expr->unary_expr, frame);
+		break;
+	case EXPR_BINARY_EXPR:
+		is_const_expr(expr) ? gen_const_expr32(expr) :
 			gen_binary_expr32(expr->binary_expr, frame);
-			break;
-		case EXPR_TERNARY_EXPR:
-			gen_ternary_expr(expr->ternary_expr, frame);
-			break;
-		case EXPR_FUNC_CALL:
-			gen_func_call32(expr->func_call, frame);
-			break;
-		default:
-			report_error("Unknown expression kind met."
-			 " in gen_expr32", NULL);
-		}
-	}
-}
-
-void gen_idnt32(Idnt* idnt, int reg, StackFrame* frame)
-{
-	if (idnt->is_enum_member)
-		gen_expr32(idnt->enum_member_value, frame);
-	else
-	{
-		StackFrameEntity* entity =
-			get_entity_by_name(idnt->svalue, frame);
-		assert(entity);
-		assert(idnt->type);
-		char* reg_arg = get_register_str(
-			get_part_of_reg(reg, idnt->type->size * 8));
-		char* entity_arg = frmt("%s ptr %s[ebp]",
-			get_ptr_prefix(idnt->type), entity->definition);
-
-		PROC_CODE_LINE2(IS_AGGREGATE_TYPE(idnt->type) ? LEA : MOV, 
-			reg_arg, entity_arg);
+		break;
+	case EXPR_TERNARY_EXPR:
+		is_const_expr(expr) ? gen_const_expr32(expr) :
+			gen_ternary_expr32(expr->ternary_expr, frame);
+		break;
+	case EXPR_FUNC_CALL:
+		gen_func_call32(expr->func_call, frame);
+		break;
+	default:
+		report_error("Unknown expression kind met."
+			" in gen_expr32", NULL);
 	}
 }
 
@@ -132,32 +105,55 @@ void gen_string32(Str* str, int reg)
 	PROC_CODE_LINE2(LEA, get_register_str(reg), name);
 }
 
-void gen_primary_expr32(Expr* prim_expr, int reg, StackFrame* frame)
+void gen_const32(Const* cnst, int reg)
 {
 	char* reg_arg = get_register_str(reg);
+	switch (cnst->kind)
+	{
+	case CONST_INT:
+		PROC_CODE_LINE2(MOV, reg_arg,
+			frmt("%d", cnst->ivalue));
+		break;
+	case CONST_UINT:
+		PROC_CODE_LINE2(MOV, reg_arg,
+			frmt("%i", cnst->uvalue));
+		break;
+	case CONST_CHAR:
+		PROC_CODE_LINE2(MOVZX, reg_arg,
+			frmt("%d", (char)cnst->ivalue));
+		break;
+	default:
+		report_error("Unknown const kind met."
+			" in gen_const32", NULL);
+	}
+}
 
+void gen_idnt32(Idnt* idnt, int reg, StackFrame* frame)
+{
+	if (idnt->is_enum_member)
+		gen_expr32(idnt->enum_member_value, frame);
+	else
+	{
+		StackFrameEntity* entity =
+			get_entity_by_name(idnt->svalue, frame);
+		assert(entity);
+		assert(idnt->type);
+		char* reg_arg = get_register_str(
+			get_subregister(reg, idnt->type->size * 8));
+		char* entity_arg = frmt("%s ptr %s[ebp]",
+			get_ptr_prefix(idnt->type), entity->definition);
+
+		PROC_CODE_LINE2(IS_AGGREGATE_TYPE(idnt->type) ? LEA : MOV,
+			reg_arg, entity_arg);
+	}
+}
+
+void gen_primary_expr32(Expr* prim_expr, int reg, StackFrame* frame)
+{
 	switch (prim_expr->kind)
 	{
 	case EXPR_CONST:
-		switch (prim_expr->cnst->kind)
-		{
-		case CONST_INT:
-			PROC_CODE_LINE2(MOV, reg_arg,
-				frmt("%d", prim_expr->cnst->ivalue));
-			break;
-		case CONST_UINT:
-			PROC_CODE_LINE2(MOV, reg_arg,
-				frmt("%i", prim_expr->cnst->uvalue));
-			break;
-		case CONST_CHAR:
-			PROC_CODE_LINE2(MOVZX, reg_arg,
-				frmt("%d", (char)prim_expr->cnst->ivalue));
-			break;
-		default:
-			report_error("Unknown const kind met."
-				" in gen_primary_expr32", NULL);
-			break;
-		}
+		gen_const32(prim_expr->cnst, reg, frame);
 		break;
 	case EXPR_IDNT:
 		gen_idnt32(prim_expr->idnt, reg, frame);
@@ -170,13 +166,16 @@ void gen_primary_expr32(Expr* prim_expr, int reg, StackFrame* frame)
 
 void gen_unary_sizeof32(UnaryExpr* expr)
 {
+	reserve_register(REGISTERS, EAX);
 	PROC_CODE_LINE2(MOV, get_register_str(EAX),
 		frmt("%i", expr->cast_type->size));
 }
 
 void gen_unary_lengthof32(UnaryExpr* expr)
 {
-	Type* expr_type = get_expr_type(expr->expr, TABLE);
+	//todo: test this (changed get -> retrieve) 
+	reserve_register(REGISTERS, EAX);
+	Type* expr_type = retrieve_expr_type(expr->expr);
 	PROC_CODE_LINE2(MOV, get_register_str(EAX),
 		frmt("%i", expr_type->size));
 }
@@ -194,11 +193,13 @@ void gen_unary_address32(UnaryExpr* expr, StackFrame* frame)
 void gen_unary_dereference32(UnaryExpr* expr, StackFrame* frame)
 {
 	gen_expr32(expr->expr, frame);
-	PROC_CODE_LINE2(MOV, get_register_str(EAX), frmt("[eax]"));
+	PROC_CODE_LINE2(MOV, get_register_str(EAX), 
+		frmt("[%s]", get_register_str(EAX)));
 }
 
 void gen_unary_lg_not32(UnaryExpr* expr)
 {
+	reserve_register(REGISTERS, EAX);
 	char* eax_reg_arg = get_register_str(EAX);
 	NEW_LABEL(label_true);
 	NEW_LABEL(label_end);
@@ -220,6 +221,9 @@ void gen_unary_expr32(UnaryExpr* unary_expr, StackFrame* frame)
 	char* eax_reg_arg = get_register_str(EAX);
 	switch (unary_expr->kind)
 	{
+	case UNARY_LG_NOT:
+		gen_unary_lg_not32(unary_expr);
+		break;
 	case UNARY_SIZEOF:
 		gen_unary_sizeof32(unary_expr);
 		break;
@@ -236,11 +240,11 @@ void gen_unary_expr32(UnaryExpr* unary_expr, StackFrame* frame)
 		gen_unary_dereference32(unary_expr, frame);
 		break;
 	default:
-		if (!IS_PRIMARY_EXPR(unary_expr->expr))
+		if (!is_primary_expr(unary_expr->expr))
 			gen_expr32(unary_expr->expr, frame);
 		else
 			reserve_register(REGISTERS, EAX),
-			gen_primary_expr32(unary_expr->expr, EAX, frame);
+				gen_primary_expr32(unary_expr->expr, EAX, frame);
 
 		switch (unary_expr->kind)
 		{
@@ -253,9 +257,6 @@ void gen_unary_expr32(UnaryExpr* unary_expr, StackFrame* frame)
 		case UNARY_BW_NOT:
 			PROC_CODE_LINE1(NOT,
 				eax_reg_arg);
-			break;
-		case UNARY_LG_NOT:
-			gen_unary_lg_not32(unary_expr);
 			break;
 		default:
 			report_error("Unknown unary expression kind met."
@@ -273,7 +274,8 @@ void gen_binary_accessor_expr32(BinaryExpr* expr, StackFrame* frame)
 	_addressable_data* data = NULL;
 	char* addr_arg = addressable_data_arg(data =
 		gen_addressable_data(wrapper, frame));
-	reserve_register(REGISTERS, EAX);
+	if (REGISTERS->reg_table[EAX] == REGISTER_FREE)
+		reserve_register(REGISTERS, EAX);
 	gen_mov_to_reg32(EAX, addr_arg, data->type);
 	addressable_data_free(data), free(wrapper);
 }
@@ -303,9 +305,9 @@ void gen_binary_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
 		gen_addressable_data(assign_expr->lexpr, frame));
 	char* eax_reg_arg = get_register_str(EAX);
 	// if we have address in register and it is EAX, 
-	// we need to save it because we'll need it for storing value of left side
+	// we need to save it because we'll need it for storing value of left side expr
 	if (data->in_reg && data->reg == EAX)
-		PROC_CODE_LINE1(PUSH, get_register_str(EAX));
+		cache_register(EAX);
 	// right expression in eax
 	gen_expr32(assign_expr->rexpr, frame);
 
@@ -320,7 +322,7 @@ void gen_binary_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
 		if (data->in_reg && data->reg == EAX)
 		{
 			PROC_CODE_LINE2(MOV, temp_reg_arg, eax_reg_arg);
-			PROC_CODE_LINE1(POP, get_register_str(EAX));
+			unreserve_register(REGISTERS, EAX), restore_register(EAX);
 			gen_mov_reg_to32(temp_reg, addr_arg, 
 				retrieve_expr_type(assign_expr->lexpr));
 		}
@@ -404,7 +406,7 @@ void gen_binary_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
 			" in gen_binary_assign_expr32", NULL);
 		}
 		if (data->in_reg && data->reg == EAX)
-			PROC_CODE_LINE1(POP, get_register_str(EAX));
+			unreserve_register(REGISTERS, EAX), restore_register(EAX);
 		// assign calculated value to addressable expr (storage)
 		gen_mov_reg_to32(temp_reg, addr_arg,
 			retrieve_expr_type(assign_expr->lexpr));
@@ -425,15 +427,18 @@ void gen_binary_relative_expr32(BinaryExpr* relative_expr, StackFrame* frame)
 
 	gen_expr32(relative_expr->lexpr, frame);
 
+	// caching the value of right expression
+	// because we need to calculate the value of left expression
+	cache_register(EAX);
 	char* eax_reg_arg = get_register_str(EAX);
-	PROC_CODE_LINE1(PUSH, eax_reg_arg);
-	
+
 	gen_expr32(relative_expr->rexpr, frame);
 	int temp_reg = get_unreserved_register(
 		REGISTERS, REGSIZE_DWORD);
 	char* temp_reg_arg = get_register_str(temp_reg);
 	PROC_CODE_LINE2(MOV, temp_reg_arg, eax_reg_arg);
-	PROC_CODE_LINE1(POP, eax_reg_arg);
+	// restoring the value of right expression
+	unreserve_register(REGISTERS, EAX), restore_register(EAX);
 
 	char* label_supply = program_new_label(program);
 	char* label_final = program_new_label(program);
@@ -518,10 +523,6 @@ void gen_binary_relative_expr32(BinaryExpr* relative_expr, StackFrame* frame)
 
 void gen_binary_expr32(BinaryExpr* binary_expr, StackFrame* frame)
 {
-	#define RESERVE_TEMP_REG  \
-		temp_reg = get_unreserved_register(\
-			REGISTERS, REGSIZE_DWORD)
-
 	int temp_reg = 0;
 	char* eax_reg_arg = NULL;
 	char* temp_reg_arg = NULL;
@@ -564,38 +565,44 @@ void gen_binary_expr32(BinaryExpr* binary_expr, StackFrame* frame)
 		break;
 
 	default:
-		if (!IS_PRIMARY_EXPR(binary_expr->lexpr) &&
-			IS_PRIMARY_EXPR(binary_expr->rexpr))
+		if (!is_primary_expr(binary_expr->lexpr) &&
+			is_primary_expr(binary_expr->rexpr))
 		{
 			gen_expr32(binary_expr->lexpr, frame);
-			RESERVE_TEMP_REG;
+			temp_reg = get_unreserved_register(
+				REGISTERS, REGSIZE_DWORD);
 			gen_primary_expr32(binary_expr->rexpr, temp_reg, frame);
 		}
-		else if (IS_PRIMARY_EXPR(binary_expr->lexpr) &&
-			IS_PRIMARY_EXPR(binary_expr->rexpr))
+		else if (is_primary_expr(binary_expr->lexpr) &&
+			is_primary_expr(binary_expr->rexpr))
 		{
 			reserve_register(REGISTERS, EAX);
 			gen_primary_expr32(binary_expr->lexpr, EAX, frame);
-			RESERVE_TEMP_REG;
+			temp_reg = get_unreserved_register(
+				REGISTERS, REGSIZE_DWORD);
 			gen_primary_expr32(binary_expr->rexpr, temp_reg, frame);
 		}
-		else if (IS_PRIMARY_EXPR(binary_expr->lexpr) &&
-			!IS_PRIMARY_EXPR(binary_expr->rexpr))
+		else if (is_primary_expr(binary_expr->lexpr) &&
+			!is_primary_expr(binary_expr->rexpr))
 		{
 			gen_expr32(binary_expr->rexpr, frame);
-			RESERVE_TEMP_REG;
-			gen_primary_expr32(binary_expr->lexpr, temp_reg, frame);
+			temp_reg = get_unreserved_register(
+				REGISTERS, REGSIZE_DWORD);
+			PROC_CODE_LINE2(MOV, get_register_str(temp_reg),
+				get_register_str(EAX));
+			unreserve_register(REGISTERS, EAX);
+			gen_primary_expr32(binary_expr->lexpr, EAX, frame);
 		}
 		else
 		{
 			gen_expr32(binary_expr->lexpr, frame);
-			PROC_CODE_LINE1(PUSH, get_register_str(EAX));
-			unreserve_register(REGISTERS, EAX);
+			cache_register(EAX);
 			gen_expr32(binary_expr->rexpr, frame);
-			RESERVE_TEMP_REG;
+			temp_reg = get_unreserved_register(
+				REGISTERS, REGSIZE_DWORD);
 			PROC_CODE_LINE2(MOV, get_register_str(temp_reg),
 				get_register_str(EAX));
-			PROC_CODE_LINE1(POP, get_register_str(EAX));
+			unreserve_register(REGISTERS, EAX), restore_register(EAX);
 		}
 
 		eax_reg_arg = get_register_str(EAX);
@@ -611,14 +618,14 @@ void gen_binary_expr32(BinaryExpr* binary_expr, StackFrame* frame)
 			PROC_CODE_LINE2(SUB, eax_reg_arg,
 				temp_reg_arg);
 			break;
-			// the second operator need to be in cl register for shift operators
+		// the second operator need to be in cl register for shift operators
 		case BINARY_LSHIFT:
 		case BINARY_RSHIFT:
 			if (temp_reg != ECX)
 			{
 				reserve_register(REGISTERS, ECX);
-				PROC_CODE_LINE2(MOV,
-					get_register_str(ECX), temp_reg_arg);
+				PROC_CODE_LINE2(MOV, get_register_str(ECX),
+					temp_reg_arg);
 				unreserve_register(REGISTERS, ECX);
 			}
 			PROC_CODE_LINE2(binary_expr->kind == BINARY_LSHIFT ? SHL : SHR,
@@ -662,11 +669,9 @@ void gen_binary_expr32(BinaryExpr* binary_expr, StackFrame* frame)
 		}
 		unreserve_register(REGISTERS, temp_reg);
 	}
-
-#undef RESERVE_TEMP_REG
 }
 
-void gen_ternary_expr(TernaryExpr* ternary_expr, StackFrame* frame)
+void gen_ternary_expr32(TernaryExpr* ternary_expr, StackFrame* frame)
 {
 	// condition:
 	gen_expr32(ternary_expr->cond, frame);
@@ -766,6 +771,19 @@ void gen_func_call32(FuncCall* func_call, StackFrame* frame)
 		"%s" : "_%s", func_call->name));
 	gen_caller_stack_clearing(func_call);
 	restore_general_purpose_registers(registers);
+}
+
+void cache_register(int reg)
+{
+	//todo: check reg type
+	unreserve_register(REGISTERS, reg);
+	PROC_CODE_LINE1(PUSH, get_register_str(reg));
+}
+
+void restore_register(int reg)
+{
+	reserve_register(REGISTERS, reg);
+	PROC_CODE_LINE1(POP, get_register_str(reg));
 }
 
 int* cache_general_purpose_registers()
