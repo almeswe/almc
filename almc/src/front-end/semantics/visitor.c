@@ -1,7 +1,6 @@
 #include "visitor.h"
 
 //todo: check type referrings to each other (for freeing)
-//todo: add enum identifiers to is_const_expression
 
 Visitor* visitor_new()
 {
@@ -94,7 +93,7 @@ void visit_pointer_like_type(Type* type, Table* table)
 	switch (type->kind)
 	{
 	case TYPE_ARRAY:
-		if (!is_const_expr(type->dimension, table))
+		if (!is_const_expr(type->dimension))
 			report_error2("Array size is not a constant expression.",
 				get_expr_area(type->dimension));
 		visit_pointer_like_type(type->base, table);
@@ -418,7 +417,7 @@ void visit_array_member_accessor(BinaryExpr* arr_accessor_expr, Table* table)
 		expr_type->dimension);
 
 	// in this case we cannot evaluate expression, so do nothing
-	if (!is_const_expr(rexpr, table))
+	if (!is_const_expr(rexpr))
 		return;
 
 	int32_t index = evaluate_expr_itype(rexpr);
@@ -704,7 +703,7 @@ void visit_enum(EnumDecl* enum_decl, Table* table)
 	{
 		// checking validity of values that assigned to enum idents
 		for (size_t j = 0; j < sbuffer_len(enum_decl->members); j++)
-			if (!is_const_expr(enum_decl->members[j]->value, table))
+			if (!is_const_expr(enum_decl->members[j]->value))
 				report_error2(frmt("Enum member \'%s\' must have constant expression, in \'%s\' enum.",
 					enum_decl->members[j]->name, enum_decl->name),
 						get_expr_area(enum_decl->members[j]->value));
@@ -1028,45 +1027,6 @@ void complete_type(Type* type, Table* table)
 			base->members = user_type->union_decl->members;
 }
 
-bool is_const_expr(Expr* expr, Table* table)
-{
-	if (!expr)
-		return false;
-	switch (expr->kind)
-	{
-	case EXPR_CONST:
-		return true;
-	case EXPR_IDNT:
-		return expr->idnt->is_enum_member;
-	case EXPR_UNARY_EXPR:
-		switch (expr->unary_expr->kind)
-		{
-		case UNARY_SIZEOF:
-		case UNARY_LENGTHOF:
-			return true;
-		}
-		return is_const_expr(expr->unary_expr->expr, table);
-	case EXPR_BINARY_EXPR:
-		return is_const_expr(expr->binary_expr->lexpr, table) &&
-			is_const_expr(expr->binary_expr->rexpr, table);
-	case EXPR_TERNARY_EXPR:
-		return is_const_expr(expr->ternary_expr->lexpr, table) &&
-			is_const_expr(expr->ternary_expr->rexpr, table) &&
-			is_const_expr(expr->ternary_expr->cond, table);
-	}
-	return false;
-}
-
-bool is_enum_member(const char* var, Table* table)
-{
-	for (Table* parent = table; parent; parent = parent->nested_in)
-		for (size_t i = 0; i < sbuffer_len(parent->enums); i++)
-			for (size_t j = 0; j < sbuffer_len(parent->enums[i]->enum_decl->members); j++)
-				if (strcmp(var, parent->enums[i]->enum_decl->members[j]->name) == 0)
-					return true;
-	return false;
-}
-
 bool is_addressable_value(Expr* expr)
 {
 	if (!expr)
@@ -1119,5 +1079,56 @@ bool is_addressable_value(Expr* expr)
 	default:
 		return false;
 	}
+	return false;
+}
+
+bool is_const_expr(Expr* expr)
+{
+	if (!expr)
+		return false;
+	switch (expr->kind)
+	{
+	case EXPR_CONST:
+		return true;
+	case EXPR_IDNT:
+		return expr->idnt->is_enum_member;
+	case EXPR_UNARY_EXPR:
+		switch (expr->unary_expr->kind)
+		{
+		case UNARY_SIZEOF:
+		case UNARY_LENGTHOF:
+			return true;
+		}
+		return is_const_expr(expr->unary_expr->expr);
+	case EXPR_BINARY_EXPR:
+		return is_const_expr(expr->binary_expr->lexpr) &&
+			is_const_expr(expr->binary_expr->rexpr);
+	case EXPR_TERNARY_EXPR:
+		return is_const_expr(expr->ternary_expr->lexpr) &&
+			is_const_expr(expr->ternary_expr->rexpr) &&
+			is_const_expr(expr->ternary_expr->cond);
+	}
+	return false;
+}
+
+bool is_primary_expr(Expr* expr)
+{
+	switch (expr->kind)
+	{
+	case EXPR_IDNT:
+	case EXPR_CONST:
+	case EXPR_STRING:
+		return true;
+	}
+	return false;
+}
+
+bool is_enum_member(const char* var, Table* table)
+{
+	for (Table* parent = table; parent; parent = parent->nested_in)
+		for (size_t i = 0; i < sbuffer_len(parent->enums); i++)
+			for (size_t j = 0; j < sbuffer_len(parent->enums[i]->enum_decl->members); j++)
+				if (strcmp(var, parent->enums[i]->enum_decl->members[j]->name) == 0)
+					return true;
 	return false;
 }

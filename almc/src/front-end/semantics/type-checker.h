@@ -24,6 +24,8 @@
 #define STR		0x2
 #define VOID	0x1
 
+extern bool is_const_expr(Expr* expr);
+
 Type* get_string_type(Str* str);
 Type* get_const_type(Const* cnst);
 Type* get_fvalue_type(double value);

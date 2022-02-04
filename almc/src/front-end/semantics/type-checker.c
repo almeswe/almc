@@ -172,7 +172,7 @@ Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 	//-----------------------------
 
 	case UNARY_CAST:
-		if (is_const_expr(unary_expr->expr, table))
+		if (is_const_expr(unary_expr->expr))
 			return cast_explicitly_when_const_expr(unary_expr->expr,
 				unary_expr->cast_type, type);
 		return cast_explicitly(unary_expr->cast_type, type);
