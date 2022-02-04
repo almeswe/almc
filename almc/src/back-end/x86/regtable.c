@@ -1,9 +1,5 @@
 #include "regtable.h"
 
-#define STATE_TO_ALL_COMPOUNDED(regstr, state)			 \
-	for (int i = 0; i < REGISTER_ENUMERATOR_SCALAR; i++) \
-		table->reg_table[regstr+i] = state;
-
 const char* registers_str[] = {
 	// 32bit
 	[EAX] = "eax",
@@ -31,20 +27,30 @@ const char* registers_str[] = {
 	[SPL] = "spl",
 	[BPL] = "bpl",
 	[SIL] = "sil",
-	[DIL] = "dil"
+	[DIL] = "dil",
+
+	//sse simd registers
+	[XMM0] = "xmm0",
+	[XMM1] = "xmm1",
+	[XMM2] = "xmm2",
+	[XMM3] = "xmm3",
+	[XMM4] = "xmm4",
+	[XMM5] = "xmm5",
+	[XMM6] = "xmm6",
+	[XMM7] = "xmm7"
 };
 
 RegisterTable* regtable_new()
 {
 	RegisterTable* regtable = new_s(RegisterTable, regtable);
-	for (int i = 0; i < REGISTERS_COUNT; i++)
+	for (int i = EAX; i <= XMM7; i++)
 		regtable->reg_table[i] = REGISTER_FREE;
 	return regtable;
 }
 
 char* get_register_str(int reg)
 {
-	return (reg < 0 || reg > REGISTERS_COUNT) ?
+	return (reg < 0 || reg > (sizeof(registers_str) / sizeof(char*))) ?
 		NULL : registers_str[reg];
 }
 
@@ -62,68 +68,80 @@ int get_unreserved_register(RegisterTable* table, RegisterSize size)
 		break;
 	case REGSIZE_DWORD:
 		offset = 0;
+		break;
+	case REGSIZE_PACKED:
+		return get_unreserved_sse_register(table);
 	}
-
-	for (int i = offset; i < REGISTERS_COUNT; i += REGISTER_ENUMERATOR_SCALAR)
+	for (int i = EAX; i <= EDX; i += REGISTER_ENUMERATOR_SCALAR)
 		if (table->reg_table[i] == REGISTER_FREE)
 			return reserve_register(table, i), i;
+	return report_regmanage_bug("bug with register managing met. line: %d, file: %s",
+		__LINE__, __FILE__), -1;
+}
 
-	// case when all common registers are reserved (at least)
-	for (int i = offset; i < REGISTERS_COUNT; i += REGISTER_ENUMERATOR_SCALAR)
-		if (table->reg_table[i] == REGISTER_RESERVED)
-			return reserve_register(table, i), i;
-
-	return -1;
+int get_unreserved_sse_register(RegisterTable* table)
+{
+	for (int sse_reg = XMM0; sse_reg <= XMM7; sse_reg++)
+		if (table->reg_table[sse_reg] == REGISTER_FREE)
+			return reserve_sse_register(table, sse_reg);
+	return report_regmanage_bug("bug with register managing met. line: %d, file: %s",
+		__LINE__, __FILE__), -1;
 }
 
 int reserve_register(RegisterTable* table, int reg)
 {
-	reg = reg - (reg % REGISTER_ENUMERATOR_SCALAR);
+	if (is_sse_reg(reg))
+		return reserve_sse_register(table, reg);
 
-	if (reg < 0 || reg > REGISTERS_COUNT)
-		return 0;
-	else
-	{ 
-		switch (table->reg_table[reg])
-		{
-		case REGISTER_FREE:
-			STATE_TO_ALL_COMPOUNDED(reg, REGISTER_RESERVED);
-			break;
-		case REGISTER_RESERVED:
-			//todo: add ability to write directly to proc
-			//PROC_CODE_LINE1(PUSH, get_register_str(reg));
-			STATE_TO_ALL_COMPOUNDED(reg, REGISTER_NEEDS_RESTORE);
-			break;
-		case REGISTER_NEEDS_RESTORE:
-			return 0;
-		}
-		return 1;
-	}
+	// finding the greates register from passed register (reg)
+	// needed to set states to all subregisters in future
+	reg = reg - (reg % REGISTER_ENUMERATOR_SCALAR);
+	if (reg < 0 || reg > DEFAULT_REGISTERS_COUNT)
+		return report_regmanage_bug("bug, passed reg is not valid. line: %d, file: %s",
+			__LINE__, __FILE__), -1;
+	if (table->reg_table[reg] != REGISTER_FREE)
+		return report_regmanage_bug("bug with register managing met (reg: %s). line: %d, file: %s",
+			get_register_str(reg), __LINE__, __FILE__), -1;
+	// binding the state to all subregisters
+	for (int i = 0; i < REGISTER_ENUMERATOR_SCALAR; i++)
+		table->reg_table[reg+i] = REGISTER_RESERVED;
+	return reg;
 }
 
-int unreserve_register(RegisterTable* table, int reg)
+int reserve_sse_register(RegisterTable* table, int sse_reg)
 {
-	reg = reg - (reg % REGISTER_ENUMERATOR_SCALAR);
-
-	if (reg < 0 || reg > REGISTERS_COUNT)
-		return 0;
-	else
-	{
-		switch (table->reg_table[reg])
-		{
-		case REGISTER_RESERVED:
-			STATE_TO_ALL_COMPOUNDED(reg, REGISTER_FREE);
-			break;
-		case REGISTER_NEEDS_RESTORE:
-			//PROC_CODE_LINE1(POP, get_register_str(reg));
-			STATE_TO_ALL_COMPOUNDED(reg, REGISTER_RESERVED);
-			break;
-		}
-		return 1;
-	}
+	if (!is_sse_reg(sse_reg))
+		return report_regmanage_bug("bug, not sse register passed. line: %d, file: %s",
+			__LINE__, __FILE__), -1;
+	if (table->reg_table[sse_reg] != REGISTER_FREE)
+		return report_regmanage_bug("bug with register managing met (reg: %s). line: %d, file: %s",
+			get_register_str(sse_reg), __LINE__, __FILE__) , -1;
+	return table->reg_table[sse_reg] = REGISTER_RESERVED, sse_reg;
 }
 
-int get_part_of_reg(int reg, RegisterSize size)
+bool unreserve_register(RegisterTable* table, int reg)
+{
+	if (is_sse_reg(reg))
+		return unreserve_sse_register(table, reg);
+
+	reg = reg - (reg % REGISTER_ENUMERATOR_SCALAR);
+	if (reg < 0 || reg > DEFAULT_REGISTERS_COUNT)
+		return report_regmanage_bug("bug, passed reg is not valid. line: %d, file: %s",
+			__LINE__, __FILE__), false;
+	for (int i = 0; i < REGISTER_ENUMERATOR_SCALAR; i++)
+		table->reg_table[reg + i] = REGISTER_FREE;
+	return true;
+}
+
+bool unreserve_sse_register(RegisterTable* table, int sse_reg)
+{
+	if (!is_sse_reg(sse_reg))
+		return report_regmanage_bug("bug, not sse register passed. line: %d, file: %s",
+			__LINE__, __FILE__), false;
+	return table->reg_table[sse_reg] = REGISTER_FREE, true;
+}
+
+int get_subregister(int reg, RegisterSize size)
 {
 	switch (size)
 	{
