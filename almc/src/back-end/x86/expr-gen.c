@@ -40,9 +40,13 @@ void gen_expr32(Expr* expr, StackFrame* frame)
 	switch (expr->kind)
 	{
 	case EXPR_IDNT:
+		expr->idnt->is_enum_member ? gen_const_expr32(expr) :
+			(reserve_register(REGISTERS, EAX), 
+				gen_idnt32(expr->idnt, EAX, frame));
+		break;
 	case EXPR_CONST:
 		reserve_register(REGISTERS, EAX),
-			gen_primary_expr32(expr, EAX, frame);
+			gen_const32(expr->cnst, EAX, frame);
 		break;
 	case EXPR_STRING:
 		reserve_register(REGISTERS, EAX),
