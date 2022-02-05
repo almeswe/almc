@@ -115,12 +115,9 @@ void gen_const32(Const* cnst, int reg)
 			frmt("%d", cnst->ivalue));
 		break;
 	case CONST_UINT:
+	case CONST_CHAR:
 		PROC_CODE_LINE2(MOV, reg_arg,
 			frmt("%i", cnst->uvalue));
-		break;
-	case CONST_CHAR:
-		PROC_CODE_LINE2(MOVZX, reg_arg,
-			frmt("%d", (char)cnst->ivalue));
 		break;
 	default:
 		report_error("Unknown const kind met."
@@ -420,11 +417,27 @@ void gen_binary_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
 	unreserve_register(REGISTERS, temp_reg);
 }
 
+int get_instr_sign_based(int sign_instr, int unsign_instr, Type* type)
+{
+	return is_signed_type(type) ? sign_instr : unsign_instr;
+}
+
+Type* get_spec_binary_type(BinaryExpr* expr)
+{
+	Type* lexpr = retrieve_expr_type(expr->lexpr);
+	Type* rexpr = retrieve_expr_type(expr->rexpr);
+	return can_cast_implicitly(lexpr, rexpr) ?
+		cast_implicitly(lexpr, rexpr, NULL) : cast_implicitly(rexpr, lexpr, NULL);
+}
+
+int get_binary_instr_of_type(int sign_instr, int unsign_instr, BinaryExpr* expr)
+{
+	return get_instr_sign_based(sign_instr, 
+		unsign_instr, get_spec_binary_type(expr));
+}
+
 void gen_binary_relative_expr32(BinaryExpr* relative_expr, StackFrame* frame)
 {
-#define SIGN_BASED(sign_instr, unsign_instr, type) \
-	(is_signed_type(type) ? sign_instr, unsign_instr)
-
 	gen_expr32(relative_expr->lexpr, frame);
 
 	// caching the value of right expression
@@ -442,6 +455,11 @@ void gen_binary_relative_expr32(BinaryExpr* relative_expr, StackFrame* frame)
 
 	char* label_supply = program_new_label(program);
 	char* label_final = program_new_label(program);
+
+	// need to check the type again to check the need for signed / unsigned logic
+	// in case of relative expr, retrieve_expr_type will return 'i32' in any case
+	// because it is conditional expression type
+	Type* result_type = get_spec_binary_type(relative_expr);
 
 	// exceptional case for logical and:
 	if (relative_expr->kind == BINARY_LG_AND || 
@@ -485,21 +503,24 @@ void gen_binary_relative_expr32(BinaryExpr* relative_expr, StackFrame* frame)
 	}
 	else
 	{
-		PROC_CODE_LINE2(CMP, eax_reg_arg,
-			temp_reg_arg);
+		PROC_CODE_LINE2(CMP, eax_reg_arg, temp_reg_arg);
 		switch (relative_expr->kind)
 		{
 		case BINARY_LESS_THAN:
-			PROC_CODE_LINE1(JL, label_supply);
+			PROC_CODE_LINE1(get_instr_sign_based(
+				JL, JB, result_type), label_supply);
 			break;
 		case BINARY_GREATER_THAN:
-			PROC_CODE_LINE1(JG, label_supply);
+			PROC_CODE_LINE1(get_instr_sign_based(
+				JG, JA, result_type), label_supply);
 			break;
 		case BINARY_LESS_EQ_THAN:
-			PROC_CODE_LINE1(JLE, label_supply);
+			PROC_CODE_LINE1(get_instr_sign_based(
+				JLE, JBE, result_type), label_supply);
 			break;
 		case BINARY_GREATER_EQ_THAN:
-			PROC_CODE_LINE1(JGE, label_supply);
+			PROC_CODE_LINE1(get_instr_sign_based(
+				JGE, JAE, result_type), label_supply);
 			break;
 		case BINARY_LG_EQ:
 			PROC_CODE_LINE1(JE, label_supply);
@@ -508,7 +529,8 @@ void gen_binary_relative_expr32(BinaryExpr* relative_expr, StackFrame* frame)
 			PROC_CODE_LINE1(JNE, label_supply);
 			break;
 		default:
-			assert(0);
+			report_error2("Unknown kind of relative expression met. in"
+			 " gen_binary_relative_expr32()", relative_expr->area);
 		}
 		PROC_CODE_LINE2(MOV, eax_reg_arg, 
 			LOGICAL_FALSE_ARG);
@@ -994,27 +1016,51 @@ _addressable_data* gen_addressable_data_for_array_accessor(
 	if (data->in_reg)
 	{
 		// the formula of [reg+eax*scalar_reg] is not used here 
-		// because it requires more logic for check tje scalar_reg (it accepts 2,4 or 8)
+		// because it requires more logic for check the scalar_reg (it accepts 2,4 or 8)
 		// in this case just reserve new reg on which we will multiply value stored in eax, then use it 
 		// for array member access
-		PROC_CODE_LINE2(MOV, scalar_reg_arg,
-			frmt("%d", typesize * data->capacity));
-		PROC_CODE_LINE1(MUL, scalar_reg_arg);
-		addr_arg = frmt("dword ptr [%s+eax]",
-			temp_reg_arg);
+		switch (typesize * data->capacity)
+		{
+		// in case when typesize is 1,2,4 or 8, just use formula:
+		//				addr = [reg1+reg2*scalar]
+		case 1: case 2:
+		case 4: case 8:
+			addr_arg = frmt("dword ptr [%s+eax*%d]",
+				temp_reg_arg, typesize * data->capacity);
+			break;
+		default:
+			PROC_CODE_LINE2(MOV, scalar_reg_arg,
+				frmt("%d", typesize * data->capacity));
+			PROC_CODE_LINE1(MUL, scalar_reg_arg);
+			addr_arg = frmt("dword ptr [%s+eax]",
+				temp_reg_arg);
+		}
 	}
 	else
 	{
 		data->in_reg = true;
-		PROC_CODE_LINE2(MOV, scalar_reg_arg,
-			frmt("%d", typesize * data->capacity));
-		PROC_CODE_LINE1(MUL, scalar_reg_arg);
+		// adding offset if there was any
 		if (data->offset)
-			// adding offset if there was any
 			PROC_CODE_LINE2(ADD, eax_reg_arg,
 				frmt("%d", data->offset)), data->offset = 0;
-		addr_arg = frmt("dword ptr %s[ebp+eax]",
-			data->entity->definition);
+
+		// same management if we have appropriate scalar value
+		switch (typesize * data->capacity)
+		{
+		case 1: case 2:
+		case 4: case 8:
+			addr_arg = frmt("dword ptr %s[ebp+eax*%d]",
+				data->entity->definition, typesize * data->capacity);
+			break;
+		default:
+			PROC_CODE_LINE2(MOV, scalar_reg_arg,
+				frmt("%d", typesize * data->capacity));
+			PROC_CODE_LINE1(MUL, scalar_reg_arg);
+			addr_arg = frmt("dword ptr %s[ebp+eax]",
+				data->entity->definition);
+			break;
+		}
+
 		if (IS_POINTER_TYPE(ltype))
 		{
 			PROC_CODE_LINE2(MOV, temp_reg_arg, frmt("dword ptr %s[ebp]",
