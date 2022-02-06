@@ -81,7 +81,8 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="example\localstd\memory.almc" />
-    <Text Include="src\back-end\x86\instructions_list.txt" />
+    <Text Include="src\back-end\x86\x86_instructions.txt" />
+    <Text Include="src\back-end\x86\x86_SSE_intructions.txt" />
     <Text Include="test\syntax.txt" />
     <Text Include="test\test-cases\lexer-test-cases\COMMENTS-TEST.txt" />
     <Text Include="test\test-cases\lexer-test-cases\gen-output.txt" />
@@ -108,7 +109,9 @@
     <None Include="example\hello world\hello_world.almc" />
     <None Include="example\localstd\time.almc" />
     <None Include="example\localstd\io.almc" />
-    <None Include="src\back-end\x86\instructions_gen.py" />
+    <None Include="src\back-end\x86\x86_SSE_instructions_gen.py" />
+    <None Include="src\back-end\x86\wiki_scraper.py" />
+    <None Include="src\back-end\x86\x86_instructions_gen.py" />
     <None Include="test\test-cases\lexer-test-cases\gen.py" />
     <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\b.almc" />
     <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\testfolder\back_end_test.almc" />

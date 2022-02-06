@@ -205,8 +205,9 @@
     <Text Include="test\test-cases\lexer-test-cases\LEXEME-TEST.txt" />
     <Text Include="test\test-cases\lexer-test-cases\COMMENTS-TEST.txt" />
     <Text Include="test\test-cases\lexer-test-cases\gen-output.txt" />
-    <Text Include="src\back-end\x86\instructions_list.txt" />
     <Text Include="example\localstd\memory.almc" />
+    <Text Include="src\back-end\x86\x86_instructions.txt" />
+    <Text Include="src\back-end\x86\x86_SSE_intructions.txt" />
   </ItemGroup>
   <ItemGroup>
     <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\b.almc" />
@@ -235,7 +236,7 @@
     <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_7\folder\c.almc" />
     <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_7\a.almc" />
     <None Include="test\test-cases\lexer-test-cases\gen.py" />
-    <None Include="src\back-end\x86\instructions_gen.py" />
+    <None Include="src\back-end\x86\x86_SSE_instructions_gen.py" />
     <None Include="example\localstd\io.almc" />
     <None Include="example\localstd\time.almc" />
     <None Include="example\hello world\hello_world.almc" />
@@ -253,5 +254,7 @@
     <None Include="example\test\enum_test\enum_tests.almc" />
     <None Include="example\test\enum_test\enum_error3.almc" />
     <None Include="example\test4\test.almc" />
+    <None Include="src\back-end\x86\wiki_scraper.py" />
+    <None Include="src\back-end\x86\x86_instructions_gen.py" />
   </ItemGroup>
 </Project>
