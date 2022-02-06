@@ -41,6 +41,8 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table);
 Type* get_ternary_expr_type(TernaryExpr* ternary_expr, Table* table);
 Type* get_and_set_expr_type(Expr* expr, Table* table);
 
+Type* get_spec_binary_type(BinaryExpr* expr);
+
 uint32_t get_type_priority(Type* type);
 
 Type* cast_explicitly(Type* to, Type* type);

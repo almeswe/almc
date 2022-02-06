@@ -368,8 +368,10 @@ void gen_binary_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
 					temp_reg_arg);
 				unreserve_register(REGISTERS, ECX);
 			}
-			PROC_CODE_LINE2(assign_expr->kind == BINARY_LSHIFT_ASSIGN ?
-				SHL : SHR, eax_reg_arg, get_register_str(CL));
+			PROC_CODE_LINE2(assign_expr->kind == BINARY_LSHIFT ?
+				get_instr_sign_based(SAL, SHL, assign_expr->type) :
+				get_instr_sign_based(SAR, SHR, assign_expr->type),
+					eax_reg_arg, get_register_str(CL));
 			PROC_CODE_LINE2(MOV, temp_reg_arg, eax_reg_arg);
 			break;
 
@@ -379,7 +381,8 @@ void gen_binary_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
 		case BINARY_MUL_ASSIGN:
 			reserve_register(REGISTERS, EDX);
 			gen_reg_clear(EDX);
-			PROC_CODE_LINE1(MUL, temp_reg_arg);
+			PROC_CODE_LINE1(get_instr_sign_based(IMUL, MUL, 
+				assign_expr->type), temp_reg_arg);
 			PROC_CODE_LINE2(MOV, temp_reg_arg, eax_reg_arg);
 			unreserve_register(REGISTERS, EDX);
 			break;
@@ -388,7 +391,8 @@ void gen_binary_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
 			gen_reg_clear(EDX);
 			// put xchg here because we carry about the operators order
 			PROC_CODE_LINE2(XCHG, temp_reg_arg, eax_reg_arg);
-			PROC_CODE_LINE1(DIV, temp_reg_arg);
+			PROC_CODE_LINE1(get_instr_sign_based(IDIV, DIV,
+				assign_expr->type), temp_reg_arg);
 			PROC_CODE_LINE2(MOV, temp_reg_arg, eax_reg_arg);
 			unreserve_register(REGISTERS, EDX);
 			break;
@@ -396,7 +400,8 @@ void gen_binary_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
 			reserve_register(REGISTERS, EDX);
 			gen_reg_clear(EDX);
 			PROC_CODE_LINE2(XCHG, temp_reg_arg, eax_reg_arg);
-			PROC_CODE_LINE1(DIV, temp_reg_arg);
+			PROC_CODE_LINE1(get_instr_sign_based(IDIV, DIV,
+				assign_expr->type), temp_reg_arg);
 			// modulus value stored in edx
 			PROC_CODE_LINE2(MOV, temp_reg_arg, 
 				get_register_str(EDX));
@@ -419,25 +424,6 @@ void gen_binary_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
 
 	addressable_data_free(data);
 	unreserve_register(REGISTERS, temp_reg);
-}
-
-int get_instr_sign_based(int sign_instr, int unsign_instr, Type* type)
-{
-	return is_signed_type(type) ? sign_instr : unsign_instr;
-}
-
-Type* get_spec_binary_type(BinaryExpr* expr)
-{
-	Type* lexpr = retrieve_expr_type(expr->lexpr);
-	Type* rexpr = retrieve_expr_type(expr->rexpr);
-	return can_cast_implicitly(lexpr, rexpr) ?
-		cast_implicitly(lexpr, rexpr, NULL) : cast_implicitly(rexpr, lexpr, NULL);
-}
-
-int get_binary_instr_of_type(int sign_instr, int unsign_instr, BinaryExpr* expr)
-{
-	return get_instr_sign_based(sign_instr, 
-		unsign_instr, get_spec_binary_type(expr));
 }
 
 void gen_binary_relative_expr32(BinaryExpr* relative_expr, StackFrame* frame)
@@ -654,8 +640,10 @@ void gen_binary_expr32(BinaryExpr* binary_expr, StackFrame* frame)
 					temp_reg_arg);
 				unreserve_register(REGISTERS, ECX);
 			}
-			PROC_CODE_LINE2(binary_expr->kind == BINARY_LSHIFT ? SHL : SHR,
-				eax_reg_arg, get_register_str(CL));
+			PROC_CODE_LINE2(binary_expr->kind == BINARY_LSHIFT ? 
+				get_instr_sign_based(SAL, SHL, binary_expr->type) : 
+				get_instr_sign_based(SAR, SHR, binary_expr->type),
+					eax_reg_arg, get_register_str(CL));
 			break;
 		case BINARY_BW_OR:
 			PROC_CODE_LINE2(OR, eax_reg_arg,
@@ -672,7 +660,8 @@ void gen_binary_expr32(BinaryExpr* binary_expr, StackFrame* frame)
 		case BINARY_MOD:
 			reserve_register(REGISTERS, EDX);
 			gen_reg_clear(EDX);
-			PROC_CODE_LINE1(DIV, temp_reg_arg);
+			PROC_CODE_LINE1(get_instr_sign_based(IDIV, DIV,
+				binary_expr->type), temp_reg_arg);
 			PROC_CODE_LINE2(MOV, eax_reg_arg,
 				get_register_str(EDX));
 			unreserve_register(REGISTERS, EDX);
@@ -680,13 +669,15 @@ void gen_binary_expr32(BinaryExpr* binary_expr, StackFrame* frame)
 		case BINARY_DIV:
 			reserve_register(REGISTERS, EDX);
 			gen_reg_clear(EDX);
-			PROC_CODE_LINE1(DIV, temp_reg_arg);
+			PROC_CODE_LINE1(get_instr_sign_based(IDIV, DIV,
+				binary_expr->type), temp_reg_arg);
 			unreserve_register(REGISTERS, EDX);
 			break;
 		case BINARY_MULT:
 			reserve_register(REGISTERS, EDX);
 			gen_reg_clear(EDX);
-			PROC_CODE_LINE1(MUL, temp_reg_arg);
+			PROC_CODE_LINE1(get_instr_sign_based(IMUL, MUL,
+				binary_expr->type), temp_reg_arg);
 			unreserve_register(REGISTERS, EDX);
 			break;
 		default:
@@ -812,20 +803,30 @@ void restore_register(int reg)
 	PROC_CODE_LINE1(POP, get_register_str(reg));
 }
 
+int get_instr_sign_based(int sign_instr, int unsign_instr, Type* type)
+{
+	return is_signed_type(type) ? sign_instr : unsign_instr;
+}
+
+int get_binary_instr_of_type(int sign_instr, int unsign_instr, BinaryExpr* expr)
+{
+	return get_instr_sign_based(sign_instr,
+		unsign_instr, get_spec_binary_type(expr));
+}
+
 int* cache_general_purpose_registers()
 {
 	int* regs = NULL;
 	for (size_t reg = EBX; reg <= EDX; reg += 3)
 		if (REGISTERS->reg_table[reg] == REGISTER_RESERVED)
-			sbuffer_add(regs, reg), PROC_CODE_LINE1(PUSH, 
-				get_register_str(reg));
+			sbuffer_add(regs, reg), cache_register(reg);
 	return regs;
 }
 
 void restore_general_purpose_registers(int* regs)
 {
 	for (size_t reg = 0; reg < sbuffer_len(regs); reg++)
-		PROC_CODE_LINE1(POP, get_register_str(regs[reg]));
+		unreserve_register(REGISTERS, reg), restore_register(reg);
 	sbuffer_free(regs);
 }
 

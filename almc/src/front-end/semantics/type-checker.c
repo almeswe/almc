@@ -394,6 +394,14 @@ Type* get_and_set_expr_type(Expr* expr, Table* table)
 	return &unknown_type;
 }
 
+Type* get_spec_binary_type(BinaryExpr* expr)
+{
+	Type* lexpr = retrieve_expr_type(expr->lexpr);
+	Type* rexpr = retrieve_expr_type(expr->rexpr);
+	return can_cast_implicitly(lexpr, rexpr) ?
+		cast_implicitly(lexpr, rexpr, NULL) : cast_implicitly(rexpr, lexpr, NULL);
+}
+
 uint32_t get_type_priority(Type* type)
 {
 	if (IS_U8_TYPE(type))
