@@ -75,38 +75,42 @@ void gen_expr32(Expr* expr, StackFrame* frame)
 
 void gen_string32(Str* str, int reg)
 {
-	//todo: refactor gen_string32
 	char* value = frmt("\"");
-	char* prev = NULL;
-	char** values = NULL;
-	bool value_is_not_empty = false;
-	size_t len = strlen(str->svalue);
+	char* value_for_freeing = NULL;
+	bool is_value_empty = true;
 
-	for (size_t i = 0; i < len; i++)
+	char** values = NULL;
+
+	for (size_t i = 0; str->svalue[i]; i++)
 	{
+		value_for_freeing = value;
 		if (!isescape(str->svalue[i]))
 		{
-			value = frmt("%s%c", prev = value, str->svalue[i]), free(prev);
-			value_is_not_empty = true;
+			is_value_empty = false;
+			value = frmt("%s%c", value, 
+				str->svalue[i]);
 		}
 		else
 		{
-			value = frmt("%s\"", prev = value), free(prev);
-			if (value_is_not_empty)
+			value = frmt("%s\"", value);
+			if (!is_value_empty)
 				sbuffer_add(values, value);
-			sbuffer_add(values, frmt("%02xh", (int)str->svalue[i]));
+			is_value_empty = true;
+			value = frmt("%02xh",
+				(int)str->svalue[i]);
+			sbuffer_add(values, value);
 			value = frmt("\"");
-			value_is_not_empty = false;
 		}
+		free(value_for_freeing);
 	}
-	if ((prev = value) && value_is_not_empty)
-		sbuffer_add(values, value = frmt("%s\"", value)), free(prev);
+	if (!is_value_empty)
+		sbuffer_add(values, frmt("%s\"", value)),
+			free(value);
 	sbuffer_add(values, frmt("00h"));
-
 	AsmDataLine* line = dataline_new("db", NULL,
 		values, DATA_INITIALIZED_STRING);
-	char* name = data_add(line, program->data);
-	PROC_CODE_LINE2(LEA, get_register_str(reg), name);
+	PROC_CODE_LINE2(LEA, get_register_str(reg), 
+		data_add(line, program->data));
 }
 
 void gen_const32(Const* cnst, int reg)
@@ -194,8 +198,12 @@ void gen_unary_address32(UnaryExpr* expr, StackFrame* frame)
 void gen_unary_dereference32(UnaryExpr* expr, StackFrame* frame)
 {
 	gen_expr32(expr->expr, frame);
-	PROC_CODE_LINE2(MOV, get_register_str(EAX), 
-		frmt("[%s]", get_register_str(EAX)));
+	int reg = get_subregister(EAX, expr->type->size * 8);
+	char* prefix = get_ptr_prefix(expr->type);
+	char* reg_arg = get_register_str(reg);
+	PROC_CODE_LINE2(MOV, reg_arg, frmt("[eax]"));
+	if (reg != EAX)
+		gen_mov_to_reg32(EAX, reg_arg, expr->type);
 }
 
 void gen_unary_lg_not32(UnaryExpr* expr)
@@ -204,7 +212,7 @@ void gen_unary_lg_not32(UnaryExpr* expr)
 	char* eax_reg_arg = get_register_str(EAX);
 	NEW_LABEL(label_true);
 	NEW_LABEL(label_end);
-
+	
 	PROC_CODE_LINE2(CMP, eax_reg_arg, 
 		LOGICAL_FALSE_ARG);
 	PROC_CODE_LINE1(JE, label_true);

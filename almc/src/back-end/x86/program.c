@@ -495,17 +495,29 @@ void code_free(AsmCodeSegment* code)
 char* data_add_string(AsmDataLine* dataline, AsmDataSegment* seg)
 {
 	// iterating through all strings in data segment
-	// and if we found the same string, return pointer to this dataline
-	// otherwise create new name and add to data segment
+	// and creating the new name and add to data segments
 	uint32_t count_of_strings = 1;
 	for (size_t i = 0; i < sbuffer_len(seg->lines); i++)
 	{
 		if (seg->lines[i]->spec == DATA_INITIALIZED_STRING)
 		{
 			count_of_strings += 1;
-			assert(seg->lines);
-			if (strcmp(dataline->values[0], seg->lines[i]->values[0]) == 0)
-				return dataline_free(dataline), seg->lines[i]->name;
+
+			// in this part program needs to check if the passing string is already
+			// listed in data segment. example of equivalence:
+			// (listed)					   strx db "frmt%d", 0ah, 00h
+			// (passing) dataline->values: 0:["frmt%d"], 1:["0ah"], 2:["00h"]
+
+			if (sbuffer_len(seg->lines[i]->values) == sbuffer_len(dataline->values))
+			{
+				bool is_equal = true;
+				for (size_t j = 0; j < sbuffer_len(dataline->values); j++)
+					if (strcmp(seg->lines[i]->values[j], dataline->values[j]) != 0)
+						is_equal = false;
+				// if we have equivalent string, just to free the passed dataline
+				if (is_equal)
+					return dataline_free(dataline), seg->lines[i]->name;
+			}
 		}
 	}
 	dataline->name = frmt("STR%d", count_of_strings);
