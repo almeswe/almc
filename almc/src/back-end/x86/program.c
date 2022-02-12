@@ -520,7 +520,7 @@ char* data_add_string(AsmDataLine* dataline, AsmDataSegment* seg)
 			}
 		}
 	}
-	dataline->name = frmt("STR%d", count_of_strings);
+	dataline->name = frmt("Str_%d", count_of_strings);
 	sbuffer_add(seg->lines, dataline);
 	return dataline->name;
 }
