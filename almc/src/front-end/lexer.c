@@ -500,8 +500,9 @@ Token* get_dec_num_token(Lexer* lexer)
 			return get_dec_fnum_token(lexer, buffer, size);
 		if (matchc(lexer, 'e') || matchc(lexer, 'E'))
 			return get_dec_expnum_token(lexer, buffer, size, 0);
-		str_builder_add(buffer, get_curr_char(lexer), size);
-		size++;
+		if (!matchc(lexer, '_'))
+			str_builder_add(buffer, get_curr_char(lexer), size),
+				size++;
 	}
 	unget_curr_char(lexer);
 	str_builder_reduce_buffer(temp, buffer, size);

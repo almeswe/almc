@@ -48,7 +48,8 @@ inline bool isdigit_hex(char c)
 
 inline bool isdigit_ext(char c)
 {
-	return isdigit(c) || c == '.' || c == 'e' || c == 'E';
+	return isdigit(c) || c == '.' || c == 'e' || c == 'E' ||
+		c == '_';
 } 
 
 inline bool isdigit_fext(char c)
