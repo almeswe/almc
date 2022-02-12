@@ -48,7 +48,6 @@
 ./
 ../
 
-auto
 break
 case
 char
@@ -86,6 +85,7 @@ u64
 let
 label
 lengthof
+var
 void
 while
 do

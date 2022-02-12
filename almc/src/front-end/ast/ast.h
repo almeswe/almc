@@ -227,6 +227,7 @@ typedef struct TypeVar
 
 typedef struct VarDecl
 {
+	bool is_auto;
 	Expr* var_init;
 	TypeVar* type_var;
 } VarDecl;
@@ -469,7 +470,7 @@ Case* case_stmt_new(Expr* value, Block* body, bool is_conjucted);
 SwitchStmt* switch_stmt_new(Expr* cond, Case** cases, Block* default_case);
 
 LabelDecl* label_decl_new(Idnt* label);
-VarDecl* var_decl_new(TypeVar* type_var, Expr* init);
+VarDecl* var_decl_new(bool is_auto, TypeVar* type_var, Expr* init);
 FuncDecl* func_decl_new(Idnt* name, TypeVar** params, Type* type, Block* body, FuncSpec* spec, CallConv* conv);
 
 TypeDecl* type_decl_new(TypeDeclKind type, void* type_decl_value_ptr);

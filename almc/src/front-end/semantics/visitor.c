@@ -665,7 +665,8 @@ void visit_continue_stmt(JumpStmt* continue_stmt, Table* table)
 
 void visit_var_decl_stmt(VarDecl* var_decl, Table* table)
 {
-	Type* type = var_decl->type_var->type;
+	Type* type = !var_decl->is_auto ? var_decl->type_var->type : 
+		get_expr_type(var_decl->var_init, table);
 	SrcArea* area = var_decl->type_var->area;
 	const char* var = var_decl->type_var->var;
 
@@ -693,6 +694,8 @@ void visit_var_decl_stmt(VarDecl* var_decl, Table* table)
 				report_error2(frmt("Expression-initializer has incompatible type \'%s\' with type of variable \'%s\'.",
 					type_tostr_plain(init_expr_type), type_tostr_plain(type)), 
 						get_expr_area(var_decl->var_init));
+			if (var_decl->is_auto)
+				var_decl->type_var->type = init_expr_type;
 		}
 	}
 }

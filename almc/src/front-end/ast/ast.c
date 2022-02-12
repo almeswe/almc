@@ -285,11 +285,12 @@ TypeVar* type_var_new(Type* type, const char* var)
 	return type_var;
 }
 
-VarDecl* var_decl_new(TypeVar* type_var, Expr* init)
+VarDecl* var_decl_new(bool is_auto, TypeVar* type_var, Expr* init)
 {
 	VarDecl* var_decl = new_s(VarDecl, var_decl);
 	var_decl->type_var = type_var;
 	var_decl->var_init = init;
+	var_decl->is_auto = is_auto;
 	return var_decl;
 }
 

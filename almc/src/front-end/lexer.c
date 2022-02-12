@@ -85,11 +85,10 @@ char* keychars[] = {
 	"..",
 	"...",
 	"./",	//additional lexemes especially for path
-	"../",
+	"../"
 };
 
 char* keywords[] = {
-	"auto",//?
 	"break",
 	"case",
 	CHAR_TYPE,
@@ -127,10 +126,11 @@ char* keywords[] = {
 	"let",
 	"label",
 	"lengthof",
+	"var",
 	VOID_TYPE,
 	"while",
 	"do",
-	"else",
+	"else"
 };
 
 Lexer* lexer_new(const char* input, StreamType input_type)

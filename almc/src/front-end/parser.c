@@ -844,6 +844,7 @@ Stmt* parse_stmt(Parser* parser)
 	case TOKEN_KEYWORD_IF:
 		return parse_if_stmt(parser);
 	case TOKEN_KEYWORD_LET:
+	case TOKEN_KEYWORD_VAR:
 		return parse_var_decl_stmt(parser);
 	case TOKEN_KEYWORD_LOOP:
 		return parse_loop_stmt(parser);
@@ -1020,6 +1021,8 @@ Stmt* parse_var_decl_stmt(Parser* parser)
 	Expr* var_init = NULL;
 	TypeVar* type_var = NULL;
 
+	if (matcht(parser, TOKEN_KEYWORD_VAR))
+		return parse_auto_var_decl_stmt(parser);
 	expect_with_skip(parser, TOKEN_KEYWORD_LET, "let");
 	type_var = parse_type_var(parser);
 	if (matcht(parser, TOKEN_ASSIGN))
@@ -1030,7 +1033,25 @@ Stmt* parse_var_decl_stmt(Parser* parser)
 	}
 	expect_with_skip(parser, TOKEN_SEMICOLON, ";");
 	return stmt_new(STMT_VAR_DECL,
-		var_decl_new(type_var, var_init));
+		var_decl_new(false, type_var, var_init));
+}
+
+Stmt* parse_auto_var_decl_stmt(Parser* parser)
+{
+	Expr* var_init = NULL;
+	TypeVar* type_var = NULL;
+
+	expect_with_skip(parser, TOKEN_KEYWORD_VAR, "var");
+	type_var = type_var_new(&unknown_type, 
+		get_curr_token(parser)->lexeme);
+	expect_with_skip(parser, TOKEN_IDNT, "variable's name");
+	expect_with_skip(parser, TOKEN_COLON, ":");
+	expect_with_skip(parser, TOKEN_ASSIGN, "=");
+	var_init = matcht(parser, TOKEN_OP_BRACE) ?
+		parse_initializer_expr(parser) : parse_expr(parser);
+	expect_with_skip(parser, TOKEN_SEMICOLON, ";");
+	return stmt_new(STMT_VAR_DECL,
+		var_decl_new(true, type_var, var_init));
 }
 
 CallConv* calling_convention_new()
