@@ -75,12 +75,13 @@ void gen_func_call32(FuncCall* func_call, StackFrame* frame);
 void gen_callee_stack_clearing(FuncDecl* func_decl);
 void gen_caller_stack_clearing(FuncCall* func_call);
 
+int* cache_gp_registers();
 void cache_register(int reg);
 void restore_register(int reg);
+void restore_gp_registers(int* regs);
+
 int get_instr_sign_based(int sign_instr, int unsign_instr, Type* type);
 int get_binary_instr_of_type(int sign_instr, int unsign_instr, BinaryExpr* expr);
-int* cache_general_purpose_registers();
-void restore_general_purpose_registers(int* regs);
 
 _addressable_data* addressable_data_new();
 void addressable_data_free(_addressable_data* data);

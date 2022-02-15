@@ -46,7 +46,7 @@ void gen_expr32(Expr* expr, StackFrame* frame)
 		break;
 	case EXPR_CONST:
 		reserve_register(REGISTERS, EAX),
-			gen_const32(expr->cnst, EAX, frame);
+			gen_const32(expr->cnst, EAX);
 		break;
 	case EXPR_STRING:
 		reserve_register(REGISTERS, EAX),
@@ -158,7 +158,7 @@ void gen_primary_expr32(Expr* prim_expr, int reg, StackFrame* frame)
 	switch (prim_expr->kind)
 	{
 	case EXPR_CONST:
-		gen_const32(prim_expr->cnst, reg, frame);
+		gen_const32(prim_expr->cnst, reg);
 		break;
 	case EXPR_IDNT:
 		gen_idnt32(prim_expr->idnt, reg, frame);
@@ -331,7 +331,7 @@ void gen_binary_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
 		if (data->in_reg && data->reg == EAX)
 		{
 			PROC_CODE_LINE2(MOV, temp_reg_arg, eax_reg_arg);
-			unreserve_register(REGISTERS, EAX), restore_register(EAX);
+			restore_register(EAX);
 			gen_mov_reg_to32(temp_reg, addr_arg, 
 				retrieve_expr_type(assign_expr->lexpr));
 		}
@@ -420,7 +420,7 @@ void gen_binary_assign_expr32(BinaryExpr* assign_expr, StackFrame* frame)
 			" in gen_binary_assign_expr32", NULL);
 		}
 		if (data->in_reg && data->reg == EAX)
-			unreserve_register(REGISTERS, EAX), restore_register(EAX);
+			restore_register(EAX);
 		// assign calculated value to addressable expr (storage)
 		gen_mov_reg_to32(temp_reg, addr_arg,
 			retrieve_expr_type(assign_expr->lexpr));
@@ -449,7 +449,7 @@ void gen_binary_relative_expr32(BinaryExpr* relative_expr, StackFrame* frame)
 	char* temp_reg_arg = get_register_str(temp_reg);
 	PROC_CODE_LINE2(MOV, temp_reg_arg, eax_reg_arg);
 	// restoring the value of right expression
-	unreserve_register(REGISTERS, EAX), restore_register(EAX);
+	restore_register(EAX);
 
 	char* label_supply = program_new_label(program);
 	char* label_final = program_new_label(program);
@@ -622,7 +622,7 @@ void gen_binary_expr32(BinaryExpr* binary_expr, StackFrame* frame)
 				REGISTERS, REGSIZE_DWORD);
 			PROC_CODE_LINE2(MOV, get_register_str(temp_reg),
 				get_register_str(EAX));
-			unreserve_register(REGISTERS, EAX), restore_register(EAX);
+			restore_register(EAX);
 		}
 
 		eax_reg_arg = get_register_str(EAX);
@@ -718,23 +718,22 @@ void gen_ternary_expr32(TernaryExpr* ternary_expr, StackFrame* frame)
 
 void gen_callee_stack_clearing(FuncDecl* func_decl)
 {
+	/*
+		if cdecl:
+			...
+			ret
+
+		if stdcall:
+			...
+			ret  xxxx <- overall size of all arguments
+	*/
 	uint32_t size = 0;
 	switch (func_decl->conv->kind)
 	{
 	case CALL_CONV_CDECL:
-		/*
-			if cdecl:
-				...
-				ret
-		*/
 		PROC_CODE_LINE0(RET);
 		break;
 	case CALL_CONV_STDCALL:
-		/*
-			if stdcall:
-				...
-				ret  xxxx <- overall size of all arguments
-		*/
 		for (size_t i = 0; i < sbuffer_len(func_decl->params); i++)
 		{
 			Type* type = func_decl->params[i]->type;
@@ -748,42 +747,43 @@ void gen_callee_stack_clearing(FuncDecl* func_decl)
 
 void gen_caller_stack_clearing(FuncCall* func_call)
 {
+	/*
+		if cdecl:
+			call xxxx
+			add  esp, yyyy
+
+		if stdcall:
+			call xxxx
+			; nothing do here because calle will free the stack
+	*/
+
 	uint32_t size = 0;
 	switch (func_call->conv->kind)
 	{
+	case CALL_CONV_STDCALL:
+		break;
 	case CALL_CONV_CDECL:
-		/*
-			if cdecl:
-				call xxxx
-				add  esp, yyyy
-		*/
-		// caching the size of each passed argument 
-		// to clear this space
+
+		// caching the size of each passed argument to clear this space
 		for (size_t i = 0; i < sbuffer_len(func_call->args); i++)
 		{
 			Type* type = retrieve_expr_type(func_call->args[i]);
 			// array struct or union types passed by reference, not by value
 			// like pointer but which points to stack.
 			assert(type);
-			size += IS_AGGREGATE_TYPE(type) ? MACHINE_WORD : type->size;
+			size += IS_AGGREGATE_TYPE(type) ? 
+				MACHINE_WORD : type->size;
 		}
 		if (size)
 			PROC_CODE_LINE2(ADD, get_register_str(ESP),
 				frmt("%d", size));
-		break;
-	case CALL_CONV_STDCALL:
-		/*
-			if stdcall:
-				call xxxx
-				; nothing do here because calle will free the stack
-		*/
 		break;
 	}
 }
 
 void gen_func_call32(FuncCall* func_call, StackFrame* frame)
 {
-	int* registers = cache_general_purpose_registers();
+	int* registers = cache_gp_registers();
 	for (int32_t i = sbuffer_len(func_call->args) - 1; i >= 0; i--)
 	{
 		assert(func_call->args);
@@ -795,7 +795,7 @@ void gen_func_call32(FuncCall* func_call, StackFrame* frame)
 	PROC_CODE_LINE1(CALL, frmt(func_call->spec->is_external ? 
 		"%s" : "_%s", func_call->name));
 	gen_caller_stack_clearing(func_call);
-	restore_general_purpose_registers(registers);
+	restore_gp_registers(registers);
 }
 
 void cache_register(int reg)
@@ -807,22 +807,12 @@ void cache_register(int reg)
 
 void restore_register(int reg)
 {
+	unreserve_register(REGISTERS, reg);
 	reserve_register(REGISTERS, reg);
 	PROC_CODE_LINE1(POP, get_register_str(reg));
 }
 
-int get_instr_sign_based(int sign_instr, int unsign_instr, Type* type)
-{
-	return is_signed_type(type) ? sign_instr : unsign_instr;
-}
-
-int get_binary_instr_of_type(int sign_instr, int unsign_instr, BinaryExpr* expr)
-{
-	return get_instr_sign_based(sign_instr,
-		unsign_instr, get_spec_binary_type(expr));
-}
-
-int* cache_general_purpose_registers()
+int* cache_gp_registers()
 {
 	int* regs = NULL;
 	for (size_t reg = EBX; reg <= EDX; reg += 3)
@@ -831,11 +821,23 @@ int* cache_general_purpose_registers()
 	return regs;
 }
 
-void restore_general_purpose_registers(int* regs)
+void restore_gp_registers(int* regs)
 {
 	for (size_t reg = 0; reg < sbuffer_len(regs); reg++)
-		unreserve_register(REGISTERS, reg), restore_register(reg);
+		restore_register(reg);
 	sbuffer_free(regs);
+}
+
+int get_instr_sign_based(int sign_instr, int unsign_instr, Type* type)
+{
+	return is_signed_type(type) ? 
+		sign_instr : unsign_instr;
+}
+
+int get_binary_instr_of_type(int sign_instr, int unsign_instr, BinaryExpr* expr)
+{
+	return get_instr_sign_based(sign_instr,
+		unsign_instr, get_spec_binary_type(expr));
 }
 
 _addressable_data* addressable_data_new()
@@ -908,7 +910,8 @@ _addressable_data* gen_addressable_data(Expr* expr, StackFrame* frame)
 			return gen_addressable_data_for_dereference(
 				expr->unary_expr, frame);
 		default:
-			assert(0);
+			report_error2("This unary expression is not addressable.",
+				expr->unary_expr->area);
 		}
 		break;
 	case EXPR_BINARY_EXPR:
@@ -920,11 +923,13 @@ _addressable_data* gen_addressable_data(Expr* expr, StackFrame* frame)
 			return gen_addressable_data_for_accessor(
 				expr->binary_expr, frame);
 		default:
-			assert(0);
+			report_error2("This binary expression is not addressable.",
+				expr->binary_expr->area);
 		}
 		break;
 	default:
-		assert(0);
+		report_error2("This expression is not addressable.",
+			get_expr_area(expr));
 	}
 	return NULL;
 }
@@ -993,7 +998,7 @@ _addressable_data* gen_addressable_data_for_accessor(
 		return gen_addressable_data_for_struct_ptr_accessor(
 			data, expr, frame);
 	default:
-		report_error("Passed expression is not the accessor actually."
+		report_error("Passed expression is not the accessor expression."
 			" in gen...for_accessor", NULL);
 	}
 	return data;
@@ -1007,8 +1012,8 @@ _addressable_data* gen_addressable_data_for_array_accessor(
 	data->kind = ADDRESSABLE_ARR_ACCESSOR;
 	Type* ltype = retrieve_expr_type(expr->lexpr);
 	if (!ltype)
-		report_error("Cannot retrieve ltype"
-			" in gen_addressable_data_for_array_accessor()", NULL);
+		return report_error("Cannot retrieve ltype"
+			" in gen_addressable_data_for_array_accessor()", NULL), NULL;
 	uint32_t capacity = IS_ARRAY_TYPE(ltype) ? (uint32_t)evaluate_expr_itype(
 		get_array_dimension(ltype, data->dimension)) : 1;
 	uint32_t typesize = IS_POINTER_TYPE(ltype) ? 
@@ -1088,7 +1093,8 @@ _addressable_data* gen_addressable_data_for_array_accessor(
 
 	data->dimension -= 1;
 	data->capacity *= capacity;
-	return data->type = ltype->base, data;
+	data->type = ltype->base;
+	return data;
 }
 
 _addressable_data* gen_addressable_data_for_struct_accessor(
@@ -1108,15 +1114,15 @@ _addressable_data* gen_addressable_data_for_struct_accessor(
 	{
 		if (strcmp(data->type->members[i]->name, expr->rexpr->idnt->svalue) == 0)
 		{
-			//todo: test this
 			// if the specified type is union, we won't add any offset (its not tested yet)
 			data->offset += !IS_UNION_TYPE(data->type) ?
 				data->type->members[i]->offset : 0;
-			return data->type = data->type->members[i]->type, data;
+			data->type = data->type->members[i]->type;
+			return data;
 		}
 	}
 
-	// if we appeared in this code flow it means that ther was no 
+	// if we appeared in this code flow it means that there was no 
 	// struct member found, potentially it is not possible because
 	// this issue is resolved in visitor
 	report_error("There are no corresponding struct member found,"
@@ -1159,7 +1165,7 @@ _addressable_data* gen_addressable_data_for_struct_ptr_accessor(
 	// if we met the '->' operator,
 	// it means that we need to get value stored in address
 	// which will vary according in_reg flag
-	// if itss true, it means that the needed address aleady stored in reg,
+	// if it's true, it means that the needed address aleady stored in reg,
 	// and no need to calculate offsets based on stack variable, need to calculate it based on this reg
 	if (!data->in_reg)
 		data->reg = get_unreserved_register(REGISTERS, REGSIZE_DWORD);
