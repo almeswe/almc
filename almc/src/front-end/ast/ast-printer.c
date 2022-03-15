@@ -132,9 +132,6 @@ void print_unary_expr(UnaryExpr* expr, const char* indent)
 		"unary-lg-not: !",
 		"unary-bw-not: ~",
 
-		"unary-inc: ++",
-		"unary-dec: --",
-
 		"unary-cast:",
 		"unary-sizeof:",
 		"unary-lengthof:",

@@ -120,24 +120,25 @@ typedef struct Type
 } Type;
 
 /* Initialization of primitive types */
-static Type i8_type = { I8_SIZE, TYPE_PRIMITIVE, NULL, I8_TYPE };
-static Type u8_type = { U8_SIZE, TYPE_PRIMITIVE, NULL, U8_TYPE };
-static Type char_type = { CHAR_SIZE, TYPE_PRIMITIVE, NULL, CHAR_TYPE };
+static Type unknown_type = { 0, TYPE_UNKNOWN, NULL, UNKNOWN_TYPE };
 
-static Type i16_type = { I16_SIZE, TYPE_PRIMITIVE, NULL, I16_TYPE };
-static Type u16_type = { U16_SIZE, TYPE_PRIMITIVE, NULL, U16_TYPE };
+static Type i8_type = { I8_SIZE, TYPE_PRIMITIVE, NULL, I8_TYPE, &unknown_type };
+static Type u8_type = { U8_SIZE, TYPE_PRIMITIVE, NULL, U8_TYPE, &unknown_type };
+static Type char_type = { CHAR_SIZE, TYPE_PRIMITIVE, NULL, CHAR_TYPE, &unknown_type };
 
-static Type i32_type = { I32_SIZE, TYPE_PRIMITIVE, NULL, I32_TYPE };
-static Type u32_type = { U32_SIZE, TYPE_PRIMITIVE, NULL, U32_TYPE };
-static Type f32_type = { F32_SIZE, TYPE_PRIMITIVE, NULL, F32_TYPE };
+static Type i16_type = { I16_SIZE, TYPE_PRIMITIVE, NULL, I16_TYPE, &unknown_type };
+static Type u16_type = { U16_SIZE, TYPE_PRIMITIVE, NULL, U16_TYPE, &unknown_type };
 
-static Type i64_type = { I64_SIZE, TYPE_PRIMITIVE, NULL, I64_TYPE };
-static Type u64_type = { U64_SIZE, TYPE_PRIMITIVE, NULL, U64_TYPE };
-static Type f64_type = { F64_SIZE, TYPE_PRIMITIVE, NULL, F64_TYPE };
+static Type i32_type = { I32_SIZE, TYPE_PRIMITIVE, NULL, I32_TYPE, &unknown_type };
+static Type u32_type = { U32_SIZE, TYPE_PRIMITIVE, NULL, U32_TYPE, &unknown_type };
+static Type f32_type = { F32_SIZE, TYPE_PRIMITIVE, NULL, F32_TYPE, &unknown_type };
+
+static Type i64_type = { I64_SIZE, TYPE_PRIMITIVE, NULL, I64_TYPE, &unknown_type };
+static Type u64_type = { U64_SIZE, TYPE_PRIMITIVE, NULL, U64_TYPE, &unknown_type };
+static Type f64_type = { F64_SIZE, TYPE_PRIMITIVE, NULL, F64_TYPE, &unknown_type };
 
 /* Initialization of some other supply types */
 static Type void_type = { 0, TYPE_VOID, NULL, VOID_TYPE };
-static Type unknown_type = { 0, TYPE_UNKNOWN, NULL, UNKNOWN_TYPE };
 
 Type* type_new(const char* repr);
 
@@ -153,6 +154,10 @@ bool is_numeric_type(Type* type);
 bool is_integral_type(Type* type);
 bool is_integral_smaller_than_pointer_type(Type* type);
 
+bool is_array_type(Type* type);
+bool is_aggregate_type(Type* type);
+bool is_user_defined_type(Type* type);
+bool is_incomplete_type(Type* type);
 bool is_pointer_like_type(Type* type);
 bool is_not_aggregate_type(Type* type);
 bool is_both_primitive(Type* type1, Type* type2);

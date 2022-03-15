@@ -65,40 +65,37 @@ void visit_stmt(Stmt* stmt, Table* table)
 		visit_import_stmt(stmt->import_stmt, table);
 		break;
 	default:
-		report_error("Unknown statement kind to visit in visit_stmt().", NULL);
+		report_error("Unknown statement kind to visit "
+			"in visit_stmt().", NULL);
 	}
 }
 
 void visit_type(Type* type, Table* table)
 {
-	Type* base = get_base_type(type);
-	if (!is_not_aggregate_type(base))
-		if (!is_struct_declared(type->repr, table) &&
-			!is_union_declared(type->repr, table) &&
-			!is_enum_declared(type->repr, table))
-				report_error2(frmt("Undefined type \'%s\' met.",
-					type->repr), type->area);
-	if (IS_ARRAY_TYPE(type))
-		visit_expr(type->dimension, table), 
-			visit_type(type->base, table);
-	if (is_pointer_like_type(type))
-		visit_pointer_like_type(type, table);
-	if (IS_INCOMPLETE_TYPE(base))
-		complete_type(type, table);
-	complete_size(type, table);
-}
-
-void visit_pointer_like_type(Type* type, Table* table)
-{
-	switch (type->kind)
+	// if the incomplete type met, it will be user-defined type:
+	//		struct, enum, union or unknown type
+	if (is_incomplete_type(type))
+		// after attempt for completing the type, checking if it is incomplete again
+		// report error if it is true
+		if (complete_type(type, table), is_incomplete_type(type))
+			report_error2(frmt("Cannot resolve type: \'%s\'.",
+				type->repr), type->area);
+	
+	if (is_array_type(type))
 	{
-	case TYPE_ARRAY:
+		// checking the index of current array dimension
+		visit_expr(type->dimension, table);
 		if (!is_const_expr(type->dimension))
-			report_error2("Array size is not a constant expression.",
+			report_error2("Index should be constant expression.",
 				get_expr_area(type->dimension));
-		visit_pointer_like_type(type->base, table);
-		break;
+		// call this function recursievly, because it might be 
+		// that there are multi-dimensional array type
+		visit_type(type->base, table);
 	}
+
+	// the size of aggregate type usually needs to be completed
+	if (is_aggregate_type(type))
+		complete_size(type, table);
 }
 
 void visit_non_void_type(Type* type, SrcArea* area, Table* table)
@@ -108,7 +105,7 @@ void visit_non_void_type(Type* type, SrcArea* area, Table* table)
 		no self-area, so, need to specify it
 	*/
 	if (IS_VOID_TYPE(type))
-		report_error2("void type is not allowed in this context.", area);
+		report_error2("Cannot resolve void type in this context.", area);
 	visit_type(type, table);
 }
 
@@ -792,19 +789,6 @@ void visit_struct(StructDecl* struct_decl, Table* table)
 				report_error2(frmt("Member \'%s\' is already declared in \'%s\' struct declaration.",
 					struct_decl->members[i]->name, struct_decl->members),
 						struct_decl->members[i]->area);
-	visit_struct_members(struct_decl->members);
-}
-
-void visit_struct_members(Member** members)
-{
-	for (size_t i = 0; i < sbuffer_len(members); i++)
-	{
-		if (i == 0)
-			members[i]->offset = 0;
-		else
-			members[i]->offset = members[i - 1]->offset +
-				members[i - 1]->type->size;
-	}
 }
 
 void visit_type_decl_stmt(TypeDecl* type_decl, Table* table)
@@ -971,32 +955,44 @@ uint32_t get_size_of_type(Type* type, Table* table)
 	else
 		report_error(frmt("Cannot get size of \'%s\' type",
 			type_tostr_plain(type)), NULL);
+	return 0;
 }
 
 uint32_t get_size_of_aggregate_type(Type* type, Table* table)
 {
-	uint32_t size = 0, buffer = 0;
-	uint32_t align = STRUCT_DEFAULT_ALIGNMENT;
-	if (IS_STRUCT_TYPE(type))
+	uint32_t size = 0;
+	//uint32_t align = STRUCT_DEFAULT_ALIGNMENT;
+
+	switch (type->kind)
+	{
+	case TYPE_UNION:
 		for (size_t i = 0; i < sbuffer_len(type->members); i++)
-			size += get_size_of_type(type->members[i]->type, table);
-	else if (IS_UNION_TYPE(type))
+			size = max(size, type->members[i]->type->size);
+		return size;
+	case TYPE_STRUCT:
 		for (size_t i = 0; i < sbuffer_len(type->members); i++)
-			buffer = get_size_of_type(type->members[i]->type, table),
-				size = max(size, buffer);
-	else if (IS_ARRAY_TYPE(type))
-		size = (int32_t)get_size_of_type(type->base, table) *
-			evaluate_expr_itype(type->dimension);
-	else
+			size += type->members[i]->type->size;
+		return size;
+	case TYPE_ARRAY:
+		return (uint32_t)(get_size_of_type(type->base, table) *
+			evaluate_expr_itype(type->dimension));
+	default:
 		report_error(frmt("Passed type \'%s\' is not aggregate, "
-			"in get_user_type_size_in_bytes()", type_tostr_plain(type)), NULL);
+			"in get_size_of_aggregate_type()", type_tostr_plain(type)), NULL);
+	}
 	return size;
 }
 
 void complete_size(Type* type, Table* table)
 {
+	// variable in which whole 
+	// member's offset will be stored
+	uint32_t offset = 0;
 	switch (type->kind)
 	{
+	case TYPE_ENUM:
+		type->size = get_size_of_type(type, table);
+		break;
 	case TYPE_ARRAY:
 	case TYPE_POINTER:
 		type->size = get_size_of_type(type, table);
@@ -1004,10 +1000,19 @@ void complete_size(Type* type, Table* table)
 		break;
 	case TYPE_UNION:
 	case TYPE_STRUCT:
+		// completing offsets for members (struct's or union's)
+		for (uint32_t i = 0; i < sbuffer_len(type->members); i++)
+		{
+			type->members[i]->type->size = get_size_of_type(
+				type->members[i]->type, table);
+			// in case of union, dont add offset for member, 
+			// keep it 0 for all members (here there are no logic for that
+			// because Member struct is allocated already with 0 stored in offset)
+			if (type->kind == TYPE_STRUCT)
+				type->members[i]->offset = offset,
+					offset += type->members[i]->type->size;
+		}
 		type->size = get_size_of_aggregate_type(type, table);
-		break;
-	case TYPE_ENUM:
-		type->size = get_size_of_type(type, table);
 		break;
 	}
 }
@@ -1016,7 +1021,7 @@ void complete_type(Type* type, Table* table)
 {
 	/*
 		Completes the missing information in type structure
-		if its struct or union type + gets size of it
+		if its struct, enum or union type + gets size of it
 	*/
 	TableEntity* user_type = NULL;
 	Type* base = get_base_type(type);

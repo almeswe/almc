@@ -17,7 +17,6 @@ void visitor_free(Visitor* visitor);
 void visit(AstRoot* ast, Visitor* visitor);
 void visit_stmt(Stmt* stmt, Table* table);
 void visit_type(Type* type, Table* table);
-void visit_pointer_like_type(Type* type, Table* table);
 void visit_non_void_type(Type* type, SrcArea* area, Table* table);
 
 void visit_scope(Stmt** stmts, Table* table);
@@ -59,7 +58,6 @@ void visit_import_stmt(ImportStmt* import_stmt, Table* table);
 void visit_enum(EnumDecl* enum_decl, Table* table);
 void visit_union(UnionDecl* union_decl, Table* table);
 void visit_struct(StructDecl* struct_decl, Table* table);
-void visit_struct_members(Member** members);
 
 void check_entry_func_params(FuncDecl* func_decl);
 void visit_entry_func_stmt(FuncDecl* func_decl, Table* table);

@@ -1,31 +1,35 @@
 #include "type.h"
 
+// todo: replace all macroses from type.h to functions
+// todo: add NULL check for all type functions
+
 Type* type_new(const char* repr)
 {
 	Type* type = cnew_s(Type, type, 1);
 	type->repr = repr;
 	type->kind = TYPE_INCOMPLETE;
+	type->base = &unknown_type;
 	return type;
 }
 
 Type* array_type_new(Type* base, Expr* index)
 {
 	Type* array_type = cnew_s(Type, array_type, 1);
+	array_type->base = base;
+	array_type->dimension = index;
 	array_type->kind = TYPE_ARRAY;
-	array_type->dimension = index,
-		array_type->base = base;
-	array_type->repr = base->repr,
-		array_type->area = base->area;
+	array_type->repr = base->repr;
+	array_type->area = base->area;
 	return array_type;
 }
 
 Type* pointer_type_new(Type* base)
 {
 	Type* pointer_type = cnew_s(Type, pointer_type, 1);
-	pointer_type->kind = TYPE_POINTER;
 	pointer_type->base = base;
-	pointer_type->repr = base->repr,
-		pointer_type->area = base->area;
+	pointer_type->repr = base->repr;
+	pointer_type->area = base->area;
+	pointer_type->kind = TYPE_POINTER;
 	pointer_type->size = MACHINE_WORD;
 	return pointer_type;
 }
@@ -118,6 +122,30 @@ bool is_both_are_equal_user_defined(Type* type1, Type* type2)
 	else if (IS_ENUM_TYPE(type1) && IS_ENUM_TYPE(type2))
 		return IS_TYPE(type1, type2->repr);
 	return false;
+}
+
+bool is_aggregate_type(Type* type)
+{
+	return type && (type->kind == TYPE_ARRAY ||
+		type->kind == TYPE_STRUCT || type->kind == TYPE_UNION);
+}
+
+bool is_user_defined_type(Type* type) 
+{
+	Type* base = get_base_type(type);
+	return IS_ENUM_TYPE(base) || 
+		IS_STRUCT_OR_UNION_TYPE(base);
+}
+
+bool is_array_type(Type* type)
+{
+	return type && type->kind == TYPE_ARRAY;
+}
+
+bool is_incomplete_type(Type* type)
+{
+	return type && get_base_type(type)
+		->kind == TYPE_INCOMPLETE;
 }
 
 bool is_not_aggregate_type(Type* type)
