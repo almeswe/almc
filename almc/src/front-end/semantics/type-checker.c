@@ -405,62 +405,58 @@ Type* get_spec_binary_type(BinaryExpr* expr)
 uint32_t get_type_priority(Type* type)
 {
 	if (IS_U8_TYPE(type))
-		return U8;
+		return U8p;
 	if (IS_I8_TYPE(type))
-		return I8;
+		return I8p;
 	if (IS_CHAR_TYPE(type))
-		return CHAR;
+		return CHARp;
 	if (IS_U16_TYPE(type))
-		return U16;
+		return U16p;
 	if (IS_I16_TYPE(type))
-		return I16;
+		return I16p;
 	if (IS_U32_TYPE(type))
-		return U32;
+		return U32p;
 	if (IS_I32_TYPE(type))
-		return I32;
+		return I32p;
 	if (IS_U64_TYPE(type))
-		return U64;
+		return U64p;
 	if (IS_I64_TYPE(type))
-		return I64;
+		return I64p;
 	if (IS_F32_TYPE(type))
-		return F32;
+		return F32p;
 	if (IS_F64_TYPE(type))
-		return F64;
+		return F64p;
 	if (IS_STRING_TYPE(type))
-		return STR;
+		return STRp;
 	if (IS_VOID_TYPE(type))
-		return VOID;
+		return VOIDp;
 	if (type && !IS_PRIMITIVE_TYPE(type))
-		return I32;
+		return I32p;
 	return 0x0;
 }
 
 Type* cast_explicitly(Type* to, Type* type)
 {
 	if (!to || !type)
-		report_error2("Cannot determine at least one type when "
-			"trying to convert explicitly.", NULL);
-	else
-	{
-		if (IS_VOID_TYPE(to))
-			report_error2("Explicit conversion to void is not allowed.", to->area);
-		if (IS_VOID_TYPE(type))
-			report_error2("Explicit conversion of void is not allowed.", to->area);
-		if (IS_STRING_TYPE(type) && !IS_STRING_TYPE(to) && !IS_CHAR_POINTER_TYPE(to))
-			report_error2(frmt("Cannot explicitly convert type \'%s\' to \'%s\'.",
-				type_tostr_plain(type), type_tostr_plain(to)), to->area);
-		if (is_integral_type(to) && is_real_type(type))
-			report_warning2("Converting real type to integral type may occur data losses.",
-				to->area);
-	}
+		return report_error2("Cannot determine at least one type when "
+			"trying to convert explicitly.", NULL), &unknown_type;
+	if (IS_VOID_TYPE(to))
+		report_error2("Explicit conversion to void is not allowed.", to->area);
+	if (IS_VOID_TYPE(type))
+		report_error2("Explicit conversion of void is not allowed.", to->area);
+	if (IS_STRING_TYPE(type) && !IS_STRING_TYPE(to) && !IS_CHAR_POINTER_TYPE(to))
+		report_error2(frmt("Cannot explicitly convert type \'%s\' to \'%s\'.",
+			type_tostr_plain(type), type_tostr_plain(to)), to->area);
+	if (is_integral_type(to) && is_real_type(type))
+		report_warning2("Converting real type to integral type may occur data losses.", to->area);
 	return to;
 }
 
 Type* cast_explicitly_when_const_expr(Expr* const_expr, Type* to, Type* const_expr_type)
 {
 	if (!to || !const_expr_type)
-		report_error2("Cannot determine at least one type "
-			"when trying to convert explicitly.", NULL);
+		return report_error2("Cannot determine at least one type "
+			"when trying to convert explicitly.", NULL), &unknown_type;
 	else
 	{
 		if (IS_VOID_TYPE(to))
@@ -470,12 +466,12 @@ Type* cast_explicitly_when_const_expr(Expr* const_expr, Type* to, Type* const_ex
 			report_error2(frmt("Cannot explicitly convert constant expression to type \'%s\'.",
 				type_tostr_plain(to)), get_expr_area(const_expr));
 
-		//---------------------------------------
 		// determining the type of evaluated constant
 		// todo: prettyfy this code
 		double value = 0.0;
 		Type* const_expr_type_new = NULL;
-		if (is_integral_type(const_expr_type) || is_pointer_like_type(const_expr_type))
+		if (is_integral_type(const_expr_type) || 
+				is_pointer_like_type(const_expr_type))
 		{
 			value = evaluate_expr_itype(const_expr);
 			const_expr_type_new = is_real_type(to) ?
@@ -484,10 +480,8 @@ Type* cast_explicitly_when_const_expr(Expr* const_expr, Type* to, Type* const_ex
 		else if (is_real_type(const_expr_type))
 		{
 			value = evaluate_expr_ftype(const_expr);
-			if (is_integral_type(to) || is_pointer_like_type(to))
-				const_expr_type_new = get_ivalue_type((int64_t)value);
-			else
-				const_expr_type_new = get_fvalue_type(value);
+			const_expr_type_new = (is_integral_type(to) || is_pointer_like_type(to)) ? 
+				get_ivalue_type((int64_t)value) : get_fvalue_type(value);
 		}
 		else
 			report_error2("Cannot evaluate constant expression for explicit cast.",
@@ -502,7 +496,10 @@ Type* cast_explicitly_when_const_expr(Expr* const_expr, Type* to, Type* const_ex
 
 Type* cast_implicitly(Type* to, Type* type, SrcArea* area)
 {
-	if (can_cast_implicitly(to, type))
+	if (!can_cast_implicitly(to, type))
+		report_error2(frmt("Cannot implicitly convert type \'%s\' to \'%s\'",
+			type_tostr_plain(to), type_tostr_plain(type)), area);
+	else
 	{
 		// if both are pointer-like
 		if (IS_POINTER_TYPE(to) && is_pointer_like_type(type))
@@ -516,22 +513,19 @@ Type* cast_implicitly(Type* to, Type* type, SrcArea* area)
 			return to;
 
 		// if one is pointer-like and second is primitive
-		if (is_pointer_like_type(to) && (get_type_priority(type) > I32))
+		if (is_pointer_like_type(to) && (get_type_priority(type) > I32p))
 			return type;
-		if (is_pointer_like_type(to) && (get_type_priority(type) <= I32))
+		if (is_pointer_like_type(to) && (get_type_priority(type) <= I32p))
 			return to;
-		if ((get_type_priority(to) > I32) && is_pointer_like_type(type))
+		if ((get_type_priority(to) > I32p) && is_pointer_like_type(type))
 			return to;
-		if ((get_type_priority(to) <= I32) && is_pointer_like_type(type))
+		if ((get_type_priority(to) <= I32p) && is_pointer_like_type(type))
 			return type;
 
 		// if both are primitive types
 		if (is_both_primitive(to, type))
 			return get_type_priority(to) >= get_type_priority(type) ? to : type;
 	}
-	else
-		report_error2(frmt("Cannot implicitly convert type \'%s\' to \'%s\'",
-			type_tostr_plain(to), type_tostr_plain(type)), area);
 }
 
 Type* cast_implicitly_when_assign(Type* to, Type* type, SrcArea* area)
