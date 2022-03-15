@@ -666,7 +666,7 @@ Token* get_keychar_token(Lexer* lexer, int order)
 	}
 	unget_curr_char(lexer);
 	str_builder_reduce_buffer(temp, str, size);
-	Token* token = token_new(strlen(str) == 1 ? (order + CHARS_IN_TOKEN_ENUM_OFFSET) : (type + EXT_CHARS_IN_TOKEN_ENUM_OFFSET),
+	Token* token = token_new(strlen(str) == 1 ? (order + CHARS_OFFSET) : (type + CMP_CHARS_OFFSET),
 		src_context_new(lexer->curr_file, lexer->curr_line_offset, strlen(str), lexer->curr_line));
 	token->lexeme = str;
 	return token;
@@ -682,7 +682,7 @@ inline int isknch(const char ch)
 
 inline int isextch(const char* ech)
 {
-	for (int i = 0; i < EXT_CHARS; i++)
+	for (int i = 0; i < CMP_CHARS; i++)
 		if (strcmp(ech, keychars[i]) == 0)
 			return i;
 	return -1;

@@ -24,7 +24,7 @@
 	#undef _CRT_SECURE_NO_WARNINGS
 
 #else
-	report_error("Os module is not supported on this platform.", NULL);
+	#error "Os module is not supported on this platform."
 #endif
 
 #endif

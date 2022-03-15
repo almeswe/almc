@@ -7,27 +7,17 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "type.h"
 #include ".\token.h"
 #include "..\error.h"
-#include "type.h"
 
 #include "..\utils\common.h"
 #include "..\utils\context.h"
 #include "..\utils\data-structures\sbuffer.h"
 
-#define EXT_CHARS 24
-#define EXT_CHARS_IN_TOKEN_ENUM_OFFSET TOKEN_RIGHT_ANGLE + 1
-
-#define CHARS 26
-#define CHARS_IN_TOKEN_ENUM_OFFSET 0
-
-#define KEYWORDS 42
-#define KEYWORD_IN_TOKEN_ENUM_OFFSET TOKEN_IDNT + 1
-
 typedef enum StreamType
 {
 	FROM_FILE,
-	// used especially for lexer debugging
 	FROM_CHAR_PTR
 } StreamType;
 
@@ -41,14 +31,22 @@ typedef enum NumericFormat
 
 typedef struct Lexer
 {
+	// pointer that points to the current character
+	// in the current char stream
 	char* stream;
+	// pointer to the non-shifted character stream
+	// needed only for proper releasing memory after the lexical analysis
 	char* stream_origin;
 	uint32_t stream_size;
-		
+	
+	// current line number
 	uint32_t curr_line;
+	// offset in the current number
 	uint32_t curr_line_offset;
 
-	//for proper use of unget_curr_char
+	// two fields above have the same sematcics
+	// as the previous two, but vise-versa
+	// for proper use of unget_curr_char
 	uint32_t prev_line;
 	uint32_t prev_line_offset;
 
@@ -56,6 +54,28 @@ typedef struct Lexer
 
 	const char* curr_file;
 } Lexer;
+
+enum LexerMetrics
+{
+	// the definitions above are the same for all other
+	// lexer metrics
+
+	// means the count of reserved characters like:
+	// *, |, ^, ~ ...
+	CHARS = 26,
+	// means the start offset in the global token enum
+	CHARS_OFFSET = 0,
+
+	// CoMPounded chars, means the strings like: 
+	// +=, >>=, <<, || ...
+	CMP_CHARS = 24,
+	CMP_CHARS_OFFSET = TOKEN_RIGHT_ANGLE + 1,
+
+	// just predefined keywords like:
+	// for, fnc, while, i32 ...
+	KEYWORDS = 42,
+	KEYWORD_IN_TOKEN_ENUM_OFFSET = TOKEN_IDNT + 1
+};
 
 Lexer* lexer_new(const char* input, StreamType input_type);
 void lexer_free(Lexer* lexer);
