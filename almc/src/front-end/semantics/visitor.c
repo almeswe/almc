@@ -229,39 +229,37 @@ void visit_enum_member(Idnt* idnt, Table* table)
 
 void visit_func_call(FuncCall* func_call, Table* table)
 {
-	if (!is_function_declared(func_call->name, table))
-		report_error2(frmt("Function \'%s\' is not declared in current scope.", 
-			func_call->name), func_call->area);
-	else
-	{
-		FuncDecl* origin = get_function(
-			func_call->name, table)->function;
-		visit_type(origin->type, table);
-		func_call->conv = origin->conv;
-		func_call->spec = origin->spec;
+	// trying to get function declaration from the table
+	TableEntity* entity = get_function(
+		func_call->name, table);
 
-		// calculating count of params without vararg (...)
-		// if its declared
-		int32_t params = (int32_t)sbuffer_len(origin->params);
+	if (entity == NULL)
+		// print resolve error if there are no any declaration for
+		// this function call
+		return report_error2(frmt("Cannot resolve function \'%s\'.",
+			func_call->name), func_call->area), (void)1;
 
-		int32_t args_passed = (int32_t)
-			sbuffer_len(func_call->args);
-		
-		if (args_passed < params)
-			report_error2(frmt("Not enough arguments passed to function call \'%s\'.",
-				func_call->name), func_call->area);
+	// synchronize few fields with function call structure
+	FuncDecl* func_decl = entity->function;
+	func_call->conv = func_decl->conv;
+	func_call->spec = func_decl->spec;
 
-		// if passed args count is greater than actual params
-		// and if the origin function is not vararg
-		else if (!origin->spec->is_vararg)
-			if (args_passed > params)
-				report_error2(frmt("Too much arguments passed to function call \'%s\'.",
-					func_call->name), func_call->area);
+	// capture count of params of function declaration and
+	// count of passed arguments to function call
+	uint32_t args = sbuffer_len(func_call->args);
+	uint32_t params = sbuffer_len(func_decl->params);
 
-		// visiting passed arguments to function call
-		for (size_t i = 0; i < sbuffer_len(func_call->args); i++)
-			visit_expr(func_call->args[i], table);
-	}
+	if (args < params)
+		report_error2(frmt("More arguments expected for " 
+			"function call \'%s\'.", func_call->name), func_call->area);
+	else if (args > params && !func_decl->spec->is_vararg)
+		// print this error only when the function declaration has vararg property
+		report_error2(frmt("Less arguments expected for "
+			"function call \'%s\'.", func_call->name), func_call->area);
+
+	// resolvig all passed arguments to function call
+	for (size_t i = 0; i < sbuffer_len(func_call->args); i++)
+		visit_expr(func_call->args[i], table);
 }
 
 void visit_unary_expr(UnaryExpr* unary_expr, Table* table)
