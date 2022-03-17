@@ -58,6 +58,7 @@ void visit_import_stmt(ImportStmt* import_stmt, Table* table);
 void visit_enum(EnumDecl* enum_decl, Table* table);
 void visit_union(UnionDecl* union_decl, Table* table);
 void visit_struct(StructDecl* struct_decl, Table* table);
+void visit_members(const char* type, Member** members, Table* table);
 
 void check_entry_func_params(FuncDecl* func_decl);
 void visit_entry_func_stmt(FuncDecl* func_decl, Table* table);

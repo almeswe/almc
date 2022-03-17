@@ -93,8 +93,8 @@ void visit_type(Type* type, Table* table)
 		visit_type(type->base, table);
 	}
 
-	// the size of aggregate type usually needs to be completed
-	if (is_aggregate_type(type))
+	// resolving size for type
+	if (type->kind != TYPE_PRIMITIVE)
 		complete_size(type, table);
 }
 
@@ -215,16 +215,12 @@ void visit_idnt(Idnt* idnt, Table* table, int is_in_assign)
 
 void visit_enum_member(Idnt* idnt, Table* table)
 {
-	Expr* value = NULL;
 	for (Table* parent = table; parent; parent = parent->nested_in)
 		for (size_t i = 0; i < sbuffer_len(parent->enums); i++)
 			for (size_t j = 0; j < sbuffer_len(parent->enums[i]->enum_decl->members); j++)
 				if (strcmp(idnt->svalue, parent->enums[i]->enum_decl->members[j]->name) == 0)
-					value = parent->enums[i]->enum_decl->members[j]->value;
-
-	if (value)
-		idnt->is_enum_member = true,
-			idnt->enum_member_value = value;
+					return idnt->enum_member_value = parent->enums[i]->enum_decl->members[j]->value,
+						idnt->is_enum_member = true, (void)1;
 }
 
 void visit_func_call(FuncCall* func_call, Table* table)
@@ -745,53 +741,39 @@ void visit_enum(EnumDecl* enum_decl, Table* table)
 
 void visit_union(UnionDecl* union_decl, Table* table)
 {
-	for (size_t i = 0; i < sbuffer_len(union_decl->members); i++)
-	{
-		// checking for self included type (and not pointer)
-		if (strcmp(union_decl->name, union_decl->members[i]->type->repr) == 0)
-			if (!IS_POINTER_TYPE(union_decl->members[i]->type))
-				report_error2(frmt("Member \'%s\' has type \'%s\' which is self included, and not pointer.",
-					union_decl->members[i]->name, union_decl->name),
-						union_decl->members[i]->area);
-		visit_non_void_type(union_decl->members[i]->type, 
-			union_decl->members[i]->area, table);
-	}
-
-	// checking here for duplicated members
-	for (size_t i = 0; i < sbuffer_len(union_decl->members); i++)
-		for (size_t j = i + 1; j < sbuffer_len(union_decl->members); j++)
-			if (strcmp(union_decl->members[i]->name, union_decl->members[j]->name) == 0)
-				report_error2(frmt("Member \'%s\' is already declared in \'%s\' union declaration.",
-					union_decl->members[i]->name, union_decl->name), union_decl->members[i]->area);
+	visit_members(union_decl->name, 
+		union_decl->members, table);
 }
 
 void visit_struct(StructDecl* struct_decl, Table* table)
 {
-	// checking all member's types
-	for (size_t i = 0; i < sbuffer_len(struct_decl->members); i++)
-	{
-		// checking for self included type (and not pointer)
-		if (strcmp(struct_decl->name, struct_decl->members[i]->type->repr) == 0)
-			if (!IS_POINTER_TYPE(struct_decl->members[i]->type))
-				report_error2(frmt("Member \'%s\' has type \'%s\' which is self included, and not pointer.",
-					struct_decl->members[i]->name, struct_decl->name),
-						struct_decl->members[i]->area);
-		visit_non_void_type(struct_decl->members[i]->type,
-			struct_decl->members[i]->area, table);
-	}
+	visit_members(struct_decl->name,
+		struct_decl->members, table);
+}
 
-	// checking here for duplicated members
-	for (size_t i = 0; i < sbuffer_len(struct_decl->members); i++)
-		for (size_t j = i+1; j < sbuffer_len(struct_decl->members); j++)
-			if (strcmp(struct_decl->members[i]->name, struct_decl->members[j]->name) == 0)
-				report_error2(frmt("Member \'%s\' is already declared in \'%s\' struct declaration.",
-					struct_decl->members[i]->name, struct_decl->members),
-						struct_decl->members[i]->area);
+void visit_members(const char* type, Member** members, Table* table)
+{
+	for (size_t i = 0; i < sbuffer_len(members); i++)
+	{
+		visit_non_void_type(members[i]->type,
+			members[i]->type->area, table);
+		if (strcmp(members[i]->type->repr, type) == 0)
+			if (members[i]->type->kind != TYPE_POINTER)
+				report_error2(frmt("Member declared with unresolved type \'%s\'.",
+					type), members[i]->area);
+		for (size_t j = 0; j < sbuffer_len(members); j++)
+		{
+			if (members[i] == members[j])
+				continue;
+			if (strcmp(members[i]->name, members[j]->name) == 0)
+				report_error2(frmt("Member is already declared in \'%s\'",
+					type), members[i]->area);
+		}
+	}
 }
 
 void visit_type_decl_stmt(TypeDecl* type_decl, Table* table)
 {
-	Table* local = table_new(NULL);
 	switch (type_decl->kind)
 	{
 	case TYPE_DECL_ENUM:
@@ -804,7 +786,8 @@ void visit_type_decl_stmt(TypeDecl* type_decl, Table* table)
 		visit_struct(type_decl->struct_decl, table);
 		break;
 	default:
-		report_error("Unknown type of type declaration met in visit_type_decl_stmt()", NULL);
+		report_error("Unknown type of type declaration met"
+			" in visit_type_decl_stmt()", NULL);
 	}
 }
 
@@ -939,37 +922,42 @@ void visit_entry_func_stmt(FuncDecl* func_decl, Table* table)
 
 uint32_t get_size_of_type(Type* type, Table* table)
 {
-	if (IS_POINTER_TYPE(type))
-		return MACHINE_WORD;
-	else if (IS_ENUM_TYPE(type))
+	switch (type->kind)
+	{
+	case TYPE_ENUM:
 		// enum type just ensures that variable can store 
 		// 4-byte variable inside
 		// so just return the size of i32
 		return i32_type.size;
-	else if (IS_AGGREGATE_TYPE(type))
-		return get_size_of_aggregate_type(type, table);
-	else if (IS_PRIMITIVE_TYPE(type))
+	case TYPE_POINTER:
+		return MACHINE_WORD;
+	case TYPE_PRIMITIVE:
 		return type->size;
-	else
+	default:
+		if (is_aggregate_type(type))
+			return get_size_of_aggregate_type(type, table);
 		report_error(frmt("Cannot get size of \'%s\' type",
 			type_tostr_plain(type)), NULL);
+	}
 	return 0;
 }
 
 uint32_t get_size_of_aggregate_type(Type* type, Table* table)
 {
-	uint32_t size = 0;
-	//uint32_t align = STRUCT_DEFAULT_ALIGNMENT;
-
+	uint32_t size = 0, buffer = 0;
+	
 	switch (type->kind)
 	{
 	case TYPE_UNION:
-		for (size_t i = 0; i < sbuffer_len(type->members); i++)
-			size = max(size, type->members[i]->type->size);
-		return size;
 	case TYPE_STRUCT:
-		for (size_t i = 0; i < sbuffer_len(type->members); i++)
-			size += type->members[i]->type->size;
+		for (size_t i = 0; i < sbuffer_len(type->members); i++) 
+		{
+			buffer = type->members[i]->type->size;
+			// when type is union, calculate max between size and size of current member
+			// otherwise just add member size to whole size (in case of struct)
+			size = type->kind == TYPE_UNION ? 
+				max(size, buffer) : (size + buffer);
+		}
 		return size;
 	case TYPE_ARRAY:
 		return (uint32_t)(get_size_of_type(type->base, table) *
@@ -978,7 +966,7 @@ uint32_t get_size_of_aggregate_type(Type* type, Table* table)
 		report_error(frmt("Passed type \'%s\' is not aggregate, "
 			"in get_size_of_aggregate_type()", type_tostr_plain(type)), NULL);
 	}
-	return size;
+	return 0;
 }
 
 void complete_size(Type* type, Table* table)
@@ -1033,6 +1021,57 @@ void complete_type(Type* type, Table* table)
 			base->members = user_type->union_decl->members;
 }
 
+bool is_const_expr(Expr* expr)
+{
+	if (!expr)
+		return false;
+	switch (expr->kind)
+	{
+	case EXPR_CONST:
+		return true;
+	case EXPR_IDNT:
+		return expr->idnt->is_enum_member;
+	case EXPR_UNARY_EXPR:
+		switch (expr->unary_expr->kind)
+		{
+		case UNARY_SIZEOF:
+		case UNARY_LENGTHOF:
+			return true;
+		}
+		return is_const_expr(expr->unary_expr->expr);
+	case EXPR_BINARY_EXPR:
+		return is_const_expr(expr->binary_expr->lexpr) &&
+			is_const_expr(expr->binary_expr->rexpr);
+	case EXPR_TERNARY_EXPR:
+		return is_const_expr(expr->ternary_expr->lexpr) &&
+			is_const_expr(expr->ternary_expr->rexpr) &&
+			is_const_expr(expr->ternary_expr->cond);
+	}
+	return false;
+}
+
+bool is_primary_expr(Expr* expr)
+{
+	switch (expr->kind)
+	{
+	case EXPR_IDNT:
+	case EXPR_CONST:
+	case EXPR_STRING:
+		return true;
+	}
+	return false;
+}
+
+bool is_enum_member(const char* var, Table* table)
+{
+	for (Table* parent = table; parent; parent = parent->nested_in)
+		for (size_t i = 0; i < sbuffer_len(parent->enums); i++)
+			for (size_t j = 0; j < sbuffer_len(parent->enums[i]->enum_decl->members); j++)
+				if (strcmp(var, parent->enums[i]->enum_decl->members[j]->name) == 0)
+					return true;
+	return false;
+}
+
 bool is_addressable_value(Expr* expr)
 {
 	if (!expr)
@@ -1085,56 +1124,5 @@ bool is_addressable_value(Expr* expr)
 	default:
 		return false;
 	}
-	return false;
-}
-
-bool is_const_expr(Expr* expr)
-{
-	if (!expr)
-		return false;
-	switch (expr->kind)
-	{
-	case EXPR_CONST:
-		return true;
-	case EXPR_IDNT:
-		return expr->idnt->is_enum_member;
-	case EXPR_UNARY_EXPR:
-		switch (expr->unary_expr->kind)
-		{
-		case UNARY_SIZEOF:
-		case UNARY_LENGTHOF:
-			return true;
-		}
-		return is_const_expr(expr->unary_expr->expr);
-	case EXPR_BINARY_EXPR:
-		return is_const_expr(expr->binary_expr->lexpr) &&
-			is_const_expr(expr->binary_expr->rexpr);
-	case EXPR_TERNARY_EXPR:
-		return is_const_expr(expr->ternary_expr->lexpr) &&
-			is_const_expr(expr->ternary_expr->rexpr) &&
-			is_const_expr(expr->ternary_expr->cond);
-	}
-	return false;
-}
-
-bool is_primary_expr(Expr* expr)
-{
-	switch (expr->kind)
-	{
-	case EXPR_IDNT:
-	case EXPR_CONST:
-	case EXPR_STRING:
-		return true;
-	}
-	return false;
-}
-
-bool is_enum_member(const char* var, Table* table)
-{
-	for (Table* parent = table; parent; parent = parent->nested_in)
-		for (size_t i = 0; i < sbuffer_len(parent->enums); i++)
-			for (size_t j = 0; j < sbuffer_len(parent->enums[i]->enum_decl->members); j++)
-				if (strcmp(var, parent->enums[i]->enum_decl->members[j]->name) == 0)
-					return true;
 	return false;
 }
