@@ -192,7 +192,7 @@ void visit_expr(Expr* expr, Table* table)
 void visit_idnt(Idnt* idnt, Table* table, int is_in_assign)
 {
 	if (is_enum_member(idnt->svalue, table))
-		visit_enum_member(idnt, table);
+		visit_idnt_as_enum_member(idnt, table);
 	else
 	{
 		// checking if identifier is not a function parameter
@@ -213,7 +213,7 @@ void visit_idnt(Idnt* idnt, Table* table, int is_in_assign)
 	}
 }
 
-void visit_enum_member(Idnt* idnt, Table* table)
+void visit_idnt_as_enum_member(Idnt* idnt, Table* table)
 {
 	for (Table* parent = table; parent; parent = parent->nested_in)
 		for (size_t i = 0; i < sbuffer_len(parent->enums); i++)
@@ -260,38 +260,34 @@ void visit_func_call(FuncCall* func_call, Table* table)
 
 void visit_unary_expr(UnaryExpr* unary_expr, Table* table)
 {
+	if (unary_expr->expr)
+		visit_expr(unary_expr->expr, table);
 	switch (unary_expr->kind)
 	{
 	case UNARY_CAST:
-		visit_non_void_type(unary_expr->cast_type, unary_expr->area, table);
-		visit_expr(unary_expr->expr, table);
+	case UNARY_SIZEOF:
+		// these unary expression does not have their own internal expression
+		// just check the type of each (existence mostly)
+		visit_type(unary_expr->cast_type,
+			unary_expr->area, table);
 		break;
-
+	case UNARY_ADDRESS:
+	case UNARY_DEREFERENCE:
+		// check for addressable value
+		if (!is_addressable_value(unary_expr->expr, table))
+			report_error2("Addressable expression required.", 
+				unary_expr->area);
+		break;
 	case UNARY_PLUS:
 	case UNARY_MINUS:
 	case UNARY_LG_NOT:
 	case UNARY_BW_NOT:
-	case UNARY_DEREFERENCE:
-		visit_expr(unary_expr->expr, table);
-		break;
-
-	case UNARY_ADDRESS:
-		if (!is_addressable_value(unary_expr->expr, table))
-			report_error2("Addressable value expected for this unary operator.", 
-				get_expr_area(unary_expr->expr));
-		if (unary_expr->expr->idnt->is_enum_member)
-			report_error2("Cannot use enum member with this unary operator.",
-				get_expr_area(unary_expr->expr));
-		visit_expr(unary_expr->expr, table);
-		break;
-	case UNARY_SIZEOF:
-		visit_non_void_type(unary_expr->cast_type, unary_expr->area, table);
-		break;
 	case UNARY_LENGTHOF:
-		visit_expr(unary_expr->expr, table);
+		// nothing to do here ...
 		break;
 	default:
-		report_error("Unknown kind of unary expression met in visit_unary_expr()", NULL);
+		report_error("Unknown kind of unary expression met"
+			" in visit_unary_expr()", NULL);
 	}
 }
 
@@ -341,7 +337,7 @@ void visit_binary_expr(BinaryExpr* binary_expr, Table* table)
 
 	case BINARY_ASSIGN:
 		if (!is_addressable_value(binary_expr->lexpr, table))
-			report_error2("Cannot assign something to non-addressible value.",
+			report_error2("Cannot assign something to non-addressable value.",
 				get_expr_area(binary_expr->lexpr));
 		// if right expression is idnt, then set it as initialized
 		if (binary_expr->lexpr->kind == EXPR_IDNT)
@@ -362,7 +358,7 @@ void visit_binary_expr(BinaryExpr* binary_expr, Table* table)
 	case BINARY_LSHIFT_ASSIGN:
 	case BINARY_RSHIFT_ASSIGN:
 		if (!is_addressable_value(binary_expr->lexpr, table))
-			report_error2("Cannot assign something to non-addressible value.", 
+			report_error2("Cannot assign something to non-addressable value.", 
 				get_expr_area(binary_expr->lexpr));
 		visit_expr(binary_expr->lexpr, table);
 		visit_expr(binary_expr->rexpr, table);
@@ -377,44 +373,6 @@ void visit_ternary_expr(TernaryExpr* ternary_expr, Table* table)
 	visit_condition(ternary_expr->cond, table);
 	visit_expr(ternary_expr->lexpr, table);
 	visit_expr(ternary_expr->rexpr, table);
-}
-
-typedef struct 
-{
-	Type* general;
-	int32_t dimension;
-} _array_member_visitor_data;
-
-_array_member_visitor_data* visit_array_member_accessor2(
-	BinaryExpr* arr_accessor_expr, Table* table)
-{
-	_array_member_visitor_data* data = NULL;
-	if (arr_accessor_expr->lexpr->kind == EXPR_IDNT)
-	{
-		data = cnew_s(_array_member_visitor_data, data, 1);
-	}
-	else
-		data = visit_array_member_accessor2(
-			arr_accessor_expr->lexpr->binary_expr, table);
-}
-
-void visit_array_member_accessor(BinaryExpr* arr_accessor_expr, Table* table)
-{
-	/*Type* expr_type = get_binary_expr_type(
-		arr_accessor_expr, table);
-	Expr* rexpr = arr_accessor_expr->rexpr;
-
-	expr_type->capacity = evaluate_expr_itype(
-		expr_type->dimension);
-
-	// in this case we cannot evaluate expression, so do nothing
-	if (!is_const_expr(rexpr))
-		return;
-
-	int32_t index = evaluate_expr_itype(rexpr);
-	if (index >= expr_type->capacity)
-		report_error2(frmt("Array accessor index does not fits in current dimension's capacity. (size: %d, index: %d)",
-			expr_type->capacity, index), get_expr_area(rexpr));*/
 }
 
 void visit_condition(Expr* condition, Table* table)
