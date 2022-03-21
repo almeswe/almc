@@ -1,6 +1,15 @@
 #include "visitor.h"
 
 //todo: check type referrings to each other (for freeing)
+//todo: create extern without file specifying (to be able to add static libs in compiler args)
+
+struct global_visitor_data {
+	FuncDecl* entry;
+};
+
+static struct global_visitor_data visitor_data = {
+	.entry = NULL
+};
 
 Visitor* visitor_new()
 {
@@ -23,6 +32,8 @@ void visit(AstRoot* ast, Visitor* visitor)
 	visit_scope(ast->stmts, visitor->global);
 	for (size_t i = 0; i < sbuffer_len(ast->stmts); i++)
 		visit_stmt(ast->stmts[i], visitor->global);
+	if (visitor_data.entry == NULL)
+		report_error("Cannot find any entry point.", NULL);
 }
 
 void visit_stmt(Stmt* stmt, Table* table)
@@ -70,16 +81,16 @@ void visit_stmt(Stmt* stmt, Table* table)
 	}
 }
 
-void visit_type(Type* type, Table* table)
+void visit_type(Type* type, SrcContext* context, Table* table)
 {
 	// if the incomplete type met, it will be user-defined type:
-	//		struct, enum, union or unknown type
+	//		struct, enum, union, void or unknown type
 	if (is_incomplete_type(type))
 		// after attempt for completing the type, checking if it is incomplete again
 		// report error if it is true
 		if (complete_type(type, table), is_incomplete_type(type))
-			report_error2(frmt("Cannot resolve type: \'%s\'.",
-				type->repr), type->area);
+			report_error(frmt("Cannot resolve type: \'%s\'.",
+				type->repr), context ? context : type->area->begins);
 	
 	if (is_array_type(type))
 	{
@@ -90,23 +101,12 @@ void visit_type(Type* type, Table* table)
 				get_expr_area(type->dimension));
 		// call this function recursievly, because it might be 
 		// that there are multi-dimensional array type
-		visit_type(type->base, table);
+		visit_type(type->base, context ? context : type->area->begins, table);
 	}
 
 	// resolving size for type
 	if (type->kind != TYPE_PRIMITIVE)
 		complete_size(type, table);
-}
-
-void visit_non_void_type(Type* type, SrcArea* area, Table* table)
-{
-	/*
-		SrcArea required here because void type is preallocated type with
-		no self-area, so, need to specify it
-	*/
-	if (IS_VOID_TYPE(type))
-		report_error2("Cannot resolve void type in this context.", area);
-	visit_type(type, table);
 }
 
 void visit_scope(Stmt** stmts, Table* table)
@@ -119,6 +119,9 @@ void visit_scope(Stmt** stmts, Table* table)
 			switch (stmts[i]->type_decl->kind)
 			{
 			case TYPE_DECL_ENUM:
+				/*if (!add_enum(stmts[i]->type_decl->enum_decl, table))
+					report_error(frmt("Type \'%s\' is already declared.",
+						stmts[i]->type_decl->enum_decl->name), NULL);*/
 				if (is_enum_declared(stmts[i]->type_decl->enum_decl->name, table))
 					report_error(frmt("\'Enum\' type \'%s\' is already declared.",
 						stmts[i]->type_decl->enum_decl->name), NULL);
@@ -269,7 +272,7 @@ void visit_unary_expr(UnaryExpr* unary_expr, Table* table)
 		// these unary expression does not have their own internal expression
 		// just check the type of each (existence mostly)
 		visit_type(unary_expr->cast_type,
-			unary_expr->area, table);
+			unary_expr->area->begins, table);
 		break;
 	case UNARY_ADDRESS:
 	case UNARY_DEREFERENCE:
@@ -324,7 +327,7 @@ void visit_binary_expr(BinaryExpr* binary_expr, Table* table)
 	case BINARY_ARR_MEMBER_ACCESSOR:
 		visit_expr(binary_expr->lexpr, table);
 		visit_expr(binary_expr->rexpr, table);
-		visit_array_member_accessor(binary_expr, table);
+		//visit_array_member_accessor(binary_expr, table);
 		break;
 
 	case BINARY_MEMBER_ACCESSOR:
@@ -631,7 +634,7 @@ void visit_var_decl_stmt(VarDecl* var_decl, Table* table)
 	else
 	{
 		add_variable(var_decl, table);
-		visit_non_void_type(type, area, table);
+		visit_type(type, type->area ? type->area->begins : NULL, table);
 		if (var_decl->var_init)
 		{
 			visit_expr(var_decl->var_init, table);
@@ -713,8 +716,8 @@ void visit_members(const char* type, Member** members, Table* table)
 {
 	for (size_t i = 0; i < sbuffer_len(members); i++)
 	{
-		visit_non_void_type(members[i]->type,
-			members[i]->type->area, table);
+		visit_type(members[i]->type,
+			members[i]->area->begins, table);
 		if (strcmp(members[i]->type->repr, type) == 0)
 			if (members[i]->type->kind != TYPE_POINTER)
 				report_error2(frmt("Member declared with unresolved type \'%s\'.",
@@ -755,74 +758,72 @@ void visit_block(Block* block, Table* table)
 		visit_stmt(block->stmts[i], table);
 }
 
-void visit_func_decl_calling_convention(FuncDecl* func_decl)
+void visit_func_decl_callconv(FuncDecl* func_decl)
 {
-	switch (func_decl->conv->kind)
-	{
-	case CALL_CONV_CDECL:
-		break;
-	case CALL_CONV_STDCALL:
-		if (func_decl->spec->is_vararg)
-			report_error("Cannot use vararg with stdcall calling convention.",
-				func_decl->name->context);
-		break;
-	}
+	if (func_decl->conv->kind == CALL_CONV_STDCALL &&
+			func_decl->spec->is_vararg)
+		report_error("Cannot use __VA_ARGS__ with stdcall.",
+			func_decl->name->context);
 }
 
-bool visit_func_decl_specifiers(FuncDecl* func_decl, Table* table)
+void visit_func_decl_specs(FuncDecl* func_decl, Table* table)
 {
 	if (func_decl->spec->is_entry)
 		visit_entry_func_stmt(func_decl, table);
+	
+	visit_func_decl_callconv(func_decl);
 
-	visit_func_decl_calling_convention(func_decl);
-
-	//todo: also check file
+	// check the possibility of existence of function's body in case 
+	// when function is external or not.
 	if (func_decl->spec->is_external && func_decl->body)
 		report_error(frmt("Function \'%s\' specified like external.",
 			func_decl->name->svalue), func_decl->name->context);
-	else if (!func_decl->spec->is_external && !func_decl->body)
+	if (!func_decl->spec->is_external && !func_decl->body)
 		report_error(frmt("Function \'%s\' needs body, its not external.",
 			func_decl->name->svalue), func_decl->name->context);
-
-	return func_decl->spec->is_external;
 }
 
 void visit_func_decl_stmt(FuncDecl* func_decl, Table* table)
 {
+	// case when function is declared inside another function or other local scope
+	// probably this error should be resolved syntactically (but i'm not sure about this)
+	if (table->nested_in)
+		report_error("Cannot declare function not in global scope",
+			func_decl->name->context);
+	
 	Table* local = table_new(table);
 	local->in_function = func_decl;
 
-	if (!visit_func_decl_specifiers(func_decl, table))
+	visit_func_decl_specs(func_decl, table);
+	// do not visit scope statements if the function is external (there are no any body in that case)
+	if (!func_decl->spec->is_external)
 		visit_scope(func_decl->body->stmts, local);
 
-	// checking func parameters
 	for (size_t i = 0; i < sbuffer_len(func_decl->params); i++)
 	{
-		// checking if parameter with this name is already defined as enum identifier
-		if (is_enum_member(func_decl->params[i]->var, local))
-			report_error2(frmt("Function parameter \'%s\' is already defined as enum identifier.",
+		// checking if the parameter's name is enum member or
+		// this name is already passed as function parameter
+		if (is_function_param_passed(func_decl->params[i]->var, local) || 
+				is_enum_member(func_decl->params[i]->var, local))
+			report_error2(frmt("Parameter's name \'%s\' is in use already.",
 				func_decl->params[i]->var), func_decl->params[i]->area);
-		// checking for duplicated parameter specification
-		if (is_function_param_passed(func_decl->params[i]->var, local))
-			report_error2(frmt("Function parameter \'%s\' is already specified in \'%s\' function's parameters.",
-				func_decl->params[i]->var, func_decl->name->svalue), func_decl->params[i]->area);
 		add_function_param(func_decl->params[i], local);
-
-		// checking func param for void type
-		visit_non_void_type(func_decl->params[i]->type, 
-			func_decl->params[i]->area, table);
+		visit_type(func_decl->params[i]->type, 
+			func_decl->params[i]->area->begins, table);
 	}
 
-	// if function is external it does not have a body
+	// no need for type resolving in case of void
+	// because it just means that function does not return any value
+	// (void in this context just exceptional case)
+	if (func_decl->type->kind != TYPE_VOID)
+		visit_type(func_decl->type, 
+			func_decl->name->context, table);
+
+	// no need to check body if this function is external
+	// and also no need for return flow check
 	if (!func_decl->spec->is_external)
-	{
-		// checking function's return type
-		visit_type(func_decl->type, table);
-		// checking function's body
-		visit_block(func_decl->body, local);
-		//checking that all code paths return value
-		check_func_return_flow(func_decl);
-	}
+		visit_block(func_decl->body, local),
+			check_func_return_flow(func_decl);
 }
 
 void visit_label_decl_stmt(LabelDecl* label_decl, Table* table)
@@ -863,18 +864,10 @@ void check_entry_func_params(FuncDecl* func_decl)
 
 void visit_entry_func_stmt(FuncDecl* func_decl, Table* table)
 {
-	if (func_decl->spec->is_entry && table->nested_in)
-		report_error(frmt("Cannot create entry function \'%s\' not in global scope.",
-			func_decl->name->svalue), func_decl->name->context);
-
-	if (func_decl->spec->is_entry)
-		for (size_t i = 0; i < sbuffer_len(table->functions); i++)
-			if (table->functions[i]->function->spec->is_entry &&
-				table->functions[i]->function != func_decl)
-				report_error(frmt("Cannot specify function \'%s\' as entry,"
-					" entry function \'%s\' is already mentioned.", func_decl->name->svalue, 
-						table->functions[i]->function->name->svalue), func_decl->name->context);
-
+	if (visitor_data.entry != NULL)
+		report_error("Entry function is already declared here.", 
+			visitor_data.entry->name->context);
+	visitor_data.entry = func_decl;
 	check_entry_func_params(func_decl);
 }
 
@@ -969,6 +962,10 @@ void complete_type(Type* type, Table* table)
 	*/
 	TableEntity* user_type = NULL;
 	Type* base = get_base_type(type);
+
+	// type void cannot be completed
+	if (type->kind == TYPE_VOID)
+		return;
 	if (user_type = get_struct(base->repr, table))
 		base->kind = TYPE_STRUCT,
 			base->members = user_type->struct_decl->members;

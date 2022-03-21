@@ -144,8 +144,13 @@ bool is_array_type(Type* type)
 
 bool is_incomplete_type(Type* type)
 {
-	return type && get_base_type(type)
-		->kind == TYPE_INCOMPLETE;
+	if (type)
+	{
+		Type* base = get_base_type(type);
+		return base->kind == TYPE_INCOMPLETE ||
+			type->kind == TYPE_VOID;
+	}
+	return false;
 }
 
 bool is_not_aggregate_type(Type* type)

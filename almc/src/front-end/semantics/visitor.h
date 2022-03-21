@@ -16,8 +16,7 @@ void visitor_free(Visitor* visitor);
 
 void visit(AstRoot* ast, Visitor* visitor);
 void visit_stmt(Stmt* stmt, Table* table);
-void visit_type(Type* type, Table* table);
-void visit_non_void_type(Type* type, SrcArea* area, Table* table);
+void visit_type(Type* type, SrcContext* context, Table* table);
 
 void visit_scope(Stmt** stmts, Table* table);
 void visit_block(Block* block, Table* table);
@@ -29,7 +28,7 @@ void visit_func_call(FuncCall* func_call, Table* table);
 void visit_unary_expr(UnaryExpr* unary_expr, Table* table);
 void visit_binary_expr(BinaryExpr* binary_expr, Table* table);
 void visit_ternary_expr(TernaryExpr* ternary_expr, Table* table);
-void visit_array_member_accessor(BinaryExpr* arr_accessor_expr, Table* table);
+//void visit_array_member_accessor(BinaryExpr* arr_accessor_expr, Table* table);
 
 void visit_condition(Expr* condition, Table* table);
 void visit_if_stmt(IfStmt* if_stmt, Table* table);
