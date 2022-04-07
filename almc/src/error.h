@@ -8,11 +8,22 @@
 #include "utils\context.h"
 #include "utils\console\colors.h"
 
-char** create_spell_lines(SrcContext* context);
+#define printerr(format, ...)					    \
+	if (fprintf_s(stderr, format, __VA_ARGS__) < 0) \
+		perror("printerr"), exit(1)
 
-void report_error(const char* message, SrcContext* context);
-void report_error2(const char* message, SrcArea* area);
-void report_warning(const char* message, SrcContext* context);
-void report_warning2(const char* message, SrcArea* area);
+typedef char* (any_context_to_str)(void*);
+
+void report_error(const char* message,
+	const SrcContext* context);
+void report_warning(const char* message,
+	const SrcContext * context);
+void report_error2(const char* message,
+	const SrcArea* area);
+void report_warning2(const char* message,
+	const SrcArea* area);
+
+void report_info_base(const char* header, const char* message, const char** spelling,
+	any_context_to_str to_str_func, const void* any_context);
 
 #endif
