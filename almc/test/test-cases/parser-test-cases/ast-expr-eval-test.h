@@ -1,5 +1,5 @@
-#ifndef ALMC_GLOBAL_AST_EXPR_EVAL_TEST_H
-#define ALMC_GLOBAL_AST_EXPR_EVAL_TEST_H
+#ifndef _ALMC_GLOBAL_AST_EXPR_EVAL_TEST_H
+#define _ALMC_GLOBAL_AST_EXPR_EVAL_TEST_H
 
 inline void ast_expr_eval_run_tests()
 {
@@ -70,4 +70,4 @@ inline void ast_expr_eval_run_tests()
 		"213 >> 5 % 4 ^ 123 == 5 ? (2123 * 2 <= 5 <= 123 * 5 >> 5 << 5 ? ((0x123 * 0o123 > 1000 == 1 << 10)) : (0b010101010 * 4 | (33 << 2 * 4))) : (- 23-32- 123 * 5 | 123 && 9 * 3)");
 }
 
-#endif
+#endif // _ALMC_GLOBAL_AST_EXPR_EVAL_TEST_H

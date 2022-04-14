@@ -1,5 +1,5 @@
-#ifndef ALMC_XMALLOC_H
-#define ALMC_XMALLOC_H
+#ifndef _ALMC_XMEMORY_H
+#define _ALMC_XMEMORY_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,4 +15,4 @@ void* xmalloc(size_t size);
 void* xcalloc(size_t blocks, size_t block_size);
 void* xrealloc(void* memblock, size_t size);
 
-#endif
+#endif // _ALMC_XMEMORY_H

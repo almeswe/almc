@@ -13,9 +13,14 @@ static struct global_visitor_data visitor_data = {
 
 Visitor* visitor_new()
 {
-	Visitor* visitor = new_s(Visitor, visitor);
+	Visitor* visitor = new(Visitor, visitor);
 	visitor->global = table_new(NULL);
 	return visitor;
+}
+
+void visitor_data_free()
+{
+	visitor_data.entry = NULL;
 }
 
 void visitor_free(Visitor* visitor)
@@ -23,6 +28,7 @@ void visitor_free(Visitor* visitor)
 	if (visitor)
 	{
 		table_free(visitor->global);
+		visitor_data_free();
 		free(visitor);
 	}
 }
@@ -195,24 +201,24 @@ void visit_expr(Expr* expr, Table* table)
 void visit_idnt(Idnt* idnt, Table* table, int is_in_assign)
 {
 	if (is_enum_member(idnt->svalue, table))
-		visit_idnt_as_enum_member(idnt, table);
-	else
-	{
-		// checking if identifier is not a function parameter
-		if (!is_function_param_passed(idnt->svalue, table))
-		{
-			// and check if declared and initialized
-			if (!is_variable_declared(idnt->svalue, table))
-				report_error(frmt("Variable \'%s\' is not declared.",
-					idnt->svalue), idnt->context);
-			if (is_in_assign && !is_variable_initialized(idnt->svalue, table))
-				add_initialized_variable(idnt->svalue, table);
+		return visit_idnt_as_enum_member(idnt, table), (void)1;
 
-			//todo: comeback here later
-			//if (!is_variable_initialized(idnt->svalue, table))
-			//	report_error(frmt("Variable \'%s\' is not initialized in current scope.",
-			//		idnt->svalue), idnt->context);
-		}
+	// checking if identifier is not a function parameter
+	if (!is_function_param_passed(idnt->svalue, table))
+	{
+		// and check if declared and initialized
+		if (!is_variable_declared(idnt->svalue, table))
+			report_error(frmt("Variable \'%s\' is not declared.",
+				idnt->svalue), idnt->context);
+
+		//todo: comeback here later
+		// 
+		//if (is_in_assign && !is_variable_initialized(idnt->svalue, table))
+		//	add_initialized_variable(idnt->svalue, table);
+		// 
+		//if (!is_variable_initialized(idnt->svalue, table))
+		//	report_error(frmt("Variable \'%s\' is not initialized in current scope.",
+		//		idnt->svalue), idnt->context);
 	}
 }
 
@@ -383,39 +389,43 @@ void visit_condition(Expr* condition, Table* table)
 	visit_expr(condition, table);
 	Type* type = retrieve_expr_type(condition);
 	if (!is_numeric_type(type) && !is_pointer_like_type(type))
-		report_error2(frmt("Condition expression must have numeric type, not \'%s\'",
+		report_error2(frmt("Condition expression cannot have \'%s\' type.",
 			type_tostr_plain(type)), get_expr_area(condition));
 }
 
 void visit_if_stmt(IfStmt* if_stmt, Table* table)
 {
-	Table* local = NULL;
+	Table* local = table_new(table);
 	visit_condition(if_stmt->cond, table);
-	visit_scope(if_stmt->body->stmts, local = table_new(table));
+	visit_scope(if_stmt->body->stmts, local);
 	visit_block(if_stmt->body, local);
 
 	for (size_t i = 0; i < sbuffer_len(if_stmt->elifs); i++)
-		visit_condition(if_stmt->elifs[i]->cond, table),
-			visit_scope(if_stmt->elifs[i]->body->stmts, local = table_new(table)),
-				visit_block(if_stmt->elifs[i]->body, local);
+		visit_elif_stmt(if_stmt->elifs[i], table);
 
 	if (if_stmt->else_body)
 		visit_scope(if_stmt->else_body->stmts, local = table_new(table)),
 			visit_block(if_stmt->else_body, local);
 }
 
-void check_for_conjuction_collisions(SwitchStmt* switch_stmt)
+void visit_elif_stmt(ElseIf* elif_stmt, Table* table)
 {
-	int collision_resolved = 1;
-	int cases_count = sbuffer_len(switch_stmt->cases);
-	for (int i = 0; i < cases_count; i++)
-		collision_resolved = !switch_stmt->cases[i]->is_conjucted;
-	if (!collision_resolved)
-		report_error2("Expected body for this case statement.",
-			get_expr_area(switch_stmt->cases[cases_count-1]->value));
+	Table* local = table_new(table);
+	visit_condition(elif_stmt->cond, table);
+	visit_scope(elif_stmt->body->stmts, local);
+	visit_block(elif_stmt->body, local);
 }
 
-void check_for_duplicated_case_conditions(SwitchStmt* switch_stmt, Table* table)
+void resolve_conjuction_collision(SwitchStmt* switch_stmt)
+{
+	//todo: test this
+	size_t cases = sbuffer_len(switch_stmt->cases);
+	if (cases > 0 && switch_stmt->cases[cases - 1]->is_conjucted)
+		report_error2("Case's body expected here.",
+			get_expr_area(switch_stmt->cases[cases - 1]->value));
+}
+
+void resolve_duplicated_conditions(SwitchStmt* switch_stmt, Table* table)
 {
 	Expr** conditions = NULL;
 
@@ -460,8 +470,8 @@ void visit_switch_stmt(SwitchStmt* switch_stmt, Table* table)
 		report_error2(frmt("Condition of switch statement must be of integral type, not \'%s\'", 
 			type_tostr_plain(switch_cond_type)), get_expr_area(switch_stmt->cond));
 
-	check_for_conjuction_collisions(switch_stmt);
-	check_for_duplicated_case_conditions(switch_stmt, table);
+	resolve_conjuction_collision(switch_stmt);
+	resolve_duplicated_conditions(switch_stmt, table);
 
 	for (size_t i = 0; i < sbuffer_len(switch_stmt->cases); i++)
 	{

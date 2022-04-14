@@ -1,5 +1,7 @@
-#ifndef ALMC_BACK_END_x86_ASM_PROGRAM_H
-#define ALMC_BACK_END_x86_ASM_PROGRAM_H
+#ifndef _ALMC_BACK_END_x86_ASM_PROGRAM_H
+#define _ALMC_BACK_END_x86_ASM_PROGRAM_H
+
+// todo: rename this header
 
 #include <assert.h>
 #include "regtable.h"
@@ -85,6 +87,7 @@ typedef enum x86_DataSpecifier
 	DATA_INITIALIZED_UNION,
 	DATA_INITIALIZED_STRUCT,
 	DATA_INITIALIZED_STRING,
+	DATA_INITIALIZED_FLOAT_CONST
 } DataSpecifier;
 
 typedef struct x86_AsmDataLine
@@ -147,6 +150,7 @@ void data_free(AsmDataSegment* data);
 void code_free(AsmCodeSegment* code);
 
 char* data_add(AsmDataLine* dataline, AsmDataSegment* seg);
+char* data_add_init_fconst(AsmDataLine* dataline, AsmDataSegment* seg);
 
 void dataline_free(AsmDataLine* dataline);
 void codeline_free(AsmCodeLine* codeline);
@@ -156,4 +160,4 @@ void proto_proc_free(AsmCodeProtoProc* proto_proc);
 
 void define_free(AsmCodeDefine* define);
 
-#endif
+#endif // _ALMC_BACK_END_x86_ASM_PROGRAM_H

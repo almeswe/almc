@@ -522,6 +522,24 @@ char* data_add_string(AsmDataLine* dataline, AsmDataSegment* seg)
 	return dataline->name;
 }
 
+char* data_add_init_fconst(AsmDataLine* dataline, AsmDataSegment* seg)
+{
+	uint32_t count_of_consts = 1;
+	for (size_t i = 0; i < sbuffer_len(seg->lines); i++)
+	{
+		if (seg->lines[i]->spec ==
+			DATA_INITIALIZED_FLOAT_CONST)
+		{
+			count_of_consts += 1;
+			if (strcmp(seg->lines[i]->values[0], dataline->values[0]) == 0)
+				return dataline_free(dataline), seg->lines[i]->name;
+		}
+	}
+	dataline->name = frmt("Real_%d", count_of_consts);
+	sbuffer_add(seg->lines, dataline);
+	return dataline->name;
+}
+
 char* data_add(AsmDataLine* dataline, AsmDataSegment* seg)
 {
 	switch (dataline->spec)

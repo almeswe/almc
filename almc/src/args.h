@@ -1,5 +1,5 @@
-#ifndef ALMC_COMPILATION_OPTIONS_H
-#define ALMC_COMPILATION_OPTIONS_H
+#ifndef _ALMC_COMPILATION_OPTIONS_H
+#define _ALMC_COMPILATION_OPTIONS_H
 
 #include "error.h"
 #include "utils/os.h"
@@ -47,4 +47,4 @@ ComplilationOptions* options_new();
 ComplilationOptions* parse_options(char** argv, int argc);
 void options_free(ComplilationOptions* options);
 
-#endif
+#endif // _ALMC_COMPILATION_OPTIONS_H

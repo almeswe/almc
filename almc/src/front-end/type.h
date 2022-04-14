@@ -1,5 +1,5 @@
-#ifndef ALMC_TYPES_H
-#define ALMC_TYPES_H
+#ifndef _ALMC_TYPES_H
+#define _ALMC_TYPES_H
 
 #include <string.h>
 
@@ -174,4 +174,4 @@ Expr* get_array_dimension(Type* type, uint32_t dimension);
 
 void type_free(Type* type);
 
-#endif
+#endif // _ALMC_TYPES_H

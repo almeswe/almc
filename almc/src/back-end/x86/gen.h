@@ -1,5 +1,5 @@
-#ifndef ALMC_BACK_END_x86_STMT_GENERATOR_H
-#define ALMC_BACK_END_x86_STMT_GENERATOR_H
+#ifndef _ALMC_BACK_END_x86_STMT_GENERATOR_H
+#define _ALMC_BACK_END_x86_STMT_GENERATOR_H
 
 #include <stdio.h>
 #include <assert.h>
@@ -23,4 +23,4 @@ void gen_expr_stmt(ExprStmt* expr_stmt, StackFrame* frame);
 void gen_global_stmt(Stmt* stmt);
 AsmProgram* gen(AstRoot* ast, Table* table);
 
-#endif
+#endif // _ALMC_BACK_END_x86_STMT_GENERATOR_H

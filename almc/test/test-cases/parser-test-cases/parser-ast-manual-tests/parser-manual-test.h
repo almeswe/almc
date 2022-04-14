@@ -1,5 +1,5 @@
-#ifndef ALMC_GLOBAL_MANUAL_AST_TEST
-#define ALMC_GLOBAL_MANUAL_AST_TEST
+#ifndef _ALMC_GLOBAL_MANUAL_AST_TEST
+#define _ALMC_GLOBAL_MANUAL_AST_TEST
 
 inline void manual_test()
 {
@@ -24,4 +24,4 @@ inline void manual_test()
 	}
 }
 
-#endif
+#endif // _ALMC_GLOBAL_MANUAL_AST_TEST

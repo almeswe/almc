@@ -1,5 +1,5 @@
-#ifndef ALMC_PRINTERR_H
-#define ALMC_PRINTERR_H
+#ifndef _ALMC_PRINTERR_H
+#define _ALMC_PRINTERR_H
 
 #include <stdio.h>
 
@@ -7,4 +7,4 @@
 	if (fprintf_s(stderr, format, __VA_ARGS__) < 0) \
 		perror("printerr"), exit(1)
 
-#endif
+#endif // _ALMC_PRINTERR_H

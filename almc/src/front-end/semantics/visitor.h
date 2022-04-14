@@ -1,5 +1,5 @@
-#ifndef ALMC_FRONT_END_VISITOR_H
-#define ALMC_FRONT_END_VISITOR_H
+#ifndef _ALMC_FRONT_END_VISITOR_H
+#define _ALMC_FRONT_END_VISITOR_H
 
 #include "type-checker.h"
 #include "flow-checker.h"
@@ -32,10 +32,11 @@ void visit_ternary_expr(TernaryExpr* ternary_expr, Table* table);
 
 void visit_condition(Expr* condition, Table* table);
 void visit_if_stmt(IfStmt* if_stmt, Table* table);
+void visit_elif_stmt(ElseIf* elif_stmt, Table* table);
 void visit_switch_stmt(SwitchStmt* switch_stmt, Table* table);
 
-void check_for_conjuction_collisions(SwitchStmt* switch_stmt);
-void check_for_duplicated_case_conditions(SwitchStmt* switch_stmt, Table* table);
+void resolve_conjuction_collision(SwitchStmt* switch_stmt);
+void resolve_duplicated_conditions(SwitchStmt* switch_stmt, Table* table);
 
 void visit_loop_stmt(LoopStmt* loop_stmt, Table* table);
 void visit_do_loop_stmt(DoLoop* do_loop, Table* table);
@@ -73,4 +74,4 @@ bool is_const_expr(Expr* expr);
 bool is_primary_expr(Expr* expr);
 bool is_enum_member(const char* var, Table* table);
 
-#endif
+#endif // _ALMC_FRONT_END_VISITOR_H

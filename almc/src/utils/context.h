@@ -1,5 +1,5 @@
-#ifndef ALMC_CONTEXT_H
-#define ALMC_CONTEXT_H
+#ifndef _ALMC_CONTEXT_H
+#define _ALMC_CONTEXT_H
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -27,4 +27,4 @@ char* src_area_tostr(SrcArea* area);
 SrcArea* src_area_new(SrcContext* begins, SrcContext* ends);
 void src_area_free(SrcArea* area);
 
-#endif
+#endif // _ALMC_CONTEXT_H

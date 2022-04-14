@@ -1,5 +1,5 @@
-#ifndef ALMC_FRONT_END_FLOW_CHECKER_H
-#define ALMC_FRONT_END_FLOW_CHECKER_H
+#ifndef _ALMC_FRONT_END_FLOW_CHECKER_H
+#define _ALMC_FRONT_END_FLOW_CHECKER_H
 
 /*
 	Module responsible for checking that the all code paths
@@ -15,4 +15,4 @@ int32_t check_flow_switch_stmt(SwitchStmt* switch_stmt);
 
 void check_func_return_flow(FuncDecl* func_decl);
 
-#endif
+#endif // _ALMC_FRONT_END_FLOW_CHECKER_H

@@ -1,5 +1,5 @@
-#ifndef ALMC_PARSER_H
-#define ALMC_PARSER_H
+#ifndef _ALMC_PARSER_H
+#define _ALMC_PARSER_H
 
 #include "lexer.h"
 #include "ast\ast.h"
@@ -90,4 +90,4 @@ Stmt* parse_from_import_member_stmt(Parser* parser, AstRoot* import_module);
 
 TypeVar* parse_type_var(Parser* parser);
 
-#endif
+#endif // _ALMC_PARSER_H

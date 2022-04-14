@@ -1,5 +1,5 @@
-#ifndef ALMC_COMMON_H
-#define ALMC_COMMON_H
+#ifndef _ALMC_COMMON_H
+#define _ALMC_COMMON_H
 
 #include <stdio.h>
 #include <ctype.h>
@@ -23,4 +23,4 @@ bool isdquote(char c);
 bool issharp(char c);
 bool isescape(char c);
 
-#endif // ALMC_COMMON_H
+#endif // _ALMC_COMMON_H

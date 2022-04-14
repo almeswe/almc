@@ -1,5 +1,5 @@
-#ifndef ALMC_FRONT_END_H
-#define ALMC_FRONT_END_H
+#ifndef _ALMC_FRONT_END_H
+#define _ALMC_FRONT_END_H
 
 #include "..\args.h"
 #include "lexer.h"
@@ -10,4 +10,4 @@
 
 #include "semantics\visitor.h"
 
-#endif
+#endif // _ALMC_FRONT_END_H

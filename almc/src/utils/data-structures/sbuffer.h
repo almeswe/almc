@@ -1,5 +1,5 @@
-#ifndef STRETCHY_BUFFERS_H
-#define STRETCHY_BUFFERS_H
+#ifndef _STRETCHY_BUFFERS_H
+#define _STRETCHY_BUFFERS_H
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -29,4 +29,4 @@ typedef struct Buffer
 
 void* sbuffer__extend(void* buffer, const uint32_t typesize);
 
-#endif
+#endif // _STRETCHY_BUFFERS_H

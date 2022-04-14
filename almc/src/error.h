@@ -1,5 +1,5 @@
-#ifndef ALMC_ERROR_H
-#define ALMC_ERROR_H
+#ifndef _ALMC_ERROR_H
+#define _ALMC_ERROR_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,4 +23,4 @@ void report_warning2(const char* message,
 void report_info_base(const char* header, const char* message, const char** spelling,
 	any_context_to_str to_str_func, const void* any_context);
 
-#endif
+#endif // _ALMC_ERROR_H

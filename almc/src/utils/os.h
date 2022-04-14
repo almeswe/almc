@@ -1,5 +1,5 @@
-#ifndef ALMC_OS_H
-#define ALMC_OS_H
+#ifndef _ALMC_OS_H
+#define _ALMC_OS_H
 
 #ifdef _WIN32
 
@@ -27,4 +27,4 @@
 	#error "Os module is not supported on this platform."
 #endif
 
-#endif
+#endif // _ALMC_OS_H

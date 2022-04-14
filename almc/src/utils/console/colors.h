@@ -1,5 +1,5 @@
-#ifndef ALMC_CONSOLE_COLOR_HANDLES_H
-#define ALMC_CONSOLE_COLOR_HANDLES_H
+#ifndef _ALMC_CONSOLE_COLOR_HANDLES_H
+#define _ALMC_CONSOLE_COLOR_HANDLES_H
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -33,4 +33,4 @@
 		GetStdHandle(-11), color),						\
 			printf(format, __VA_ARGS__), setdefaultc
 
-#endif
+#endif // _ALMC_CONSOLE_COLOR_HANDLES_H

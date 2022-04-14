@@ -1,5 +1,5 @@
-#ifndef ALMC_FRONT_END_TYPE_CHECKER_H
-#define ALMC_FRONT_END_TYPE_CHECKER_H
+#ifndef _ALMC_FRONT_END_TYPE_CHECKER_H
+#define _ALMC_FRONT_END_TYPE_CHECKER_H
 
 #include "table.h"
 #include "..\ast\ast-evaluator.h"
@@ -48,4 +48,4 @@ bool can_cast_implicitly(Type* to, Type* type);
 char* get_member_name(Expr* expr);
 SrcArea* get_expr_area(Expr* expr);
 
-#endif
+#endif // _ALMC_FRONT_END_TYPE_CHECKER_H

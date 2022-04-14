@@ -1,5 +1,5 @@
-#ifndef ALMC_BACK_END_x86_REGISTERS_H
-#define ALMC_BACK_END_x86_REGISTERS_H
+#ifndef _ALMC_BACK_END_x86_REGISTERS_H
+#define _ALMC_BACK_END_x86_REGISTERS_H
 
 #include "instructions.h"
 #include "..\..\utils\common.h"
@@ -76,4 +76,4 @@ int get_unreserved_register(RegisterTable* table, RegisterSize size);
 int get_unreserved_sse_register(RegisterTable* table);
 int get_subregister(int reg, RegisterSize size);
 
-#endif
+#endif // _ALMC_BACK_END_x86_REGISTERS_H

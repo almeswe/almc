@@ -1,5 +1,5 @@
-#ifndef ALMC_TESTS_H
-#define ALMC_TESTS_H
+#ifndef _ALMC_TESTS_H
+#define _ALMC_TESTS_H
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <stdio.h>
@@ -15,4 +15,4 @@
 
 void run_tests();
 
-#endif
+#endif // _ALMC_TESTS_H

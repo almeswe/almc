@@ -1,9 +1,10 @@
-#ifndef ALMC_BACK_END_x86_EXPR_GENERATOR_H
-#define ALMC_BACK_END_x86_EXPR_GENERATOR_H
+#ifndef _ALMC_BACK_END_x86_EXPR_GENERATOR_H
+#define _ALMC_BACK_END_x86_EXPR_GENERATOR_H
 
 #include "program.h"
 #include "regtable.h"
 #include "stack-frame.h"
+#include "expr-gen-sse.h"
 #include "..\..\front-end\front-end.h"
 
 typedef enum x86_ExprGeneratorResult
@@ -102,4 +103,4 @@ _addressable_data* gen_addressable_data_for_struct_accessor(
 _addressable_data* gen_addressable_data_for_struct_ptr_accessor(
 	_addressable_data* data, BinaryExpr* expr, StackFrame* frame);
 
-#endif 
+#endif // _ALMC_BACK_END_x86_EXPR_GENERATOR_H

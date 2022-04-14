@@ -1,5 +1,5 @@
-#ifndef ALMC_NEW_LEXER_H
-#define ALMC_NEW_LEXER_H
+#ifndef _ALMC_NEW_LEXER_H
+#define _ALMC_NEW_LEXER_H
 #define NEW_LEXER_IN_USE	
 
 #include <stdio.h>
@@ -105,4 +105,4 @@ Token* get_string_token(Lexer* lexer);
 Token* get_keychar_token(Lexer* lexer, int order);
 Token* get_keyword_token(Lexer* lexer, int order);
 
-#endif
+#endif // _ALMC_NEW_LEXER_H

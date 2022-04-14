@@ -1,5 +1,5 @@
-#ifndef ALMC_TABLE2
-#define ALMC_TABLE2
+#ifndef _ALMC_TABLE2
+#define _ALMC_TABLE2
 
 #include "..\ast\ast.h"
 #include "..\..\utils\common.h"
@@ -107,4 +107,4 @@ TableEntity* get_enum(const char* enum_name, Table* table);
 TableEntity* get_union(const char* union_name, Table* table);
 TableEntity* get_struct(const char* struct_name, Table* table);
 
-#endif
+#endif // _ALMC_TABLE2

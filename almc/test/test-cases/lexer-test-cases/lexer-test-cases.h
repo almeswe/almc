@@ -1,5 +1,5 @@
-#ifndef ALMC_GLOBAL_LEXER_TEST_H
-#define ALMC_GLOBAL_LEXER_TEST_H
+#ifndef _ALMC_GLOBAL_LEXER_TEST_H
+#define _ALMC_GLOBAL_LEXER_TEST_H
 
 inline int compare_context(SrcContext* c, uint32_t start, uint32_t size, uint32_t line)
 {
@@ -219,4 +219,4 @@ inline void lexer_run_tests()
 	lexer_src_context_test();
 }
 
-#endif
+#endif // _ALMC_GLOBAL_LEXER_TEST_H

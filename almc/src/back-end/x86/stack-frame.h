@@ -1,5 +1,5 @@
-#ifndef ALMC_BACK_END_STACK_FRAME_H
-#define ALMC_BACK_END_STACK_FRAME_H
+#ifndef _ALMC_BACK_END_STACK_FRAME_H
+#define _ALMC_BACK_END_STACK_FRAME_H
 
 #include "regtable.h"
 #include "..\..\front-end\ast\ast.h"
@@ -60,4 +60,4 @@ StackFrameEntity* get_entity_by_name(const char* name, StackFrame* frame);
 StackFrameEntity* add_local(VarDecl* local, StackFrame* frame);
 StackFrameEntity* add_argument(TypeVar* argument, StackFrame* frame);
 
-#endif
+#endif // _ALMC_BACK_END_STACK_FRAME_H

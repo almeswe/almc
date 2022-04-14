@@ -1,5 +1,5 @@
-#ifndef ALMC_AST_H
-#define ALMC_AST_H
+#ifndef _ALMC_AST_H
+#define _ALMC_AST_H
 
 #include "..\type.h"
 #include "..\lexer.h"
@@ -523,4 +523,4 @@ void import_stmt_free(ImportStmt* import_stmt);
 
 void jump_stmt_free(JumpStmt* jump_stmt);
 
-#endif
+#endif // _ALMC_AST_H

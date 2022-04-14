@@ -1,5 +1,5 @@
-#ifndef ALMC_LEXER_TOKEN_H
-#define ALMC_LEXER_TOKEN_H
+#ifndef _ALMC_LEXER_TOKEN_H
+#define _ALMC_LEXER_TOKEN_H
 
 #include "..\utils\common.h"
 #include "..\utils\context.h"
@@ -131,4 +131,4 @@ void token_free(Token* token);
 char* token_tostr(Token* token);
 char* token_type_tostr(TokenKind type);
 
-#endif
+#endif // _ALMC_LEXER_TOKEN_H

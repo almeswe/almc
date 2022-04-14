@@ -1,5 +1,5 @@
-#ifndef ALMC_AST_CONSOLE_PRINTER_H
-#define ALMC_AST_CONSOLE_PRINTER_H
+#ifndef _ALMC_AST_CONSOLE_PRINTER_H
+#define _ALMC_AST_CONSOLE_PRINTER_H
 
 #include "ast.h"
 #include "..\..\utils\console\colors.h"
@@ -43,4 +43,4 @@ void print_switch_stmt(SwitchStmt* switch_stmt, const char* indent);
 void print_import_stmt(ImportStmt* import_stmt, const char* indent);
 void print_stmt(Stmt* stmt, const char* indent);
 
-#endif //ALMC_AST_CONSOLE_PRINTER
+#endif // _ALMC_AST_CONSOLE_PRINTER

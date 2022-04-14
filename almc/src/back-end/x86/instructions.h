@@ -1,5 +1,5 @@
-#ifndef ALMC_BACK_END_x86_INSTRUCTIONS_H
-#define ALMC_BACK_END_x86_INSTRUCTIONS_H
+#ifndef _ALMC_BACK_END_x86_INSTRUCTIONS_H
+#define _ALMC_BACK_END_x86_INSTRUCTIONS_H
 
 enum x86_instruction_set
 {
@@ -246,4 +246,4 @@ inline const char* instr_tostr(unsigned int instr)
 	return instructions_str[instr];
 }
 
-#endif 
+#endif // _ALMC_BACK_END_x86_INSTRUCTIONS_H
