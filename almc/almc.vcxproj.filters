@@ -71,9 +71,6 @@
     <ClCompile Include="src\front-end\semantics\flow-checker.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\front-end\semantics\table.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\front-end\semantics\type-checker.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -102,6 +99,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\args.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\front-end\semantics\table.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\utils\xmemory\xmemory.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\printerr.h">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -140,9 +146,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\front-end\semantics\flow-checker.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\front-end\semantics\table.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\front-end\semantics\type-checker.h">
@@ -196,6 +199,15 @@
     <ClInclude Include="src\utils\console\colors.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\front-end\semantics\table.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\back-end\x86\expr-gen-sse.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\xmemory\xmemory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="test\syntax.txt" />
@@ -206,8 +218,8 @@
     <Text Include="test\test-cases\lexer-test-cases\COMMENTS-TEST.txt" />
     <Text Include="test\test-cases\lexer-test-cases\gen-output.txt" />
     <Text Include="example\localstd\memory.almc" />
-    <Text Include="src\back-end\x86\x86_instructions.txt" />
-    <Text Include="src\back-end\x86\x86_SSE_intructions.txt" />
+    <Text Include="scripts\back-end\x86_instructions.txt" />
+    <Text Include="scripts\back-end\x86_SSE_intructions.txt" />
   </ItemGroup>
   <ItemGroup>
     <None Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\b.almc" />
@@ -236,7 +248,6 @@
     <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_7\folder\c.almc" />
     <None Include="test\test-cases\parser-test-cases\parser-ast-tests\import-tests\case_7\a.almc" />
     <None Include="test\test-cases\lexer-test-cases\gen.py" />
-    <None Include="src\back-end\x86\x86_SSE_instructions_gen.py" />
     <None Include="example\localstd\io.almc" />
     <None Include="example\localstd\time.almc" />
     <None Include="example\hello world\hello_world.almc" />
@@ -254,7 +265,8 @@
     <None Include="example\test\enum_test\enum_tests.almc" />
     <None Include="example\test\enum_test\enum_error3.almc" />
     <None Include="example\test4\test.almc" />
-    <None Include="src\back-end\x86\wiki_scraper.py" />
-    <None Include="src\back-end\x86\x86_instructions_gen.py" />
+    <None Include="scripts\back-end\x86_SSE_instructions_gen.py" />
+    <None Include="scripts\back-end\wiki_scraper.py" />
+    <None Include="scripts\back-end\x86_instructions_gen.py" />
   </ItemGroup>
 </Project>

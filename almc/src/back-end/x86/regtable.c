@@ -42,7 +42,7 @@ const char* registers_str[] = {
 
 RegisterTable* regtable_new()
 {
-	RegisterTable* regtable = new_s(RegisterTable, regtable);
+	RegisterTable* regtable = new(RegisterTable, regtable);
 	for (int i = EAX; i <= XMM7; i++)
 		regtable->reg_table[i] = REGISTER_FREE;
 	return regtable;

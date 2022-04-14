@@ -81,6 +81,14 @@ void gen_string32(Str* str, int reg)
 
 	char** values = NULL;
 
+	/*
+		Logic below splits control characters and normal text
+		to different item, all these will be appended to string definition
+		in assembly source
+		e.g:
+		[INPUT]			"test\n\r"
+		[OUTPUT]		"test" "0ah" "0dh"
+	*/
 	for (size_t i = 0; str->svalue[i]; i++)
 	{
 		value_for_freeing = value;
@@ -842,9 +850,7 @@ int get_binary_instr_of_type(int sign_instr, int unsign_instr, BinaryExpr* expr)
 
 _addressable_data* addressable_data_new()
 {
-	_addressable_data* data =
-		cnew_s(_addressable_data, data, 1);
-	return data;
+	return cnew(_addressable_data, 1);
 }
 
 void addressable_data_free(_addressable_data* data)

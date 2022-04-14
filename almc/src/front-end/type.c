@@ -5,7 +5,7 @@
 
 Type* type_new(const char* repr)
 {
-	Type* type = cnew_s(Type, type, 1);
+	Type* type = cnew(Type, 1);
 	type->repr = repr;
 	type->kind = TYPE_INCOMPLETE;
 	type->base = &unknown_type;
@@ -14,7 +14,7 @@ Type* type_new(const char* repr)
 
 Type* array_type_new(Type* base, Expr* index)
 {
-	Type* array_type = cnew_s(Type, array_type, 1);
+	Type* array_type = cnew(Type, 1);
 	array_type->base = base;
 	array_type->dimension = index;
 	array_type->kind = TYPE_ARRAY;
@@ -25,7 +25,7 @@ Type* array_type_new(Type* base, Expr* index)
 
 Type* pointer_type_new(Type* base)
 {
-	Type* pointer_type = cnew_s(Type, pointer_type, 1);
+	Type* pointer_type = cnew(Type, 1);
 	pointer_type->base = base;
 	pointer_type->repr = base->repr;
 	pointer_type->area = base->area;

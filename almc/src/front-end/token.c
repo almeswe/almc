@@ -112,7 +112,7 @@ char* tokens_str[] = {
 
 Token* token_new(TokenKind type, SrcContext* context)
 {
-	Token* t = new_s(Token, t);
+	Token* t = new(Token, t);
 	t->lexeme = 0; // union's initialization here
 	t->type = type;
 	t->context = context;

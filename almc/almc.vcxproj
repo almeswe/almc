@@ -37,6 +37,7 @@
     <ClCompile Include="src\front-end\semantics\visitor.c" />
     <ClCompile Include="src\front-end\token.c" />
     <ClCompile Include="src\front-end\type.c" />
+    <ClCompile Include="src\printerr.h" />
     <ClCompile Include="src\utils\common.c" />
     <ClCompile Include="src\utils\context.c" />
     <ClCompile Include="src\error.c" />
@@ -45,6 +46,7 @@
     <ClCompile Include="src\utils\data-structures\sbuffer.h" />
     <ClCompile Include="src\main.c" />
     <ClCompile Include="src\utils\os.c" />
+    <ClCompile Include="src\utils\xmemory\xmemory.c" />
     <ClCompile Include="test\test.c" />
   </ItemGroup>
   <ItemGroup>
@@ -72,6 +74,7 @@
     <ClInclude Include="src\error.h" />
     <ClInclude Include="src\front-end\parser.h" />
     <ClInclude Include="src\utils\os.h" />
+    <ClInclude Include="src\utils\xmemory\xmemory.h" />
     <ClInclude Include="test\test-cases\lexer-test-cases\lexer-test-cases.h" />
     <ClInclude Include="test\test-cases\parser-test-cases\ast-expr-eval-test.h" />
     <ClInclude Include="test\test-cases\parser-test-cases\parser-ast-manual-tests\parser-manual-test.h" />

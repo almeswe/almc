@@ -14,7 +14,7 @@
 
 Table* table_new(Table* parent)
 {
-	Table* table = cnew_s(Table, table, 1);
+	Table* table = cnew(Table, 1);
 	table->nested_in = parent;
 
 	if (parent)
@@ -49,7 +49,7 @@ void table_free(Table* table)
 
 TableEntity* table_entity_new(TableEntityKind kind)
 {
-	TableEntity* entity = cnew_s(TableEntity, entity, 1);
+	TableEntity* entity = cnew(TableEntity, 1);
 	return entity->kind = kind, entity;
 }
 

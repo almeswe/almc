@@ -2,8 +2,7 @@
 
 ComplilationOptions* options_new()
 {
-	return cnew_s(ComplilationOptions,
-		options, 1);
+	return cnew(ComplilationOptions, 1);
 }
 
 void parse_compiler_roots(ComplilationOptions* options)

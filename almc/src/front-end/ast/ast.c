@@ -5,7 +5,7 @@ Expr* expr_new(ExprKind type, void* expr_value_ptr)
 	#define EXPR_SET_VALUE(type, field) \
 		expr->field = (type*)expr_value_ptr; break
 
-	Expr* expr = new_s(Expr, expr);
+	Expr* expr = new(Expr);
 	switch (expr->kind = type)
 	{
 	case EXPR_IDNT:
@@ -34,7 +34,7 @@ Expr* expr_new(ExprKind type, void* expr_value_ptr)
 
 Str* str_new(const char* string, SrcContext* context)
 {
-	Str* str = new_s(Str, str);
+	Str* str = new(Str);
 	str->svalue = string;
 	str->context = context;
 	str->type = &unknown_type;
@@ -43,7 +43,7 @@ Str* str_new(const char* string, SrcContext* context)
 
 Idnt* idnt_new(const char* idnt, SrcContext* context)
 {
-	Idnt* identifier = new_s(Idnt, identifier);
+	Idnt* identifier = new(Idnt);
 	identifier->svalue = idnt;
 	identifier->context = context;
 	identifier->type = &unknown_type;
@@ -75,7 +75,7 @@ Const* const_new(ConstKind type, const char* svalue, SrcContext* context)
 		}									   \
 	}
 
-	Const* cnst = new_s(Const, cnst);
+	Const* cnst = new(Const);
 	cnst->type = &unknown_type;
 	cnst->context = context;
 
@@ -97,7 +97,7 @@ Const* const_new(ConstKind type, const char* svalue, SrcContext* context)
 
 FuncCall* func_call_new(const char* func_name, Expr** func_args)
 {
-	FuncCall* func_call = cnew_s(FuncCall, func_call, 1);
+	FuncCall* func_call = cnew(FuncCall, 1);
 	func_call->args = func_args;
 	func_call->name = func_name;
 	func_call->type = &unknown_type;
@@ -107,7 +107,7 @@ FuncCall* func_call_new(const char* func_name, Expr** func_args)
 
 UnaryExpr* unary_expr_new(UnaryExprKind type, Expr* expr)
 {
-	UnaryExpr* unary_expr = new_s(UnaryExpr, unary_expr);
+	UnaryExpr* unary_expr = new(UnaryExpr);
 	unary_expr->kind = type;
 	unary_expr->expr = expr;
 	unary_expr->type = &unknown_type;
@@ -118,7 +118,7 @@ UnaryExpr* unary_expr_new(UnaryExprKind type, Expr* expr)
 
 BinaryExpr* binary_expr_new(BinaryExprKind type, Expr* lexpr, Expr* rexpr)
 {
-	BinaryExpr* binary_expr = new_s(BinaryExpr, binary_expr);
+	BinaryExpr* binary_expr = new(BinaryExpr);
 	binary_expr->kind = type;
 	binary_expr->lexpr = lexpr;
 	binary_expr->rexpr = rexpr;
@@ -129,8 +129,7 @@ BinaryExpr* binary_expr_new(BinaryExprKind type, Expr* lexpr, Expr* rexpr)
 
 TernaryExpr* ternary_expr_new(Expr* cond, Expr* lexpr, Expr* rexpr)
 {
-	TernaryExpr* ternary_expr = 
-		new_s(TernaryExpr, ternary_expr);
+	TernaryExpr* ternary_expr = new(TernaryExpr);
 	ternary_expr->cond = cond;
 	ternary_expr->lexpr = lexpr;
 	ternary_expr->rexpr = rexpr;
@@ -141,8 +140,7 @@ TernaryExpr* ternary_expr_new(Expr* cond, Expr* lexpr, Expr* rexpr)
 
 Initializer* initializer_new(Expr** values)
 {
-	Initializer* initializer = 
-		new_s(Initializer, initializer);
+	Initializer* initializer = new(Initializer);
 	initializer->area = NULL;
 	initializer->type = &unknown_type;
 	initializer->values = values;
@@ -154,7 +152,7 @@ Stmt* stmt_new(StmtType type, void* stmt_value_ptr)
 	#define SET_STMT_VALUE(type, field) \
 		stmt->field = (type*)stmt_value_ptr; break
 
-	Stmt* stmt = new_s(Stmt, stmt);
+	Stmt* stmt = new(Stmt);
 	switch (stmt->kind = type)
 	{
 	case STMT_IF:
@@ -194,7 +192,7 @@ TypeDecl* type_decl_new(TypeDeclKind type, void* type_decl_value_ptr)
 	#define TYPE_DECL_SET_VALUE(type, field) \
 		type_decl->field = (type*)type_decl_value_ptr; break
 
-	TypeDecl* type_decl = new_s(TypeDecl, type_decl);
+	TypeDecl* type_decl = new(TypeDecl);
 	switch (type_decl->kind = type)
 	{
 	case TYPE_DECL_ENUM:
@@ -213,7 +211,7 @@ TypeDecl* type_decl_new(TypeDeclKind type, void* type_decl_value_ptr)
 
 EnumDecl* enum_decl_new(EnumMember** members, const char* name)
 {
-	EnumDecl* enum_decl = new_s(EnumDecl, enum_decl);
+	EnumDecl* enum_decl = new(EnumDecl);
 	enum_decl->name = name;
 	enum_decl->members = members;
 	return enum_decl;
@@ -221,7 +219,7 @@ EnumDecl* enum_decl_new(EnumMember** members, const char* name)
 
 UnionDecl* union_decl_new(Member** members, const char* name)
 {
-	UnionDecl* union_decl = new_s(UnionDecl, union_decl);
+	UnionDecl* union_decl = new(UnionDecl);
 	union_decl->name = name;
 	union_decl->members = members;
 	return union_decl;
@@ -229,7 +227,7 @@ UnionDecl* union_decl_new(Member** members, const char* name)
 
 StructDecl* struct_decl_new(Member** members, const char* name)
 {
-	StructDecl* struct_decl = new_s(StructDecl, struct_decl);
+	StructDecl* struct_decl = new(StructDecl);
 	struct_decl->name = name;
 	struct_decl->members = members;
 	struct_decl->alignment = STRUCT_DEFAULT_ALIGNMENT;
@@ -238,7 +236,7 @@ StructDecl* struct_decl_new(Member** members, const char* name)
 
 Member* member_new(char* name, Type* type, SrcArea* area)
 {
-	Member* member = new_s(Member, member);
+	Member* member = new(Member);
 	member->name = name;
 	member->type = type;
 	member->area = area;
@@ -248,7 +246,7 @@ Member* member_new(char* name, Type* type, SrcArea* area)
 
 EnumMember* enum_member_new(char* name, Expr* value, SrcContext* context)
 {
-	EnumMember* member = new_s(EnumMember, member);
+	EnumMember* member = new(EnumMember);
 	member->name = name;
 	member->value = value;
 	member->context = context;
@@ -257,28 +255,27 @@ EnumMember* enum_member_new(char* name, Expr* value, SrcContext* context)
 
 EmptyStmt* empty_stmt_new()
 {
-	EmptyStmt* empty_stmt = 
-		new_s(EmptyStmt, empty_stmt);
+	EmptyStmt* empty_stmt = new(EmptyStmt);
 	return empty_stmt;
 }
 
 ExprStmt* expr_stmt_new(Expr* expr)
 {
-	ExprStmt* expr_stmt = new_s(ExprStmt, expr_stmt);
+	ExprStmt* expr_stmt = new(ExprStmt);
 	expr_stmt->expr = expr;
 	return expr_stmt;
 }
 
 Block* block_new(Stmt** stmts)
 {
-	Block* block = new_s(Block, block);
+	Block* block = new(Block);
 	block->stmts = stmts;
 	return block;
 }
 
 TypeVar* type_var_new(Type* type, const char* var)
 {
-	TypeVar* type_var = new_s(TypeVar, type_var);
+	TypeVar* type_var = new(TypeVar);
 	type_var->var = var;
 	type_var->type = type;
 	type_var->area = NULL;
@@ -287,7 +284,7 @@ TypeVar* type_var_new(Type* type, const char* var)
 
 VarDecl* var_decl_new(bool is_auto, TypeVar* type_var, Expr* init)
 {
-	VarDecl* var_decl = new_s(VarDecl, var_decl);
+	VarDecl* var_decl = new(VarDecl);
 	var_decl->type_var = type_var;
 	var_decl->var_init = init;
 	var_decl->is_auto = is_auto;
@@ -297,7 +294,7 @@ VarDecl* var_decl_new(bool is_auto, TypeVar* type_var, Expr* init)
 FuncDecl* func_decl_new(Idnt* name, TypeVar** params, 
 	Type* type, Block* body, FuncSpec* spec, CallConv* conv)
 {
-	FuncDecl* func_decl = new_s(FuncDecl, func_decl);
+	FuncDecl* func_decl = new(FuncDecl);
 	func_decl->name = name;
 	func_decl->type = type;
 	func_decl->body = body;
@@ -309,7 +306,7 @@ FuncDecl* func_decl_new(Idnt* name, TypeVar** params,
 
 LabelDecl* label_decl_new(Idnt* label)
 {
-	LabelDecl* loop_decl = new_s(LabelDecl, loop_decl);
+	LabelDecl* loop_decl = new(LabelDecl);
 	loop_decl->label = label;
 	return loop_decl;
 }
@@ -319,7 +316,7 @@ LoopStmt* loop_stmt_new(LoopStmtKind type, void* loop_stmt_value_ptr)
 	#define LOOP_STMT_SET_VALUE(type, field) \
 		loop_stmt->field = (type*)loop_stmt_value_ptr; break
 
-	LoopStmt* loop_stmt = new_s(LoopStmt, loop_stmt);
+	LoopStmt* loop_stmt = new(LoopStmt);
 	switch (loop_stmt->kind = type)
 	{
 	case LOOP_DO:
@@ -338,7 +335,7 @@ LoopStmt* loop_stmt_new(LoopStmtKind type, void* loop_stmt_value_ptr)
 
 DoLoop* do_loop_new(Expr* cond, Block* body)
 {
-	DoLoop* do_loop = new_s(DoLoop, do_loop);
+	DoLoop* do_loop = new(DoLoop);
 	do_loop->cond = cond;
 	do_loop->body = body;
 	return do_loop;
@@ -346,8 +343,7 @@ DoLoop* do_loop_new(Expr* cond, Block* body)
 
 ForLoop* for_loop_new(VarDecl* init, Expr* cond, Expr* step, Block* body)
 {
-	ForLoop* for_loop = 
-		new_s(ForLoop, for_loop);
+	ForLoop* for_loop = new(ForLoop);
 	for_loop->init = init;
 	for_loop->cond = cond;
 	for_loop->step = step;
@@ -357,8 +353,7 @@ ForLoop* for_loop_new(VarDecl* init, Expr* cond, Expr* step, Block* body)
 
 WhileLoop* while_loop_new(Expr* cond, Block* body)
 {
-	WhileLoop* while_loop = 
-		new_s(WhileLoop, while_loop);
+	WhileLoop* while_loop = new(WhileLoop);
 	while_loop->cond = cond;
 	while_loop->body = body;
 	return while_loop;
@@ -366,7 +361,7 @@ WhileLoop* while_loop_new(Expr* cond, Block* body)
 
 ElseIf* elif_stmt_new(Expr* cond, Block* body)
 {
-	ElseIf* elseif = new_s(ElseIf, elseif);
+	ElseIf* elseif = new(ElseIf);
 	elseif->cond = cond;
 	elseif->body = body;
 	return elseif;
@@ -374,7 +369,7 @@ ElseIf* elif_stmt_new(Expr* cond, Block* body)
 
 IfStmt* if_stmt_new(Expr* cond, Block* body, ElseIf** elifs, Block* else_body)
 {
-	IfStmt* if_stmt = new_s(IfStmt, if_stmt);
+	IfStmt* if_stmt = new(IfStmt);
 	if_stmt->cond = cond;
 	if_stmt->body = body;
 	if_stmt->elifs = elifs;
@@ -384,7 +379,7 @@ IfStmt* if_stmt_new(Expr* cond, Block* body, ElseIf** elifs, Block* else_body)
 
 Case* case_stmt_new(Expr* value, Block* body, bool is_conjucted)
 {
-	Case* case_expr = new_s(Case, case_expr);
+	Case* case_expr = new(Case);
 	case_expr->value = value;
 	case_expr->body = body;
 	case_expr->is_conjucted = is_conjucted;
@@ -393,8 +388,7 @@ Case* case_stmt_new(Expr* value, Block* body, bool is_conjucted)
 
 SwitchStmt* switch_stmt_new(Expr* cond, Case** cases, Block* default_case)
 {
-	SwitchStmt* switch_stmt = 
-		new_s(SwitchStmt, switch_stmt);
+	SwitchStmt* switch_stmt = new(SwitchStmt);
 	switch_stmt->cond = cond;
 	switch_stmt->cases = cases;
 	switch_stmt->default_case = default_case;
@@ -403,15 +397,14 @@ SwitchStmt* switch_stmt_new(Expr* cond, Case** cases, Block* default_case)
 
 ImportStmt* import_stmt_new(AstRoot* ast)
 {
-	ImportStmt* import_stmt = 
-		new_s(ImportStmt, import_stmt);
+	ImportStmt* import_stmt = new(ImportStmt);
 	import_stmt->ast = ast;
 	return import_stmt;
 }
 
 JumpStmt* jump_stmt_new(JumpStmtKind type, Expr* additional_expr)
 {
-	JumpStmt* jump_stmt = new_s(JumpStmt, jump_stmt);
+	JumpStmt* jump_stmt = new(JumpStmt);
 	jump_stmt->area = NULL;
 	switch (jump_stmt->kind = type)
 	{

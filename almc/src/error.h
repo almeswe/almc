@@ -5,12 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "printerr.h"
 #include "utils\context.h"
 #include "utils\console\colors.h"
-
-#define printerr(format, ...)					    \
-	if (fprintf_s(stderr, format, __VA_ARGS__) < 0) \
-		perror("printerr"), exit(1)
 
 typedef char* (any_context_to_str)(void*);
 

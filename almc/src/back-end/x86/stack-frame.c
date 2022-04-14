@@ -2,7 +2,7 @@
 
 StackFrame* stack_frame_new(FuncDecl* func)
 {
-	StackFrame* frame = cnew_s(StackFrame, frame, 1);
+	StackFrame* frame = cnew(StackFrame, 1);
 	frame->required_space_for_locals = -4;
 	frame->required_space_for_arguments = 4;
 	for (size_t i = 0; i < sbuffer_len(func->params); i++)
@@ -13,7 +13,7 @@ StackFrame* stack_frame_new(FuncDecl* func)
 StackFrameEntity* stack_frame_entity_new(Type* type, uint32_t offset, char* definition,
 	StackFrameEntityKind kind)
 {
-	StackFrameEntity* entity = cnew_s(StackFrameEntity, entity, 1);
+	StackFrameEntity* entity = cnew(StackFrameEntity, 1);
 	entity->type = type;
 	entity->kind = kind;
 	// if is aggregate type, need to specify the end of offset, because

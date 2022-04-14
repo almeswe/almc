@@ -10,7 +10,8 @@
 	SrcContext* var_name = get_curr_token(parser)->context
 
 #define context_ends(parser, starts, node) \
-	new__chk(node);                        \
+	if (node == NULL)					   \
+		printerr("context_ends: node");    \
 	unget_curr_token(parser);              \
 	node->area = src_area_new(starts,      \
 		get_curr_token(parser)->context);  \
@@ -62,7 +63,7 @@ static char** imported_modules = NULL;
 
 Parser* parser_new(char* file, Token** tokens)
 {
-	Parser* p = new_s(Parser, p);
+	Parser* p = new(Parser);
 	p->file = file;
 	p->token_index = 0;
 	p->tokens = tokens;
@@ -135,7 +136,7 @@ void expect(Parser* parser, TokenKind type, const char* token_value)
 
 AstRoot* parse(Parser* parser)
 {
-	AstRoot* ast = new_s(AstRoot, ast);
+	AstRoot* ast = new(AstRoot);
 	ast->stmts = NULL;
 	while (!matcht(parser, TOKEN_EOF))
 		sbuffer_add(ast->stmts, parse_stmt(parser));
@@ -1056,8 +1057,7 @@ Stmt* parse_auto_var_decl_stmt(Parser* parser)
 
 CallConv* calling_convention_new()
 {
-	CallConv* convention =
-		cnew_s(CallConv, convention, 1);
+	CallConv* convention = cnew(CallConv, 1);
 	convention->repr = "c";
 	convention->kind = CALL_CONV_CDECL;
 	return convention;
@@ -1084,8 +1084,7 @@ CallConv* parse_func_calling_convention(Parser* parser)
 
 ExternalFuncSpec* parse_func_proto_spec(Parser* parser)
 {
-	ExternalFuncSpec* proto = 
-		cnew_s(ExternalFuncSpec, proto, 1);
+	ExternalFuncSpec* proto = cnew(ExternalFuncSpec, 1);
 	expect_with_skip(parser, TOKEN_KEYWORD_FROM, "from keyword");
 	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
 	proto->lib = get_curr_token(parser)->lexeme;
@@ -1096,7 +1095,7 @@ ExternalFuncSpec* parse_func_proto_spec(Parser* parser)
 
 FuncSpec* parse_func_specifiers(Parser* parser)
 {
-	FuncSpec* spec = cnew_s(FuncSpec, spec, 1);
+	FuncSpec* spec = cnew(FuncSpec, 1);
 	switch (get_curr_token(parser)->type)
 	{
 	case TOKEN_KEYWORD_FROM:
@@ -1160,7 +1159,7 @@ Stmt* parse_func_decl_stmt(Parser* parser)
 
 Stmt* parse_label_decl_stmt(Parser* parser)
 {
-	Idnt* label = cnew_s(Idnt, label, 1);
+	Idnt* label = cnew(Idnt, 1);
 
 	expect_with_skip(parser, TOKEN_KEYWORD_LABEL, "label");
 	label->svalue = get_curr_token(parser)->lexeme;
@@ -1399,7 +1398,7 @@ Stmt* parse_import_stmt(Parser* parser)
 {
 	char* module_path = NULL;
 	AstRoot* imported_module = NULL;
-	AstRoot* module = cnew_s(AstRoot, module, 1);
+	AstRoot* module = cnew(AstRoot, 1);
 	
 	expect_with_skip(parser, TOKEN_KEYWORD_IMPORT, "import");
 	do
@@ -1527,7 +1526,7 @@ Stmt* parse_from_import_stmt(Parser* parser)
 	module_path = parse_import_path_desc(parser);
 	import_module = parse_module(module_path);
 	expect_with_skip(parser, TOKEN_KEYWORD_IMPORT, "import");
-	from_module = cnew_s(AstRoot, from_module, 1);
+	from_module = cnew(AstRoot, 1);
 	do
 	{
 		if (matcht(parser, TOKEN_COMMA))
@@ -1588,7 +1587,7 @@ Stmt* parse_jump_stmt(Parser* parser)
 	JumpStmtKind type = -1;
 	context_starts(parser, context);
 	Expr* additional_expr = NULL;
-	Idnt* goto_label = cnew_s(Idnt, goto_label, 1);
+	Idnt* goto_label = cnew(Idnt, 1);
 
 	switch (get_curr_token(parser)->type)
 	{

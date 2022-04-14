@@ -277,11 +277,10 @@ char* get_ptr_prefix(Type* type)
 
 AsmProgram* program_new(Table* table)
 {
-	AsmProgram* program = 
-		cnew_s(AsmProgram, program, 1);
-	program->entry = NULL;
-	program->incs = NULL;
-	program->libs = NULL;
+	AsmProgram* program = cnew(AsmProgram, 1);
+	//program->entry = NULL;
+	//program->incs = NULL;
+	//program->libs = NULL;
 	program->table = table;
 	program->regtable = regtable_new();
 	program->code = code_new();
@@ -316,7 +315,7 @@ void program_add_lib(AsmProgram* program, char* lib)
 AsmDataSegment* data_new()
 {
 	AsmDataSegment* data = 
-		new_s(AsmDataSegment, data);
+		new(AsmDataSegment, data);
 	data->lines = NULL;
 	return data;
 }
@@ -324,7 +323,7 @@ AsmDataSegment* data_new()
 AsmCodeSegment* code_new()
 {
 	AsmCodeSegment* code =
-		new_s(AsmCodeSegment, code);
+		new(AsmCodeSegment, code);
 	code->procs = NULL;
 	code->proto_procs = NULL;
 	return code;
@@ -333,7 +332,7 @@ AsmCodeSegment* code_new()
 AsmDataLine* dataline_new(char* size, char* name,
 	char** values, DataSpecifier spec)
 {
-	AsmDataLine* line = new_s(AsmDataLine, line);
+	AsmDataLine* line = new(AsmDataLine, line);
 	line->size = size;
 	line->name = name;
 	line->values = values;
@@ -343,7 +342,7 @@ AsmDataLine* dataline_new(char* size, char* name,
 
 AsmCodeLine* codeline_new(uint32_t instruction, char* arg1, char* arg2)
 {
-	AsmCodeLine* line = new_s(AsmCodeLine, line);
+	AsmCodeLine* line = new(AsmCodeLine, line);
 	line->instruction = instruction;
 	line->arguments = NULL;
 	if (arg1)
@@ -355,8 +354,7 @@ AsmCodeLine* codeline_new(uint32_t instruction, char* arg1, char* arg2)
 
 AsmCodeProc* proc_new(FuncDecl* func_decl)
 {
-	AsmCodeProc* proc = 
-		cnew_s(AsmCodeProc, proc, 1);
+	AsmCodeProc* proc = cnew(AsmCodeProc, 1);
 	proc->lines = NULL;
 	proc->name = frmt("_%s", func_decl->name->svalue);
 	proc->frame = stack_frame_new(func_decl);
@@ -366,8 +364,7 @@ AsmCodeProc* proc_new(FuncDecl* func_decl)
 
 AsmCodeProtoProc* proto_proc_new(FuncDecl* func_decl)
 {
-	AsmCodeProtoProc* proc = 
-		cnew_s(AsmCodeProtoProc, proc, 1);
+	AsmCodeProtoProc* proc = cnew(AsmCodeProtoProc, 1);
 	proc->lib = func_decl->spec->proto->lib;
 	proc->convention = func_decl->conv->repr;
 
@@ -382,7 +379,7 @@ AsmCodeProtoProc* proto_proc_new(FuncDecl* func_decl)
 AsmCodeDefine* define_new(char* name, char* value)
 {
 	AsmCodeDefine* define = 
-		new_s(AsmCodeDefine, define);
+		new(AsmCodeDefine, define);
 	define->name = name;
 	define->value = value;
 	return define;

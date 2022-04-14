@@ -17,11 +17,11 @@
 #define STR_BUILDER_BUFFER_SIZE 128
 
 #define str_builder_create_buffer(buffer) \
-	char* buffer = newc_s(char, buffer, STR_BUILDER_BUFFER_SIZE)
+	char* buffer = newc(char, STR_BUILDER_BUFFER_SIZE)
 
 #define str_builder_reduce_buffer(temp, buffer, size) \
 	char* temp = buffer;							  \
-	if (!(buffer = rnew(char, size + 1, buffer)))     \
+	if (!(buffer = rnew(char, size + 1, buffer)))	  \
 		 buffer = temp;								  \
 	buffer[size] = '\0';
 
@@ -135,7 +135,7 @@ char* keywords[] = {
 
 Lexer* lexer_new(const char* input, StreamType input_type)
 {
-	Lexer* l = new_s(Lexer, l);
+	Lexer* l = new(Lexer, l);
 	if ((l->input = input_type) == FROM_CHAR_PTR)
 	{
 		l->stream_origin = input;
@@ -154,7 +154,7 @@ Lexer* lexer_new(const char* input, StreamType input_type)
 			fseek(file, 0L, SEEK_END);
 			l->stream_size = ftell(file);
 			rewind(file);
-			l->stream_origin = newc_s(char, l->stream_origin, l->stream_size + 1);
+			l->stream_origin = newc(char, l->stream_size + 1);
 			fread(l->stream_origin, sizeof(char), l->stream_size, file);
 			l->stream_origin[l->stream_size] = '\0';
 			fclose(file);

@@ -10,6 +10,8 @@ enum
 
 char** create_spell_lines(SrcContext* context)
 {
+	if (context == NULL)
+		return NULL;
 	FILE* source;
 	fopen_s(&source, context->file, "r");
 	if (!source)
