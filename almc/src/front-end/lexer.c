@@ -11,83 +11,27 @@
 #define curr_char_fits(lexer) \
 	((uint32_t)((lexer->stream - lexer->stream_origin) >= 0) && (!eos(lexer)))
 
-#define matchc(lexer, c) (get_curr_char(lexer) == c)
-#define matchc_in(lexer, c1, c2) ((get_curr_char(lexer)) >= (c1) && (get_curr_char(lexer)) <= (c2))
-
-#define STR_BUILDER_BUFFER_SIZE 128
-
-#define str_builder_create_buffer(buffer) \
-	char* buffer = newc(char, STR_BUILDER_BUFFER_SIZE)
-
-#define str_builder_reduce_buffer(temp, buffer, size) \
-	char* temp = buffer;							  \
-	if (!(buffer = rnew(char, size + 1, buffer)))	  \
-		 buffer = temp;								  \
-	buffer[size] = '\0';
-
-#define str_builder_err										    \
-	report_error(frmt("Identifier size should be less than %d", \
-		STR_BUILDER_BUFFER_SIZE), NULL)
-
-#define str_builder_add(buffer, digit, index)			      \
-	((index)+1 > STR_BUILDER_BUFFER_SIZE) ? str_builder_err : \
-		(buffer[index] = digit)
+#define matchc(lexer, c) \
+	(get_curr_char(lexer) == c)
+#define matchc_in(lexer, c1, c2) \
+	((get_curr_char(lexer)) >= (c1) && (get_curr_char(lexer)) <= (c2))
 
 char chars[] = {
-	'+',
-	'-',
-	'*',
-	'/',
-	'%',
-	'|',
-	'~',
-	'^',
-	'\'',
-	'"',
-	'!',
-	',',
-	'.',
-	':',
-	';',
-	'=',
-	'?',
-	'&',
-	')',
-	'(',
-	']',
-	'[',
-	'}',
-	'{',
-	'<',
-	'>'
+	'+', '-', '*', '/',
+	'%', '|', '~', '^',
+	'\'', '"', '!', ',',
+	'.', ':', ';', '=',
+	'?', '&', ')', '(',
+	']', '[', '}', '{', '<', '>'
 };
 char* keychars[] = {
-	"+=",
-	"-=",
-	"*=",
-	"/=",
-	"%=",
-	"<<=",
-	">>=",
-	"|=",
-	"&=",
-	"^=",
-	"~=",
-	"||",
-	"==",
-	"!=",
-	"&&",
-	"<<",
-	">>",
-	"<=",
-	">=",
-	"->",
-	"..",
-	"...",
-	"./",	//additional lexemes especially for path
-	"../"
+	"+=", "-=", "*=", "/=",
+	"%=", "<<=", ">>=", "|=",
+	"&=", "^=", "~=", "||",
+	"==", "!=", "&&", "<<",
+	">>", "<=", ">=", "->",
+	"..", "...", "./", "../"
 };
-
 char* keywords[] = {
 	"break",
 	"case",

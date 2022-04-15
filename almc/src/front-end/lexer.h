@@ -14,6 +14,7 @@
 #include "..\utils\common.h"
 #include "..\utils\context.h"
 #include "..\utils\data-structures\sbuffer.h"
+#include "..\utils\data-structures\str-builder.h"
 
 typedef enum StreamType
 {

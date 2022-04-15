@@ -208,6 +208,9 @@
     <ClInclude Include="src\utils\xmemory\xmemory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\utils\data-structures\str-builder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="test\syntax.txt" />

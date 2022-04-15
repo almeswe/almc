@@ -74,6 +74,7 @@
     <ClInclude Include="src\error.h" />
     <ClInclude Include="src\front-end\parser.h" />
     <ClInclude Include="src\utils\os.h" />
+    <ClInclude Include="src\utils\data-structures\str-builder.h" />
     <ClInclude Include="src\utils\xmemory\xmemory.h" />
     <ClInclude Include="test\test-cases\lexer-test-cases\lexer-test-cases.h" />
     <ClInclude Include="test\test-cases\parser-test-cases\ast-expr-eval-test.h" />
