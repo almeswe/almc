@@ -90,12 +90,18 @@ bool is_enum_declared(const char* enum_name, Table* table);
 bool is_struct_declared(const char* struct_name, Table* table);
 bool is_union_declared(const char* union_name, Table* table);
 
+bool is_table_entity_declared(const char* decl_name,
+	TableEntityKind kind, Table* table);
+bool add_table_entity(TableEntity*** entities, void* decl,
+	const char* decl_name, TableEntityKind kind, Table* table);
+
 void add_function(FuncDecl* func_decl, Table* table);
 void add_variable(VarDecl* var_decl, Table* table);
 void add_label(LabelDecl* label_decl, Table* table);
 void add_function_param(TypeVar* type_var, Table* table);
 void add_initialized_variable(char* var_name, Table* table);
 void add_enum(EnumDecl* enum_decl, Table* table);
+bool add_enum2(EnumDecl* enum_decl, Table* table);
 void add_struct(StructDecl* struct_decl, Table* table);
 void add_union(UnionDecl* union_decl, Table* table);
 

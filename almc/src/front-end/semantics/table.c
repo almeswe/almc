@@ -157,11 +157,96 @@ void add_function_param(TypeVar* type_var, Table* table)
 	}
 }
 
-void add_initialized_variable(char* var_name, Table* table)
+void add_initialized_variable(char* var_name, Table* table) 
 {
 	TableEntity* entity;
 	if (entity = get_variable(var_name, table))
 		entity->is_initialized = true;
+}
+
+//typedef void (ent_add_func)(void*, void*, TableEntityKind, Table*);
+//typedef bool (ent_decld_func)(const char*, Table*);
+
+bool is_table_entity_declared(const char* decl_name, 
+	TableEntityKind kind, Table* table)
+{
+	/*
+		Generic function for checking if the table entity
+		is declared in currenct scope (Table*).
+		Returns true if table entitt is alread declared in collection, otherwise false.
+	*/
+
+	switch (kind) {
+#define _decld_in(c, m_in)						 \
+	for (size_t i = 0; i < sbuffer_len(c); i++)	 \
+		if (strcmp(c[i]->m_in, decl_name) == 0)  \
+			return true;						 \
+	return false
+		case TABLE_ENTITY_ENUM:		
+			_decld_in(table->enums, enum_decl->name);
+		case TABLE_ENTITY_UNION:		
+			_decld_in(table->unions, union_decl->name);
+		case TABLE_ENTITY_STRUCT:		
+			_decld_in(table->structs, struct_decl->name);
+		case TABLE_ENTITY_VARIABLE:		
+			_decld_in(table->locals, local->type_var->var);
+		case TABLE_ENTITY_PARAMETER:	
+			_decld_in(table->parameters, parameter->var);
+		case TABLE_ENTITY_LABEL:		
+			_decld_in(table->labels, label->label->svalue);
+		case TABLE_ENTITY_FUNCTION:		
+			_decld_in(table->functions, function->name->svalue);
+		default:
+			report_error("Unknown table entity kind met in is_table_entity_declared"
+				" this is bug actually.", NULL);
+#undef _decld_in
+	}
+	return false;
+}
+
+bool add_table_entity(TableEntity*** entities, void* decl, 
+	const char* decl_name, TableEntityKind kind, Table* table)
+{
+	/*
+		Generic function appending table entity to 
+		collection if it is not alreadt declared there.
+		Returns true if entity was successfully appended, otherwise false.
+	*/
+
+	bool declared = false;
+	if (!(declared = is_table_entity_declared(decl_name, kind, table))) {
+		TableEntity* entity = table_entity_new(kind);
+		switch (kind) {
+#define _set_as(as) \
+	entity->as = decl; break
+			case TABLE_ENTITY_ENUM:
+				_set_as(enum_decl);
+			case TABLE_ENTITY_UNION:
+				_set_as(union_decl);
+			case TABLE_ENTITY_STRUCT:
+				_set_as(struct_decl);
+			case TABLE_ENTITY_VARIABLE:
+				_set_as(local);
+			case TABLE_ENTITY_PARAMETER:
+				_set_as(parameter);
+			case TABLE_ENTITY_LABEL:
+				_set_as(label);
+			case TABLE_ENTITY_FUNCTION:
+				_set_as(function);
+			default:
+				report_error("Unknown table entity kind met in add_table_entity"
+					" this is bug actually.", NULL);
+#undef _set_as
+		}
+		sbuffer_add(*entities, entity);
+	}
+	return !declared;
+}
+
+bool add_enum2(EnumDecl* enum_decl, Table* table)
+{
+	return add_table_entity(&table->enums, (void*)enum_decl, 
+		enum_decl->name, TABLE_ENTITY_ENUM, table);
 }
 
 void add_enum(EnumDecl* enum_decl, Table* table)
