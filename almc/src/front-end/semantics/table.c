@@ -127,6 +127,12 @@ void add_function(FuncDecl* func_decl, Table* table)
 	}
 }
 
+bool add_func2(FuncDecl* func_decl, Table* table)
+{
+	return add_table_entity(&table->functions, (void*)func_decl,
+		func_decl->name->svalue, TABLE_ENTITY_FUNCTION, table);
+}
+
 void add_variable(VarDecl* var_decl, Table* table)
 {
 	if (!is_variable_declared(var_decl->type_var->var, table))
@@ -135,6 +141,12 @@ void add_variable(VarDecl* var_decl, Table* table)
 		entity->local = var_decl;
 		sbuffer_add(table->locals, entity);
 	}
+}
+
+bool add_variable2(VarDecl* var_decl, Table* table)
+{
+	return add_table_entity(&table->locals, (void*)var_decl,
+		var_decl->type_var->var, TABLE_ENTITY_VARIABLE, table);
 }
 
 void add_label(LabelDecl* label_decl, Table* table)
@@ -147,6 +159,12 @@ void add_label(LabelDecl* label_decl, Table* table)
 	}
 }
 
+bool add_label2(LabelDecl* label_decl, Table* table)
+{
+	return add_table_entity(&table->labels, (void*)label_decl,
+		label_decl->label->svalue, TABLE_ENTITY_LABEL, table);
+}
+
 void add_function_param(TypeVar* type_var, Table* table)
 {
 	if (!is_function_param_passed(type_var->var, table))
@@ -157,6 +175,12 @@ void add_function_param(TypeVar* type_var, Table* table)
 	}
 }
 
+bool add_parameter(TypeVar* type_var, Table* table)
+{
+	return add_table_entity(&table->parameters, (void*)type_var,
+		type_var->var, TABLE_ENTITY_PARAMETER, table);
+}
+
 void add_initialized_variable(char* var_name, Table* table) 
 {
 	TableEntity* entity;
@@ -164,42 +188,52 @@ void add_initialized_variable(char* var_name, Table* table)
 		entity->is_initialized = true;
 }
 
-//typedef void (ent_add_func)(void*, void*, TableEntityKind, Table*);
-//typedef bool (ent_decld_func)(const char*, Table*);
-
 bool is_table_entity_declared(const char* decl_name, 
 	TableEntityKind kind, Table* table)
 {
 	/*
 		Generic function for checking if the table entity
 		is declared in currenct scope (Table*).
-		Returns true if table entitt is alread declared in collection, otherwise false.
+		Returns true if table entity is alread declared in collection, otherwise false.
 	*/
 
-	switch (kind) {
-#define _decld_in(c, m_in)						 \
-	for (size_t i = 0; i < sbuffer_len(c); i++)	 \
-		if (strcmp(c[i]->m_in, decl_name) == 0)  \
-			return true;						 \
+#define _decld_in(c, m_in)						  \
+	for (size_t i = 0; i < sbuffer_len(c); i++) { \
+		if (strcmp(c[i]->m_in, decl_name) == 0) { \
+			return true;						  \
+		}										  \
+	}
+
+#define _decld_in_ret(c, m_in)  \
+	_decld_in(c, m_in);			\
 	return false
-		case TABLE_ENTITY_ENUM:		
+	
+	switch (kind) {
+		case TABLE_ENTITY_ENUM:	
+			_decld_in(table->structs, enum_decl->name);
 			_decld_in(table->enums, enum_decl->name);
-		case TABLE_ENTITY_UNION:		
-			_decld_in(table->unions, union_decl->name);
-		case TABLE_ENTITY_STRUCT:		
+			_decld_in_ret(table->unions, enum_decl->name);
+		case TABLE_ENTITY_UNION:	
+			_decld_in(table->structs, union_decl->name);
+			_decld_in(table->enums, union_decl->name);
+			_decld_in_ret(table->unions, union_decl->name);
+		case TABLE_ENTITY_STRUCT:
 			_decld_in(table->structs, struct_decl->name);
-		case TABLE_ENTITY_VARIABLE:		
-			_decld_in(table->locals, local->type_var->var);
-		case TABLE_ENTITY_PARAMETER:	
-			_decld_in(table->parameters, parameter->var);
-		case TABLE_ENTITY_LABEL:		
-			_decld_in(table->labels, label->label->svalue);
-		case TABLE_ENTITY_FUNCTION:		
-			_decld_in(table->functions, function->name->svalue);
+			_decld_in(table->enums, struct_decl->name);
+			_decld_in_ret(table->unions, struct_decl->name);
+		case TABLE_ENTITY_VARIABLE:
+			_decld_in_ret(table->locals, local->type_var->var);
+		case TABLE_ENTITY_PARAMETER:
+			_decld_in_ret(table->parameters, parameter->var);
+		case TABLE_ENTITY_LABEL:
+			_decld_in_ret(table->labels, label->label->svalue);
+		case TABLE_ENTITY_FUNCTION:
+			_decld_in_ret(table->functions, function->name->svalue);
 		default:
-			report_error("Unknown table entity kind met in is_table_entity_declared"
-				" this is bug actually.", NULL);
+			report_error("Unknown table entity kind met in function: "
+				"is_table_entity_declared, this is bug actually.", NULL);
 #undef _decld_in
+#undef _decld_in_ret
 	}
 	return false;
 }
@@ -208,31 +242,25 @@ bool add_table_entity(TableEntity*** entities, void* decl,
 	const char* decl_name, TableEntityKind kind, Table* table)
 {
 	/*
-		Generic function appending table entity to 
-		collection if it is not alreadt declared there.
+		Generic function for appending table entity to 
+		collection if it is not already declared there.
 		Returns true if entity was successfully appended, otherwise false.
 	*/
+
+#define _set_as(as) \
+	entity->as = decl; break
 
 	bool declared = false;
 	if (!(declared = is_table_entity_declared(decl_name, kind, table))) {
 		TableEntity* entity = table_entity_new(kind);
 		switch (kind) {
-#define _set_as(as) \
-	entity->as = decl; break
-			case TABLE_ENTITY_ENUM:
-				_set_as(enum_decl);
-			case TABLE_ENTITY_UNION:
-				_set_as(union_decl);
-			case TABLE_ENTITY_STRUCT:
-				_set_as(struct_decl);
-			case TABLE_ENTITY_VARIABLE:
-				_set_as(local);
-			case TABLE_ENTITY_PARAMETER:
-				_set_as(parameter);
-			case TABLE_ENTITY_LABEL:
-				_set_as(label);
-			case TABLE_ENTITY_FUNCTION:
-				_set_as(function);
+			case TABLE_ENTITY_ENUM:			_set_as(enum_decl);
+			case TABLE_ENTITY_UNION:		_set_as(union_decl);
+			case TABLE_ENTITY_STRUCT:		_set_as(struct_decl);
+			case TABLE_ENTITY_VARIABLE:		_set_as(local);
+			case TABLE_ENTITY_PARAMETER:	_set_as(parameter);
+			case TABLE_ENTITY_LABEL:		_set_as(label);
+			case TABLE_ENTITY_FUNCTION:		_set_as(function);
 			default:
 				report_error("Unknown table entity kind met in add_table_entity"
 					" this is bug actually.", NULL);
@@ -269,6 +297,12 @@ void add_struct(StructDecl* struct_decl, Table* table)
 	}
 }
 
+bool add_struct2(StructDecl* struct_decl, Table* table)
+{
+	return add_table_entity(&table->structs, (void*)struct_decl,
+		struct_decl->name, TABLE_ENTITY_STRUCT, table);
+}
+
 void add_union(UnionDecl* union_decl, Table* table)
 {
 	if (!is_union_declared(union_decl->name, table))
@@ -277,6 +311,12 @@ void add_union(UnionDecl* union_decl, Table* table)
 		entity->union_decl = union_decl;
 		sbuffer_add(table->unions, entity);
 	}
+}
+
+bool add_union2(UnionDecl* union_decl, Table* table)
+{
+	return add_table_entity(&table->unions, (void*)union_decl,
+		union_decl->name, TABLE_ENTITY_UNION, table);
 }
 
 TableEntity* get_variable(const char* var_name, Table* table)

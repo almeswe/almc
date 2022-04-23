@@ -117,51 +117,35 @@ void visit_type(Type* type, SrcContext* context, Table* table)
 
 void visit_scope(Stmt** stmts, Table* table)
 {
-	for (size_t i = 0; i < sbuffer_len(stmts); i++)
-	{
-		switch (stmts[i]->kind)
-		{
-		case STMT_TYPE_DECL:
-			switch (stmts[i]->type_decl->kind)
-			{
-			case TYPE_DECL_ENUM:
-				/*if (!add_enum(stmts[i]->type_decl->enum_decl, table))
-					report_error(frmt("Type \'%s\' is already declared.",
-						stmts[i]->type_decl->enum_decl->name), NULL);*/
-				if (is_enum_declared(stmts[i]->type_decl->enum_decl->name, table))
-					report_error(frmt("\'Enum\' type \'%s\' is already declared.",
-						stmts[i]->type_decl->enum_decl->name), NULL);
-				add_enum(stmts[i]->type_decl->enum_decl, table);
+#define _str(val) #val
+
+#define _add_decl(kind, name, c)										\
+	if (!add_##kind##2(stmts[i]->##kind##_decl, table))					\
+		report_error(frmt("%s \'%s\' is already declared.", _str(kind),	\
+			stmts[i]->##kind##_decl->name),								\
+				stmts[i]->##kind##_decl->c);							\
+	break
+
+#define _add_typedecl(kind)											\
+	if (!add_##kind##2(stmts[i]->type_decl->##kind##_decl, table))	\
+		report_error(frmt("Type \'%s\' is already declared.",		\
+			stmts[i]->type_decl->##kind##_decl->name), NULL);		\
+	break
+
+	for (size_t i = 0; i < sbuffer_len(stmts); i++) {
+		switch (stmts[i]->kind) {
+			case STMT_FUNC_DECL:	_add_decl(func, name->svalue, name->context);
+			case STMT_LABEL_DECL:	_add_decl(label, label->svalue, label->context);
+			case STMT_TYPE_DECL:
+				switch (stmts[i]->type_decl->kind) {
+					case TYPE_DECL_ENUM:	_add_typedecl(enum);
+					case TYPE_DECL_UNION:	_add_typedecl(union);
+					case TYPE_DECL_STRUCT:	_add_typedecl(struct);
+				}
 				break;
-			case TYPE_DECL_UNION:
-				if (is_union_declared(stmts[i]->type_decl->union_decl->name, table)) 
-					report_error(frmt("\'Union\' type \'%s\' is already declared.", 
-						stmts[i]->type_decl->union_decl->name), NULL);		     
-				add_union(stmts[i]->type_decl->union_decl, table);					 
-				break;
-			case TYPE_DECL_STRUCT:
-				if (is_struct_declared(stmts[i]->type_decl->struct_decl->name, table))
-					report_error(frmt("\'Struct\' type \'%s\' is already declared.",
-						stmts[i]->type_decl->struct_decl->name), NULL);
-				add_struct(stmts[i]->type_decl->struct_decl, table);
-				break;
-			}
-			break;
-		case STMT_FUNC_DECL:
-			if (is_function_declared(stmts[i]->func_decl->name->svalue, table))
-				report_error(frmt("Function \'%s\' is already declared.",
-					stmts[i]->func_decl->name->svalue), 
-						stmts[i]->func_decl->name->context);
-			add_function(stmts[i]->func_decl, table);
-			break;
-		// also added labels here
-		case STMT_LABEL_DECL:
-			if (is_label_declared(stmts[i]->label_decl->label->svalue, table))
-				report_error(frmt("Label \'%s\' is already declared.",
-					stmts[i]->label_decl->label->svalue), 
-						stmts[i]->label_decl->label->context);
-			add_label(stmts[i]->label_decl, table);
-			break;
+#undef _str
+#undef _add_decl
+#undef _add_typedecl
 		}
 	}
 }
@@ -817,7 +801,6 @@ void visit_func_decl_stmt(FuncDecl* func_decl, Table* table)
 				is_enum_member(func_decl->params[i]->var, local))
 			report_error2(frmt("Parameter's name \'%s\' is in use already.",
 				func_decl->params[i]->var), func_decl->params[i]->area);
-		add_function_param(func_decl->params[i], local);
 		visit_type(func_decl->params[i]->type, 
 			func_decl->params[i]->area->begins, table);
 	}
