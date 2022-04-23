@@ -117,6 +117,13 @@ void visit_type(Type* type, SrcContext* context, Table* table)
 
 void visit_scope(Stmt** stmts, Table* table)
 {
+	/*
+		Function which visits all statements in specified scope
+		before the main visit functions are called.
+		Mostly needed for declaring statements, which will
+		be order independent for other callers.
+	*/
+
 #define _str(val) #val
 
 #define _add_decl(kind, name, c)										\
@@ -141,6 +148,9 @@ void visit_scope(Stmt** stmts, Table* table)
 					case TYPE_DECL_ENUM:	_add_typedecl(enum);
 					case TYPE_DECL_UNION:	_add_typedecl(union);
 					case TYPE_DECL_STRUCT:	_add_typedecl(struct);
+					default:
+						report_error(frmt("Unknown type declaration kind met "
+							"in function: %s.", __FUNCTION__), NULL);
 				}
 				break;
 #undef _str
@@ -152,6 +162,11 @@ void visit_scope(Stmt** stmts, Table* table)
 
 void visit_expr(Expr* expr, Table* table)
 {
+	/*
+		Function which determines the appropriate visit function
+		for specified expression.
+	*/
+
 	switch (expr->kind)
 	{
 	case EXPR_CONST:
@@ -177,8 +192,12 @@ void visit_expr(Expr* expr, Table* table)
 			expr->initializer->area);
 		break;
 	default:
-		report_error("Unknown kind of binary expression met in visit_expr()", NULL);
+		report_error(frmt("Unknown kind of binary expression met"
+			" in function: %s", __FUNCTION__), NULL);
 	}
+	// after the process of visiting the specified expression
+	// type checker comes in. (calling the function which will resolve
+	// types in specified expression here)
 	get_and_set_expr_type(expr, table);
 }
 
@@ -357,7 +376,8 @@ void visit_binary_expr(BinaryExpr* binary_expr, Table* table)
 		visit_expr(binary_expr->rexpr, table);
 		break;
 	default:
-		report_error("Unknown kind of binary expression met in visit_binary_expr()", NULL);
+		report_error(frmt("Unknown kind of binary expression met"
+			" in function: %s", __FUNCTION__), NULL);
 	}
 }
 
@@ -501,8 +521,8 @@ void visit_loop_stmt(LoopStmt* loop_stmt, Table* table)
 		visit_while_loop_stmt(loop_stmt->while_loop, local);
 		break;
 	default:
-		report_error("Unknown loop kind met in visit_loop_stmt()",
-			NULL);
+		report_error(frmt("Unknown loop kind met",
+			" in function: %s", __FUNCTION__), NULL);
 	}
 }
 
@@ -549,8 +569,8 @@ void visit_jump_stmt(JumpStmt* jump_stmt, Table* table)
 		visit_continue_stmt(jump_stmt, table);
 		break;
 	default:
-		report_error("Unknown jump statement kind met in visit_jump_stmt()", 
-			NULL);
+		report_error(frmt("Unknown jump statement kind met", 
+			" in function: %s", __FUNCTION__), NULL);
 	}
 }
 

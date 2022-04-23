@@ -603,7 +603,8 @@ void stmt_free(Stmt* stmt)
 			label_decl_free(stmt->label_decl);
 			break;
 		default:
-			report_error("Unexpected stmt kind met in stmt_free().", NULL);
+			report_error(frmt("Unexpected stmt kind met"
+				" in function: %s", __FUNCTION__), NULL);
 		}
 		free(stmt);
 	}

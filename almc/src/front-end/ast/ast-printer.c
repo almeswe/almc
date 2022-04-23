@@ -456,7 +456,8 @@ void print_loop_stmt(LoopStmt* loop_stmt, const char* indent)
 		print_while_loop(loop_stmt->while_loop, indent);
 		break;
 	default:
-		report_error("Unknown loop kind met in print_loop_stmt()", NULL);
+		report_error(frmt("Unknown loop kind met",
+			" in function : %s", __FUNCTION__), NULL);
 	}
 }
 
@@ -521,7 +522,8 @@ void print_jump_stmt(JumpStmt* jump_stmt, const char* indent)
 		printfc(ALMC_CONSOLE_DARKMAGENTA, "continue-stmt\n");
 		break;
 	default:
-		report_error("Unknown jump statemnt kind met in print_jump_stmt()", NULL);
+		report_error(frmt("Unknown jump statemnt kind met"
+			" in function: %s", __FUNCTION__), NULL);
 	}
 }
 
@@ -610,7 +612,8 @@ void print_stmt(Stmt* stmt, const char* indent)
 			print_label_decl(stmt->label_decl, new_indent);
 			break;
 		default:
-			report_error("Unknown statemnt kind met in print_stmt()", NULL);
+			report_error(frmt("Unknown statemnt kind met"
+				" in function: %s", __FUNCTION__), NULL);
 		}
 	}
 }

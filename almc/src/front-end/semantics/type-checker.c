@@ -22,8 +22,8 @@ Type* retrieve_expr_type(Expr* expr)
 	case EXPR_TERNARY_EXPR:
 		return expr->ternary_expr->type;
 	default:
-		report_error(frmt("Unknown expression kind met in retrieve_expr_type(): %d",
-			expr->kind), NULL);
+		report_error(frmt("Unknown expression kind met"
+			" in function: %s", __FUNCTION__), NULL);
 	}
 	return &unknown_type;
 }
@@ -50,8 +50,8 @@ Type* get_expr_type(Expr* expr, Table* table)
 	case EXPR_TERNARY_EXPR:
 		return get_ternary_expr_type(expr->ternary_expr, table);
 	default:
-		report_error(frmt("Unknown expression kind met in get_expr_type(): %d",
-			expr->kind), NULL);
+		report_error(frmt("Unknown expression kind met",
+			" in function: %s", __FUNCTION__), NULL);
 	}
 	return &unknown_type;
 }
@@ -339,8 +339,8 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 	//------------------------------
 
 	default:
-		report_error(frmt("Unknown binary expression kind met in get_binary_expr_type(): %d",
-			binary_expr->type), NULL);
+		report_error(frmt("Unknown binary expression kind met"
+			" in function: %s", __FUNCTION__), NULL);
 	}
 	// useless, only to avoid warning
 	return ltype;

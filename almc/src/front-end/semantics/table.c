@@ -230,8 +230,8 @@ bool is_table_entity_declared(const char* decl_name,
 		case TABLE_ENTITY_FUNCTION:
 			_decld_in_ret(table->functions, function->name->svalue);
 		default:
-			report_error("Unknown table entity kind met in function: "
-				"is_table_entity_declared, this is bug actually.", NULL);
+			report_error(frmt("Unknown table entity kind met"
+				" in function: %s", __FUNCTION__), NULL);
 #undef _decld_in
 #undef _decld_in_ret
 	}
@@ -262,11 +262,11 @@ bool add_table_entity(TableEntity*** entities, void* decl,
 			case TABLE_ENTITY_LABEL:		_set_as(label);
 			case TABLE_ENTITY_FUNCTION:		_set_as(function);
 			default:
-				report_error("Unknown table entity kind met in add_table_entity"
-					" this is bug actually.", NULL);
-#undef _set_as
+				report_error(frmt("Unknown table entity kind met"
+					" in function: %s.", __FUNCTION__), NULL);
 		}
 		sbuffer_add(*entities, entity);
+#undef _set_as
 	}
 	return !declared;
 }
