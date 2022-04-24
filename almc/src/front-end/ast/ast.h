@@ -248,12 +248,7 @@ typedef struct LabelDecl
 	Idnt* label;
 } LabelDecl;
 
-typedef struct EnumMember
-{
-	char* name;
-	Expr* value;
-	SrcContext* context;
-} EnumMember;
+typedef struct EnumMember EnumMember;
 
 typedef struct EnumDecl
 {
@@ -269,6 +264,14 @@ typedef struct Member
 	int32_t offset;
 	int32_t padding;
 } Member;
+
+typedef struct EnumMember
+{
+	char* name;
+	Expr* value;
+	EnumDecl* from;
+	SrcContext* context;
+} EnumMember;
 
 typedef struct UnionDecl
 {

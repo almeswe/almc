@@ -214,6 +214,8 @@ EnumDecl* enum_decl_new(EnumMember** members, const char* name)
 	EnumDecl* enum_decl = new(EnumDecl);
 	enum_decl->name = name;
 	enum_decl->members = members;
+	for (size_t i = 0; i < sbuffer_len(members); i++)
+		members[i]->from = enum_decl;
 	return enum_decl;
 }
 
@@ -249,6 +251,7 @@ EnumMember* enum_member_new(char* name, Expr* value, SrcContext* context)
 	EnumMember* member = new(EnumMember);
 	member->name = name;
 	member->value = value;
+	member->from = NULL;
 	member->context = context;
 	return member;
 }
