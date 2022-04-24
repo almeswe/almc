@@ -25,8 +25,7 @@ void visitor_data_free()
 
 void visitor_free(Visitor* visitor)
 {
-	if (visitor)
-	{
+	if (visitor) {
 		table_free(visitor->global);
 		visitor_data_free();
 		free(visitor);
@@ -36,10 +35,12 @@ void visitor_free(Visitor* visitor)
 void visit(AstRoot* ast, Visitor* visitor)
 {
 	visit_scope(ast->stmts, visitor->global);
-	for (size_t i = 0; i < sbuffer_len(ast->stmts); i++)
+	for (size_t i = 0; i < sbuffer_len(ast->stmts); i++) {
 		visit_stmt(ast->stmts[i], visitor->global);
-	if (visitor_data.entry == NULL)
+	}
+	if (visitor_data.entry == NULL) {
 		report_error("Cannot find any entry point.", NULL);
+	}
 }
 
 void visit_stmt(Stmt* stmt, Table* table)
@@ -59,7 +60,7 @@ void visit_stmt(Stmt* stmt, Table* table)
 		visit_expr(stmt->expr_stmt->expr, table);
 		break;
 	case STMT_BLOCK:
-		visit_block(stmt->block, table_new(table));
+		visit_block(stmt->block, table);
 		break;
 	case STMT_SWITCH:
 		visit_switch_stmt(stmt->switch_stmt, table);
@@ -73,10 +74,8 @@ void visit_stmt(Stmt* stmt, Table* table)
 	case STMT_FUNC_DECL:
 		visit_func_decl_stmt(stmt->func_decl, table);
 		break;
-	case STMT_LABEL_DECL:
-		visit_label_decl_stmt(stmt->label_decl, table);
-		break;
 	case STMT_EMPTY:
+	case STMT_LABEL_DECL:
 		break;
 	case STMT_IMPORT:
 		visit_import_stmt(stmt->import_stmt, table);
@@ -91,28 +90,31 @@ void visit_type(Type* type, SrcContext* context, Table* table)
 {
 	// if the incomplete type met, it will be user-defined type:
 	//		struct, enum, union, void or unknown type
-	if (is_incomplete_type(type))
+	if (is_incomplete_type(type)) {
 		// after attempt for completing the type, checking if it is incomplete again
 		// report error if it is true
-		if (complete_type(type, table), is_incomplete_type(type))
+		if (complete_type(type, table), is_incomplete_type(type)) {
 			report_error(frmt("Cannot resolve type: \'%s\'.",
 				type->repr), context ? context : type->area->begins);
-	
-	if (is_array_type(type))
-	{
+		}
+	}
+
+	if (is_array_type(type)) {
 		// checking the index of current array dimension
 		visit_expr(type->dimension, table);
-		if (!is_const_expr(type->dimension))
+		if (!is_const_expr(type->dimension)) {
 			report_error2("Index should be constant expression.",
 				get_expr_area(type->dimension));
+		}
 		// call this function recursievly, because it might be 
 		// that there are multi-dimensional array type
 		visit_type(type->base, context ? context : type->area->begins, table);
 	}
 
 	// resolving size for type
-	if (type->kind != TYPE_PRIMITIVE)
+	if (type->kind != TYPE_PRIMITIVE) {
 		complete_size(type, table);
+	}
 }
 
 void visit_scope(Stmt** stmts, Table* table)
@@ -127,14 +129,14 @@ void visit_scope(Stmt** stmts, Table* table)
 #define _str(val) #val
 
 #define _add_decl(kind, name, c)										\
-	if (!add_##kind##2(stmts[i]->##kind##_decl, table))					\
+	if (!add_##kind##(stmts[i]->##kind##_decl, table))					\
 		report_error(frmt("%s \'%s\' is already declared.", _str(kind),	\
 			stmts[i]->##kind##_decl->name),								\
 				stmts[i]->##kind##_decl->c);							\
 	break
 
 #define _add_typedecl(kind)											\
-	if (!add_##kind##2(stmts[i]->type_decl->##kind##_decl, table))	\
+	if (!add_##kind##(stmts[i]->type_decl->##kind##_decl, table))	\
 		report_error(frmt("Type \'%s\' is already declared.",		\
 			stmts[i]->type_decl->##kind##_decl->name), NULL);		\
 	break
@@ -209,11 +211,12 @@ void visit_idnt(Idnt* idnt, Table* table, bool is_in_assign)
 		idnt->enum_member_value = 
 			entity->enum_member->value;
 	}
-
-	if (!get_parameter(idnt->svalue, table)) {
-		if (!(entity = get_variable(idnt->svalue, table))) {
-			report_error(frmt("Unknown entity name \'%s\'.",
-				idnt->svalue), idnt->context);
+	else {
+		if (!get_parameter(idnt->svalue, table)) {
+			if (!(entity = get_variable(idnt->svalue, table))) {
+				report_error(frmt("Unknown entity name \'%s\'.",
+					idnt->svalue), idnt->context);
+			}
 		}
 		//todo: comeback here later
 		//	//if (is_in_assign && !is_variable_initialized(idnt->svalue, table))
@@ -232,11 +235,12 @@ void visit_func_call(FuncCall* func_call, Table* table)
 	TableEntity* entity = get_function(
 		func_call->name, table);
 
-	if (entity == NULL)
+	if (entity == NULL) {
 		// print resolve error if there are no any declaration for
 		// this function call
 		return report_error2(frmt("Cannot resolve function \'%s\'.",
 			func_call->name), func_call->area), (void)1;
+	}
 
 	// synchronize few fields with function call structure
 	FuncDecl* func_decl = entity->function;
@@ -248,23 +252,27 @@ void visit_func_call(FuncCall* func_call, Table* table)
 	uint32_t args = sbuffer_len(func_call->args);
 	uint32_t params = sbuffer_len(func_decl->params);
 
-	if (args < params)
-		report_error2(frmt("More arguments expected for " 
+	if (args < params) {
+		report_error2(frmt("More arguments expected for "
 			"function call \'%s\'.", func_call->name), func_call->area);
-	else if (args > params && !func_decl->spec->is_vararg)
+	}
+	else if (args > params && !func_decl->spec->is_vararg) {
 		// print this error only when the function declaration has vararg property
 		report_error2(frmt("Less arguments expected for "
 			"function call \'%s\'.", func_call->name), func_call->area);
+	}
 
 	// resolvig all passed arguments to function call
-	for (size_t i = 0; i < sbuffer_len(func_call->args); i++)
+	for (size_t i = 0; i < sbuffer_len(func_call->args); i++) {
 		visit_expr(func_call->args[i], table);
+	}
 }
 
 void visit_unary_expr(UnaryExpr* unary_expr, Table* table)
 {
-	if (unary_expr->expr)
+	if (unary_expr->expr) {
 		visit_expr(unary_expr->expr, table);
+	}
 	switch (unary_expr->kind)
 	{
 	case UNARY_CAST:
@@ -277,9 +285,10 @@ void visit_unary_expr(UnaryExpr* unary_expr, Table* table)
 	case UNARY_ADDRESS:
 	case UNARY_DEREFERENCE:
 		// check for addressable value
-		if (!is_addressable_value(unary_expr->expr, table))
-			report_error2("Addressable expression required.", 
+		if (!is_addressable_value(unary_expr->expr, table)) {
+			report_error2("Addressable expression required.",
 				unary_expr->area);
+		}
 		break;
 	case UNARY_PLUS:
 	case UNARY_MINUS:
@@ -289,8 +298,8 @@ void visit_unary_expr(UnaryExpr* unary_expr, Table* table)
 		// nothing to do here ...
 		break;
 	default:
-		report_error("Unknown kind of unary expression met"
-			" in visit_unary_expr()", NULL);
+		report_error(frmt("Unknown kind of unary expression met"
+			" in function: ", __FUNCTION__), NULL);
 	}
 }
 
@@ -332,21 +341,26 @@ void visit_binary_expr(BinaryExpr* binary_expr, Table* table)
 
 	case BINARY_MEMBER_ACCESSOR:
 	case BINARY_PTR_MEMBER_ACCESSOR:
-		if (binary_expr->lexpr->kind != EXPR_IDNT)
+		if (binary_expr->lexpr->kind != EXPR_IDNT) {
 			visit_expr(binary_expr->lexpr, table);
-		else
+		}
+		else {
 			visit_idnt(binary_expr->lexpr->idnt, table, false);
+		}
 		break;
 
 	case BINARY_ASSIGN:
-		if (!is_addressable_value(binary_expr->lexpr, table))
+		if (!is_addressable_value(binary_expr->lexpr, table)) {
 			report_error2("Cannot assign something to non-addressable value.",
 				get_expr_area(binary_expr->lexpr));
+		}
 		// if right expression is idnt, then set it as initialized
-		if (binary_expr->lexpr->kind == EXPR_IDNT)
+		if (binary_expr->lexpr->kind == EXPR_IDNT) {
 			visit_idnt(binary_expr->lexpr->idnt, table, 1);
-		else 
+		}
+		else {
 			visit_expr(binary_expr->lexpr, table);
+		}
 		visit_expr(binary_expr->rexpr, table);
 		break;
 
@@ -360,9 +374,10 @@ void visit_binary_expr(BinaryExpr* binary_expr, Table* table)
 	case BINARY_BW_XOR_ASSIGN:
 	case BINARY_LSHIFT_ASSIGN:
 	case BINARY_RSHIFT_ASSIGN:
-		if (!is_addressable_value(binary_expr->lexpr, table))
-			report_error2("Cannot assign something to non-addressable value.", 
+		if (!is_addressable_value(binary_expr->lexpr, table)) {
+			report_error2("Cannot assign something to non-addressable value.",
 				get_expr_area(binary_expr->lexpr));
+		}
 		visit_expr(binary_expr->lexpr, table);
 		visit_expr(binary_expr->rexpr, table);
 		break;
@@ -394,14 +409,16 @@ void visit_if_stmt(IfStmt* if_stmt, Table* table)
 	Table* local = table_new(table);
 	visit_condition(if_stmt->cond, table);
 	visit_scope(if_stmt->body->stmts, local);
-	visit_block(if_stmt->body, local);
+	visit_block_stmts(if_stmt->body, local);
 
-	for (size_t i = 0; i < sbuffer_len(if_stmt->elifs); i++)
+	for (size_t i = 0; i < sbuffer_len(if_stmt->elifs); i++) {
 		visit_elif_stmt(if_stmt->elifs[i], table);
+	}
 
-	if (if_stmt->else_body)
+	if (if_stmt->else_body) {
 		visit_scope(if_stmt->else_body->stmts, local = table_new(table)),
-			visit_block(if_stmt->else_body, local);
+			visit_block_stmts(if_stmt->else_body, local);
+	}
 }
 
 void visit_elif_stmt(ElseIf* elif_stmt, Table* table)
@@ -409,7 +426,7 @@ void visit_elif_stmt(ElseIf* elif_stmt, Table* table)
 	Table* local = table_new(table);
 	visit_condition(elif_stmt->cond, table);
 	visit_scope(elif_stmt->body->stmts, local);
-	visit_block(elif_stmt->body, local);
+	visit_block_stmts(elif_stmt->body, local);
 }
 
 void resolve_conjuction_collision(SwitchStmt* switch_stmt)
@@ -476,7 +493,7 @@ void visit_switch_stmt(SwitchStmt* switch_stmt, Table* table)
 
 		if (switch_stmt->cases[i]->body)
 			visit_scope(switch_stmt->cases[i]->body->stmts, local),
-				visit_block(switch_stmt->cases[i]->body, local);
+				visit_block_stmts(switch_stmt->cases[i]->body, local);
 
 		switch_case_type = get_expr_type(switch_stmt->cases[i]->value, local);
 		if (!can_cast_implicitly(switch_cond_type, switch_case_type))
@@ -493,7 +510,7 @@ void visit_switch_stmt(SwitchStmt* switch_stmt, Table* table)
 		local = table_new(table);
 		local->in_switch = switch_stmt;
 		visit_scope(switch_stmt->default_case->stmts, local),
-			visit_block(switch_stmt->default_case, local);
+			visit_block_stmts(switch_stmt->default_case, local);
 	}
 }
 
@@ -520,28 +537,31 @@ void visit_loop_stmt(LoopStmt* loop_stmt, Table* table)
 
 void visit_do_loop_stmt(DoLoop* do_loop, Table* table)
 {
-	visit_block(do_loop->body, table);
+	visit_block_stmts(do_loop->body, table);
 	visit_scope(do_loop->body->stmts, table);
 	visit_condition(do_loop->cond, table);
 }
 
 void visit_for_loop_stmt(ForLoop* for_loop, Table* table)
 {
-	if (for_loop->init)
+	if (for_loop->init) {
 		visit_var_decl_stmt(for_loop->init, table);
-	if (for_loop->cond)
+	}
+	if (for_loop->cond) {
 		visit_condition(for_loop->cond, table);
-	if (for_loop->step)
+	}
+	if (for_loop->step) {
 		visit_expr(for_loop->step, table);
+	}
 	visit_scope(for_loop->body->stmts, table);
-	visit_block(for_loop->body, table);
+	visit_block_stmts(for_loop->body, table);
 }
 
 void visit_while_loop_stmt(WhileLoop* while_loop, Table* table)
 {
 	visit_condition(while_loop->cond, table);
 	visit_scope(while_loop->body->stmts, table);
-	visit_block(while_loop->body, table);
+	visit_block_stmts(while_loop->body, table);
 }
 
 void visit_jump_stmt(JumpStmt* jump_stmt, Table* table)
@@ -568,62 +588,76 @@ void visit_jump_stmt(JumpStmt* jump_stmt, Table* table)
 
 void visit_goto_stmt(JumpStmt* goto_stmt, Table* table)
 {
-	if (!goto_stmt->additional_expr)
-		report_error2("Expression in jump statement is undefined in visit_goto_stmt().", NULL);
-	else
-	{
-		if (goto_stmt->additional_expr->kind != EXPR_IDNT)
-			report_error2("Expression in jump statement must be identifier in case of goto statement.",
-				goto_stmt->area);
-		if (!is_label_declared(goto_stmt->additional_expr->idnt->svalue, table))
+	if (!goto_stmt->additional_expr) {
+		report_error2(frmt("Expression in jump statement is NULL."
+			" in function: %s.", __FUNCTION__), goto_stmt->area);
+	}
+	else {
+		Expr* label = goto_stmt->additional_expr;
+		if (label->kind != EXPR_IDNT) {
+			report_error2("Expression in jump statement must be identifier"
+				" in case of goto statement.", goto_stmt->area);
+		}
+		if (!get_label(label->idnt->svalue, table)) {
 			report_error2(frmt("Label \'%s\' is not declared in current scope.",
-				goto_stmt->additional_expr->idnt->svalue), goto_stmt->area);
+				label->idnt->svalue), goto_stmt->area);
+		}
 	}
 }
 
 void visit_break_stmt(JumpStmt* break_stmt, Table* table)
 {
-	if (!table->in_loop && !table->in_switch)
-		report_error2("Cannot use break statement in this context.", 
-			break_stmt->area);
+	if (!table->in_loop && !table->in_switch) {
+		report_error2("Cannot use break statement"
+			" in this context.", break_stmt->area);
+	}
 }
 
 void visit_return_stmt(JumpStmt* return_stmt, Table* table)
 {
-	if (!table->in_function)
-		report_error2("Cannot use return statement when its not located in function.",
-			return_stmt->area);
-	else
-	{
-		if (!IS_VOID_TYPE(table->in_function->type))
-		{
-			if (!return_stmt->additional_expr)
-				report_error2("Return statement must return some value from function.",
-					return_stmt->area);
-			visit_expr(return_stmt->additional_expr, table);
-			Type* return_type = get_expr_type(return_stmt->additional_expr, table);
-			if (!can_cast_implicitly(table->in_function->type, return_type))
+	/*
+		Function which resolves returns statement.
+			- in-function validation.
+			- return expression type.
+			- function return type.
+	*/
+
+	if (!table->in_function) {
+		report_error2("Cannot use return statement"
+			" when its not located in function.", return_stmt->area);
+	}
+	else {
+		Expr* ret_expr = return_stmt->additional_expr;
+		Type* func_ret_type = table->in_function->type;
+		if (ret_expr != NULL) {
+			visit_expr(ret_expr, table);
+			Type* ret_expr_type = retrieve_expr_type(ret_expr);
+			if (!can_cast_implicitly(func_ret_type, ret_expr_type)) {
 				report_error2(frmt("Cannot return value of type \'%s\' from function with \'%s\'.",
-					type_tostr_plain(return_type), type_tostr_plain(table->in_function->type)),
-						get_expr_area(return_stmt->additional_expr));
+					type_tostr_plain(ret_expr_type), type_tostr_plain(func_ret_type)),
+						get_expr_area(ret_expr));
+			}
 		}
-		else
-			if (return_stmt->additional_expr)
-				report_error2("Cannot return value from function with void type.",
-					get_expr_area(return_stmt->additional_expr));
+		else {
+			if (func_ret_type != TYPE_VOID) {
+				report_error2("Cannot ignore return expression"
+					" not in void function.", return_stmt->area);
+			}
+		}
 	}
 }
 
 void visit_continue_stmt(JumpStmt* continue_stmt, Table* table)
 {
-	if (!table->in_loop)
-		report_error2("Cannot use continue statement in this context.", 
-			continue_stmt->area);
+	if (!table->in_loop) {
+		report_error2("Cannot use continue statement"
+			" in this context.", continue_stmt->area);
+	}
 }
 
 void visit_var_decl_stmt(VarDecl* var_decl, Table* table)
 {
-	if (!add_variable2(var_decl, table)) {
+	if (!add_variable(var_decl, table)) {
 		TableEntity* entity = NULL;
 		SrcArea* area = var_decl->type_var->area;
 		const char* name = var_decl->type_var->var;
@@ -748,21 +782,23 @@ void visit_members(const char* type, Member** members, Table* table)
 		union/struct declaration.
 	*/
 
-	for (size_t i = 0; i < sbuffer_len(members); i++)
-	{
+	for (size_t i = 0; i < sbuffer_len(members); i++) {
 		visit_type(members[i]->type,
 			members[i]->area->begins, table);
-		if (strcmp(members[i]->type->repr, type) == 0)
-			if (members[i]->type->kind != TYPE_POINTER)
+		if (strcmp(members[i]->type->repr, type) == 0) {
+			if (members[i]->type->kind != TYPE_POINTER) {
 				report_error2(frmt("Member declared with unresolved type \'%s\'.",
 					type), members[i]->area);
-		for (size_t j = 0; j < sbuffer_len(members); j++)
-		{
-			if (members[i] == members[j])
+			}
+		}
+		for (size_t j = 0; j < sbuffer_len(members); j++) {
+			if (members[i] == members[j]) {
 				continue;
-			if (strcmp(members[i]->name, members[j]->name) == 0)
+			}
+			if (strcmp(members[i]->name, members[j]->name) == 0) {
 				report_error2(frmt("Member is already declared in \'%s\'",
 					type), members[i]->area);
+			}
 		}
 	}
 }
@@ -771,50 +807,71 @@ void visit_type_decl_stmt(TypeDecl* type_decl, Table* table)
 {
 	switch (type_decl->kind)
 	{
-	case TYPE_DECL_ENUM:
-		visit_enum(type_decl->enum_decl, table);
-		break;
-	case TYPE_DECL_UNION:
-		visit_union(type_decl->union_decl, table);
-		break;
-	case TYPE_DECL_STRUCT:
-		visit_struct(type_decl->struct_decl, table);
-		break;
-	default:
-		report_error(frmt("Unknown kind of type declaration met"
-			" in function: %s.", __FUNCTION__), NULL);
+		case TYPE_DECL_ENUM:
+			visit_enum(type_decl->enum_decl, table);
+			break;
+		case TYPE_DECL_UNION:
+			visit_union(type_decl->union_decl, table);
+			break;
+		case TYPE_DECL_STRUCT:
+			visit_struct(type_decl->struct_decl, table);
+			break;
+		default:
+			report_error(frmt("Unknown kind of type declaration met"
+				" in function: %s.", __FUNCTION__), NULL);
 	}
 }
 
 void visit_block(Block* block, Table* table)
 {
-	for (size_t i = 0; i < sbuffer_len(block->stmts); i++)
+	/*
+		Function which visits all statements and scope.
+		And also creates new local scope.
+	*/
+
+	Table* local = table_new(table);
+	visit_scope(block->stmts, local);
+	visit_block_stmts(block, local);
+}
+
+void visit_block_stmts(Block* block, Table* table)
+{
+	/*
+		Function which just visits all statements in scope.
+	*/
+
+	for (size_t i = 0; i < sbuffer_len(block->stmts); i++) {
 		visit_stmt(block->stmts[i], table);
+	}
 }
 
 void visit_func_decl_callconv(FuncDecl* func_decl)
 {
 	if (func_decl->conv->kind == CALL_CONV_STDCALL &&
-			func_decl->spec->is_vararg)
+			func_decl->spec->is_vararg) {
 		report_error("Cannot use __VA_ARGS__ with stdcall.",
 			func_decl->name->context);
+	}
 }
 
 void visit_func_decl_specs(FuncDecl* func_decl, Table* table)
 {
-	if (func_decl->spec->is_entry)
+	if (func_decl->spec->is_entry) {
 		visit_entry_func_stmt(func_decl, table);
-	
+	}
+
 	visit_func_decl_callconv(func_decl);
 
 	// check the possibility of existence of function's body in case 
 	// when function is external or not.
-	if (func_decl->spec->is_external && func_decl->body)
+	if (func_decl->spec->is_external && func_decl->body) {
 		report_error(frmt("Function \'%s\' specified like external.",
 			func_decl->name->svalue), func_decl->name->context);
-	if (!func_decl->spec->is_external && !func_decl->body)
+	}
+	if (!func_decl->spec->is_external && !func_decl->body) {
 		report_error(frmt("Function \'%s\' needs body, its not external.",
 			func_decl->name->svalue), func_decl->name->context);
+	}
 }
 
 void visit_func_decl_stmt(FuncDecl* func_decl, Table* table)
@@ -867,22 +924,17 @@ void visit_func_decl_stmt(FuncDecl* func_decl, Table* table)
 	// no need to check body if this function is external
 	// and also no need for return flow check
 	if (!func_decl->spec->is_external) {
-		visit_block(func_decl->body, local),
+		visit_block_stmts(func_decl->body, local),
 			check_func_return_flow(func_decl);
 	}
-}
-
-void visit_label_decl_stmt(LabelDecl* label_decl, Table* table)
-{
-	// there are no any processing stuff for label declaration statement yet.  ? ?
-	// check for duplicated label is already exists in visit_scope
 }
 
 void visit_import_stmt(ImportStmt* import_stmt, Table* table)
 {
 	visit_scope(import_stmt->ast->stmts, table);
-	for (size_t i = 0; i < sbuffer_len(import_stmt->ast->stmts); i++)
+	for (size_t i = 0; i < sbuffer_len(import_stmt->ast->stmts); i++) {
 		visit_stmt(import_stmt->ast->stmts[i], table);
+	}
 }
 
 void check_entry_func_params(FuncDecl* func_decl)
@@ -910,9 +962,10 @@ void check_entry_func_params(FuncDecl* func_decl)
 
 void visit_entry_func_stmt(FuncDecl* func_decl, Table* table)
 {
-	if (visitor_data.entry != NULL)
-		report_error("Entry function is already declared here.", 
+	if (visitor_data.entry != NULL) {
+		report_error("Entry function is already declared here.",
 			visitor_data.entry->name->context);
+	}
 	visitor_data.entry = func_decl;
 	check_entry_func_params(func_decl);
 }
@@ -931,8 +984,9 @@ uint32_t get_size_of_type(Type* type, Table* table)
 	case TYPE_PRIMITIVE:
 		return type->size;
 	default:
-		if (is_aggregate_type(type))
+		if (is_aggregate_type(type)) {
 			return get_size_of_aggregate_type(type, table);
+		}
 		report_error(frmt("Cannot get size of \'%s\' type",
 			type_tostr_plain(type)), NULL);
 	}
@@ -947,8 +1001,7 @@ uint32_t get_size_of_aggregate_type(Type* type, Table* table)
 	{
 	case TYPE_UNION:
 	case TYPE_STRUCT:
-		for (size_t i = 0; i < sbuffer_len(type->members); i++) 
-		{
+		for (size_t i = 0; i < sbuffer_len(type->members); i++) {
 			buffer = type->members[i]->type->size;
 			// when type is union, calculate max between size and size of current member
 			// otherwise just add member size to whole size (in case of struct)
@@ -960,8 +1013,8 @@ uint32_t get_size_of_aggregate_type(Type* type, Table* table)
 		return (uint32_t)(get_size_of_type(type->base, table) *
 			evaluate_expr_itype(type->dimension));
 	default:
-		report_error(frmt("Passed type \'%s\' is not aggregate, "
-			"in get_size_of_aggregate_type()", type_tostr_plain(type)), NULL);
+		report_error(frmt("Passed type \'%s\' is not aggregate in function: %s.",
+			type_tostr_plain(type), __FUNCTION__), NULL);
 	}
 	return 0;
 }
@@ -984,16 +1037,16 @@ void complete_size(Type* type, Table* table)
 	case TYPE_UNION:
 	case TYPE_STRUCT:
 		// completing offsets for members (struct's or union's)
-		for (uint32_t i = 0; i < sbuffer_len(type->members); i++)
-		{
+		for (uint32_t i = 0; i < sbuffer_len(type->members); i++) {
 			type->members[i]->type->size = get_size_of_type(
 				type->members[i]->type, table);
 			// in case of union, dont add offset for member, 
 			// keep it 0 for all members (here there are no logic for that
 			// because Member struct is allocated already with 0 stored in offset)
-			if (type->kind == TYPE_STRUCT)
-				type->members[i]->offset = offset,
-					offset += type->members[i]->type->size;
+			if (type->kind == TYPE_STRUCT) {
+				type->members[i]->offset = offset;
+				offset += type->members[i]->type->size;
+			}
 		}
 		type->size = get_size_of_aggregate_type(type, table);
 		break;
@@ -1004,28 +1057,39 @@ void complete_type(Type* type, Table* table)
 {
 	/*
 		Completes the missing information in type structure
-		if its struct, enum or union type + gets size of it
+		if its struct, enum or union type + gets it's size
 	*/
+
 	TableEntity* user_type = NULL;
 	Type* base = get_base_type(type);
 
 	// type void cannot be completed
-	if (type->kind == TYPE_VOID)
+	if (type->kind == TYPE_VOID) {
 		return;
-	if (user_type = get_struct(base->repr, table))
-		base->kind = TYPE_STRUCT,
-			base->members = user_type->struct_decl->members;
-	else if (get_enum(base->repr, table))
+	}
+	if (user_type = get_struct(base->repr, table)) {
+		base->kind = TYPE_STRUCT;
+		base->members = user_type->struct_decl->members;
+	}
+	else if (get_enum(base->repr, table)) {
 		base->kind = TYPE_ENUM;
-	else if (user_type = get_union(base->repr, table))
-		base->kind = TYPE_UNION,
-			base->members = user_type->union_decl->members;
+	}
+	else if (user_type = get_union(base->repr, table)) {
+		base->kind = TYPE_UNION;
+		base->members = user_type->union_decl->members;
+	}
 }
 
 bool is_const_expr(Expr* expr)
 {
-	if (!expr)
+	/*
+		Statically determines if specified expression
+		is constant. (it means this expression can be evaluated)
+	*/
+
+	if (!expr) {
 		return false;
+	}
 	switch (expr->kind)
 	{
 	case EXPR_CONST:
@@ -1063,20 +1127,17 @@ bool is_primary_expr(Expr* expr)
 	return false;
 }
 
-bool is_enum_member(const char* var, Table* table)
-{
-	for (Table* parent = table; parent; parent = parent->nested_in)
-		for (size_t i = 0; i < sbuffer_len(parent->enums); i++)
-			for (size_t j = 0; j < sbuffer_len(parent->enums[i]->enum_decl->members); j++)
-				if (strcmp(var, parent->enums[i]->enum_decl->members[j]->name) == 0)
-					return true;
-	return false;
-}
-
 bool is_addressable_value(Expr* expr)
 {
-	if (!expr)
+	/*
+		Statically determines if the specified expression 
+		is addressable expression. (if we able to assign some
+		value to this expression: variable, array index etc.)
+	*/
+
+	if (!expr) {
 		return false;
+	}
 	switch (expr->kind)
 	{
 	case EXPR_CONST:

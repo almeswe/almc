@@ -20,6 +20,7 @@ void visit_type(Type* type, SrcContext* context, Table* table);
 
 void visit_scope(Stmt** stmts, Table* table);
 void visit_block(Block* block, Table* table);
+void visit_block_stmts(Block* block, Table* table);
 
 void visit_expr(Expr* expr, Table* table);
 void visit_idnt(Idnt* idnt, Table* table, bool is_in_assign);
@@ -51,7 +52,6 @@ void visit_continue_stmt(JumpStmt* continue_stmt, Table* table);
 void visit_var_decl_stmt(VarDecl* var_decl, Table* table);
 void visit_type_decl_stmt(TypeDecl* type_decl, Table* table);
 void visit_func_decl_stmt(FuncDecl* func_decl, Table* table);
-void visit_label_decl_stmt(LabelDecl* label_decl, Table* table);
 void visit_import_stmt(ImportStmt* import_stmt, Table* table);
 
 void visit_enum(EnumDecl* enum_decl, Table* table);
@@ -71,6 +71,5 @@ void complete_type(Type* type, Table* table);
 bool is_addressable_value(Expr* expr);
 bool is_const_expr(Expr* expr);
 bool is_primary_expr(Expr* expr);
-bool is_enum_member(const char* var, Table* table);
 
 #endif // _ALMC_FRONT_END_VISITOR_H

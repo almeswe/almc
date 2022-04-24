@@ -103,16 +103,20 @@ Type* get_fvalue_type(double value)
 
 Type* get_idnt_type(Idnt* idnt, Table* table)
 {
-	if (idnt->is_enum_member)
+	if (idnt->is_enum_member) {
 		return get_expr_type(idnt->enum_member_value, table);
-	if (!is_variable_declared(idnt->svalue, table) &&
-		!is_function_param_passed(idnt->svalue, table))
-			return &unknown_type;
-
-	Type* type = is_function_param_passed(idnt->svalue, table) ? 
-		get_function_param(idnt->svalue, table)->parameter->type : 
-			get_variable(idnt->svalue, table)->local->type_var->type;
-	return type;
+	}
+	TableEntity* varent = get_variable(idnt->svalue, table);
+	TableEntity* parament = get_parameter(idnt->svalue, table);
+	if (!varent && !parament) {
+		return &unknown_type;
+	}
+	if (varent && parament) {
+		report_error(frmt("Bug with type identation met"
+			" in function: %s.", __FUNCTION__), NULL);
+	}
+	return varent ? varent->local->type_var->type :
+		parament->parameter->type;
 }
 
 Type* get_string_type(Str* str)

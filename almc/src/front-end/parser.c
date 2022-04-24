@@ -1162,7 +1162,7 @@ Stmt* parse_label_decl_stmt(Parser* parser)
 	label->svalue = get_curr_token(parser)->lexeme;
 	label->context = get_curr_token(parser)->context;
 	expect_with_skip(parser, TOKEN_IDNT, "label name");
-	expect_with_skip(parser, TOKEN_COLON, ":");
+	expect_with_skip(parser, TOKEN_SEMICOLON, ";");
 	return stmt_new(STMT_LABEL_DECL, label_decl_new(label));
 }
 

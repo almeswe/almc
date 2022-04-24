@@ -84,43 +84,30 @@ TableEntity* table_entity_new(TableEntityKind kind);
 void table_entity_free(TableEntity* table_entity);
 void table_entities_free(TableEntity** entities);
 
-bool is_function_declared(const char* func_name, Table* table);
-bool is_variable_declared(const char* var_name, Table* table);
-bool is_function_param_passed(const char* param_name, Table* table);
-bool is_label_declared(const char* label_name, Table* table);
-bool is_variable_initialized(const char* var_name, Table* table);
-bool is_enum_declared(const char* enum_name, Table* table);
-bool is_struct_declared(const char* struct_name, Table* table);
-bool is_union_declared(const char* union_name, Table* table);
-
 bool is_table_entity_declared(const char* decl_name,
 	TableEntityKind kind, Table* table);
 bool add_table_entity(TableEntity*** entities, void* decl,
 	const char* decl_name, TableEntityKind kind, Table* table);
 
-bool add_func2(FuncDecl* func_decl, Table* table);
-void add_variable(VarDecl* var_decl, Table* table);
-bool add_variable2(VarDecl* var_decl, Table* table);
-bool add_label2(LabelDecl* label_decl, Table* table);
+bool add_enum(EnumDecl* enum_decl, Table* table);
+bool add_union(UnionDecl* union_decl, Table* table);
+bool add_struct(StructDecl* struct_decl, Table* table);
+bool add_func(FuncDecl* func_decl, Table* table);
+bool add_label(LabelDecl* label_decl, Table* table);
+bool add_variable(VarDecl* var_decl, Table* table);
 bool add_parameter(TypeVar* type_var, Table* table);
-void add_initialized_variable(char* var_name, Table* table);
 bool add_enum_member(EnumMember* enum_member, Table* table);
-bool add_enum2(EnumDecl* enum_decl, Table* table);
-bool add_struct2(StructDecl* struct_decl, Table* table);
-bool add_union2(UnionDecl* union_decl, Table* table);
 
 TableEntity* get_table_entity(const char* entity_name, 
 	TableEntityKind kind, Table* table);
 
-TableEntity* get_enum_member(const char* enum_member_name, Table* table);
-TableEntity* get_parameter(const char* parameter_name, Table* table);
-TableEntity* get_variable(const char* var_name, Table* table);
-
-TableEntity* get_label(const char* label_name, Table* table);
-TableEntity* get_function(const char* func_name, Table* table);
-TableEntity* get_function_param(const char* param_name, Table* table);
 TableEntity* get_enum(const char* enum_name, Table* table);
 TableEntity* get_union(const char* union_name, Table* table);
 TableEntity* get_struct(const char* struct_name, Table* table);
+TableEntity* get_label(const char* label_name, Table* table);
+TableEntity* get_variable(const char* var_name, Table* table);
+TableEntity* get_function(const char* func_name, Table* table);
+TableEntity* get_parameter(const char* parameter_name, Table* table);
+TableEntity* get_enum_member(const char* enum_member_name, Table* table);
 
 #endif // _ALMC_TABLE2

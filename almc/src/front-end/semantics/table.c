@@ -17,8 +17,7 @@ Table* table_new(Table* parent)
 	Table* table = cnew(Table, 1);
 	table->nested_in = parent;
 
-	if (parent)
-	{
+	if (parent) {
 		table->in_loop = parent->in_loop;
 		table->in_switch = parent->in_switch;
 		table->in_function = parent->in_function;
@@ -29,8 +28,7 @@ Table* table_new(Table* parent)
 
 void table_free(Table* table)
 {
-	if (table)
-	{
+	if (table) {
 		table_entities_free(table->functions);
 		table_entities_free(table->locals);
 		table_entities_free(table->parameters);
@@ -41,8 +39,9 @@ void table_free(Table* table)
 		table_entities_free(table->unions);
 		table_entities_free(table->structs);
 
-		for (size_t i = 0; i < sbuffer_len(table->nesting); i++)
+		for (size_t i = 0; i < sbuffer_len(table->nesting); i++) {
 			table_free(table->nesting[i]);
+		}
 		sbuffer_free(table->nesting);
 		free(table);
 	}
@@ -56,91 +55,32 @@ TableEntity* table_entity_new(TableEntityKind kind)
 
 void table_entity_free(TableEntity* entity)
 {
-	if (entity)
+	if (entity) {
 		free(entity);
+	}
 }
 
 void table_entities_free(TableEntity** entities)
 {
-	for (size_t i = 0; i < sbuffer_len(entities); i++)
+	for (size_t i = 0; i < sbuffer_len(entities); i++) {
 		table_entity_free(entities[i]);
+	}
 	sbuffer_free(entities);
 }
 
-bool is_function_declared(const char* func_name, Table* table)
-{
-	for (Table* parent = table; parent != NULL; parent = parent->nested_in)
-		is_declared_in_collection(func_name, function->name->svalue, parent->functions);
-}
-
-bool is_variable_declared(const char* var_name, Table* table)
-{
-	for (Table* parent = table; parent != NULL; parent = parent->nested_in)
-		is_declared_in_collection(var_name, local->type_var->var, parent->locals);
-}
-
-bool is_function_param_passed(const char* param_name, Table* table)
-{
-	for (Table* parent = table; parent != NULL; parent = parent->nested_in)
-		is_declared_in_collection(param_name, parameter->var, parent->parameters);
-}
-
-bool is_label_declared(const char* label_name, Table* table)
-{
-	for (Table* parent = table; parent != NULL; parent = parent->nested_in)
-		is_declared_in_collection(label_name, label->label->svalue, parent->labels);
-}
-
-bool is_variable_initialized(const char* var_name, Table* table)
-{
-	for (Table* parent = table; parent != NULL; parent = parent->nested_in)
-		for (size_t i = 0; i < sbuffer_len(parent->locals); i++)
-			if (strcmp(parent->locals[i], var_name) == 0 && parent->locals[i]->is_initialized)
-				return true;
-	return false;
-}
-
-bool is_enum_declared(const char* enum_name, Table* table)
-{
-	for (Table* parent = table; parent != NULL; parent = parent->nested_in)
-		is_declared_in_collection(enum_name, enum_decl->name, parent->enums);
-}
-
-bool is_struct_declared(const char* struct_name, Table* table)
-{
-	for (Table* parent = table; parent != NULL; parent = parent->nested_in)
-		is_declared_in_collection(struct_name, struct_decl->name, parent->structs);
-}
-
-bool is_union_declared(const char* union_name, Table* table)
-{
-	for (Table* parent = table; parent != NULL; parent = parent->nested_in)
-		is_declared_in_collection(union_name, union_decl->name, parent->unions);
-}
-
-bool add_func2(FuncDecl* func_decl, Table* table)
+bool add_func(FuncDecl* func_decl, Table* table)
 {
 	return add_table_entity(&table->functions, (void*)func_decl,
 		func_decl->name->svalue, TABLE_ENTITY_FUNCTION, table);
 }
 
-void add_variable(VarDecl* var_decl, Table* table)
-{
-	if (!is_variable_declared(var_decl->type_var->var, table))
-	{
-		TableEntity* entity = table_entity_new(TABLE_ENTITY_VARIABLE);
-		entity->local = var_decl;
-		sbuffer_add(table->locals, entity);
-	}
-}
-
-bool add_variable2(VarDecl* var_decl, Table* table)
+bool add_variable(VarDecl* var_decl, Table* table)
 {
 	return add_table_entity(&table->locals, (void*)var_decl,
 		var_decl->type_var->var, TABLE_ENTITY_VARIABLE, table);
 }
 
-bool add_label2(LabelDecl* label_decl, Table* table)
+bool add_label(LabelDecl* label_decl, Table* table)
 {
 	return add_table_entity(&table->labels, (void*)label_decl,
 		label_decl->label->svalue, TABLE_ENTITY_LABEL, table);
@@ -150,13 +90,6 @@ bool add_parameter(TypeVar* type_var, Table* table)
 {
 	return add_table_entity(&table->parameters, (void*)type_var,
 		type_var->var, TABLE_ENTITY_PARAMETER, table);
-}
-
-void add_initialized_variable(char* var_name, Table* table) 
-{
-	TableEntity* entity;
-	if (entity = get_variable(var_name, table))
-		entity->is_initialized = true;
 }
 
 bool is_table_entity_declared(const char* decl_name, 
@@ -185,14 +118,14 @@ bool is_table_entity_declared(const char* decl_name,
 			_decld_in(structs, struct_decl->name);
 			_decld_in(enums, enum_decl->name);
 			_decld_in_ret(unions, union_decl->name);
+		case TABLE_ENTITY_LABEL:
 		case TABLE_ENTITY_VARIABLE:
 		case TABLE_ENTITY_PARAMETER:
 		case TABLE_ENTITY_ENUM_MEMBER:
-			_decld_in(locals, local->type_var->var);
+			_decld_in(labels, label->label->svalue);
 			_decld_in(parameters, parameter->var);
+			_decld_in(locals, local->type_var->var);
 			_decld_in_ret(enum_members, enum_member->name);
-		case TABLE_ENTITY_LABEL:
-			_decld_in_ret(labels, label->label->svalue);
 		case TABLE_ENTITY_FUNCTION:
 			_decld_in_ret(functions, function->name->svalue);
 		default:
@@ -244,19 +177,19 @@ bool add_enum_member(EnumMember* enum_member, Table* table)
 		enum_member->name, TABLE_ENTITY_ENUM_MEMBER, table);
 }
 
-bool add_enum2(EnumDecl* enum_decl, Table* table)
+bool add_enum(EnumDecl* enum_decl, Table* table)
 {
 	return add_table_entity(&table->enums, (void*)enum_decl, 
 		enum_decl->name, TABLE_ENTITY_ENUM, table);
 }
 
-bool add_struct2(StructDecl* struct_decl, Table* table)
+bool add_struct(StructDecl* struct_decl, Table* table)
 {
 	return add_table_entity(&table->structs, (void*)struct_decl,
 		struct_decl->name, TABLE_ENTITY_STRUCT, table);
 }
 
-bool add_union2(UnionDecl* union_decl, Table* table)
+bool add_union(UnionDecl* union_decl, Table* table)
 {
 	return add_table_entity(&table->unions, (void*)union_decl,
 		union_decl->name, TABLE_ENTITY_UNION, table);
@@ -318,36 +251,30 @@ TableEntity* get_variable(const char* var_name, Table* table)
 
 TableEntity* get_label(const char* label_name, Table* table)
 {
-	for (Table* parent = table; parent != NULL; parent = parent->nested_in)
-		get_from_collection(label_name, label->label->svalue, parent->labels);
+	return get_table_entity(label_name,
+		TABLE_ENTITY_LABEL, table);
 }
 
 TableEntity* get_function(const char* func_name, Table* table)
 {
-	for (Table* parent = table; parent != NULL; parent = parent->nested_in)
-		get_from_collection(func_name, function->name->svalue, parent->functions);
-}
-
-TableEntity* get_function_param(const char* param_name, Table* table)
-{
-	for (Table* parent = table; parent != NULL; parent = parent->nested_in)
-		get_from_collection(param_name, parameter->var, parent->parameters);
+	return get_table_entity(func_name,
+		TABLE_ENTITY_FUNCTION, table);
 }
 
 TableEntity* get_enum(const char* enum_name, Table* table)
 {
-	for (Table* parent = table; parent != NULL; parent = parent->nested_in)
-		get_from_collection(enum_name, enum_decl->name, parent->enums);
+	return get_table_entity(enum_name,
+		TABLE_ENTITY_ENUM, table);
 }
 
 TableEntity* get_union(const char* union_name, Table* table)
 {
-	for (Table* parent = table; parent != NULL; parent = parent->nested_in)
-		get_from_collection(union_name, union_decl->name, parent->unions);
+	return get_table_entity(union_name,
+		TABLE_ENTITY_UNION, table);
 }
 
 TableEntity* get_struct(const char* struct_name, Table* table)
 {
-	for (Table* parent = table; parent != NULL; parent = parent->nested_in)
-		get_from_collection(struct_name, struct_decl->name, parent->structs);
+	return get_table_entity(struct_name,
+		TABLE_ENTITY_STRUCT, table);
 }
