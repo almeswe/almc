@@ -82,8 +82,8 @@ void visit_stmt(Stmt* stmt, Table* table)
 		visit_import_stmt(stmt->import_stmt, table);
 		break;
 	default:
-		report_error("Unknown statement kind to visit "
-			"in visit_stmt().", NULL);
+		report_error(frmt("Unknown statement kind to visit"
+			" in function: %s.", __FUNCTION__), NULL);
 	}
 }
 
@@ -668,66 +668,86 @@ void visit_var_decl_stmt(VarDecl* var_decl, Table* table)
 
 void visit_enum(EnumDecl* enum_decl, Table* table)
 {
-	for (size_t i = 0; i < sbuffer_len(enum_decl->members); i++)
-	{
-		// checking validity of values that assigned to enum idents
-		for (size_t j = 0; j < sbuffer_len(enum_decl->members); j++)
-			if (!is_const_expr(enum_decl->members[j]->value))
-				report_error2(frmt("Enum member \'%s\' must have constant expression, in \'%s\' enum.",
-					enum_decl->members[j]->name, enum_decl->name),
-						get_expr_area(enum_decl->members[j]->value));
+	/*
+		Resolving semantically enum declaration.
+			- duplicate check in current enum.
+			- duplicate check in other enums scoped.
+			- constant expression check.
+			- expression's type check.
+	*/
 
-		// iterating through all members of all enums (except current enum)
-		for (Table* parent = table; parent != NULL; parent = parent->nested_in)                      // each scope from above scope
-			for (size_t j = 0; j < sbuffer_len(parent->enums); j++)                                  // each enum in iterating scope
-				if (strcmp(parent->enums[j]->enum_decl->name, enum_decl->name) != 0)                 // if iterating enum != current enum
-					for (size_t z = 0; z < sbuffer_len(parent->enums[j]->enum_decl->members); z++)   // each member in iterating enum
-						if (strcmp(parent->enums[j]->enum_decl->members[z]->name,
-							enum_decl->members[i]->name) == 0)
-								report_error(frmt("Enum member \'%s\' is already declared in \'%s\' enum.",
-									enum_decl->members[i]->name, parent->enums[j]->enum_decl->name),
-										enum_decl->members[i]->context);
+	for (size_t i = 0; i < sbuffer_len(enum_decl->members); i++) {
+		EnumMember* current = enum_decl->members[i];
+
+		// Validation of assigned expression, it must be constant.
+		if (current->value && !is_const_expr(current->value))
+			report_error2(frmt("Enum member \'%s\' must have constant expression, in \'%s\'.",
+				current->name, enum_decl->name), get_expr_area(current->value));
 		
-		// set type to enum identifier
-		Type* value_type = get_expr_type(enum_decl->members[i]->value, table);
-		if (!is_integral_type(value_type) || value_type->size > i32_type.size)
-			report_error2(frmt("Enum's member \'%s\' has incompatible \'%s\' type in \'%s\' enum.",
-				enum_decl->members[i]->name, type_tostr_plain(value_type), enum_decl->name),
-					get_expr_area(enum_decl->members[i]->value));
+		// Visiting expression assigned to enum member
+		if (current->value) {
+			visit_expr(current->value, table);
+			// Retrieving assigned type for validation
+			Type* expr_type = retrieve_expr_type(current->value);
+			if (expr_type != NULL) {
+				// Type must be integral and less or equal than i32/u32.
+				if (!is_integral_type(expr_type) || expr_type->size > i32_type.size) {
+					report_error2(frmt("Enum's member \'%s\' has incompatible \'%s\' type.",
+						current->name, type_tostr_plain(expr_type)), get_expr_area(current->value));
+				}
+			}
+		}
 
-		// checking value type
-		// evaluating the value to get the proper type of it
-		// and then compare with 4 byte type
-		// enum identifier's value must be less equal than 4 bytes
-		Type* const_expr_type = get_ivalue_type(
-			evaluate_expr_itype(enum_decl->members[i]->value));
-		if (const_expr_type->size >= i32_type.size)
-			report_error2(frmt("Enum member \'%s\' must have value type less equal than 4 bytes, in \'%s\' enum.",
-				enum_decl->members[i]->name, enum_decl->name),
-					get_expr_area(enum_decl->members[i]->value));
-
-		// checking for any duplicated names in current enum
-		for (size_t j = i + 1; j < sbuffer_len(enum_decl->members); j++)
-			if (strcmp(enum_decl->members[i]->name, enum_decl->members[j]->name) == 0)
-				report_error(frmt("Member \'%s\' is already declared in \'%s\' enum declaration.",
-					enum_decl->members[i]->name, enum_decl->name), enum_decl->members[i]->context);
+		// Trying to add enum member to symbol table,
+		// if this enum member already declared somewhere in this scope
+		// this function will return false, and error will be printed
+		if (!add_enum_member(current, table)) {
+			TableEntity* entity = NULL;
+			if (!(entity = get_enum_member(current->name, table))) {
+			 	// this is ambigiuos situation when add_enum_member finds entity,
+				// but get_enum_member cannot find any.
+				report_error(frmt("Retrieved NULL table entity, this is a bug actually:"
+					"line %d, function %s.", __LINE__, __FUNCTION__), NULL);
+			}
+			else {
+				report_error(frmt("Enum member \'%s\' in \'%s\' is already declared in \'%s\'.",
+					current->name, enum_decl->name, entity->enum_member->from->name), current->context);
+			}
+		}
 	}
 }
 
 void visit_union(UnionDecl* union_decl, Table* table)
 {
+	/*
+		Resolving semantically union declaration.
+			- duplicate check in current union.
+			- resolving member's type.
+	*/
+
 	visit_members(union_decl->name, 
 		union_decl->members, table);
 }
 
 void visit_struct(StructDecl* struct_decl, Table* table)
 {
+	/*
+		Resolving semantically struct declaration.
+			- duplicate check in current struct.
+			- resolving member's type.
+	*/
+
 	visit_members(struct_decl->name,
 		struct_decl->members, table);
 }
 
 void visit_members(const char* type, Member** members, Table* table)
 {
+	/*
+		Resolves semantically set of members, usually passed by 
+		union/struct declaration.
+	*/
+
 	for (size_t i = 0; i < sbuffer_len(members); i++)
 	{
 		visit_type(members[i]->type,
@@ -761,8 +781,8 @@ void visit_type_decl_stmt(TypeDecl* type_decl, Table* table)
 		visit_struct(type_decl->struct_decl, table);
 		break;
 	default:
-		report_error("Unknown type of type declaration met"
-			" in visit_type_decl_stmt()", NULL);
+		report_error(frmt("Unknown kind of type declaration met"
+			" in function: %s.", __FUNCTION__), NULL);
 	}
 }
 
