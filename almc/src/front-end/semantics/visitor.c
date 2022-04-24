@@ -201,38 +201,29 @@ void visit_expr(Expr* expr, Table* table)
 	get_and_set_expr_type(expr, table);
 }
 
-void visit_idnt(Idnt* idnt, Table* table, int is_in_assign)
+void visit_idnt(Idnt* idnt, Table* table, bool is_in_assign)
 {
-	if (is_enum_member(idnt->svalue, table))
-		return visit_idnt_as_enum_member(idnt, table), (void)1;
-
-	// checking if identifier is not a function parameter
-	if (!is_function_param_passed(idnt->svalue, table))
-	{
-		// and check if declared and initialized
-		if (!is_variable_declared(idnt->svalue, table))
-			report_error(frmt("Variable \'%s\' is not declared.",
-				idnt->svalue), idnt->context);
-
-		//todo: comeback here later
-		// 
-		//if (is_in_assign && !is_variable_initialized(idnt->svalue, table))
-		//	add_initialized_variable(idnt->svalue, table);
-		// 
-		//if (!is_variable_initialized(idnt->svalue, table))
-		//	report_error(frmt("Variable \'%s\' is not initialized in current scope.",
-		//		idnt->svalue), idnt->context);
+	TableEntity* entity = NULL;
+	if (entity = get_enum_member(idnt->svalue, table)) {
+		idnt->is_enum_member = true;
+		idnt->enum_member_value = 
+			entity->enum_member->value;
 	}
-}
 
-void visit_idnt_as_enum_member(Idnt* idnt, Table* table)
-{
-	for (Table* parent = table; parent; parent = parent->nested_in)
-		for (size_t i = 0; i < sbuffer_len(parent->enums); i++)
-			for (size_t j = 0; j < sbuffer_len(parent->enums[i]->enum_decl->members); j++)
-				if (strcmp(idnt->svalue, parent->enums[i]->enum_decl->members[j]->name) == 0)
-					return idnt->enum_member_value = parent->enums[i]->enum_decl->members[j]->value,
-						idnt->is_enum_member = true, (void)1;
+	if (!get_parameter(idnt->svalue, table)) {
+		if (!(entity = get_variable(idnt->svalue, table))) {
+			report_error(frmt("Unknown entity name \'%s\'.",
+				idnt->svalue), idnt->context);
+		}
+		//todo: comeback here later
+		//	//if (is_in_assign && !is_variable_initialized(idnt->svalue, table))
+		//	//	add_initialized_variable(idnt->svalue, table);
+		//	// 
+		//	//if (!is_variable_initialized(idnt->svalue, table))
+		//	//	report_error(frmt("Variable \'%s\' is not initialized in current scope.",
+		//	//		idnt->svalue), idnt->context);
+		//}
+	}
 }
 
 void visit_func_call(FuncCall* func_call, Table* table)
@@ -392,9 +383,10 @@ void visit_condition(Expr* condition, Table* table)
 {
 	visit_expr(condition, table);
 	Type* type = retrieve_expr_type(condition);
-	if (!is_numeric_type(type) && !is_pointer_like_type(type))
+	if (!is_numeric_type(type) && !is_pointer_like_type(type)) {
 		report_error2(frmt("Condition expression cannot have \'%s\' type.",
 			type_tostr_plain(type)), get_expr_area(condition));
+	}
 }
 
 void visit_if_stmt(IfStmt* if_stmt, Table* table)
@@ -631,37 +623,44 @@ void visit_continue_stmt(JumpStmt* continue_stmt, Table* table)
 
 void visit_var_decl_stmt(VarDecl* var_decl, Table* table)
 {
-	Type* type = !var_decl->is_auto ? var_decl->type_var->type : 
-		get_expr_type(var_decl->var_init, table);
-	SrcArea* area = var_decl->type_var->area;
-	const char* var = var_decl->type_var->var;
+	if (!add_variable2(var_decl, table)) {
+		TableEntity* entity = NULL;
+		SrcArea* area = var_decl->type_var->area;
+		const char* name = var_decl->type_var->var;
+		// if get_variable returns NULL, it means that there are
+		// no variable with specified name, and other entity named like this variable
+		if (!(entity = get_variable(name, table))) {
+			report_error2(frmt("Variable's name \'%s\' is already"
+				" in use by another entity.", name), area);
+		}
+		else {
+			report_error2(frmt("Variable \'%s\'"
+				" is already declared.", name), area);
+		}
+	}
 
-	if (is_variable_declared(var, table))
-		report_error2(frmt("Variable \'%s\' is already declared.",
-			var), area);
-	else if (is_function_param_passed(var, table))
-		report_error2(frmt("\'%s\' is already declared as function's parameter.",
-			var), area);
-	else if (is_enum_member(var, table))
-		report_error2(frmt("\'%s\' is already declared as enum's identifier.",
-			var), area);
-	else
-	{
-		add_variable(var_decl, table);
-		visit_type(type, type->area ? type->area->begins : NULL, table);
-		if (var_decl->var_init)
-		{
-			visit_expr(var_decl->var_init, table);
-			add_initialized_variable(var, table);
-
-			// check type of created variable with type of initializing expression
-			Type* init_expr_type = get_expr_type(var_decl->var_init, table);
-			if (!can_cast_implicitly(type, init_expr_type))
+	// if variable declaration is auto,
+	// it means that we need to specify type manually
+	if (var_decl->var_init != NULL) {
+		visit_expr(var_decl->var_init, table);
+	}
+	if (var_decl->is_auto) {
+		if (var_decl->var_init == NULL) {
+			report_error2("Auto variable declaration statement "
+				"requires expression initializer.", var_decl->type_var->area);
+		}
+		var_decl->type_var->type = retrieve_expr_type(var_decl->var_init);
+	}
+	else {
+		// in case of common variable declaration
+		// we need to ensure that type by the right side is subset of left type.
+		if (var_decl->var_init != NULL) {
+			Type* ltype = var_decl->type_var->type;
+			Type* rtype = retrieve_expr_type(var_decl->var_init);
+			if (!can_cast_implicitly(ltype, rtype)) {
 				report_error2(frmt("Expression-initializer has incompatible type \'%s\' with type of variable \'%s\'.",
-					type_tostr_plain(init_expr_type), type_tostr_plain(type)), 
-						get_expr_area(var_decl->var_init));
-			if (var_decl->is_auto)
-				var_decl->type_var->type = init_expr_type;
+					type_tostr_plain(rtype), type_tostr_plain(ltype)), get_expr_area(var_decl->var_init));
+			}
 		}
 	}
 }
@@ -680,10 +679,11 @@ void visit_enum(EnumDecl* enum_decl, Table* table)
 		EnumMember* current = enum_decl->members[i];
 
 		// Validation of assigned expression, it must be constant.
-		if (current->value && !is_const_expr(current->value))
+		if (current->value && !is_const_expr(current->value)) {
 			report_error2(frmt("Enum member \'%s\' must have constant expression, in \'%s\'.",
 				current->name, enum_decl->name), get_expr_area(current->value));
-		
+		}
+
 		// Visiting expression assigned to enum member
 		if (current->value) {
 			visit_expr(current->value, table);
@@ -706,8 +706,8 @@ void visit_enum(EnumDecl* enum_decl, Table* table)
 			if (!(entity = get_enum_member(current->name, table))) {
 			 	// this is ambigiuos situation when add_enum_member finds entity,
 				// but get_enum_member cannot find any.
-				report_error(frmt("Retrieved NULL table entity, this is a bug actually:"
-					"line %d, function %s.", __LINE__, __FUNCTION__), NULL);
+				report_error(frmt("Enum member's name \'%s\' is already"
+					" in use by another entity.", current->name), current->context);
 			}
 			else {
 				report_error(frmt("Enum member \'%s\' in \'%s\' is already declared in \'%s\'.",
@@ -821,42 +821,55 @@ void visit_func_decl_stmt(FuncDecl* func_decl, Table* table)
 {
 	// case when function is declared inside another function or other local scope
 	// probably this error should be resolved syntactically (but i'm not sure about this)
-	if (table->nested_in)
+	if (table->nested_in) {
 		report_error("Cannot declare function not in global scope",
 			func_decl->name->context);
+	}
 	
 	Table* local = table_new(table);
 	local->in_function = func_decl;
 
 	visit_func_decl_specs(func_decl, table);
-	// do not visit scope statements if the function is external (there are no any body in that case)
-	if (!func_decl->spec->is_external)
+	// do not visit scope statements if the function is external 
+	// (there are no any body in that case)
+	if (!func_decl->spec->is_external) {
 		visit_scope(func_decl->body->stmts, local);
+	}
 
-	for (size_t i = 0; i < sbuffer_len(func_decl->params); i++)
-	{
+	for (size_t i = 0; i < sbuffer_len(func_decl->params); i++) {
+		TypeVar* current = func_decl->params[i];
 		// checking if the parameter's name is enum member or
 		// this name is already passed as function parameter
-		if (is_function_param_passed(func_decl->params[i]->var, local) || 
-				is_enum_member(func_decl->params[i]->var, local))
-			report_error2(frmt("Parameter's name \'%s\' is in use already.",
-				func_decl->params[i]->var), func_decl->params[i]->area);
-		visit_type(func_decl->params[i]->type, 
-			func_decl->params[i]->area->begins, table);
+		if (!add_parameter(current, table)) {
+			TableEntity* entity = NULL;
+			// if get_parameter returns NULL, it means that there are
+			// no parameter with specified name, and other entity named like this parameter
+			if (!(entity = get_parameter(current->var, table))) {
+				report_error2(frmt("Parameter's name \'%s\' is already"
+					" in use by another entity.", current->var), current->area);
+			}
+			else {
+				report_error2(frmt("Parameter with name \'%s\'"
+					" is already passed.", current->var), current->area);
+			}
+		}
+		visit_type(current->type, current->area->begins, table);
 	}
 
 	// no need for type resolving in case of void
 	// because it just means that function does not return any value
 	// (void in this context just exceptional case)
-	if (func_decl->type->kind != TYPE_VOID)
-		visit_type(func_decl->type, 
+	if (func_decl->type->kind != TYPE_VOID) {
+		visit_type(func_decl->type,
 			func_decl->name->context, table);
+	}
 
 	// no need to check body if this function is external
 	// and also no need for return flow check
-	if (!func_decl->spec->is_external)
+	if (!func_decl->spec->is_external) {
 		visit_block(func_decl->body, local),
 			check_func_return_flow(func_decl);
+	}
 }
 
 void visit_label_decl_stmt(LabelDecl* label_decl, Table* table)

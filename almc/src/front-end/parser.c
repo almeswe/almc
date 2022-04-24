@@ -1043,10 +1043,7 @@ Stmt* parse_auto_var_decl_stmt(Parser* parser)
 	TypeVar* type_var = NULL;
 
 	expect_with_skip(parser, TOKEN_KEYWORD_VAR, "var");
-	type_var = type_var_new(&unknown_type, 
-		get_curr_token(parser)->lexeme);
-	expect_with_skip(parser, TOKEN_IDNT, "variable's name");
-	expect_with_skip(parser, TOKEN_COLON, ":");
+	type_var = parse_auto_type_var(parser);
 	expect_with_skip(parser, TOKEN_ASSIGN, "=");
 	var_init = matcht(parser, TOKEN_OP_BRACE) ?
 		parse_initializer_expr(parser) : parse_expr(parser);
@@ -1635,6 +1632,19 @@ TypeVar* parse_type_var(Parser* parser)
 	expect_with_skip(parser, TOKEN_COLON, ":");
 	type = parse_type(parser);
 	type_var = type_var_new(type, var);
+	context_ends(parser, context, type_var);
+	return type_var;
+}
+
+TypeVar* parse_auto_type_var(Parser* parser)
+{
+	const char* var = get_curr_token(parser)->lexeme;
+	TypeVar* type_var = NULL;
+
+	context_starts(parser, context);
+	expect_with_skip(parser, TOKEN_IDNT, "variable's name");
+	expect_with_skip(parser, TOKEN_COLON, ":");
+	type_var = type_var_new(&unknown_type, var);
 	context_ends(parser, context, type_var);
 	return type_var;
 }

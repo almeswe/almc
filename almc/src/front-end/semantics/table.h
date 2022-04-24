@@ -102,7 +102,6 @@ bool add_func2(FuncDecl* func_decl, Table* table);
 void add_variable(VarDecl* var_decl, Table* table);
 bool add_variable2(VarDecl* var_decl, Table* table);
 bool add_label2(LabelDecl* label_decl, Table* table);
-void add_function_param(TypeVar* type_var, Table* table);
 bool add_parameter(TypeVar* type_var, Table* table);
 void add_initialized_variable(char* var_name, Table* table);
 bool add_enum_member(EnumMember* enum_member, Table* table);
@@ -114,8 +113,9 @@ TableEntity* get_table_entity(const char* entity_name,
 	TableEntityKind kind, Table* table);
 
 TableEntity* get_enum_member(const char* enum_member_name, Table* table);
-
+TableEntity* get_parameter(const char* parameter_name, Table* table);
 TableEntity* get_variable(const char* var_name, Table* table);
+
 TableEntity* get_label(const char* label_name, Table* table);
 TableEntity* get_function(const char* func_name, Table* table);
 TableEntity* get_function_param(const char* param_name, Table* table);

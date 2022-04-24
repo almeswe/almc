@@ -146,16 +146,6 @@ bool add_label2(LabelDecl* label_decl, Table* table)
 		label_decl->label->svalue, TABLE_ENTITY_LABEL, table);
 }
 
-void add_function_param(TypeVar* type_var, Table* table)
-{
-	if (!is_function_param_passed(type_var->var, table))
-	{
-		TableEntity* entity = table_entity_new(TABLE_ENTITY_PARAMETER);
-		entity->label = type_var;
-		sbuffer_add(table->parameters, entity);
-	}
-}
-
 bool add_parameter(TypeVar* type_var, Table* table)
 {
 	return add_table_entity(&table->parameters, (void*)type_var,
@@ -190,27 +180,21 @@ bool is_table_entity_declared(const char* decl_name,
 	
 	switch (kind) {
 		case TABLE_ENTITY_ENUM:	
-			_decld_in(structs, enum_decl->name);
-			_decld_in(enums, enum_decl->name);
-			_decld_in_ret(unions, enum_decl->name);
-		case TABLE_ENTITY_UNION:	
-			_decld_in(structs, union_decl->name);
-			_decld_in(enums, union_decl->name);
-			_decld_in_ret(unions, union_decl->name);
+		case TABLE_ENTITY_UNION:
 		case TABLE_ENTITY_STRUCT:
 			_decld_in(structs, struct_decl->name);
-			_decld_in(enums, struct_decl->name);
-			_decld_in_ret(unions, struct_decl->name);
+			_decld_in(enums, enum_decl->name);
+			_decld_in_ret(unions, union_decl->name);
 		case TABLE_ENTITY_VARIABLE:
-			_decld_in_ret(locals, local->type_var->var);
 		case TABLE_ENTITY_PARAMETER:
-			_decld_in_ret(parameters, parameter->var);
+		case TABLE_ENTITY_ENUM_MEMBER:
+			_decld_in(locals, local->type_var->var);
+			_decld_in(parameters, parameter->var);
+			_decld_in_ret(enum_members, enum_member->name);
 		case TABLE_ENTITY_LABEL:
 			_decld_in_ret(labels, label->label->svalue);
 		case TABLE_ENTITY_FUNCTION:
 			_decld_in_ret(functions, function->name->svalue);
-		case TABLE_ENTITY_ENUM_MEMBER:
-			_decld_in_ret(enum_members, enum_member->name);
 		default:
 			report_error(frmt("Unknown table entity kind met"
 				" in function: %s", __FUNCTION__), NULL);
@@ -320,10 +304,16 @@ TableEntity* get_enum_member(const char* enum_member_name, Table* table)
 		TABLE_ENTITY_ENUM_MEMBER , table);
 }
 
+TableEntity* get_parameter(const char* parameter_name, Table* table)
+{
+	return get_table_entity(parameter_name,
+		TABLE_ENTITY_PARAMETER, table);
+}
+
 TableEntity* get_variable(const char* var_name, Table* table)
 {
-	for (Table* parent = table; parent != NULL; parent = parent->nested_in)
-		get_from_collection(var_name, local->type_var->var, parent->locals);
+	return get_table_entity(var_name,
+		TABLE_ENTITY_VARIABLE, table);
 }
 
 TableEntity* get_label(const char* label_name, Table* table)

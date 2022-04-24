@@ -89,5 +89,6 @@ Stmt* parse_from_import_stmt(Parser* parser);
 Stmt* parse_from_import_member_stmt(Parser* parser, AstRoot* import_module);
 
 TypeVar* parse_type_var(Parser* parser);
+TypeVar* parse_auto_type_var(Parser* parser);
 
 #endif // _ALMC_PARSER_H
