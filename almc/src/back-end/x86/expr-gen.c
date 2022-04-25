@@ -144,7 +144,7 @@ void gen_const32(Const* cnst, int reg)
 void gen_idnt32(Idnt* idnt, int reg, StackFrame* frame)
 {
 	if (idnt->is_enum_member)
-		gen_expr32(idnt->enum_member_value, frame);
+		gen_expr32(idnt->enum_member->value, frame);
 	else
 	{
 		StackFrameEntity* entity =

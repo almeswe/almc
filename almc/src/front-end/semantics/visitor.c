@@ -203,13 +203,21 @@ void visit_expr(Expr* expr, Table* table)
 	get_and_set_expr_type(expr, table);
 }
 
+void visit_addr_expr(Expr* expr, Table* table)
+{
+	visit_expr(expr, table);
+	if (!is_addressable_expr(expr)) {
+		report_error2("Expression must be addressable.", 
+			get_expr_area(expr));
+	}
+}
+
 void visit_idnt(Idnt* idnt, Table* table, bool is_in_assign)
 {
 	TableEntity* entity = NULL;
 	if (entity = get_enum_member(idnt->svalue, table)) {
 		idnt->is_enum_member = true;
-		idnt->enum_member_value = 
-			entity->enum_member->value;
+		idnt->enum_member = entity->enum_member;
 	}
 	else {
 		if (!get_parameter(idnt->svalue, table)) {
@@ -285,7 +293,7 @@ void visit_unary_expr(UnaryExpr* unary_expr, Table* table)
 	case UNARY_ADDRESS:
 	case UNARY_DEREFERENCE:
 		// check for addressable value
-		if (!is_addressable_value(unary_expr->expr, table)) {
+		if (!is_addressable_expr(unary_expr->expr, table)) {
 			report_error2("Addressable expression required.",
 				unary_expr->area);
 		}
@@ -341,29 +349,22 @@ void visit_binary_expr(BinaryExpr* binary_expr, Table* table)
 
 	case BINARY_MEMBER_ACCESSOR:
 	case BINARY_PTR_MEMBER_ACCESSOR:
-		if (binary_expr->lexpr->kind != EXPR_IDNT) {
-			visit_expr(binary_expr->lexpr, table);
-		}
-		else {
-			visit_idnt(binary_expr->lexpr->idnt, table, false);
-		}
+		visit_expr(binary_expr->lexpr, table);
+		visit_type(retrieve_expr_type(binary_expr->lexpr), 
+			binary_expr->area->begins, table);
 		break;
-
-	case BINARY_ASSIGN:
-		if (!is_addressable_value(binary_expr->lexpr, table)) {
-			report_error2("Cannot assign something to non-addressable value.",
-				get_expr_area(binary_expr->lexpr));
-		}
+	//case BINARY_ASSIGN:
 		// if right expression is idnt, then set it as initialized
-		if (binary_expr->lexpr->kind == EXPR_IDNT) {
-			visit_idnt(binary_expr->lexpr->idnt, table, 1);
-		}
-		else {
-			visit_expr(binary_expr->lexpr, table);
-		}
-		visit_expr(binary_expr->rexpr, table);
-		break;
-
+		//if (binary_expr->lexpr->kind == EXPR_IDNT) {
+		//	visit_idnt(binary_expr->lexpr->idnt, table, 1);
+		//}
+		//else {
+		//	visit_expr(binary_expr->lexpr, table);
+		//}
+		//visit_addr_expr(binary_expr->lexpr, table);
+		//visit_expr(binary_expr->rexpr, table);
+		//break;
+	case BINARY_ASSIGN:
 	case BINARY_ADD_ASSIGN:
 	case BINARY_SUB_ASSIGN:
 	case BINARY_MUL_ASSIGN:
@@ -374,11 +375,7 @@ void visit_binary_expr(BinaryExpr* binary_expr, Table* table)
 	case BINARY_BW_XOR_ASSIGN:
 	case BINARY_LSHIFT_ASSIGN:
 	case BINARY_RSHIFT_ASSIGN:
-		if (!is_addressable_value(binary_expr->lexpr, table)) {
-			report_error2("Cannot assign something to non-addressable value.",
-				get_expr_area(binary_expr->lexpr));
-		}
-		visit_expr(binary_expr->lexpr, table);
+		visit_addr_expr(binary_expr->lexpr, table);
 		visit_expr(binary_expr->rexpr, table);
 		break;
 	default:
@@ -688,8 +685,9 @@ void visit_var_decl_stmt(VarDecl* var_decl, Table* table)
 	else {
 		// in case of common variable declaration
 		// we need to ensure that type by the right side is subset of left type.
+		Type* ltype = var_decl->type_var->type;
+		visit_type(ltype, var_decl->type_var->area->begins, table);
 		if (var_decl->var_init != NULL) {
-			Type* ltype = var_decl->type_var->type;
 			Type* rtype = retrieve_expr_type(var_decl->var_init);
 			if (!can_cast_implicitly(ltype, rtype)) {
 				report_error2(frmt("Expression-initializer has incompatible type \'%s\' with type of variable \'%s\'.",
@@ -711,13 +709,6 @@ void visit_enum(EnumDecl* enum_decl, Table* table)
 
 	for (size_t i = 0; i < sbuffer_len(enum_decl->members); i++) {
 		EnumMember* current = enum_decl->members[i];
-
-		// Validation of assigned expression, it must be constant.
-		if (current->value && !is_const_expr(current->value)) {
-			report_error2(frmt("Enum member \'%s\' must have constant expression, in \'%s\'.",
-				current->name, enum_decl->name), get_expr_area(current->value));
-		}
-
 		// Visiting expression assigned to enum member
 		if (current->value) {
 			visit_expr(current->value, table);
@@ -730,6 +721,12 @@ void visit_enum(EnumDecl* enum_decl, Table* table)
 						current->name, type_tostr_plain(expr_type)), get_expr_area(current->value));
 				}
 			}
+		}
+
+		// Validation of assigned expression, it must be constant.
+		if (current->value && !is_const_expr(current->value)) {
+			report_error2(frmt("Enum member \'%s\' must have constant expression, in \'%s\'.",
+				current->name, enum_decl->name), get_expr_area(current->value));
 		}
 
 		// Trying to add enum member to symbol table,
@@ -1127,7 +1124,7 @@ bool is_primary_expr(Expr* expr)
 	return false;
 }
 
-bool is_addressable_value(Expr* expr)
+bool is_addressable_expr(Expr* expr)
 {
 	/*
 		Statically determines if the specified expression 

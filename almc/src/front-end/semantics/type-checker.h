@@ -45,7 +45,8 @@ Type* cast_implicitly_when_assign(Type* to, Type* type, SrcArea* area);
 
 bool can_cast_implicitly(Type* to, Type* type);
 
-char* get_member_name(Expr* expr);
+const char* get_member_name(Expr* expr);
+Idnt* get_member_idnt(Expr* expr);
 SrcArea* get_expr_area(Expr* expr);
 
 #endif // _ALMC_FRONT_END_TYPE_CHECKER_H

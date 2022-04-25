@@ -2,8 +2,9 @@
 
 Type* retrieve_expr_type(Expr* expr)
 {
-	if (!expr)
+	if (!expr) {
 		return &unknown_type;
+	}
 
 	switch (expr->kind)
 	{
@@ -104,7 +105,7 @@ Type* get_fvalue_type(double value)
 Type* get_idnt_type(Idnt* idnt, Table* table)
 {
 	if (idnt->is_enum_member) {
-		return get_expr_type(idnt->enum_member_value, table);
+		return get_expr_type(idnt->enum_member->value, table);
 	}
 	TableEntity* varent = get_variable(idnt->svalue, table);
 	TableEntity* parament = get_parameter(idnt->svalue, table);
@@ -328,10 +329,10 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 				type_tostr_plain(ltype)), binary_expr->area);
 
 		// iterating through all struct and through all struct's members, trying to find matching
-		if (IS_STRUCT_TYPE(ltype) || IS_UNION_TYPE(ltype))
+		if (IS_STRUCT_OR_UNION_TYPE(ltype))
 			for (size_t i = 0; i < sbuffer_len(ltype->members); i++)
 				if (strcmp(ltype->members[i]->name, get_member_name(binary_expr->rexpr)) == 0)
-					return ltype->members[i]->type;
+					return get_member_idnt(binary_expr->rexpr)->type = ltype->members[i]->type;
 
 		report_error2(frmt("Cannot find any member with name \'%s\' in type \'%s\'.",
 			binary_expr->rexpr->idnt->svalue, ltype->repr), binary_expr->area);
@@ -682,7 +683,13 @@ SrcArea* get_expr_area(Expr* expr)
 	return &unknown_type;
 }
 
-char* get_member_name(Expr* expr)
+const char* get_member_name(Expr* expr)
+{
+	Idnt* idnt = get_member_idnt(expr);
+	return idnt ? idnt->svalue : NULL;
+}
+
+Idnt* get_member_idnt(Expr* expr)
 {
 	// function is needed espesially for recognizing the member's name in accessor expression
 	// i mean that we are not fully knew that member will be represented as Idnt
@@ -690,16 +697,16 @@ char* get_member_name(Expr* expr)
 	switch (expr->kind)
 	{
 	case EXPR_IDNT:
-		return expr->idnt->svalue;
+		return expr->idnt;
 	case EXPR_BINARY_EXPR:
 		switch (expr->binary_expr->kind)
 		{
 		case BINARY_MEMBER_ACCESSOR:
 		case BINARY_PTR_MEMBER_ACCESSOR:
 		case BINARY_ARR_MEMBER_ACCESSOR:
-			return get_member_name(expr->binary_expr->lexpr);
+			return get_member_idnt(expr->binary_expr->lexpr);
 		default:
-			report_error2("Cannot get member name from binary expression.", 
+			report_error2("Cannot get member name from binary expression.",
 				expr->binary_expr->area);
 			break;
 		}
@@ -708,5 +715,5 @@ char* get_member_name(Expr* expr)
 		report_error("Cannot get member name from expression.", NULL);
 		break;
 	}
-	return &unknown_type;
+	return NULL;
 }

@@ -7,6 +7,7 @@
 typedef struct Expr Expr;
 typedef struct Stmt Stmt;
 typedef struct AstRoot AstRoot;
+typedef struct EnumMember EnumMember;
 
 typedef enum UnaryExprKind
 {
@@ -125,20 +126,20 @@ typedef struct TernaryExpr
 typedef struct Str
 {
 	Type* type;
-	const char* svalue;
+	char* svalue;
 	SrcContext* context;
 } Str;
 
 typedef struct Idnt
 {
 	Type* type;
-	const char* svalue;
+	char* svalue;
 	SrcContext* context;
 
 	struct _enum_member_data
 	{
 		bool is_enum_member;
-		Expr* enum_member_value;
+		EnumMember* enum_member;
 	};
 } Idnt;
 
@@ -170,7 +171,7 @@ typedef struct FuncCall
 	SrcArea* area;
 	FuncSpec* spec;
 	CallConv* conv;
-	const char* name;
+	char* name;
 } FuncCall;
 
 typedef struct Initializer
@@ -222,7 +223,7 @@ typedef struct TypeVar
 {
 	Type* type;
 	SrcArea* area;
-	const char* var;
+	char* var;
 } TypeVar;
 
 typedef struct VarDecl
@@ -247,8 +248,6 @@ typedef struct LabelDecl
 {
 	Idnt* label;
 } LabelDecl;
-
-typedef struct EnumMember EnumMember;
 
 typedef struct EnumDecl
 {

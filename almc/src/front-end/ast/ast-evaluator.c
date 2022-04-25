@@ -141,7 +141,7 @@ int64_t evaluate_expr_itype(Expr* expr)
 	case EXPR_IDNT:
 		if (expr->idnt->is_enum_member)
 			return evaluate_expr_itype(
-				expr->idnt->enum_member_value);
+				expr->idnt->enum_member->value);
 		break;
 	case EXPR_CONST:
 		return evaluate_const_itype(expr->cnst);
@@ -249,7 +249,7 @@ double evaluate_expr_ftype(Expr* expr)
 	case EXPR_IDNT:
 		if (expr->idnt->is_enum_member)
 			return evaluate_expr_ftype(
-				expr->idnt->enum_member_value);
+				expr->idnt->enum_member->value);
 		break;
 	case EXPR_CONST:
 		return evaluate_const_ftype(expr->cnst);

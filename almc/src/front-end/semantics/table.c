@@ -1,17 +1,5 @@
 #include "table.h"
 
-#define is_declared_in_collection(member, member_in_collection, collection)   \
-	for (size_t i = 0; i < sbuffer_len(collection); i++)				      \
-		if (strcmp(collection[i]->member_in_collection, member) == 0)         \
-			return true;													  \
-	return false;
-
-#define get_from_collection(member, member_in_collection, collection)   \
-	for (size_t i = 0; i < sbuffer_len(collection); i++)                \
-		if (strcmp(collection[i]->member_in_collection, member) == 0)   \
-			return collection[i];						                \
-	return NULL;
-
 Table* table_new(Table* parent)
 {
 	Table* table = cnew(Table, 1);
@@ -106,10 +94,6 @@ bool is_table_entity_declared(const char* decl_name,
 		for (size_t i = 0; i < sbuffer_len(p->c); i++) 	 \
 			if (strcmp(p->c[i]->m_in, decl_name) == 0) 	 \
 				return true;
-
-#define _decld_in_ret(c, m_in)  \
-	_decld_in(c, m_in);			\
-	return false
 	
 	switch (kind) {
 		case TABLE_ENTITY_ENUM:	
@@ -117,7 +101,8 @@ bool is_table_entity_declared(const char* decl_name,
 		case TABLE_ENTITY_STRUCT:
 			_decld_in(structs, struct_decl->name);
 			_decld_in(enums, enum_decl->name);
-			_decld_in_ret(unions, union_decl->name);
+			_decld_in(unions, union_decl->name);
+			return false;
 		case TABLE_ENTITY_LABEL:
 		case TABLE_ENTITY_VARIABLE:
 		case TABLE_ENTITY_PARAMETER:
@@ -125,16 +110,17 @@ bool is_table_entity_declared(const char* decl_name,
 			_decld_in(labels, label->label->svalue);
 			_decld_in(parameters, parameter->var);
 			_decld_in(locals, local->type_var->var);
-			_decld_in_ret(enum_members, enum_member->name);
+			_decld_in(enum_members, enum_member->name);
+			return false;
 		case TABLE_ENTITY_FUNCTION:
-			_decld_in_ret(functions, function->name->svalue);
+			_decld_in(functions, function->name->svalue);
+			return false;
 		default:
 			report_error(frmt("Unknown table entity kind met"
 				" in function: %s", __FUNCTION__), NULL);
-#undef _decld_in
-#undef _decld_in_ret
 	}
 	return false;
+#undef _decld_in
 }
 
 bool add_table_entity(TableEntity*** entities, void* decl, 

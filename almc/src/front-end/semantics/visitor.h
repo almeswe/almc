@@ -23,6 +23,7 @@ void visit_block(Block* block, Table* table);
 void visit_block_stmts(Block* block, Table* table);
 
 void visit_expr(Expr* expr, Table* table);
+void visit_addr_expr(Expr* expr, Table* table);
 void visit_idnt(Idnt* idnt, Table* table, bool is_in_assign);
 void visit_func_call(FuncCall* func_call, Table* table);
 void visit_unary_expr(UnaryExpr* unary_expr, Table* table);
@@ -68,7 +69,7 @@ uint32_t get_size_of_type(Type* type, Table* table);
 void complete_size(Type* type, Table* table);
 void complete_type(Type* type, Table* table);
 
-bool is_addressable_value(Expr* expr);
+bool is_addressable_expr(Expr* expr);
 bool is_const_expr(Expr* expr);
 bool is_primary_expr(Expr* expr);
 

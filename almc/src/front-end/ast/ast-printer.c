@@ -202,7 +202,6 @@ void print_binary_expr(BinaryExpr* expr, const char* indent)
 		"binary-bw-or-asgn: |=",
 		"binary-bw-and-asgn: &=",
 		"binary-bw-xor-asgn: ^=",
-		"binary-bw-not-asgn: ~=",
 
 		"binary-mmbr-accsr: .",
 		"binary-ptr-mmbr-accsr: ->",

@@ -48,7 +48,7 @@ Idnt* idnt_new(const char* idnt, SrcContext* context)
 	identifier->context = context;
 	identifier->type = &unknown_type;
 	identifier->is_enum_member = 0;
-	identifier->enum_member_value = NULL;
+	identifier->enum_member = NULL;
 	return identifier;
 }
 
