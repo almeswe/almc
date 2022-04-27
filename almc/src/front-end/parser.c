@@ -221,6 +221,16 @@ Type* parse_type(Parser* parser)
 	#undef ASSIGN_TYPE
 }
 
+Name* parse_name(Parser* parser)
+{
+	Token* token = get_curr_token(parser);
+	expect_with_skip(parser, TOKEN_IDNT, "identifier");
+	Name* name = new(Name);
+	name->value = token->lexeme;
+	name->context = token->context;
+	return name;
+}
+
 Expr* parse_paren_expr(Parser* parser)
 {
 	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
@@ -232,11 +242,9 @@ Expr* parse_paren_expr(Parser* parser)
 Expr* parse_func_call_expr(Parser* parser)
 {
 	Expr** func_args = NULL;
-	const char* func_name = 
-		get_curr_token(parser)->lexeme;
+	Name* func_name = parse_name(parser);
 
 	context_starts(parser, context);
-	expect_with_skip(parser, TOKEN_IDNT, "func name");
 	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
 	if (!matcht(parser, TOKEN_CL_PAREN))
 	{
@@ -890,14 +898,14 @@ Stmt* parse_enum_decl_stmt(Parser* parser)
 	Expr* member_value = NULL;
 	SrcContext* member_context = NULL;
 
-	char* name = "";
 	EnumMember** members = NULL;
 
 	expect_with_skip(parser, TOKEN_KEYWORD_ENUM, "enum");
+	Name* name = parse_name(parser);
 	// enum can be no-name
-	if (matcht(parser, TOKEN_IDNT))
-		name = get_curr_token(parser)->lexeme,
-			expect_with_skip(parser, TOKEN_IDNT, "enum name");
+	//if (matcht(parser, TOKEN_IDNT))
+	//	name = get_curr_token(parser)->lexeme,
+	//		expect_with_skip(parser, TOKEN_IDNT, "enum name");
 	expect_with_skip(parser, TOKEN_OP_BRACE, "{");
 	while (!matcht(parser, TOKEN_CL_BRACE))
 	{
@@ -941,13 +949,12 @@ Stmt* parse_enum_decl_stmt(Parser* parser)
 
 Stmt* parse_union_decl_stmt(Parser* parser)
 {
-	char* name = "";
 	Member** members = NULL;
 	TypeVar* typevar = NULL;
 
 	expect_with_skip(parser, TOKEN_KEYWORD_UNION, "union");
-	name = get_curr_token(parser)->lexeme;
-	expect_with_skip(parser, TOKEN_IDNT, "union name");
+	Name* name = parse_name(parser);//get_curr_token(parser)->lexeme;
+	//expect_with_skip(parser, TOKEN_IDNT, "union name");
 	expect_with_skip(parser, TOKEN_OP_BRACE, "{");
 	while (!matcht(parser, TOKEN_CL_BRACE))
 	{
@@ -964,13 +971,12 @@ Stmt* parse_union_decl_stmt(Parser* parser)
 
 Stmt* parse_struct_decl_stmt(Parser* parser)
 {
-	char* name = "";
 	TypeVar* typevar = NULL;
 	Member** members = NULL;
 
 	expect_with_skip(parser, TOKEN_KEYWORD_STRUCT, "struct");
-	name = get_curr_token(parser)->lexeme;
-	expect_with_skip(parser, TOKEN_IDNT, "struct name");
+	Name* name = parse_name(parser);//get_curr_token(parser)->lexeme;
+	//expect_with_skip(parser, TOKEN_IDNT, "struct name");
 	expect_with_skip(parser, TOKEN_OP_BRACE, "{");
 	while (!matcht(parser, TOKEN_CL_BRACE))
 	{
@@ -1052,18 +1058,18 @@ Stmt* parse_auto_var_decl_stmt(Parser* parser)
 		var_decl_new(true, type_var, var_init));
 }
 
-CallConv* calling_convention_new()
+Convention* calling_convention_new()
 {
-	CallConv* convention = cnew(CallConv, 1);
+	Convention* convention = cnew(Convention, 1);
 	convention->repr = "c";
 	convention->kind = CALL_CONV_CDECL;
 	return convention;
 }
 
-CallConv* parse_func_calling_convention(Parser* parser)
+Convention* parse_func_calling_convention(Parser* parser)
 {
 	// cdecl will be set by default
-	CallConv* convention = 
+	Convention* convention = 
 		calling_convention_new();
 
 	char* token_str = get_curr_token(parser)->lexeme;
@@ -1110,19 +1116,13 @@ FuncSpec* parse_func_specifiers(Parser* parser)
 
 Stmt* parse_func_decl_stmt(Parser* parser)
 {
-	Idnt* name = NULL;
-	Type* type = NULL;
 	Block* body = NULL;
 	TypeVar** params = NULL;
-	FuncSpec* spec = NULL;
-	CallConv* call_conv = NULL;
 
 	expect_with_skip(parser, TOKEN_KEYWORD_FUNC, "fnc");
-	call_conv = parse_func_calling_convention(parser);
-	spec = parse_func_specifiers(parser);
-	name = idnt_new(get_curr_token(parser)->lexeme,
-		get_curr_token(parser)->context);
-	expect_with_skip(parser, TOKEN_IDNT, "func name");
+	Convention* call_conv = parse_func_calling_convention(parser);
+	FuncSpec* spec = parse_func_specifiers(parser);
+	Name* name = parse_name(parser);
 	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
 	while (!matcht(parser, TOKEN_CL_PAREN))
 	{
@@ -1139,7 +1139,7 @@ Stmt* parse_func_decl_stmt(Parser* parser)
 	}
 	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
 	expect_with_skip(parser, TOKEN_COLON, ":");
-	type = parse_type(parser);
+	Type* type = parse_type(parser);
 	
 	// checking if function does not have any block
 	if (matcht(parser, TOKEN_SEMICOLON))
@@ -1156,14 +1156,10 @@ Stmt* parse_func_decl_stmt(Parser* parser)
 
 Stmt* parse_label_decl_stmt(Parser* parser)
 {
-	Idnt* label = cnew(Idnt, 1);
-
 	expect_with_skip(parser, TOKEN_KEYWORD_LABEL, "label");
-	label->svalue = get_curr_token(parser)->lexeme;
-	label->context = get_curr_token(parser)->context;
-	expect_with_skip(parser, TOKEN_IDNT, "label name");
+	Name* name = parse_name(parser);
 	expect_with_skip(parser, TOKEN_SEMICOLON, ";");
-	return stmt_new(STMT_LABEL_DECL, label_decl_new(label));
+	return stmt_new(STMT_LABEL_DECL, label_decl_new(name));
 }
 
 Stmt* parse_loop_stmt(Parser* parser)
@@ -1376,17 +1372,17 @@ char* get_stmt_for_import_name(Stmt* stmt)
 		switch (stmt->type_decl->kind)
 		{
 		case TYPE_DECL_ENUM:
-			return stmt->type_decl->enum_decl->name;
+			return stmt->type_decl->enum_decl->name->value;
 		case TYPE_DECL_UNION:
-			return stmt->type_decl->union_decl->name;
+			return stmt->type_decl->union_decl->name->value;
 		case TYPE_DECL_STRUCT:
-			return stmt->type_decl->struct_decl->name;
+			return stmt->type_decl->struct_decl->name->value;
 		}
 		break;
 	case STMT_VAR_DECL:
 		return stmt->var_decl->type_var->var;
 	case STMT_FUNC_DECL:
-		return stmt->func_decl->name->svalue;
+		return stmt->func_decl->name->value;
 	}
 	return NULL;
 }
@@ -1583,7 +1579,7 @@ Stmt* parse_jump_stmt(Parser* parser)
 {
 	JumpStmtKind type = -1;
 	context_starts(parser, context);
-	Expr* additional_expr = NULL;
+	Expr* expr = NULL;
 	Idnt* goto_label = cnew(Idnt, 1);
 
 	switch (get_curr_token(parser)->type)
@@ -1593,7 +1589,7 @@ Stmt* parse_jump_stmt(Parser* parser)
 		expect_with_skip(parser, TOKEN_KEYWORD_GOTO, "goto");
 		goto_label->svalue = get_curr_token(parser)->lexeme;
 		expect_with_skip(parser, TOKEN_IDNT, "goto label");
-		additional_expr = expr_new(EXPR_IDNT, goto_label);
+		expr = expr_new(EXPR_IDNT, goto_label);
 		break;
 	case TOKEN_KEYWORD_BREAK:
 		type = JUMP_BREAK;
@@ -1607,7 +1603,7 @@ Stmt* parse_jump_stmt(Parser* parser)
 		type = JUMP_RETURN;
 		expect_with_skip(parser, TOKEN_KEYWORD_RETURN, "return");
 		if (!matcht(parser, TOKEN_SEMICOLON))
-			additional_expr = parse_expr(parser);
+			expr = parse_expr(parser);
 		break;
 	default:
 		report_error(frmt("Expected keyword (return, break or continue), but met: %s",
@@ -1615,7 +1611,7 @@ Stmt* parse_jump_stmt(Parser* parser)
 	}
 	expect_with_skip(parser, TOKEN_SEMICOLON, ";");
 	Stmt* stmt = stmt_new(STMT_JUMP, jump_stmt_new(type, 
-		additional_expr));
+		expr));
 	context_ends(parser, context, stmt->jump_stmt);
 	return stmt;
 }

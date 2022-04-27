@@ -766,12 +766,11 @@ void gen_caller_stack_clearing(FuncCall* func_call)
 	*/
 
 	uint32_t size = 0;
-	switch (func_call->conv->kind)
+	switch (func_call->decl->conv->kind)
 	{
 	case CALL_CONV_STDCALL:
 		break;
 	case CALL_CONV_CDECL:
-
 		// caching the size of each passed argument to clear this space
 		for (size_t i = 0; i < sbuffer_len(func_call->args); i++)
 		{
@@ -800,8 +799,8 @@ void gen_func_call32(FuncCall* func_call, StackFrame* frame)
 		PROC_CODE_LINE1(PUSH, get_register_str(EAX));
 	}
 	// if we met here the external function there will be no need to add underscore
-	PROC_CODE_LINE1(CALL, frmt(func_call->spec->is_external ? 
-		"%s" : "_%s", func_call->name));
+	PROC_CODE_LINE1(CALL, frmt(func_call->decl->spec->is_external ? 
+		"%s" : "_%s", func_call->name->value));
 	gen_caller_stack_clearing(func_call);
 	restore_gp_registers(registers);
 }

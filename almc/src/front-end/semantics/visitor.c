@@ -135,21 +135,22 @@ void visit_scope(Stmt** stmts, Table* table)
 				stmts[i]->##kind##_decl->c);							\
 	break
 
-#define _add_typedecl(kind)											\
+#define _add_typedecl(kind, c)										\
 	if (!add_##kind##(stmts[i]->type_decl->##kind##_decl, table))	\
 		report_error(frmt("Type \'%s\' is already declared.",		\
-			stmts[i]->type_decl->##kind##_decl->name), NULL);		\
+			stmts[i]->type_decl->##kind##_decl->name->value),		\
+			stmts[i]->type_decl->##kind##_decl->c);					\
 	break
 
 	for (size_t i = 0; i < sbuffer_len(stmts); i++) {
 		switch (stmts[i]->kind) {
-			case STMT_FUNC_DECL:	_add_decl(func, name->svalue, name->context);
-			case STMT_LABEL_DECL:	_add_decl(label, label->svalue, label->context);
+			case STMT_FUNC_DECL:	_add_decl(func, name->value, name->context);
+			case STMT_LABEL_DECL:	_add_decl(label, name->value, name->context);
 			case STMT_TYPE_DECL:
 				switch (stmts[i]->type_decl->kind) {
-					case TYPE_DECL_ENUM:	_add_typedecl(enum);
-					case TYPE_DECL_UNION:	_add_typedecl(union);
-					case TYPE_DECL_STRUCT:	_add_typedecl(struct);
+					case TYPE_DECL_ENUM:	_add_typedecl(enum, name->context);
+					case TYPE_DECL_UNION:	_add_typedecl(union, name->context);
+					case TYPE_DECL_STRUCT:	_add_typedecl(struct, name->context);
 					default:
 						report_error(frmt("Unknown type declaration kind met "
 							"in function: %s.", __FUNCTION__), NULL);
@@ -212,6 +213,30 @@ void visit_addr_expr(Expr* expr, Table* table)
 	}
 }
 
+//void visit_pointed_expr(Expr* lexpr, Expr* rexpr, Table* table)
+//{
+//	StructDecl* entval = NULL;
+//	TableEntity* entity = NULL, *copy = NULL;
+//	Type* type = get_base_type(retrieve_expr_type(lexpr));
+//	const char* name = get_member_name(rexpr);
+//	if (entity = get_struct(type->repr, table)) {
+//		entval = entity->struct_decl;
+//	} 
+//	else if (entity = get_union(type->repr, table)) {
+//		entval = entity->union_decl;
+//	}
+//	else {
+//		report_error("Error", NULL);
+//	}
+//	if (entval != NULL) {
+//		for (size_t i = 0; i < sbuffer_len(entval->members); i++) {
+//			if (strcmp(entval->members[i]->name, name) == 0) {
+//				return;
+//			}
+//		}
+//	}
+//}
+
 void visit_idnt(Idnt* idnt, Table* table, bool is_in_assign)
 {
 	TableEntity* entity = NULL;
@@ -241,19 +266,18 @@ void visit_func_call(FuncCall* func_call, Table* table)
 {
 	// trying to get function declaration from the table
 	TableEntity* entity = get_function(
-		func_call->name, table);
+		func_call->name->value, table);
 
 	if (entity == NULL) {
 		// print resolve error if there are no any declaration for
 		// this function call
 		return report_error2(frmt("Cannot resolve function \'%s\'.",
-			func_call->name), func_call->area), (void)1;
+			func_call->name->value), func_call->area), (void)1;
 	}
 
 	// synchronize few fields with function call structure
 	FuncDecl* func_decl = entity->function;
-	func_call->conv = func_decl->conv;
-	func_call->spec = func_decl->spec;
+	func_call->decl = func_decl;
 
 	// capture count of params of function declaration and
 	// count of passed arguments to function call
@@ -261,13 +285,13 @@ void visit_func_call(FuncCall* func_call, Table* table)
 	uint32_t params = sbuffer_len(func_decl->params);
 
 	if (args < params) {
-		report_error2(frmt("More arguments expected for "
-			"function call \'%s\'.", func_call->name), func_call->area);
+		report_error(frmt("More arguments expected for function call \'%s\'.",
+			func_call->name->value), func_call->name->context);
 	}
 	else if (args > params && !func_decl->spec->is_vararg) {
 		// print this error only when the function declaration has vararg property
-		report_error2(frmt("Less arguments expected for "
-			"function call \'%s\'.", func_call->name), func_call->area);
+		report_error(frmt("Less arguments expected for function call \'%s\'.",
+			func_call->name->value), func_call->name->context);
 	}
 
 	// resolvig all passed arguments to function call
@@ -585,12 +609,12 @@ void visit_jump_stmt(JumpStmt* jump_stmt, Table* table)
 
 void visit_goto_stmt(JumpStmt* goto_stmt, Table* table)
 {
-	if (!goto_stmt->additional_expr) {
+	if (!goto_stmt->expr) {
 		report_error2(frmt("Expression in jump statement is NULL."
 			" in function: %s.", __FUNCTION__), goto_stmt->area);
 	}
 	else {
-		Expr* label = goto_stmt->additional_expr;
+		Expr* label = goto_stmt->expr;
 		if (label->kind != EXPR_IDNT) {
 			report_error2("Expression in jump statement must be identifier"
 				" in case of goto statement.", goto_stmt->area);
@@ -624,7 +648,7 @@ void visit_return_stmt(JumpStmt* return_stmt, Table* table)
 			" when its not located in function.", return_stmt->area);
 	}
 	else {
-		Expr* ret_expr = return_stmt->additional_expr;
+		Expr* ret_expr = return_stmt->expr;
 		Type* func_ret_type = table->in_function->type;
 		if (ret_expr != NULL) {
 			visit_expr(ret_expr, table);
@@ -636,7 +660,7 @@ void visit_return_stmt(JumpStmt* return_stmt, Table* table)
 			}
 		}
 		else {
-			if (func_ret_type != TYPE_VOID) {
+			if (func_ret_type->kind != TYPE_VOID) {
 				report_error2("Cannot ignore return expression"
 					" not in void function.", return_stmt->area);
 			}
@@ -726,7 +750,7 @@ void visit_enum(EnumDecl* enum_decl, Table* table)
 		// Validation of assigned expression, it must be constant.
 		if (current->value && !is_const_expr(current->value)) {
 			report_error2(frmt("Enum member \'%s\' must have constant expression, in \'%s\'.",
-				current->name, enum_decl->name), get_expr_area(current->value));
+				current->name, enum_decl->name->value), get_expr_area(current->value));
 		}
 
 		// Trying to add enum member to symbol table,
@@ -742,7 +766,7 @@ void visit_enum(EnumDecl* enum_decl, Table* table)
 			}
 			else {
 				report_error(frmt("Enum member \'%s\' in \'%s\' is already declared in \'%s\'.",
-					current->name, enum_decl->name, entity->enum_member->from->name), current->context);
+					current->name, enum_decl->name->value, entity->enum_member->from->name->value), current->context);
 			}
 		}
 	}
@@ -756,7 +780,7 @@ void visit_union(UnionDecl* union_decl, Table* table)
 			- resolving member's type.
 	*/
 
-	visit_members(union_decl->name, 
+	visit_members(union_decl->name->value,
 		union_decl->members, table);
 }
 
@@ -768,7 +792,7 @@ void visit_struct(StructDecl* struct_decl, Table* table)
 			- resolving member's type.
 	*/
 
-	visit_members(struct_decl->name,
+	visit_members(struct_decl->name->value,
 		struct_decl->members, table);
 }
 
@@ -863,11 +887,11 @@ void visit_func_decl_specs(FuncDecl* func_decl, Table* table)
 	// when function is external or not.
 	if (func_decl->spec->is_external && func_decl->body) {
 		report_error(frmt("Function \'%s\' specified like external.",
-			func_decl->name->svalue), func_decl->name->context);
+			func_decl->name->value), func_decl->name->context);
 	}
 	if (!func_decl->spec->is_external && !func_decl->body) {
 		report_error(frmt("Function \'%s\' needs body, its not external.",
-			func_decl->name->svalue), func_decl->name->context);
+			func_decl->name->value), func_decl->name->context);
 	}
 }
 
@@ -953,7 +977,7 @@ void check_entry_func_params(FuncDecl* func_decl)
 		break;
 	default:
 		report_error(frmt("Entry method \'%s\' cannot accept this count \'%d\' of parameters.",
-			func_decl->name->svalue, param_count), func_decl->name->context);
+			func_decl->name->value, param_count), func_decl->name->context);
 	}
 }
 

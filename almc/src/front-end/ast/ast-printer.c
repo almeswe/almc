@@ -110,10 +110,10 @@ void print_func_call(FuncCall* func_call, const char* indent)
 	size_t len = sbuffer_len(func_call->args);
 	if (func_call->type)
 		printfc(ALMC_CONSOLE_GREEN, "%sfunc-call: %s(args: %d) %s\n", indent,
-			func_call->name, len, type_tostr_plain(func_call->type));
+			func_call->name->value, len, type_tostr_plain(func_call->type));
 	else
 		printfc(ALMC_CONSOLE_GREEN, "%sfunc-call: %s(args: %d)\n",
-			indent, func_call->name, len);
+			indent, func_call->name->value, len);
 	if (len)
 		for (size_t i = 0; i < len; i++)
 			print_expr(func_call->args[i], indent);
@@ -317,7 +317,7 @@ void print_func_decl(FuncDecl* func_decl, const char* indent)
 	printf("%s%s: %d\n", indent, #x, func_decl->spec->x) : 0
 
 	printfc(ALMC_CONSOLE_CYAN, "%sfunc-decl: %s\n", indent,
-		func_decl->name->svalue);
+		func_decl->name->value);
 	indent = frmt("   %s", indent);
 	print_func_spec(is_entry);
 	print_func_spec(is_vararg);
@@ -342,7 +342,7 @@ void print_func_decl(FuncDecl* func_decl, const char* indent)
 void print_label_decl(LabelDecl* label_decl, const char* indent)
 {
 	printfc(ALMC_CONSOLE_CYAN, "%slabel-decl: %s\n", 
-		indent, label_decl->label->svalue);
+		indent, label_decl->name->value);
 }
 
 void print_member(Member* member, const char* indent)
@@ -361,7 +361,7 @@ void print_enum_member(EnumMember* member, const char* indent)
 void print_enum_decl(EnumDecl* enum_decl, const char* indent)
 {
 	printfc(ALMC_CONSOLE_MAGENTA, "%senum-decl: %s{idnts: %d}\n",
-		indent, enum_decl->name, sbuffer_len(enum_decl->members));
+		indent, enum_decl->name->value, sbuffer_len(enum_decl->members));
 	for (size_t i = 0; i < sbuffer_len(enum_decl->members); i++)
 		print_enum_member(enum_decl->members[i], indent);
 }
@@ -369,7 +369,7 @@ void print_enum_decl(EnumDecl* enum_decl, const char* indent)
 void print_union_decl(UnionDecl* union_decl, const char* indent)
 {
 	printfc(ALMC_CONSOLE_MAGENTA, "%sunion-decl: %s{mmbrs: %d}\n", 
-		indent, union_decl->name, sbuffer_len(union_decl->members));
+		indent, union_decl->name->value, sbuffer_len(union_decl->members));
 	for (size_t i = 0; i < sbuffer_len(union_decl->members); i++)
 		print_member(union_decl->members[i], frmt("   %s", indent));
 }
@@ -377,7 +377,7 @@ void print_union_decl(UnionDecl* union_decl, const char* indent)
 void print_struct_decl(StructDecl* struct_decl, const char* indent)
 {
 	printfc(ALMC_CONSOLE_MAGENTA, "%sstruct-decl: %s{mmbrs: %d}\n", 
-		indent, struct_decl->name, sbuffer_len(struct_decl->members));
+		indent, struct_decl->name->value, sbuffer_len(struct_decl->members));
 	for (size_t i = 0; i < sbuffer_len(struct_decl->members); i++)
 		print_member(struct_decl->members[i], frmt("   %s", indent));
 }
@@ -507,15 +507,15 @@ void print_jump_stmt(JumpStmt* jump_stmt, const char* indent)
 	{
 	case JUMP_GOTO:
 		printfc(ALMC_CONSOLE_DARKMAGENTA, "goto-stmt:\n");
-		print_expr(jump_stmt->additional_expr, indent);
+		print_expr(jump_stmt->expr, indent);
 		break;
 	case JUMP_BREAK:
 		printfc(ALMC_CONSOLE_DARKMAGENTA, "break-stmt\n");
 		break;
 	case JUMP_RETURN:
 		printfc(ALMC_CONSOLE_DARKMAGENTA, "return-stmt\n");
-		if (jump_stmt->additional_expr)
-			print_expr(jump_stmt->additional_expr, indent);
+		if (jump_stmt->expr)
+			print_expr(jump_stmt->expr, indent);
 		break;
 	case JUMP_CONTINUE:
 		printfc(ALMC_CONSOLE_DARKMAGENTA, "continue-stmt\n");

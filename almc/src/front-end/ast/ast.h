@@ -6,11 +6,8 @@
 
 typedef struct Expr Expr;
 typedef struct Stmt Stmt;
-typedef struct AstRoot AstRoot;
-typedef struct EnumMember EnumMember;
 
-typedef enum UnaryExprKind
-{
+typedef enum UnaryExprKind {
 	UNARY_PLUS,
 	UNARY_MINUS,
 	UNARY_ADDRESS,
@@ -24,8 +21,7 @@ typedef enum UnaryExprKind
 	UNARY_LENGTHOF,
 } UnaryExprKind;
 
-typedef struct UnaryExpr
-{
+typedef struct UnaryExpr {
 	Type* type;
 	Expr* expr;
 	Type* cast_type;
@@ -33,8 +29,7 @@ typedef struct UnaryExpr
 	UnaryExprKind kind;
 } UnaryExpr;
 
-typedef enum BinaryExprKind
-{
+typedef enum BinaryExprKind {
 	BINARY_ADD,
 	BINARY_SUB,
 	BINARY_DIV,
@@ -77,36 +72,30 @@ typedef enum BinaryExprKind
 	BINARY_ARR_MEMBER_ACCESSOR,
 } BinaryExprKind;
 
-typedef enum CallConvKind
-{
+typedef enum {
 	CALL_CONV_CDECL = 0,
 	CALL_CONV_STDCALL = 1
-} CallConvKind;
+} ConventionKind;
 
-typedef struct CallConv
-{
+typedef struct Convention {
 	// representation of the convention
 	// in masm proto function declaration
 	char* repr;
-	CallConvKind kind;
-} CallConv;
+	ConventionKind kind;
+} Convention;
 
-typedef struct ExternalFuncSpec
-{
+typedef struct {
 	char* lib;
 } ExternalFuncSpec;
 
-typedef struct FuncSpec
-{
+typedef struct FuncSpec {
 	bool is_entry;
 	bool is_vararg;
-
 	bool is_external;
 	ExternalFuncSpec* proto;
 } FuncSpec;
 
-typedef struct BinaryExpr
-{
+typedef struct BinaryExpr {
 	Type* type;
 	Expr* lexpr;
 	Expr* rexpr;
@@ -114,8 +103,7 @@ typedef struct BinaryExpr
 	BinaryExprKind kind;
 } BinaryExpr;
 
-typedef struct TernaryExpr
-{
+typedef struct TernaryExpr {
 	Type* type;
 	Expr* cond;
 	Expr* lexpr;
@@ -123,15 +111,19 @@ typedef struct TernaryExpr
 	SrcArea* area;
 } TernaryExpr;
 
-typedef struct Str
-{
+typedef struct Str {
 	Type* type;
 	char* svalue;
 	SrcContext* context;
 } Str;
 
-typedef struct Idnt
-{
+typedef struct Name {
+	const char* value;
+	SrcContext* context;
+} Name;
+
+typedef struct EnumMember EnumMember;
+typedef struct Idnt {
 	Type* type;
 	char* svalue;
 	SrcContext* context;
@@ -143,20 +135,17 @@ typedef struct Idnt
 	};
 } Idnt;
 
-typedef enum ConstKind
-{
+typedef enum ConstKind {
 	CONST_INT,
 	CONST_UINT,
 	CONST_FLOAT,
 	CONST_CHAR,
 } ConstKind;
 
-typedef struct Const
-{
+typedef struct Const {
 	Type* type;
 	ConstKind kind;
-	union
-	{
+	union {
 		double fvalue;
 		int64_t ivalue;
 		uint64_t uvalue;
@@ -164,25 +153,22 @@ typedef struct Const
 	SrcContext* context;
 } Const;
 
-typedef struct FuncCall
-{
+typedef struct FuncDecl FuncDecl;
+typedef struct FuncCall {
+	Name* name;
 	Type* type;
 	Expr** args;
 	SrcArea* area;
-	FuncSpec* spec;
-	CallConv* conv;
-	char* name;
+	FuncDecl* decl;
 } FuncCall;
 
-typedef struct Initializer
-{
+typedef struct Initializer {
 	Type* type;
 	Expr** values;
 	SrcArea* area;
 } Initializer;
 
-typedef enum ExprKind
-{
+typedef enum ExprKind {
 	EXPR_IDNT,
 	EXPR_CONST,
 	EXPR_STRING,
@@ -193,11 +179,9 @@ typedef enum ExprKind
 	EXPR_INITIALIZER,
 } ExprKind;
 
-typedef struct Expr
-{
+typedef struct Expr {
 	ExprKind kind;
-	union
-	{
+	union {
 		Str* str;
 		Idnt* idnt;
 		Const* cnst;
@@ -209,54 +193,45 @@ typedef struct Expr
 	};
 } Expr;
 
-typedef struct Block
-{
+typedef struct Block {
 	Stmt** stmts;
 } Block;
 
-typedef struct ExprStmt
-{
+typedef struct ExprStmt {
 	Expr* expr;
 } ExprStmt;
 
-typedef struct TypeVar
-{
+typedef struct TypeVar {
 	Type* type;
 	SrcArea* area;
 	char* var;
 } TypeVar;
 
-typedef struct VarDecl
-{
+typedef struct VarDecl {
 	bool is_auto;
 	Expr* var_init;
 	TypeVar* type_var;
 } VarDecl;
 
-typedef struct FuncDecl
-{
-	Idnt* name;
+typedef struct FuncDecl {
+	Name* name;
 	Type* type;
 	Block* body;
 	TypeVar** params;
-
-	CallConv* conv;
 	FuncSpec* spec;
+	Convention* conv;
 } FuncDecl;
 
-typedef struct LabelDecl
-{
-	Idnt* label;
+typedef struct LabelDecl {
+	Name* name;
 } LabelDecl;
 
-typedef struct EnumDecl
-{
-	char* name;
+typedef struct EnumDecl {
+	Name* name;
 	EnumMember** members;
 } EnumDecl;
 
-typedef struct Member
-{
+typedef struct Member {
 	char* name;
 	Type* type;
 	SrcArea* area;
@@ -264,74 +239,63 @@ typedef struct Member
 	int32_t padding;
 } Member;
 
-typedef struct EnumMember
-{
+typedef struct EnumMember {
 	char* name;
 	Expr* value;
 	EnumDecl* from;
 	SrcContext* context;
 } EnumMember;
 
-typedef struct UnionDecl
-{
-	char* name;
+typedef struct UnionDecl {
+	Name* name;
 	Member** members;
 } UnionDecl;
 
-typedef struct StructDecl
-{
-	char* name;
+typedef struct StructDecl {
+	Name* name;
 	Member** members;
 	uint32_t alignment;
 } StructDecl;
 
-typedef enum TypeDeclKind
-{
+typedef enum TypeDeclKind {
 	TYPE_DECL_ENUM,
 	TYPE_DECL_UNION,
 	TYPE_DECL_STRUCT,
 } TypeDeclKind;
 
-typedef struct TypeDecl
-{
+typedef struct TypeDecl {
 	TypeDeclKind kind;
-	union
-	{
+	union {
 		EnumDecl* enum_decl;
 		UnionDecl* union_decl;
 		StructDecl* struct_decl;
 	};
 } TypeDecl;
 
-typedef struct DoLoop
-{
+typedef struct DoLoop {
 	Expr* cond;
 	Block* body;
 } DoLoop;
 
-typedef struct ForLoop
-{
+typedef struct ForLoop {
 	Expr* cond;
 	Expr* step;
 	Block* body;
 	VarDecl* init;
 } ForLoop;
 
-typedef struct WhileLoop
-{
+typedef struct WhileLoop {
 	Expr* cond;
 	Block* body;
 } WhileLoop;
 
-typedef enum LoopStmtKind
-{
+typedef enum {
 	LOOP_DO,
 	LOOP_FOR,
 	LOOP_WHILE,
 } LoopStmtKind;
 
-typedef struct LoopStmt
-{
+typedef struct LoopStmt {
 	LoopStmtKind kind;
 	union
 	{
@@ -341,14 +305,12 @@ typedef struct LoopStmt
 	};
 } LoopStmt;
 
-typedef struct ElseIf
-{
+typedef struct ElseIf {
 	Expr* cond;
 	Block* body;
 } ElseIf;
 
-typedef struct IfStmt
-{
+typedef struct IfStmt {
 	Expr* cond;
 	Block* body;
 	Block* else_body;
@@ -356,49 +318,41 @@ typedef struct IfStmt
 	ElseIf** elifs;
 } IfStmt;
 
-typedef struct Case
-{
+typedef struct Case {
 	Expr* value;
 	Block* body;
-	// means that this case statement has the same body with next case
 	bool is_conjucted;
 } Case;
 
-typedef struct SwitchStmt
-{
+typedef struct SwitchStmt {
 	Expr* cond;
 	Case** cases;
 	Block* default_case;
 } SwitchStmt;
 
-typedef struct EmptyStmt
-{
+typedef struct EmptyStmt {
 	char filler[0];
 } EmptyStmt;
 
-typedef enum JumpStmtKind
-{
+typedef enum JumpStmtKind {
 	JUMP_GOTO,
 	JUMP_BREAK,
 	JUMP_RETURN,
 	JUMP_CONTINUE,
 } JumpStmtKind;
 
-typedef struct JumpStmt
-{
+typedef struct JumpStmt {
 	SrcArea* area;
 	JumpStmtKind kind;
-	//used by goto && return stmts
-	Expr* additional_expr;
+	Expr* expr;
 } JumpStmt;
 
-typedef struct ImportStmt
-{
+typedef struct AstRoot AstRoot;
+typedef struct {
 	AstRoot* ast;
 } ImportStmt;
 
-typedef enum StmtType
-{
+typedef enum StmtType {
 	STMT_IF,
 	STMT_EXPR,
 	STMT_LOOP,
@@ -413,11 +367,9 @@ typedef enum StmtType
 	STMT_LABEL_DECL,
 } StmtType;
 
-typedef struct Stmt
-{
+typedef struct Stmt {
 	StmtType kind;
-	union
-	{
+	union {
 		Block* block;
 		IfStmt* if_stmt;
 		LoopStmt* loop_stmt;
@@ -434,17 +386,17 @@ typedef struct Stmt
 	};
 } Stmt;
 
-typedef struct AstRoot
-{
+typedef struct AstRoot {
 	Stmt** stmts;
 } AstRoot;
 
 Expr* expr_new(ExprKind type, void* expr_value_ptr);
 
 Str* str_new(const char* string, SrcContext* context);
+Name* name_new(const char* value, SrcContext* context);
 Idnt* idnt_new(const char* idnt, SrcContext* context);
 Const* const_new(ConstKind type, const char* svalue, SrcContext* context);
-FuncCall* func_call_new(const char* name, Expr** args);
+FuncCall* func_call_new(Name* name, Expr** args);
 UnaryExpr* unary_expr_new(UnaryExprKind type, Expr* expr);
 BinaryExpr* binary_expr_new(BinaryExprKind type, Expr* lexpr, Expr* rexpr);
 TernaryExpr* ternary_expr_new(Expr* cond, Expr* lexpr, Expr* rexpr);
@@ -471,14 +423,14 @@ ImportStmt* import_stmt_new(AstRoot* ast);
 Case* case_stmt_new(Expr* value, Block* body, bool is_conjucted);
 SwitchStmt* switch_stmt_new(Expr* cond, Case** cases, Block* default_case);
 
-LabelDecl* label_decl_new(Idnt* label);
+LabelDecl* label_decl_new(Name* name);
 VarDecl* var_decl_new(bool is_auto, TypeVar* type_var, Expr* init);
-FuncDecl* func_decl_new(Idnt* name, TypeVar** params, Type* type, Block* body, FuncSpec* spec, CallConv* conv);
+FuncDecl* func_decl_new(Name* name, TypeVar** params, Type* type, Block* body, FuncSpec* spec, Convention* conv);
 
 TypeDecl* type_decl_new(TypeDeclKind type, void* type_decl_value_ptr);
-EnumDecl* enum_decl_new(EnumMember** members, const char* name);
-UnionDecl* union_decl_new(Member** members, const char* name);
-StructDecl* struct_decl_new(Member** members, const char* name);
+EnumDecl* enum_decl_new(EnumMember** members, Name* name);
+UnionDecl* union_decl_new(Member** members, Name* name);
+StructDecl* struct_decl_new(Member** members, Name* name);
 
 Member* member_new(char* name, Type* type, SrcArea* area);
 EnumMember* enum_member_new(char* name, Expr* value, SrcContext* context);
@@ -487,6 +439,7 @@ void ast_free(AstRoot* root);
 
 void expr_free(Expr* expr);
 void str_free(Str* str);
+void name_free(Name* name);
 void idnt_free(Idnt* idnt);
 void const_free(Const* cnst);
 void func_call_free(FuncCall* func_call);

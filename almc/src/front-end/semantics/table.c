@@ -59,7 +59,7 @@ void table_entities_free(TableEntity** entities)
 bool add_func(FuncDecl* func_decl, Table* table)
 {
 	return add_table_entity(&table->functions, (void*)func_decl,
-		func_decl->name->svalue, TABLE_ENTITY_FUNCTION, table);
+		func_decl->name->value, TABLE_ENTITY_FUNCTION, table);
 }
 
 bool add_variable(VarDecl* var_decl, Table* table)
@@ -71,7 +71,7 @@ bool add_variable(VarDecl* var_decl, Table* table)
 bool add_label(LabelDecl* label_decl, Table* table)
 {
 	return add_table_entity(&table->labels, (void*)label_decl,
-		label_decl->label->svalue, TABLE_ENTITY_LABEL, table);
+		label_decl->name->value, TABLE_ENTITY_LABEL, table);
 }
 
 bool add_parameter(TypeVar* type_var, Table* table)
@@ -99,21 +99,21 @@ bool is_table_entity_declared(const char* decl_name,
 		case TABLE_ENTITY_ENUM:	
 		case TABLE_ENTITY_UNION:
 		case TABLE_ENTITY_STRUCT:
-			_decld_in(structs, struct_decl->name);
-			_decld_in(enums, enum_decl->name);
-			_decld_in(unions, union_decl->name);
+			_decld_in(structs, struct_decl->name->value);
+			_decld_in(enums, enum_decl->name->value);
+			_decld_in(unions, union_decl->name->value);
 			return false;
 		case TABLE_ENTITY_LABEL:
 		case TABLE_ENTITY_VARIABLE:
 		case TABLE_ENTITY_PARAMETER:
 		case TABLE_ENTITY_ENUM_MEMBER:
-			_decld_in(labels, label->label->svalue);
+			_decld_in(labels, label->name->value);
 			_decld_in(parameters, parameter->var);
 			_decld_in(locals, local->type_var->var);
 			_decld_in(enum_members, enum_member->name);
 			return false;
 		case TABLE_ENTITY_FUNCTION:
-			_decld_in(functions, function->name->svalue);
+			_decld_in(functions, function->name->value);
 			return false;
 		default:
 			report_error(frmt("Unknown table entity kind met"
@@ -166,19 +166,19 @@ bool add_enum_member(EnumMember* enum_member, Table* table)
 bool add_enum(EnumDecl* enum_decl, Table* table)
 {
 	return add_table_entity(&table->enums, (void*)enum_decl, 
-		enum_decl->name, TABLE_ENTITY_ENUM, table);
+		enum_decl->name->value, TABLE_ENTITY_ENUM, table);
 }
 
 bool add_struct(StructDecl* struct_decl, Table* table)
 {
 	return add_table_entity(&table->structs, (void*)struct_decl,
-		struct_decl->name, TABLE_ENTITY_STRUCT, table);
+		struct_decl->name->value, TABLE_ENTITY_STRUCT, table);
 }
 
 bool add_union(UnionDecl* union_decl, Table* table)
 {
 	return add_table_entity(&table->unions, (void*)union_decl,
-		union_decl->name, TABLE_ENTITY_UNION, table);
+		union_decl->name->value, TABLE_ENTITY_UNION, table);
 }
 
 TableEntity* get_table_entity(const char* entity_name,
@@ -201,13 +201,13 @@ TableEntity* get_table_entity(const char* entity_name,
 			return NULL;
 	}
 	switch (kind) {
-		case TABLE_ENTITY_ENUM:			_get_from(enums, enum_decl->name);
-		case TABLE_ENTITY_UNION:		_get_from(unions, union_decl->name);
-		case TABLE_ENTITY_STRUCT:		_get_from(structs, struct_decl->name);
+		case TABLE_ENTITY_ENUM:			_get_from(enums, enum_decl->name->value);
+		case TABLE_ENTITY_UNION:		_get_from(unions, union_decl->name->value);
+		case TABLE_ENTITY_STRUCT:		_get_from(structs, struct_decl->name->value);
 		case TABLE_ENTITY_VARIABLE:		_get_from(locals, local->type_var->var);
 		case TABLE_ENTITY_PARAMETER:	_get_from(parameters, parameter->var);
-		case TABLE_ENTITY_LABEL:		_get_from(labels, label->label->svalue);
-		case TABLE_ENTITY_FUNCTION:		_get_from(functions, function->name->svalue);
+		case TABLE_ENTITY_LABEL:		_get_from(labels, label->name->value);
+		case TABLE_ENTITY_FUNCTION:		_get_from(functions, function->name->value);
 		case TABLE_ENTITY_ENUM_MEMBER:	_get_from(enum_members, enum_member->name);
 		default:
 			report_error(frmt("Unknown table entity kind met"

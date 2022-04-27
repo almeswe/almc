@@ -165,14 +165,14 @@ void gen_jump_stmt(JumpStmt* jump_stmt, StackFrame* frame)
 	case JUMP_RETURN:
 		// check if return is last statement?
 		declare_return_stmt(frame);
-		if (jump_stmt->additional_expr)
-			gen_expr32(jump_stmt->additional_expr, frame),
+		if (jump_stmt->expr)
+			gen_expr32(jump_stmt->expr, frame),
 				unreserve_register(REGISTERS, EAX);
 		PROC_CODE_LINE1(JMP, frame->proc_return_label);
 		break;
 	case JUMP_GOTO:
 		PROC_CODE_LINE1(JMP, frmt("LN_%s", 
-			jump_stmt->additional_expr->idnt->svalue));
+			jump_stmt->expr->idnt->svalue));
 		break;
 	case JUMP_BREAK:
 		PROC_CODE_LINE1(JMP, frame->loop_break_label);
@@ -214,8 +214,7 @@ void gen_var_decl_stmt(VarDecl* var_decl, StackFrame* frame)
 
 void gen_label_decl_stmt(LabelDecl* label_decl)
 {
-	PROC_CODE_LINE1(_LABEL, 
-		frmt("LN_%s", label_decl->label->svalue));
+	PROC_CODE_LINE1(_LABEL, frmt("LN_%s", label_decl->name->value));
 }
 
 void gen_stmt(Stmt* stmt, StackFrame* frame)

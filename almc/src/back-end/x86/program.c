@@ -356,7 +356,7 @@ AsmCodeProc* proc_new(FuncDecl* func_decl)
 {
 	AsmCodeProc* proc = cnew(AsmCodeProc, 1);
 	proc->lines = NULL;
-	proc->name = frmt("_%s", func_decl->name->svalue);
+	proc->name = frmt("_%s", func_decl->name->value);
 	proc->frame = stack_frame_new(func_decl);
 	proc->frame->of_proc = proc;
 	return proc;
@@ -368,7 +368,7 @@ AsmCodeProtoProc* proto_proc_new(FuncDecl* func_decl)
 	proc->lib = func_decl->spec->proto->lib;
 	proc->convention = func_decl->conv->repr;
 
-	proc->name = func_decl->name->svalue;
+	proc->name = func_decl->name->value;
 	proc->is_vararg = func_decl->spec->is_vararg;
 
 	for (size_t i = 0; i < sbuffer_len(func_decl->params); i++)

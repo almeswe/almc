@@ -129,7 +129,7 @@ Type* get_string_type(Str* str)
 Type* get_func_call_type(FuncCall* func_call, Table* table)
 {
 	// also checking type of each function's argument with type of passed value
-	FuncDecl* origin = get_function(func_call->name, table)->function;
+	FuncDecl* origin = get_function(func_call->name->value, table)->function;
 	for (size_t i = 0; i < sbuffer_len(origin->params); i++)
 		cast_implicitly(origin->params[i]->type, get_expr_type(func_call->args[i], table),
 			get_expr_area(func_call->args[i]));

@@ -41,6 +41,14 @@ Str* str_new(const char* string, SrcContext* context)
 	return str;
 }
 
+Name* name_new(const char* value, SrcContext* context)
+{
+	Name* name = new(Name);
+	name->value = value;
+	name->context = context;
+	return name;
+}
+
 Idnt* idnt_new(const char* idnt, SrcContext* context)
 {
 	Idnt* identifier = new(Idnt);
@@ -95,13 +103,14 @@ Const* const_new(ConstKind type, const char* svalue, SrcContext* context)
 	return cnst;
 }
 
-FuncCall* func_call_new(const char* func_name, Expr** func_args)
+FuncCall* func_call_new(Name* func_name, Expr** func_args)
 {
 	FuncCall* func_call = cnew(FuncCall, 1);
+	func_call->area = NULL;
+	func_call->decl = NULL;
 	func_call->args = func_args;
 	func_call->name = func_name;
 	func_call->type = &unknown_type;
-	func_call->area = NULL;
 	return func_call;
 }
 
@@ -209,7 +218,7 @@ TypeDecl* type_decl_new(TypeDeclKind type, void* type_decl_value_ptr)
 	#undef TYPE_DECL_SET_VALUE
 }
 
-EnumDecl* enum_decl_new(EnumMember** members, const char* name)
+EnumDecl* enum_decl_new(EnumMember** members, Name* name)
 {
 	EnumDecl* enum_decl = new(EnumDecl);
 	enum_decl->name = name;
@@ -219,7 +228,7 @@ EnumDecl* enum_decl_new(EnumMember** members, const char* name)
 	return enum_decl;
 }
 
-UnionDecl* union_decl_new(Member** members, const char* name)
+UnionDecl* union_decl_new(Member** members, Name* name)
 {
 	UnionDecl* union_decl = new(UnionDecl);
 	union_decl->name = name;
@@ -227,7 +236,7 @@ UnionDecl* union_decl_new(Member** members, const char* name)
 	return union_decl;
 }
 
-StructDecl* struct_decl_new(Member** members, const char* name)
+StructDecl* struct_decl_new(Member** members, Name* name)
 {
 	StructDecl* struct_decl = new(StructDecl);
 	struct_decl->name = name;
@@ -294,8 +303,8 @@ VarDecl* var_decl_new(bool is_auto, TypeVar* type_var, Expr* init)
 	return var_decl;
 }
 
-FuncDecl* func_decl_new(Idnt* name, TypeVar** params, 
-	Type* type, Block* body, FuncSpec* spec, CallConv* conv)
+FuncDecl* func_decl_new(Name* name, TypeVar** params,
+	Type* type, Block* body, FuncSpec* spec, Convention* conv)
 {
 	FuncDecl* func_decl = new(FuncDecl);
 	func_decl->name = name;
@@ -307,10 +316,10 @@ FuncDecl* func_decl_new(Idnt* name, TypeVar** params,
 	return func_decl;
 }
 
-LabelDecl* label_decl_new(Idnt* label)
+LabelDecl* label_decl_new(Name* name)
 {
 	LabelDecl* loop_decl = new(LabelDecl);
-	loop_decl->label = label;
+	loop_decl->name = name;
 	return loop_decl;
 }
 
@@ -405,7 +414,7 @@ ImportStmt* import_stmt_new(AstRoot* ast)
 	return import_stmt;
 }
 
-JumpStmt* jump_stmt_new(JumpStmtKind type, Expr* additional_expr)
+JumpStmt* jump_stmt_new(JumpStmtKind type, Expr* expr)
 {
 	JumpStmt* jump_stmt = new(JumpStmt);
 	jump_stmt->area = NULL;
@@ -413,12 +422,12 @@ JumpStmt* jump_stmt_new(JumpStmtKind type, Expr* additional_expr)
 	{
 	case JUMP_BREAK:
 	case JUMP_CONTINUE:
-		jump_stmt->additional_expr = NULL;
+		jump_stmt->expr = NULL;
 		break;
 	case JUMP_GOTO:
 	case JUMP_RETURN:
-		jump_stmt->additional_expr 
-			= additional_expr;
+		jump_stmt->expr 
+			= expr;
 		break;
 	default:
 		report_error("Unexpected jump-stmt type.", NULL);
@@ -480,6 +489,13 @@ void str_free(Str* str)
 		free(str);
 }
 
+void name_free(Name* name)
+{
+	if (name) {
+		free(name);
+	}
+}
+
 void idnt_free(Idnt* idnt)
 {
 	if (idnt)
@@ -496,6 +512,7 @@ void func_call_free(FuncCall* func_call)
 {
 	if (func_call)
 	{
+		name_free(func_call->name);
 		for (uint32_t i = 0; i < sbuffer_len(func_call->args); i++)
 			expr_free(func_call->args[i]);
 		sbuffer_free(func_call->args);
@@ -674,6 +691,7 @@ void union_decl_free(UnionDecl* union_decl)
 {
 	if (union_decl)
 	{
+		name_free(union_decl->name);
 		for (uint32_t i = 0; i < sbuffer_len(union_decl->members); i++)
 			member_free(union_decl->members[i]);
 		sbuffer_free(union_decl->members);
@@ -685,6 +703,7 @@ void struct_decl_free(StructDecl* struct_decl)
 {
 	if (struct_decl)
 	{
+		name_free(struct_decl->name);
 		for (uint32_t i = 0; i < sbuffer_len(struct_decl->members); i++)
 			member_free(struct_decl->members[i]);
 		sbuffer_free(struct_decl->members);
@@ -762,7 +781,7 @@ void func_decl_free(FuncDecl* func_decl)
 {
 	if (func_decl)
 	{
-		idnt_free(func_decl->name);
+		name_free(func_decl->name);
 		type_free(func_decl->type);
 		block_free(func_decl->body);
 		func_spec_free(func_decl->spec);
@@ -778,7 +797,7 @@ void label_decl_free(LabelDecl* label_decl)
 {
 	if (label_decl)
 	{
-		idnt_free(label_decl->label);
+		name_free(label_decl->name);
 		free(label_decl);
 	}
 }
@@ -905,7 +924,7 @@ void jump_stmt_free(JumpStmt* jump_stmt)
 			break;
 		case JUMP_GOTO:
 		case JUMP_RETURN:
-			expr_free(jump_stmt->additional_expr);
+			expr_free(jump_stmt->expr);
 			break;
 		default:
 			report_error("Unexpected jump statement kind in jump_stmt_free().", NULL);

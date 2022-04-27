@@ -82,5 +82,5 @@ void check_func_return_flow(FuncDecl* func_decl)
 	if (!IS_VOID_TYPE(func_decl->type))
 		if (!check_flow_scope(func_decl->body))
 			report_error(frmt("Not every code flow in function \'%s\' returns value.",
-				func_decl->name->svalue), func_decl->name->context);
+				func_decl->name->value), func_decl->name->context);
 }
