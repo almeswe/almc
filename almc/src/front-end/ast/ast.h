@@ -289,7 +289,7 @@ typedef struct WhileLoop {
 	Block* body;
 } WhileLoop;
 
-typedef enum {
+typedef enum LoopStmtKind {
 	LOOP_DO,
 	LOOP_FOR,
 	LOOP_WHILE,

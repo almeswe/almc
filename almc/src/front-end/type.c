@@ -103,8 +103,8 @@ bool is_integral_smaller_than_pointer_type(Type* type)
 
 bool is_pointer_like_type(Type* type)
 {
-	return IS_ARRAY_TYPE(type) || 
-		IS_POINTER_TYPE(type);
+	return type->kind == TYPE_ARRAY || 
+		type->kind == TYPE_POINTER;
 }
 
 bool is_both_primitive(Type* type1, Type* type2)
@@ -153,12 +153,6 @@ bool is_incomplete_type(Type* type)
 	return false;
 }
 
-bool is_not_aggregate_type(Type* type)
-{
-	return IS_PRIMITIVE_TYPE(type) || 
-		IS_VOID_TYPE(type);
-}
-
 bool is_signed_type(Type* type)
 {
 	if (IS_I8_TYPE(type)  ||
@@ -177,6 +171,28 @@ bool is_unsigned_type(Type* type)
 		IS_U64_TYPE(type))
 			return true;
 	return IS_POINTER_TYPE(type);
+}
+
+bool is_one(Type* type1, Type* type2, TypeKind kind)
+{
+	return type1->kind == kind || type2->kind == kind;
+}
+
+bool is_onea(Type* type1, Type* type2, 
+	bool (action_func)(Type*))
+{
+	return action_func(type1) || action_func(type2);
+}
+
+bool is_both(Type* type1, Type* type2, TypeKind kind)
+{
+	return type1->kind == kind && type2->kind == kind;
+}
+
+bool is_botha(Type* type1, Type* type2, 
+	bool (action_func)(Type*))
+{
+	return action_func(type1) && action_func(type2);
 }
 
 Type* get_base_type(Type* type)

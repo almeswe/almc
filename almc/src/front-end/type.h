@@ -159,12 +159,15 @@ bool is_aggregate_type(Type* type);
 bool is_user_defined_type(Type* type);
 bool is_incomplete_type(Type* type);
 bool is_pointer_like_type(Type* type);
-bool is_not_aggregate_type(Type* type);
 bool is_both_primitive(Type* type1, Type* type2);
 bool is_both_are_equal_user_defined(Type* type1, Type* type2);
 
 bool is_signed_type(Type* type);
 bool is_unsigned_type(Type* type);
+bool is_one(Type* type1, Type* type2, TypeKind kind);
+bool is_onea(Type* type1, Type* type2, bool (action_func)(Type*));
+bool is_both(Type* type1, Type* type2, TypeKind kind);
+bool is_botha(Type* type1, Type* type2, bool (action_func)(Type*));
 
 Type* get_base_type(Type* type);
 Type* get_array_base_type(Type* type);

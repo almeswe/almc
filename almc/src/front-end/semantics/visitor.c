@@ -126,31 +126,43 @@ void visit_scope(Stmt** stmts, Table* table)
 		be order independent for other callers.
 	*/
 
+	FuncDecl** func_decls = NULL;
+
 #define _str(val) #val
 
 #define _add_decl(kind, name, c)										\
 	if (!add_##kind##(stmts[i]->##kind##_decl, table))					\
 		report_error(frmt("%s \'%s\' is already declared.", _str(kind),	\
 			stmts[i]->##kind##_decl->name),								\
-				stmts[i]->##kind##_decl->c);							\
-	break
+				stmts[i]->##kind##_decl->c)							
 
 #define _add_typedecl(kind, c)										\
 	if (!add_##kind##(stmts[i]->type_decl->##kind##_decl, table))	\
 		report_error(frmt("Type \'%s\' is already declared.",		\
 			stmts[i]->type_decl->##kind##_decl->name->value),		\
-			stmts[i]->type_decl->##kind##_decl->c);					\
-	break
+			stmts[i]->type_decl->##kind##_decl->c)					
 
 	for (size_t i = 0; i < sbuffer_len(stmts); i++) {
 		switch (stmts[i]->kind) {
-			case STMT_FUNC_DECL:	_add_decl(func, name->value, name->context);
-			case STMT_LABEL_DECL:	_add_decl(label, name->value, name->context);
+			case STMT_FUNC_DECL:
+				_add_decl(func, name->value, name->context);
+				sbuffer_add(func_decls, stmts[i]->func_decl);
+				break;
+			case STMT_LABEL_DECL:	
+				_add_decl(label, name->value, name->context);
+				break;
 			case STMT_TYPE_DECL:
 				switch (stmts[i]->type_decl->kind) {
-					case TYPE_DECL_ENUM:	_add_typedecl(enum, name->context);
-					case TYPE_DECL_UNION:	_add_typedecl(union, name->context);
-					case TYPE_DECL_STRUCT:	_add_typedecl(struct, name->context);
+					case TYPE_DECL_ENUM:	
+						_add_typedecl(enum, name->context);
+						visit_enum(stmts[i]->type_decl->enum_decl, table);
+						break;
+					case TYPE_DECL_UNION:	
+						_add_typedecl(union, name->context);
+						break;
+					case TYPE_DECL_STRUCT:	
+						_add_typedecl(struct, name->context);
+						break;
 					default:
 						report_error(frmt("Unknown type declaration kind met "
 							"in function: %s.", __FUNCTION__), NULL);
@@ -161,6 +173,26 @@ void visit_scope(Stmt** stmts, Table* table)
 #undef _add_typedecl
 		}
 	}
+	
+	/*
+		Resolving types of parameters of each function
+		and its return type, to avoid incomplete types during
+		function calls before the actual function declaration 
+		resolving process is done.
+	*/
+
+	for (size_t i = 0; i < sbuffer_len(func_decls); i++) {
+		for (size_t p = 0; p < sbuffer_len(func_decls[i]->params); p++) {
+			visit_type(func_decls[i]->params[p]->type, NULL, table);
+		}
+		// no need for type resolving in case of void
+		// because it just means that function does not return any value
+		// (void in this context just exceptional case)
+		if (func_decls[i]->type->kind != TYPE_VOID) {
+			visit_type(func_decls[i]->type, NULL, table);
+		}
+	}
+	sbuffer_free(func_decls);
 }
 
 void visit_expr(Expr* expr, Table* table)
@@ -212,30 +244,6 @@ void visit_addr_expr(Expr* expr, Table* table)
 			get_expr_area(expr));
 	}
 }
-
-//void visit_pointed_expr(Expr* lexpr, Expr* rexpr, Table* table)
-//{
-//	StructDecl* entval = NULL;
-//	TableEntity* entity = NULL, *copy = NULL;
-//	Type* type = get_base_type(retrieve_expr_type(lexpr));
-//	const char* name = get_member_name(rexpr);
-//	if (entity = get_struct(type->repr, table)) {
-//		entval = entity->struct_decl;
-//	} 
-//	else if (entity = get_union(type->repr, table)) {
-//		entval = entity->union_decl;
-//	}
-//	else {
-//		report_error("Error", NULL);
-//	}
-//	if (entval != NULL) {
-//		for (size_t i = 0; i < sbuffer_len(entval->members); i++) {
-//			if (strcmp(entval->members[i]->name, name) == 0) {
-//				return;
-//			}
-//		}
-//	}
-//}
 
 void visit_idnt(Idnt* idnt, Table* table, bool is_in_assign)
 {
@@ -829,7 +837,8 @@ void visit_type_decl_stmt(TypeDecl* type_decl, Table* table)
 	switch (type_decl->kind)
 	{
 		case TYPE_DECL_ENUM:
-			visit_enum(type_decl->enum_decl, table);
+			// enum is already visited in visit_scope function
+			// it is needed for pre-definition of all enum members in symbol table
 			break;
 		case TYPE_DECL_UNION:
 			visit_union(type_decl->union_decl, table);
@@ -931,15 +940,6 @@ void visit_func_decl_stmt(FuncDecl* func_decl, Table* table)
 					" is already passed.", current->var), current->area);
 			}
 		}
-		visit_type(current->type, current->area->begins, table);
-	}
-
-	// no need for type resolving in case of void
-	// because it just means that function does not return any value
-	// (void in this context just exceptional case)
-	if (func_decl->type->kind != TYPE_VOID) {
-		visit_type(func_decl->type,
-			func_decl->name->context, table);
 	}
 
 	// no need to check body if this function is external
