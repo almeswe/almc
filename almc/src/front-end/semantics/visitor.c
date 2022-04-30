@@ -427,7 +427,7 @@ void visit_condition(Expr* condition, Table* table)
 {
 	visit_expr(condition, table);
 	Type* type = retrieve_expr_type(condition);
-	if (!is_numeric_type(type) && !is_pointer_like_type(type)) {
+	if (!is_numeric_type(type) && !is_pointer_type(type)) {
 		report_error2(frmt("Condition expression cannot have \'%s\' type.",
 			type_tostr_plain(type)), get_expr_area(condition));
 	}

@@ -5,6 +5,7 @@
 
 #include "..\utils\common.h"
 #include "..\utils\context.h"
+#include "..\utils\data-structures\str-builder.h"
 
 #define I8_TYPE		 "i8"
 #define I16_TYPE	 "i16"
@@ -149,21 +150,36 @@ Type* address_type(Type* type);
 
 char* type_tostr_plain(Type* type);
 
+bool is_u8_type(Type* type);
+bool is_i8_type(Type* type);
+bool is_u16_type(Type* type);
+bool is_i16_type(Type* type);
+bool is_u32_type(Type* type);
+bool is_i32_type(Type* type);
+bool is_u64_type(Type* type);
+bool is_i64_type(Type* type);
+bool is_f32_type(Type* type);
+bool is_f64_type(Type* type);
+bool is_char_type(Type* type);
+bool is_void_type(Type* type);
+bool is_enum_type(Type* type);
+bool is_union_type(Type* type);
+bool is_struct_type(Type* type);
+bool is_array_type(Type* type);
+bool is_pointer_type(Type* type);
+bool is_incomplete_type(Type* type);
+
 bool is_real_type(Type* type);
 bool is_numeric_type(Type* type);
 bool is_integral_type(Type* type);
-bool is_integral_smaller_than_pointer_type(Type* type);
 
-bool is_array_type(Type* type);
 bool is_aggregate_type(Type* type);
 bool is_user_defined_type(Type* type);
-bool is_incomplete_type(Type* type);
-bool is_pointer_like_type(Type* type);
-bool is_both_primitive(Type* type1, Type* type2);
 bool is_both_are_equal_user_defined(Type* type1, Type* type2);
 
 bool is_signed_type(Type* type);
 bool is_unsigned_type(Type* type);
+
 bool is_one(Type* type1, Type* type2, TypeKind kind);
 bool is_onea(Type* type1, Type* type2, bool (action_func)(Type*));
 bool is_both(Type* type1, Type* type2, TypeKind kind);

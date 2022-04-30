@@ -265,7 +265,7 @@ double evaluate_expr_ftype(Expr* expr)
 
 bool value_in_bounds_of_type(Type* type, double value)
 {
-	if (is_integral_type(type) || is_pointer_like_type(type))
+	if (is_integral_type(type) || is_pointer_type(type))
 	{
 		int64_t ivalue = (int64_t)value;
 		uint64_t uvalue = (uint64_t)value;
@@ -280,7 +280,7 @@ bool value_in_bounds_of_type(Type* type, double value)
 			return IN_BOUNDS_OF(UINT16_MAX, 0, uvalue);
 		if (IS_I32_TYPE(type) || IS_ENUM_TYPE(type))
 			return IN_BOUNDS_OF(INT32_MAX, INT32_MIN, ivalue);
-		if (IS_U32_TYPE(type) || IS_ENUM_TYPE(type) || is_pointer_like_type(type))
+		if (IS_U32_TYPE(type) || IS_ENUM_TYPE(type) || is_pointer_type(type))
 			return IN_BOUNDS_OF(UINT32_MAX, 0, uvalue);
 		if (IS_I64_TYPE(type))
 			return IN_BOUNDS_OF(INT64_MAX, INT64_MIN, ivalue);

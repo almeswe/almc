@@ -178,7 +178,7 @@ Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 		report_error2("Cannot determine the type of unary expression " 
 			"while taking an address.", unary_expr->area);
 	case UNARY_DEREFERENCE:
-		if (is_pointer_like_type(type)) {
+		if (is_pointer_type(type)) {
 			return dereference_type(type);
 		}
 		report_error2(frmt("Cannot dereference value of type \'%s\'.",
@@ -230,8 +230,8 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 	case BINARY_GREATER_THAN:
 	case BINARY_LESS_EQ_THAN:
 	case BINARY_GREATER_EQ_THAN:
-		if ((is_numeric_type(ltype) || is_pointer_like_type(ltype)) &&
-			(is_numeric_type(rtype) || is_pointer_like_type(rtype)))
+		if ((is_numeric_type(ltype) || is_pointer_type(ltype)) &&
+			(is_numeric_type(rtype) || is_pointer_type(rtype)))
 				if (can_cast_implicitly(ltype, rtype) ||
 					can_cast_implicitly(rtype, ltype))
 						return &i32_type;
@@ -311,7 +311,7 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 	//------------------------------
 	// accessors
 	case BINARY_ARR_MEMBER_ACCESSOR:
-		if (!is_pointer_like_type(ltype))			
+		if (!is_pointer_type(ltype))			
 			report_error2(frmt("Cannot access array element value of type \'%s\', pointer type expected.",
 				type_tostr_plain(ltype)), binary_expr->area);
 		// index of an array should be an integral type
@@ -321,14 +321,14 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 		return dereference_type(ltype);
 
 	case BINARY_PTR_MEMBER_ACCESSOR:
-		if (!is_pointer_like_type(ltype))
+		if (!is_pointer_type(ltype))
 			report_error2(frmt("Cannot access member of non pointer-like type \'%s\'.",
 				type_tostr_plain(ltype)), binary_expr->area);
 		// logic of pointer and common member accessor are the same except this primary condition
 		ltype = ltype->base;
 
 	case BINARY_MEMBER_ACCESSOR:
-		if (is_pointer_like_type(ltype))
+		if (is_pointer_type(ltype))
 			report_error2(frmt("Cannot access member of pointer-like type \'%s\'.",
 				type_tostr_plain(ltype)), binary_expr->area);
 
@@ -367,7 +367,7 @@ Type* get_ternary_expr_type(TernaryExpr* ternary_expr, Table* table)
 	Type* rtype = get_and_set_expr_type(ternary_expr->rexpr, table);
 	Type* ctype = get_and_set_expr_type(ternary_expr->cond, table);
 	
-	if (!is_numeric_type(ctype) && !is_pointer_like_type(ctype))
+	if (!is_numeric_type(ctype) && !is_pointer_type(ctype))
 		report_error2(frmt("Expected numeric or pointer-like type in "
 			"condition of ternary expression, type met: \'%s\'",
 				type_tostr_plain(ctype)), get_expr_area(ternary_expr->cond));
@@ -419,27 +419,27 @@ Type* get_spec_binary_type(BinaryExpr* expr)
 
 uint32_t get_type_priority(Type* type)
 {
-	if (IS_U8_TYPE(type))
+	if (is_u8_type(type))
 		return U8p;
-	if (IS_I8_TYPE(type))
+	if (is_i8_type(type))
 		return I8p;
-	if (IS_CHAR_TYPE(type))
+	if (is_char_type(type))
 		return CHARp;
-	if (IS_U16_TYPE(type))
+	if (is_u16_type(type))
 		return U16p;
-	if (IS_I16_TYPE(type))
+	if (is_i16_type(type))
 		return I16p;
-	if (IS_U32_TYPE(type))
+	if (is_u32_type(type))
 		return U32p;
-	if (IS_I32_TYPE(type))
+	if (is_i32_type(type))
 		return I32p;
-	if (IS_U64_TYPE(type))
+	if (is_u64_type(type))
 		return U64p;
-	if (IS_I64_TYPE(type))
+	if (is_i64_type(type))
 		return I64p;
-	if (IS_F32_TYPE(type))
+	if (is_f32_type(type))
 		return F32p;
-	if (IS_F64_TYPE(type))
+	if (is_f64_type(type))
 		return F64p;
 	if (IS_STRING_TYPE(type))
 		return STRp;
@@ -477,7 +477,7 @@ Type* cast_explicitly_when_const_expr(Expr* const_expr, Type* to, Type* const_ex
 		if (IS_VOID_TYPE(to))
 			report_error2("Explicit conversion to void is not allowed.", 
 				get_expr_area(const_expr));
-		if (!is_pointer_like_type(to) && !IS_PRIMITIVE_TYPE(get_base_type(to)) && !IS_ENUM_TYPE(get_base_type(to)))
+		if (!is_pointer_type(to) && !IS_PRIMITIVE_TYPE(get_base_type(to)) && !IS_ENUM_TYPE(get_base_type(to)))
 			report_error2(frmt("Cannot explicitly convert constant expression to type \'%s\'.",
 				type_tostr_plain(to)), get_expr_area(const_expr));
 
@@ -486,7 +486,7 @@ Type* cast_explicitly_when_const_expr(Expr* const_expr, Type* to, Type* const_ex
 		double value = 0.0;
 		Type* const_expr_type_new = NULL;
 		if (is_integral_type(const_expr_type) || 
-				is_pointer_like_type(const_expr_type))
+				is_pointer_type(const_expr_type))
 		{
 			value = evaluate_expr_itype(const_expr);
 			const_expr_type_new = is_real_type(to) ?
@@ -495,7 +495,7 @@ Type* cast_explicitly_when_const_expr(Expr* const_expr, Type* to, Type* const_ex
 		else if (is_real_type(const_expr_type))
 		{
 			value = evaluate_expr_ftype(const_expr);
-			const_expr_type_new = (is_integral_type(to) || is_pointer_like_type(to)) ? 
+			const_expr_type_new = (is_integral_type(to) || is_pointer_type(to)) ? 
 				get_ivalue_type((int64_t)value) : get_fvalue_type(value);
 		}
 		else
@@ -517,9 +517,9 @@ Type* cast_implicitly(Type* to, Type* type, SrcArea* area)
 	else
 	{
 		// if both are pointer-like
-		if (IS_POINTER_TYPE(to) && is_pointer_like_type(type))
+		if (IS_POINTER_TYPE(to) && is_pointer_type(type))
 			return to;
-		if (is_pointer_like_type(to) && IS_POINTER_TYPE(type))
+		if (is_pointer_type(to) && IS_POINTER_TYPE(type))
 			return type;
 		// if one is enum and second is integral
 		if (IS_ENUM_TYPE(to) && is_integral_type(type))
@@ -528,17 +528,17 @@ Type* cast_implicitly(Type* to, Type* type, SrcArea* area)
 			return to;
 
 		// if one is pointer-like and second is primitive
-		if (is_pointer_like_type(to) && (get_type_priority(type) > I32p))
+		if (is_pointer_type(to) && (get_type_priority(type) > I32p))
 			return type;
-		if (is_pointer_like_type(to) && (get_type_priority(type) <= I32p))
+		if (is_pointer_type(to) && (get_type_priority(type) <= I32p))
 			return to;
-		if ((get_type_priority(to) > I32p) && is_pointer_like_type(type))
+		if ((get_type_priority(to) > I32p) && is_pointer_type(type))
 			return to;
-		if ((get_type_priority(to) <= I32p) && is_pointer_like_type(type))
+		if ((get_type_priority(to) <= I32p) && is_pointer_type(type))
 			return type;
 
 		// if both are primitive types
-		if (is_both_primitive(to, type))
+		if (is_both(to, type, TYPE_PRIMITIVE))
 			return get_type_priority(to) >= get_type_priority(type) ? to : type;
 	}
 }
@@ -582,6 +582,21 @@ bool can_cast_enum_type(Type* to, Type* type)
 	return false;
 }
 
+bool can_cast_intptr_types(Type* to, Type* type)
+{
+	if (is_integral_type(to)) {
+		if (to->size >= i32_type.size) {
+			return true;
+		}
+	}
+	if (is_pointer_type(to)) {
+		if (type->size <= 4) {
+			return true;
+		}
+	}
+	return false;
+}
+
 bool can_cast_implicitly(Type* to, Type* type)
 {
 	// if both types are equal, no need for 
@@ -599,7 +614,7 @@ bool can_cast_implicitly(Type* to, Type* type)
 	}
 	// trying to cast if both passed types are pointer-like types
 	//		- pointers, arrays, [function types ?]
-	if (is_botha(to, type, is_pointer_like_type)) {
+	if (is_botha(to, type, is_pointer_type)) {
 		return can_cast_pointer_types(to, type);
 	}
 	// trying to cast if at least one type is enum type
@@ -608,85 +623,86 @@ bool can_cast_implicitly(Type* to, Type* type)
 	if (is_one(to, type, TYPE_ENUM)) {
 		return can_cast_enum_type(to, type);
 	}
-
-	else if (!is_integral_smaller_than_pointer_type(to) &&
-		is_pointer_like_type(type))
-		return true;
-
-	else if (is_pointer_like_type(to) &&
-		is_integral_smaller_than_pointer_type(type))
-		return true;
-
-	else if (is_both(to, type, TYPE_PRIMITIVE)) {
+	// trying to cast if one type is integral type,
+	// and second type is pointer
+	if (is_onea(to, type, is_integral_type) &&
+		is_onea(to, type, is_pointer_type)) {
+			return can_cast_intptr_types(to, type);
+	}
+	// trying to cast if both types are just primitive
+	if (is_both(to, type, TYPE_PRIMITIVE)) {
 		// types that can be casted to u8 and char
-		if ((IS_U8_TYPE(to) || IS_CHAR_TYPE(to)) &&
-			(IS_U8_TYPE(type) || IS_CHAR_TYPE(type)))
-			return true;
+		if ((is_u8_type(to)   || is_char_type(to)) &&
+			(is_u8_type(type) || is_char_type(type))) {
+				return true;
+		}
 
 		// types that can be casted to i8
-		if (IS_I8_TYPE(to) &&
-			IS_I8_TYPE(type))
+		if (is_i8_type(to) && is_i8_type(type)) {
 			return true;
+		}
 
 		// types that can be casted to u16
-		else if (IS_U16_TYPE(to) &&
-			(IS_I8_TYPE(type) || IS_CHAR_TYPE(type) || IS_U8_TYPE(type) ||
-				IS_U16_TYPE(type)))
-			return true;
+		else if (is_u16_type(to) &&
+			(is_i8_type(type) || is_char_type(type) ||
+			 is_u8_type(type) || is_u16_type(type))) {
+				return true;
+		}
 
 		// types that can be casted to i16
-		else if (IS_I16_TYPE(to) &&
-			(IS_I8_TYPE(type) || IS_CHAR_TYPE(type) || IS_U8_TYPE(type) ||
-				IS_I16_TYPE(type)))
-			return true;
+		else if (is_i16_type(to) &&
+			(is_i8_type(type) || is_char_type(type) || 
+			 is_u8_type(type) || is_i16_type(type))) {
+				return true;
+		}
 
 		// types that can be casted to u32
-		else if (IS_U32_TYPE(to) &&
-			(IS_I8_TYPE(type) || IS_CHAR_TYPE(type) || IS_U8_TYPE(type) ||
-				IS_I16_TYPE(type) || IS_U16_TYPE(type) ||
-				IS_U32_TYPE(type)))
-			return true;
+		else if (is_u32_type(to) &&
+			(is_i8_type(type)  || is_char_type(type) || is_u8_type(type) ||
+			 is_i16_type(type) || is_u16_type(type)  || is_u32_type(type))) {
+				return true;
+		}
 
 		// types that can be casted to i32
-		else if (IS_I32_TYPE(to) &&
-			(IS_I8_TYPE(type) || IS_CHAR_TYPE(type) || IS_U8_TYPE(type) ||
-				IS_I16_TYPE(type) || IS_U16_TYPE(type) ||
-				IS_I32_TYPE(type)))
-			return true;
+		else if (is_i32_type(to) &&
+			(is_i8_type(type)  || is_char_type(type) || is_u8_type(type) ||
+		     is_i16_type(type) || is_u16_type(type)  || is_i32_type(type))) {
+				return true;
+		}
 
 		// types that can be casted to u64
-		else if (IS_U64_TYPE(to) &&
-			(IS_I8_TYPE(type) || IS_CHAR_TYPE(type) || IS_U8_TYPE(type) ||
-				IS_I16_TYPE(type) || IS_U16_TYPE(type) ||
-				IS_I32_TYPE(type) || IS_U32_TYPE(type) ||
-				IS_U64_TYPE(type)))
-			return true;
+		else if (is_u64_type(to) &&
+			(is_i8_type(type)  || is_char_type(type) || is_u8_type(type) ||
+			 is_i16_type(type) || is_u16_type(type)  ||
+			 is_i32_type(type) || is_u32_type(type)  || is_u64_type(type))) {
+				return true;
+		}
 
 		// types that can be casted to i64
-		else if (IS_I64_TYPE(to) &&
-			(IS_I8_TYPE(type) || IS_CHAR_TYPE(type) || IS_U8_TYPE(type) ||
-				IS_I16_TYPE(type) || IS_U16_TYPE(type) ||
-				IS_I32_TYPE(type) || IS_U32_TYPE(type) ||
-				IS_I64_TYPE(type)))
-			return true;
+		else if (is_i64_type(to) &&
+			(is_i8_type(type)  || is_char_type(type) || is_u8_type(type)  ||
+			 is_i16_type(type) || is_u16_type(type)  || is_i32_type(type) || 
+			 is_u32_type(type) || is_i64_type(type))) {
+				return true;
+		}
 
 		// types that can be casted to f32
-		else if (IS_F32_TYPE(to) &&
-			(IS_I8_TYPE(type) || IS_CHAR_TYPE(type) || IS_U8_TYPE(type) ||
-				IS_I16_TYPE(type) || IS_U16_TYPE(type) ||
-				IS_I32_TYPE(type) || IS_U32_TYPE(type) || IS_F32_TYPE(type)))
-			return true;
+		else if (is_f32_type(to) &&
+			(is_i8_type(type) || is_char_type(type) || is_u8_type(type) ||
+			is_i16_type(type) || is_u16_type(type)  ||
+			is_i32_type(type) || is_u32_type(type)  || is_f32_type(type))) {
+				return true;
+		}
 
 		// types that can be casted to f64
-		else if (IS_F64_TYPE(to) &&
-			(IS_I8_TYPE(type) || IS_CHAR_TYPE(type) || IS_U8_TYPE(type) ||
-				IS_I16_TYPE(type) || IS_U16_TYPE(type) ||
-				IS_I32_TYPE(type) || IS_U32_TYPE(type) ||
-				IS_I64_TYPE(type) || IS_U64_TYPE(type) || IS_F32_TYPE(type)))
-			return true;
+		else if (is_f64_type(to) &&
+			(is_i8_type(type) || is_char_type(type) || is_u8_type(type) ||
+			is_i16_type(type) || is_u16_type(type) ||
+			is_i32_type(type) || is_u32_type(type) ||
+			is_i64_type(type) || is_u64_type(type) || is_f32_type(type))) {
+				return true;
+		}
 	}
-	else if (is_both_are_equal_user_defined(to, type))
-		return true;
 	return false;
 }
 

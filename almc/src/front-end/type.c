@@ -74,43 +74,118 @@ char* type_tostr_plain(Type* type)
 	}
 }
 
+bool is_u8_type(Type* type)
+{
+	return type->kind == TYPE_PRIMITIVE &&
+		str_eq(type->repr, U8_TYPE);
+}
+
+bool is_i8_type(Type* type)
+{
+	return type->kind == TYPE_PRIMITIVE &&
+		str_eq(type->repr, I8_TYPE);
+}
+
+bool is_u16_type(Type* type)
+{
+	return type->kind == TYPE_PRIMITIVE &&
+		str_eq(type->repr, U16_TYPE);
+}
+
+bool is_i16_type(Type* type)
+{
+	return type->kind == TYPE_PRIMITIVE &&
+		str_eq(type->repr, I16_TYPE);
+}
+
+bool is_u32_type(Type* type)
+{
+	return type->kind == TYPE_PRIMITIVE &&
+		str_eq(type->repr, U32_TYPE);
+}
+
+bool is_i32_type(Type* type)
+{
+	return type->kind == TYPE_PRIMITIVE &&
+		str_eq(type->repr, I32_TYPE);
+}
+
+bool is_u64_type(Type* type)
+{
+	return type->kind == TYPE_PRIMITIVE &&
+		str_eq(type->repr, U64_TYPE);
+}
+
+bool is_i64_type(Type* type)
+{
+	return type->kind == TYPE_PRIMITIVE &&
+		str_eq(type->repr, I64_TYPE);
+}
+
+bool is_f32_type(Type* type)
+{
+	return type->kind == TYPE_PRIMITIVE &&
+		str_eq(type->repr, F32_TYPE);
+}
+
+bool is_f64_type(Type* type)
+{
+	return type->kind == TYPE_PRIMITIVE &&
+		str_eq(type->repr, F64_TYPE);
+}
+
+bool is_char_type(Type* type)
+{
+	return type->kind == TYPE_PRIMITIVE &&
+		str_eq(type->repr, CHAR_TYPE);
+}
+
+bool is_void_type(Type* type)
+{
+	return type->kind == TYPE_PRIMITIVE &&
+		str_eq(type->repr, VOID_TYPE);
+}
+
+bool is_enum_type(Type* type)
+{
+	return type->kind == TYPE_ENUM;
+}
+
+bool is_union_type(Type* type)
+{
+	return type->kind == TYPE_UNION;
+}
+
+bool is_struct_type(Type* type)
+{
+	return type->kind == TYPE_STRUCT;
+}
+
 bool is_real_type(Type* type)
 {
-	return (IS_F32_TYPE(type) || IS_F64_TYPE(type));
+	return is_f32_type(type) || is_f64_type(type);
 }
 
 bool is_numeric_type(Type* type)
 {
-	return is_real_type(type) ||
-		is_integral_type(type);
+	return is_real_type(type) || is_integral_type(type);
 }
 
 bool is_integral_type(Type* type)
 {
-	if (IS_I8_TYPE(type)  || IS_U8_TYPE(type)  || IS_CHAR_TYPE(type) ||
-		IS_I16_TYPE(type) || IS_U16_TYPE(type) ||
-		IS_I32_TYPE(type) || IS_U32_TYPE(type) ||
-		IS_I64_TYPE(type) || IS_U64_TYPE(type))
+	if (is_i8_type(type)  || is_u8_type(type)  || is_char_type(type) ||
+		is_i16_type(type) || is_u16_type(type) ||
+		is_i32_type(type) || is_u32_type(type) ||
+		is_i64_type(type) || is_u64_type(type)) {
 			return true;
-	return IS_ENUM_TYPE(type) || false;
+	}
+	return is_enum_type(type);
 }
 
-bool is_integral_smaller_than_pointer_type(Type* type)
-{
-	return is_integral_type(type) && 
-		(type->size <= MACHINE_WORD);
-}
-
-bool is_pointer_like_type(Type* type)
+bool is_pointer_type(Type* type)
 {
 	return type->kind == TYPE_ARRAY || 
 		type->kind == TYPE_POINTER;
-}
-
-bool is_both_primitive(Type* type1, Type* type2)
-{
-	return IS_PRIMITIVE_TYPE(type1) &&
-		IS_PRIMITIVE_TYPE(type2);
 }
 
 bool is_both_are_equal_user_defined(Type* type1, Type* type2)
@@ -144,8 +219,7 @@ bool is_array_type(Type* type)
 
 bool is_incomplete_type(Type* type)
 {
-	if (type)
-	{
+	if (type) {
 		Type* base = get_base_type(type);
 		return base->kind == TYPE_INCOMPLETE ||
 			type->kind == TYPE_VOID;
@@ -155,20 +229,20 @@ bool is_incomplete_type(Type* type)
 
 bool is_signed_type(Type* type)
 {
-	if (IS_I8_TYPE(type)  ||
-		IS_I16_TYPE(type) ||
-		IS_I32_TYPE(type) ||
-		IS_I64_TYPE(type))
+	if (is_i8_type(type)  ||
+		is_i16_type(type) ||
+		is_i32_type(type) ||
+		is_i64_type(type))
 			return true;
 	return false;
 }
 
 bool is_unsigned_type(Type* type)
 {
-	if (IS_U8_TYPE(type)  || IS_CHAR_TYPE(type) ||
-		IS_U16_TYPE(type) ||
-		IS_U32_TYPE(type) ||
-		IS_U64_TYPE(type))
+	if (is_u8_type(type)  || is_char_type(type) ||
+		is_u16_type(type) ||
+		is_u32_type(type) ||
+		is_u64_type(type))
 			return true;
 	return IS_POINTER_TYPE(type);
 }
@@ -229,34 +303,36 @@ uint32_t get_pointer_rank(Type* type)
 
 bool can_be_freed(Type* type)
 {
-	return is_pointer_like_type(type) ||
+	return is_pointer_type(type) ||
 		IS_STRUCT_OR_UNION_TYPE(type);
 }
 
 Expr* get_array_dimension(Type* type, uint32_t dimension)
 {
-	if (!IS_ARRAY_TYPE(type->base))
+	if (!IS_ARRAY_TYPE(type->base)) {
 		return type->dimension;
-	if (dimension == 1)
+	}
+	if (dimension == 1) {
 		return type->dimension;
+	}
 	return get_array_dimension(type->base, dimension - 1);
 }
 
 uint32_t get_array_dimensions(Type* type)
 {
-	if (IS_ARRAY_TYPE(type))
-		return get_array_dimensions(type->base) + 1;
-	return 0;
+	return type->kind == TYPE_ARRAY ?
+		(get_array_dimensions(type->base) + 1) : 0;
 }
 
 void type_free(Type* type)
 {
-	if (type && can_be_freed(type))
-	{
-		if (IS_ARRAY_TYPE(type))
+	if (type && can_be_freed(type)) {
+		if (IS_ARRAY_TYPE(type)) {
 			expr_free(type->dimension);
-		if (IS_STRUCT_OR_UNION_TYPE(type))
+		}
+		if (IS_STRUCT_OR_UNION_TYPE(type)) {
 			free(type->area);
+		}
 		type_free(type->base);
 		free(type);
 	}
