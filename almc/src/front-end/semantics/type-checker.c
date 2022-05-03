@@ -178,7 +178,7 @@ Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 		report_error2("Cannot determine the type of unary expression " 
 			"while taking an address.", unary_expr->area);
 	case UNARY_DEREFERENCE:
-		if (is_pointer_type(type)) {
+		if (is_pointer_like_type(type)) {
 			return dereference_type(type);
 		}
 		report_error2(frmt("Cannot dereference value of type \'%s\'.",
@@ -230,8 +230,8 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 	case BINARY_GREATER_THAN:
 	case BINARY_LESS_EQ_THAN:
 	case BINARY_GREATER_EQ_THAN:
-		if ((is_numeric_type(ltype) || is_pointer_type(ltype)) &&
-			(is_numeric_type(rtype) || is_pointer_type(rtype)))
+		if ((is_numeric_type(ltype) || is_pointer_like_type(ltype)) &&
+			(is_numeric_type(rtype) || is_pointer_like_type(rtype)))
 				if (can_cast_implicitly(ltype, rtype) ||
 					can_cast_implicitly(rtype, ltype))
 						return &i32_type;
@@ -311,7 +311,7 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 	//------------------------------
 	// accessors
 	case BINARY_ARR_MEMBER_ACCESSOR:
-		if (!is_pointer_type(ltype))			
+		if (!is_pointer_like_type(ltype))			
 			report_error2(frmt("Cannot access array element value of type \'%s\', pointer type expected.",
 				type_tostr_plain(ltype)), binary_expr->area);
 		// index of an array should be an integral type
@@ -321,14 +321,14 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 		return dereference_type(ltype);
 
 	case BINARY_PTR_MEMBER_ACCESSOR:
-		if (!is_pointer_type(ltype))
+		if (!is_pointer_like_type(ltype))
 			report_error2(frmt("Cannot access member of non pointer-like type \'%s\'.",
 				type_tostr_plain(ltype)), binary_expr->area);
 		// logic of pointer and common member accessor are the same except this primary condition
 		ltype = ltype->base;
 
 	case BINARY_MEMBER_ACCESSOR:
-		if (is_pointer_type(ltype))
+		if (is_pointer_like_type(ltype))
 			report_error2(frmt("Cannot access member of pointer-like type \'%s\'.",
 				type_tostr_plain(ltype)), binary_expr->area);
 
@@ -367,7 +367,7 @@ Type* get_ternary_expr_type(TernaryExpr* ternary_expr, Table* table)
 	Type* rtype = get_and_set_expr_type(ternary_expr->rexpr, table);
 	Type* ctype = get_and_set_expr_type(ternary_expr->cond, table);
 	
-	if (!is_numeric_type(ctype) && !is_pointer_type(ctype))
+	if (!is_numeric_type(ctype) && !is_pointer_like_type(ctype))
 		report_error2(frmt("Expected numeric or pointer-like type in "
 			"condition of ternary expression, type met: \'%s\'",
 				type_tostr_plain(ctype)), get_expr_area(ternary_expr->cond));
@@ -477,7 +477,7 @@ Type* cast_explicitly_when_const_expr(Expr* const_expr, Type* to, Type* const_ex
 		if (IS_VOID_TYPE(to))
 			report_error2("Explicit conversion to void is not allowed.", 
 				get_expr_area(const_expr));
-		if (!is_pointer_type(to) && !IS_PRIMITIVE_TYPE(get_base_type(to)) && !IS_ENUM_TYPE(get_base_type(to)))
+		if (!is_pointer_like_type(to) && !IS_PRIMITIVE_TYPE(get_base_type(to)) && !IS_ENUM_TYPE(get_base_type(to)))
 			report_error2(frmt("Cannot explicitly convert constant expression to type \'%s\'.",
 				type_tostr_plain(to)), get_expr_area(const_expr));
 
@@ -486,7 +486,7 @@ Type* cast_explicitly_when_const_expr(Expr* const_expr, Type* to, Type* const_ex
 		double value = 0.0;
 		Type* const_expr_type_new = NULL;
 		if (is_integral_type(const_expr_type) || 
-				is_pointer_type(const_expr_type))
+				is_pointer_like_type(const_expr_type))
 		{
 			value = evaluate_expr_itype(const_expr);
 			const_expr_type_new = is_real_type(to) ?
@@ -495,7 +495,7 @@ Type* cast_explicitly_when_const_expr(Expr* const_expr, Type* to, Type* const_ex
 		else if (is_real_type(const_expr_type))
 		{
 			value = evaluate_expr_ftype(const_expr);
-			const_expr_type_new = (is_integral_type(to) || is_pointer_type(to)) ? 
+			const_expr_type_new = (is_integral_type(to) || is_pointer_like_type(to)) ? 
 				get_ivalue_type((int64_t)value) : get_fvalue_type(value);
 		}
 		else
@@ -511,62 +511,59 @@ Type* cast_explicitly_when_const_expr(Expr* const_expr, Type* to, Type* const_ex
 
 Type* cast_implicitly(Type* to, Type* type, SrcArea* area)
 {
-	if (!can_cast_implicitly(to, type))
+	if (!can_cast_implicitly(to, type)) {
 		report_error2(frmt("Cannot implicitly convert type \'%s\' to \'%s\'",
 			type_tostr_plain(type), type_tostr_plain(to)), area);
-	else
-	{
+	}
+	else {
 		// if both are pointer-like
-		if (IS_POINTER_TYPE(to) && is_pointer_type(type))
-			return to;
-		if (is_pointer_type(to) && IS_POINTER_TYPE(type))
-			return type;
+		if (is_onea(to, type, is_pointer_type) &&
+			is_onea(to, type, is_array_type)) {
+				return is_pointer_type(to) ? to : type;
+		}
 		// if one is enum and second is integral
-		if (IS_ENUM_TYPE(to) && is_integral_type(type))
-			return type;
-		if (IS_ENUM_TYPE(type) && is_integral_type(to))
-			return to;
+		if (is_onea(to, type, is_enum_type) &&
+			is_onea(to, type, is_integral_type)) {
+				return is_integral_type(to) ? to : type;
+		}
 
-		// if one is pointer-like and second is primitive
-		if (is_pointer_type(to) && (get_type_priority(type) > I32p))
-			return type;
-		if (is_pointer_type(to) && (get_type_priority(type) <= I32p))
-			return to;
-		if ((get_type_priority(to) > I32p) && is_pointer_type(type))
-			return to;
-		if ((get_type_priority(to) <= I32p) && is_pointer_type(type))
-			return type;
+		if (is_onea(to, type, is_integral_type) ||
+			is_onea(to, type, is_pointer_like_type)) {
+			if (is_pointer_like_type(to)) {
+				return type->size > i32_type.size ? type : to;
+			}
+			if (is_pointer_like_type(type)) {
+				return to->size > i32_type.size ? to : type;
+			}
+		}
+
+		//// if one is pointer-like and second is primitive
+		//if (is_pointer_like_type(to) && (get_type_priority(type) > I32p))
+		//	return type;
+		//if (is_pointer_like_type(to) && (get_type_priority(type) <= I32p))
+		//	return to;
+		//if ((get_type_priority(to) > I32p) && is_pointer_like_type(type))
+		//	return to;
+		//if ((get_type_priority(to) <= I32p) && is_pointer_like_type(type))
+		//	return type;
 
 		// if both are primitive types
-		if (is_both(to, type, TYPE_PRIMITIVE))
+		if (is_both(to, type, TYPE_PRIMITIVE)) {
 			return get_type_priority(to) >= get_type_priority(type) ? to : type;
+		}
 	}
+	return NULL;
 }
 
 Type* cast_implicitly_when_assign(Type* to, Type* type, SrcArea* area)
 {
-	if (can_cast_implicitly(to, type))
+	if (can_cast_implicitly(to, type)) {
 		return to;
-	else
+	}
+	else {
 		report_error2(frmt("Cannot implicitly convert type \'%s\' to \'%s\'",
 			type_tostr_plain(to), type_tostr_plain(type)), area);
-}
-
-bool can_cast_pointer_types(Type* to, Type* type)
-{
-	if (get_pointer_rank(to) == get_pointer_rank(type)) {
-		// if we trying to cast pointer type with same rank 
-		// to void pointer, return true, because void pointer is
-		// kind-of generic type for pointers
-		if (get_base_type(to)->kind == TYPE_VOID) {
-			return true;
-		}
-		// and also if their base types can be casted implicitly
-		if (can_cast_implicitly(get_base_type(to), get_base_type(type))) {
-			return true;
-		}
 	}
-	return false;
 }
 
 bool can_cast_enum_type(Type* to, Type* type)
@@ -589,8 +586,25 @@ bool can_cast_intptr_types(Type* to, Type* type)
 			return true;
 		}
 	}
-	if (is_pointer_type(to)) {
+	if (is_pointer_like_type(to)) {
 		if (type->size <= 4) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool can_cast_pointer_types(Type* to, Type* type)
+{
+	if (get_pointer_rank(to) == get_pointer_rank(type)) {
+		// if we trying to cast pointer type with same rank 
+		// to void pointer, return true, because void pointer is
+		// kind-of generic type for pointers
+		if (get_base_type(to)->kind == TYPE_VOID) {
+			return true;
+		}
+		// and also if their base types can be casted implicitly
+		if (can_cast_implicitly(get_base_type(to), get_base_type(type))) {
 			return true;
 		}
 	}
@@ -614,7 +628,7 @@ bool can_cast_implicitly(Type* to, Type* type)
 	}
 	// trying to cast if both passed types are pointer-like types
 	//		- pointers, arrays, [function types ?]
-	if (is_botha(to, type, is_pointer_type)) {
+	if (is_botha(to, type, is_pointer_like_type)) {
 		return can_cast_pointer_types(to, type);
 	}
 	// trying to cast if at least one type is enum type
@@ -626,7 +640,7 @@ bool can_cast_implicitly(Type* to, Type* type)
 	// trying to cast if one type is integral type,
 	// and second type is pointer
 	if (is_onea(to, type, is_integral_type) &&
-		is_onea(to, type, is_pointer_type)) {
+		is_onea(to, type, is_pointer_like_type)) {
 			return can_cast_intptr_types(to, type);
 	}
 	// trying to cast if both types are just primitive

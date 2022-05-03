@@ -167,6 +167,7 @@ bool is_union_type(Type* type);
 bool is_struct_type(Type* type);
 bool is_array_type(Type* type);
 bool is_pointer_type(Type* type);
+bool is_pointer_like_type(Type* type);
 bool is_incomplete_type(Type* type);
 
 bool is_real_type(Type* type);

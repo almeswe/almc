@@ -184,8 +184,13 @@ bool is_integral_type(Type* type)
 
 bool is_pointer_type(Type* type)
 {
+	return type->kind == TYPE_POINTER;
+}
+
+bool is_pointer_like_type(Type* type)
+{
 	return type->kind == TYPE_ARRAY || 
-		type->kind == TYPE_POINTER;
+		 type->kind == TYPE_POINTER;
 }
 
 bool is_both_are_equal_user_defined(Type* type1, Type* type2)
@@ -303,7 +308,7 @@ uint32_t get_pointer_rank(Type* type)
 
 bool can_be_freed(Type* type)
 {
-	return is_pointer_type(type) ||
+	return is_pointer_like_type(type) ||
 		IS_STRUCT_OR_UNION_TYPE(type);
 }
 
