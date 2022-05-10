@@ -182,9 +182,19 @@ bool is_integral_type(Type* type)
 	return is_enum_type(type);
 }
 
+bool is_struct_or_union_type(Type* type)
+{
+	return is_struct_type(type) || is_union_type(type);
+}
+
 bool is_pointer_type(Type* type)
 {
 	return type->kind == TYPE_POINTER;
+}
+
+bool is_primitive_type(Type* type)
+{
+	return type->kind == TYPE_PRIMITIVE;
 }
 
 bool is_pointer_like_type(Type* type)

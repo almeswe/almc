@@ -167,12 +167,14 @@ bool is_union_type(Type* type);
 bool is_struct_type(Type* type);
 bool is_array_type(Type* type);
 bool is_pointer_type(Type* type);
+bool is_primitive_type(Type* type);
 bool is_pointer_like_type(Type* type);
 bool is_incomplete_type(Type* type);
 
 bool is_real_type(Type* type);
 bool is_numeric_type(Type* type);
 bool is_integral_type(Type* type);
+bool is_struct_or_union_type(Type* type);
 
 bool is_aggregate_type(Type* type);
 bool is_user_defined_type(Type* type);

@@ -7,14 +7,23 @@
 /* Type priorities */
 enum _type_priority_table
 {
-	VOIDp = 0x1,
-	STRp  = 0x2,
+	VOID_TYPE_PRIORITY = 0x1,
+	STR_TYPE_PRIORITY,
 
-	U8p,  I8p, CHARp,
-	U16p, I16p,
-	U32p, I32p,
-	U64p, I64p,
-	F32p, F64p
+	U8_TYPE_PRIORITY,  
+	I8_TYPE_PRIORITY, 
+	CHAR_TYPE_PRIORITY,
+	
+	U16_TYPE_PRIORITY, 
+	I16_TYPE_PRIORITY,
+	
+	U32_TYPE_PRIORITY, 
+	I32_TYPE_PRIORITY,
+	
+	U64_TYPE_PRIORITY, 
+	I64_TYPE_PRIORITY,
+	F32_TYPE_PRIORITY, 
+	F64_TYPE_PRIORITY
 };
 
 extern bool is_const_expr(Expr* expr);
