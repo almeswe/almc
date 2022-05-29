@@ -47,7 +47,6 @@ uint32_t get_type_priority(Type* type);
 Type* get_spec_binary_type(BinaryExpr* expr);
 
 Type* cast_explicitly(Type* to, Type* type);
-Type* cast_explicitly_when_const_expr(Expr* const_expr, Type* to, Type* const_expr_type);
 
 Type* cast_implicitly(Type* to, Type* type, SrcArea* area);
 Type* cast_implicitly_when_assign(Type* to, Type* type, SrcArea* area);

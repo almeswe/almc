@@ -186,10 +186,6 @@ Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table)
 	//-----------------------------
 
 	case UNARY_CAST:
-		if (is_const_expr(unary_expr->expr)) {
-			return cast_explicitly_when_const_expr(unary_expr->expr,
-				unary_expr->cast_type, type);
-		}
 		return cast_explicitly(unary_expr->cast_type, type);
 	case UNARY_SIZEOF:
 	case UNARY_LENGTHOF:
@@ -377,7 +373,7 @@ Type* get_ternary_expr_type(TernaryExpr* ternary_expr, Table* table)
 	Type* ltype = get_and_set_expr_type(ternary_expr->lexpr, table);
 	Type* rtype = get_and_set_expr_type(ternary_expr->rexpr, table);
 	Type* ctype = get_and_set_expr_type(ternary_expr->cond, table);
-	
+
 	if (!is_numeric_type(ctype) && !is_pointer_like_type(ctype)) {
 		report_error2(frmt("Expected numeric or pointer-like type in "
 			"condition of ternary expression, type met: \'%s\'",
@@ -488,48 +484,6 @@ Type* cast_explicitly(Type* to, Type* type)
 	return to;
 }
 
-Type* cast_explicitly_when_const_expr(Expr* const_expr, Type* to, Type* const_expr_type)
-{
-	if (!to || !const_expr_type)
-		return report_error2("Cannot determine at least one type "
-			"when trying to convert explicitly.", NULL), &unknown_type;
-	else
-	{
-		if (IS_VOID_TYPE(to))
-			report_error2("Explicit conversion to void is not allowed.", 
-				get_expr_area(const_expr));
-		if (!is_pointer_like_type(to) && !IS_PRIMITIVE_TYPE(get_base_type(to)) && !IS_ENUM_TYPE(get_base_type(to)))
-			report_error2(frmt("Cannot explicitly convert constant expression to type \'%s\'.",
-				type_tostr_plain(to)), get_expr_area(const_expr));
-
-		// determining the type of evaluated constant
-		// todo: prettyfy this code
-		double value = 0.0;
-		Type* const_expr_type_new = NULL;
-		if (is_integral_type(const_expr_type) || 
-				is_pointer_like_type(const_expr_type))
-		{
-			value = evaluate_expr_itype(const_expr);
-			const_expr_type_new = is_real_type(to) ?
-				get_fvalue_type(value) : get_ivalue_type((int64_t)value);
-		}
-		else if (is_real_type(const_expr_type))
-		{
-			value = evaluate_expr_ftype(const_expr);
-			const_expr_type_new = (is_integral_type(to) || is_pointer_like_type(to)) ? 
-				get_ivalue_type((int64_t)value) : get_fvalue_type(value);
-		}
-		else
-			report_error2("Cannot evaluate constant expression for explicit cast.",
-				get_expr_area(const_expr));
-
-		if (!value_in_bounds_of_type(to, value))
-			report_error2(frmt("Cannot explicitly convert constant value of type \'%s\' to \'%s\' (value: %f).",
-				type_tostr_plain(const_expr_type_new), type_tostr_plain(to), value), get_expr_area(const_expr));
-		return cast_explicitly(to, const_expr_type);
-	}
-}
-
 Type* cast_implicitly(Type* to, Type* type, SrcArea* area)
 {
 	if (!can_cast_implicitly(to, type)) {
@@ -557,16 +511,6 @@ Type* cast_implicitly(Type* to, Type* type, SrcArea* area)
 				return to->size > i32_type.size ? to : type;
 			}
 		}
-
-		//// if one is pointer-like and second is primitive
-		//if (is_pointer_like_type(to) && (get_type_priority(type) > I32_TYPE_PRIORITY))
-		//	return type;
-		//if (is_pointer_like_type(to) && (get_type_priority(type) <= I32_TYPE_PRIORITY))
-		//	return to;
-		//if ((get_type_priority(to) > I32_TYPE_PRIORITY) && is_pointer_like_type(type))
-		//	return to;
-		//if ((get_type_priority(to) <= I32_TYPE_PRIORITY) && is_pointer_like_type(type))
-		//	return type;
 
 		// if both are primitive types
 		if (is_both(to, type, TYPE_PRIMITIVE)) {
@@ -777,7 +721,7 @@ Idnt* get_member_idnt(Expr* expr)
 {
 	// function is needed espesially for recognizing the member's name in accessor expression
 	// i mean that we are not fully knew that member will be represented as Idnt
-	// it can be ...->a[i], ...->a++/--, ...->a.a-> ...
+	// it can be ...->a[i], ...->a.a-> ...
 	switch (expr->kind)
 	{
 	case EXPR_IDNT:
