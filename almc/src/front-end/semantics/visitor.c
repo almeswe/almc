@@ -458,88 +458,45 @@ void visit_elif_stmt(ElseIf* elif_stmt, Table* table)
 	visit_block_stmts(elif_stmt->body, local);
 }
 
-void resolve_conjuction_collision(SwitchStmt* switch_stmt)
-{
-	//todo: test this
-	size_t cases = sbuffer_len(switch_stmt->cases);
-	if (cases > 0 && switch_stmt->cases[cases - 1]->is_conjucted)
-		report_error2("Case's body expected here.",
-			get_expr_area(switch_stmt->cases[cases - 1]->value));
-}
-
-void resolve_duplicated_conditions(SwitchStmt* switch_stmt, Table* table)
-{
-	Expr** conditions = NULL;
-
-	for (size_t i = 0; i < sbuffer_len(switch_stmt->cases); i++)
-	{
-		Expr* case_value = switch_stmt->cases[i]->value;
-		switch (case_value->kind)
-		{
-		case EXPR_IDNT:
-			if (!case_value->idnt->is_enum_member)
-				report_error2("Only enum members is allowed for case condition.",
-					get_expr_area(case_value));
-			for (size_t j = 0; j < sbuffer_len(conditions); j++)
-				if (conditions[j]->kind == EXPR_IDNT)
-					if (strcmp(conditions[j]->idnt->svalue, case_value->idnt->svalue) == 0)
-						report_error2(frmt("This condition \'%s\' is already mentioned above.",
-							case_value->idnt->svalue), get_expr_area(case_value));
-			sbuffer_add(conditions, case_value);
-			break;
-		case EXPR_CONST:
-			for (size_t j = 0; j < sbuffer_len(conditions); j++)
-				if (conditions[j]->kind == EXPR_CONST)
-					if (conditions[j]->cnst->ivalue == case_value->cnst->ivalue)
-						report_error2(frmt("This condition \'%d\' is already mentioned above.",
-							case_value->cnst->ivalue), get_expr_area(case_value));
-			sbuffer_add(conditions, case_value);
-			break;
-		}
-	}
-	sbuffer_free(conditions);
-}
-
 void visit_switch_stmt(SwitchStmt* switch_stmt, Table* table)
 {
-	Table* local = NULL;
 	visit_condition(switch_stmt->cond, table);
 
 	Type* switch_case_type = NULL;
 	Type* switch_cond_type = get_expr_type(switch_stmt->cond, table);
+	SrcArea* switch_case_area = NULL;
 
-	if (!is_integral_type(switch_cond_type))
-		report_error2(frmt("Condition of switch statement must be of integral type, not \'%s\'", 
-			type_tostr_plain(switch_cond_type)), get_expr_area(switch_stmt->cond));
-
-	resolve_conjuction_collision(switch_stmt);
-	resolve_duplicated_conditions(switch_stmt, table);
-
-	for (size_t i = 0; i < sbuffer_len(switch_stmt->cases); i++)
-	{
-		local = table_new(table);
-		local->in_switch = switch_stmt;
-
-		if (switch_stmt->cases[i]->body)
-			visit_scope(switch_stmt->cases[i]->body->stmts, local),
-				visit_block_stmts(switch_stmt->cases[i]->body, local);
-
-		switch_case_type = get_expr_type(switch_stmt->cases[i]->value, local);
-		if (!can_cast_implicitly(switch_cond_type, switch_case_type))
-			report_error2(frmt("Cannot use case statement with type \'%s\' when switch's condition has type \'%s\'",
-				type_tostr_plain(switch_case_type), type_tostr_plain(switch_cond_type)),
-					get_expr_area(switch_stmt->cases[i]->value));
-		if (!is_integral_type(switch_case_type))
-			report_error2(frmt("Condition of case statement must be of integral type, not \'%s\'",
-				type_tostr_plain(switch_case_type)), get_expr_area(switch_stmt->cases[i]->value));
+	size_t cases = sbuffer_len(switch_stmt->cases);
+	if (cases > 0 && switch_stmt->cases[cases - 1]->is_conjucted) {
+		report_error2("Expected body here.",
+			get_expr_area(switch_stmt->cases[cases - 1]->value));
 	}
 
-	if (switch_stmt->default_case)
-	{
-		local = table_new(table);
+	for (size_t i = 0; i < cases; i++) {
+		Table* local = table_new(table);
 		local->in_switch = switch_stmt;
-		visit_scope(switch_stmt->default_case->stmts, local),
-			visit_block_stmts(switch_stmt->default_case, local);
+
+		if (switch_stmt->cases[i]->body) {
+			visit_scope(switch_stmt->cases[i]->body->stmts, local);
+			visit_block_stmts(switch_stmt->cases[i]->body, local);
+		}
+
+		switch_case_area = get_expr_area(switch_stmt->cases[i]->value);
+		switch_case_type = get_expr_type(switch_stmt->cases[i]->value, local);
+		if (!cast_implicitly(switch_cond_type, switch_case_type, switch_case_area)) {
+			report_error2("Unexpected NULL type value returned.", switch_case_area);
+		}
+		if (!is_integral_type(switch_case_type)) {
+			report_error2(frmt("Condition of case statement cannot be \'%s\'",
+				type_tostr_plain(switch_case_type)), switch_case_area);
+		}
+	}
+
+	if (switch_stmt->default_case) {
+		Table* local = table_new(table);
+		local->in_switch = switch_stmt;
+		visit_scope(switch_stmt->default_case->stmts, local);
+		visit_block_stmts(switch_stmt->default_case, local);
 	}
 }
 
