@@ -1,7 +1,16 @@
 #include "type.h"
 
-// todo: replace all macroses from type.h to functions
 // todo: add NULL check for all type functions
+
+#define io_buffer_size 4096
+#define io_buffer_put(format, ...)										\
+	if (sprintf_s(io_buffer, io_buffer_size, format, __VA_ARGS__) < 0)	\
+		perror("_io_buffer_put"), exit(1)
+
+#define io_buffer_set(format, ...)	\
+	sprintf_s(io_buffer, io_buffer_size, format, __VA_ARGS__), io_buffer
+
+static char io_buffer[io_buffer_size];
 
 Type* type_new(const char* repr)
 {
@@ -50,27 +59,21 @@ Type* address_type(Type* type)
 	return pointer_type_new(type);
 }
 
-char* type_tostr_plain(Type* type)
+const char* type_tostr_plain(Type* type)
 {
-	char* str, temp;
-	switch (type->kind)
-	{
-	case TYPE_ARRAY:
-		//temp = type_tostr_plain(type->base);
-		//return str = frmt("%s[]", temp), free(temp), str;
-		return frmt("%s[]", type_tostr_plain(type->base));
-	case TYPE_POINTER:
-		//temp = type_tostr_plain(type->base);
-		//return str = frmt("%s*", temp), free(temp), str;
-		return frmt("%s*", type_tostr_plain(type->base));
-	case TYPE_ENUM:
-		return frmt("enum %s", type->repr);
-	case TYPE_UNION:
-		return frmt("union %s", type->repr);
-	case TYPE_STRUCT:
-		return frmt("struct %s", type->repr);
-	default:
-		return frmt(type->repr);
+	switch (type->kind) {
+		case TYPE_ARRAY:
+			return io_buffer_set("%s[]", type_tostr_plain(type->base));
+		case TYPE_POINTER:
+			return io_buffer_set("%s*", type_tostr_plain(type->base));
+		case TYPE_ENUM:
+			return io_buffer_set("enum %s", type->repr);
+		case TYPE_UNION:
+			return io_buffer_set("union %s", type->repr);
+		case TYPE_STRUCT:
+			return io_buffer_set("struct %s", type->repr);
+		default:
+			return type->repr;
 	}
 }
 

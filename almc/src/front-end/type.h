@@ -148,7 +148,7 @@ Type* pointer_type_new(Type* base);
 Type* dereference_type(Type* type);
 Type* address_type(Type* type);
 
-char* type_tostr_plain(Type* type);
+const char* type_tostr_plain(Type* type);
 
 bool is_u8_type(Type* type);
 bool is_i8_type(Type* type);
