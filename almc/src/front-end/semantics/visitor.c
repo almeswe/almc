@@ -915,29 +915,6 @@ void visit_import_stmt(ImportStmt* import_stmt, Table* table)
 	}
 }
 
-void check_entry_func_params(FuncDecl* func_decl)
-{
-	TypeVar** params = func_decl->params;
-	size_t param_count = sbuffer_len(params);
-
-	switch (param_count)
-	{
-	case 0:
-		break;
-	case 2:
-		if (!IS_I32_TYPE(params[0]->type))
-			report_error2("First parameter of an entry method"
-				" should be of type \'i32\' in this context.", params[0]->area);
-		if (!IS_CHAR_TYPE(get_base_type(params[1]->type)) || get_pointer_rank(params[1]->type) != 2)
-			report_error2("Second parameter of an entry method should"
-				" be of type \'char**\' in this context.", params[1]->area);
-		break;
-	default:
-		report_error(frmt("Entry method \'%s\' cannot accept this count \'%d\' of parameters.",
-			func_decl->name->value, param_count), func_decl->name->context);
-	}
-}
-
 void visit_entry_func_stmt(FuncDecl* func_decl, Table* table)
 {
 	if (visitor_data.entry != NULL) {
@@ -945,7 +922,15 @@ void visit_entry_func_stmt(FuncDecl* func_decl, Table* table)
 			visitor_data.entry->name->context);
 	}
 	visitor_data.entry = func_decl;
-	check_entry_func_params(func_decl);
+
+	size_t param_count = sbuffer_len(func_decl->params);
+	if (param_count != 2) {
+		if (param_count != 0) {
+			report_warning(frmt("Function should use one of two templates:\n"
+				"\tfnc entry %s() ... \n\tfnc entry %s(i32, char**) ...\n",
+					func_decl->name->value, func_decl->name->value), func_decl->name->context);
+		}
+	}
 }
 
 uint32_t get_size_of_type(Type* type, Table* table)

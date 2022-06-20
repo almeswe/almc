@@ -58,7 +58,6 @@ void visit_union(UnionDecl* union_decl, Table* table);
 void visit_struct(StructDecl* struct_decl, Table* table);
 void visit_members(const char* type, Member** members, Table* table);
 
-void check_entry_func_params(FuncDecl* func_decl);
 void visit_entry_func_stmt(FuncDecl* func_decl, Table* table);
 
 uint32_t get_size_of_aggregate_type(Type* type, Table* table);
