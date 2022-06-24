@@ -149,35 +149,6 @@ int regtable_test()
 	return 1;
 }
 
-void conversion_test()
-{
-	//Const* cnst = const_new(CONST_FLOAT, "1.3e-24", NULL);
-	//gen_const_sse(cnst, NULL);
-	char buf[64];
-	sprintf_s(buf, sizeof buf, "%g", 1.3e-24);
-	sprintf_s(buf, sizeof buf, "%g", 3.14151692);
-	sprintf_s(buf, sizeof buf, "%g", 1.0);
-	sprintf_s(buf, sizeof buf, "%g", 0.132123);
-	sprintf_s(buf, sizeof buf, "%g", 11.0e+24);
-}
-
-void fprintf_test()
-{
-	char header[256];
-	sprintf_s(header, sizeof header, "%s", "ERROR");
-
-	char message[256];
-	sprintf_s(message, sizeof message, "%s", "error message");
-
-	char** spelling = NULL;
-	char* line1 = (char*)malloc(sizeof(256));
-	char* line2 = (char*)malloc(sizeof(256));
-
-	SrcContext* context = src_context_new("unknown", 0, 15, 4);
-
-	report_info_base(header, message, NULL, src_context_tostr, context);
-}
-
 int main(int argc, char** argv)
 {
 	//fprintf_test();
