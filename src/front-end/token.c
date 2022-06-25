@@ -1,6 +1,6 @@
 #include "token.h"
 
-char* tokens_str[] = {
+const char* tokens_str[] = {
 	"TOKEN_PLUS",
 	"TOKEN_DASH",
 	"TOKEN_ASTERISK",
@@ -50,8 +50,6 @@ char* tokens_str[] = {
 	"TOKEN_RSHIFT",
 	"TOKEN_LESS_EQ_THAN",
 	"TOKEN_GREATER_EQ_THAN",
-	"TOKEN_INC",
-	"TOKEN_DEC",
 	"TOKEN_ARROW",
 	"TOKEN_DOUBLE_DOT",
 	"TOKEN_TRIPLE_DOT",
@@ -110,33 +108,28 @@ char* tokens_str[] = {
 	"TOKEN_EOF",
 };
 
-Token* token_new(TokenKind type, SrcContext* context)
-{
-	Token* t = new(Token, t);
-	t->lexeme = 0; // union's initialization here
-	t->type = type;
-	t->context = context;
-	return t;
+Token* token_new(TokenKind type, SrcContext* context) {
+	Token* token = new(Token);
+	token->lexeme = 0; // union's initialization here
+	token->type = type;
+	token->attrs.context = context;
+	return token;
 }
 
-void token_free(Token* token)
-{
-	if (token)
-	{
+void token_free(Token* token) {
+	if (token) {
 		//todo: if its not keyword, than lexeme can be cleared
-		src_context_free(token->context);
+		src_context_free(token->attrs.context);
 		free(token);
 	}
 }
 
-char* token_tostr(Token* token)
-{
-	char* str = frmt("%s: %s", token_type_tostr(token->type), token->lexeme);
-	return frmt("%s %s", str, src_context_tostr(token->context));
+const char* token_tostr(const Token* token) {
+	char* tok_str = frmt("%s: %s", token_type_tostr(token->type), token->lexeme);
+	return frmt("%s %s", tok_str, src_context_tostr(token->attrs.context));
 }
 
-char* token_type_tostr(TokenKind type)
-{
+const char* token_type_tostr(TokenKind type) {
 	return (type >= 0 && type <= TOKEN_EOF) ?
 		tokens_str[type] : tokens_str[0];
 }

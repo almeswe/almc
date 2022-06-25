@@ -3,9 +3,9 @@
 
 #include <string.h>
 
-#include "..\utils\common.h"
-#include "..\utils\context.h"
-#include "..\utils\data-structures\str-builder.h"
+#include "../utils/common.h"
+#include "../utils/context.h"
+#include "../utils/data-structures/str-builder.h"
 
 #define I8_TYPE		 "i8"
 #define I16_TYPE	 "i16"
@@ -79,8 +79,7 @@ typedef struct Member Member;
 
 extern void expr_free(Expr* expr);
 
-typedef enum TypeKind 
-{
+typedef enum TypeKind {
 	TYPE_ARRAY,
 	TYPE_POINTER,
 	TYPE_PRIMITIVE,
@@ -94,8 +93,7 @@ typedef enum TypeKind
 	TYPE_UNKNOWN
 } TypeKind;
 
-typedef struct Type
-{
+typedef struct Type {
 	uint32_t size;
 	TypeKind kind;
 	SrcArea* area;
@@ -103,21 +101,18 @@ typedef struct Type
 
 	// Used by pointer and array types
 	struct Type* base;
-	union
-	{
-		struct _array_kind_data
-		{
+	union _type_attributes {
+		struct _array_kind_data {
 			// can be accessed when type is TYPE_ARRAY
 			Expr* dimension;
 			// max capacity of current dimension
 			uint32_t capacity;
-		};
-		struct _struct_or_union_kind_data
-		{
+		} arr;
+		struct _struct_or_union_kind_data {
 			// can be accessed when type is struct or union
 			Member** members;
-		};
-	};
+		} compound;
+	} attrs;
 } Type;
 
 /* Initialization of primitive types */
@@ -178,7 +173,6 @@ bool is_struct_or_union_type(Type* type);
 
 bool is_aggregate_type(Type* type);
 bool is_user_defined_type(Type* type);
-bool is_both_are_equal_user_defined(Type* type1, Type* type2);
 
 bool is_signed_type(Type* type);
 bool is_unsigned_type(Type* type);

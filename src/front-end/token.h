@@ -1,11 +1,10 @@
 #ifndef _ALMC_LEXER_TOKEN_H
 #define _ALMC_LEXER_TOKEN_H
 
-#include "..\utils\common.h"
-#include "..\utils\context.h"
+#include "../utils/common.h"
+#include "../utils/context.h"
 
-typedef enum TokenKind
-{
+typedef enum TokenKind {
 	TOKEN_PLUS,
 	TOKEN_DASH,
 	TOKEN_ASTERISK,
@@ -114,21 +113,19 @@ typedef enum TokenKind
 	TOKEN_EOF
 } TokenKind;
 
-typedef struct Token
-{
+typedef struct Token {
 	char* lexeme;
 	TokenKind type;
 
-	struct _token_attributes
-	{
+	struct _token_attributes {
 		SrcContext* context;
-	};
+	} attrs;
 } Token;
 
 Token* token_new(TokenKind type, SrcContext* context);
 void token_free(Token* token);
 
-char* token_tostr(Token* token);
-char* token_type_tostr(TokenKind type);
+const char* token_tostr(const Token* token);
+const char* token_type_tostr(TokenKind type);
 
 #endif // _ALMC_LEXER_TOKEN_H

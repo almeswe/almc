@@ -1,14 +1,15 @@
 #ifndef _STRETCHY_BUFFERS_H
 #define _STRETCHY_BUFFERS_H
 
-#include <stdlib.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <stddef.h>
 
 //todo: fix warning, when sbuffer_add for NULL var
 
 typedef struct Buffer {
-	uint32_t cap;
-	uint32_t len;
+	size_t cap;
+	size_t len;
 	char buffer[0];
 } Buffer;
 
@@ -26,6 +27,6 @@ typedef struct Buffer {
 #define sbuffer_pop(buf) ((buf) ? (sbuffer__len(buf) > 0 ? sbuffer__len(buf)-- : 0) : 0)
 #define sbuffer_free(buf) ((buf) ? free(sbuffer__hdr(buf)) : 0)
 
-void* sbuffer__extend(void* buffer, const uint32_t typesize);
+void* sbuffer__extend(void* buffer, const size_t typesize);
 
 #endif // _STRETCHY_BUFFERS_H

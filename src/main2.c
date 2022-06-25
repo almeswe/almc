@@ -1,11 +1,14 @@
 #include <stdio.h>
 
-#include "error.h"
-#include "printerr.h"
+#include "front-end/lexer.h"
+#include "front-end/token.h"
 
 int main(int argc, char** argv) {
-    SrcContext* context = src_context_new("src/front-end/lexer.h", 10, 5, 101);
-    report_warning("test error", context);
-    src_context_free(context);    
+    Lexer* lexer = lexer_new("asdasdasd if else case 123e+6 ;; .", FROM_CHAR_PTR);
+    Token** tokens = lex(lexer);
+    for (size_t i = 0; i < sbuffer_len(tokens); i++) {
+        printf("%s\n", token_type_tostr(tokens[i]->type));
+    }
+    lexer_free(lexer);
     return 0;
 }
