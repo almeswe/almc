@@ -1,0 +1,2 @@
+- add global buffer for all string-related stuff (frmt, (.)*_tostr)
+- finish get_spelling function

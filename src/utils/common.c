@@ -1,5 +1,7 @@
 #include "common.h"
 
+char io_buffer[4096];
+
 char* frmt(const char* format, ...)
 {
 	/*
@@ -8,17 +10,12 @@ char* frmt(const char* format, ...)
 		Returned string must be freed.
 	*/
 
-	int len;
-	char* buffer;
 	va_list args;
 
 	va_start(args, format);
-	len = _vscprintf(format, args) + 1;
-	buffer = newc(char, len);
-	if (NULL != buffer)
-		vsprintf_s(buffer, len, format, args);
+	vsprintf(io_buffer, format, args);
 	va_end(args);
-	return buffer ? buffer : new(char);
+	return io_buffer;
 }
 
 bool isidnt(char c)

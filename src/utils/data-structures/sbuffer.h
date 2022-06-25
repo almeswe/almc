@@ -6,8 +6,7 @@
 
 //todo: fix warning, when sbuffer_add for NULL var
 
-typedef struct Buffer
-{
+typedef struct Buffer {
 	uint32_t cap;
 	uint32_t len;
 	char buffer[0];

@@ -1,7 +1,6 @@
 #include "sbuffer.h"
 
-void* sbuffer__extend(void* buffer, const uint32_t typesize)
-{
+void* sbuffer__extend(void* buffer, const uint32_t typesize) {
 	uint32_t new_cap = buffer ? sbuffer__cap(buffer) * 2 : 1;
 	uint32_t new_size = offsetof(Buffer, buffer) + (typesize * new_cap);
 	Buffer* hdr = (Buffer*)(buffer ?

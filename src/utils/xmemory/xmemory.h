@@ -4,7 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include "..\..\printerr.h"
+
+#include "../../printerr.h"
 
 #define new(type)			   (type*)xmalloc(sizeof(type))        
 #define newc(type, count)	   (type*)xmalloc(sizeof(type) * (count))

@@ -6,7 +6,8 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include "xmemory\xmemory.h"
+
+#include "xmemory/xmemory.h"
 
 char* frmt(const char* format, ...);
 
