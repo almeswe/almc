@@ -543,7 +543,10 @@ Token* get_string_token(Lexer* lexer) {
 
 	str_builder_create_buffer(str);
 
-	while (!eos(lexer) && isstrc(get_next_char(lexer))) {
+	while (!eos(lexer) && !isdquote(get_next_char(lexer))) {
+		if (iscntrl(get_curr_char(lexer))) {
+			continue;
+		}
 		curr_char = ((is_escape = is_escape_sequence(lexer)) >= 0) ?
 			is_escape : get_curr_char(lexer);
 		str_builder_add(str, curr_char, index);
