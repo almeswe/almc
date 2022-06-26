@@ -9,6 +9,10 @@
 
 #include "xmemory/xmemory.h"
 
+#define _FRMT_BUFFER_SIZE 4096
+
+char _frmt_buffer[_FRMT_BUFFER_SIZE];
+
 char* frmt(const char* format, ...);
 
 bool isidnt(char c);

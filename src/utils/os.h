@@ -1,30 +1,34 @@
 #ifndef _ALMC_OS_H
 #define _ALMC_OS_H
 
-#ifdef _WIN32
+#include <stdio.h>
+#include <string.h>
+#include <stdbool.h>
 
+#ifdef _WIN32
 	#define WIN32_LEAN_AND_MEAN
 	#define _CRT_SECURE_NO_WARNINGS
-
-	#include <stdio.h>
-	#include <stdlib.h>
-	#include <windows.h>
-
-	char* get_drives();
-	char* get_curr_dir();
-	char* get_curr_module();
-	char* get_root(const char* path);
-	char* get_dir_parent(const char* dir);
-
-	char* path_combine(const char* parent, const char* child);
-
-	int dir_exists(const char* dir);
-	int file_exists(const char* file);
-
+		#include <stdlib.h>
+		#include <windows.h>
 	#undef _CRT_SECURE_NO_WARNINGS
-
+	#undef WIN32_LEAN_AND_MEAN
+#elif __linux__
+	#include <unistd.h>
+	#include <libgen.h>
+	#include <dirent.h>
 #else
-	#error "Os module is not supported on this platform."
+	#error "OS module is not supported on this platform."
 #endif
+
+char* get_drives();
+char* get_curr_dir();
+char* get_curr_module();
+char* get_root(char* path);
+char* get_dir_parent(char* dir);
+
+char* path_combine(char* parent, char* child);
+
+bool dir_exists(char* path);
+bool file_exists(char* path);
 
 #endif // _ALMC_OS_H

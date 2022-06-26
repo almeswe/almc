@@ -1,8 +1,8 @@
 #ifndef _ALMC_AST_H
 #define _ALMC_AST_H
 
-#include "..\type.h"
-#include "..\lexer.h"
+#include "type.h"
+#include "lexer.h"
 
 typedef struct Expr Expr;
 typedef struct Stmt Stmt;
@@ -118,7 +118,7 @@ typedef struct Str {
 } Str;
 
 typedef struct Name {
-	const char* value;
+	char* value;
 	SrcContext* context;
 } Name;
 
@@ -128,11 +128,10 @@ typedef struct Idnt {
 	char* svalue;
 	SrcContext* context;
 
-	struct _enum_member_data
-	{
+	struct _enum_member_data {
 		bool is_enum_member;
 		EnumMember* enum_member;
-	};
+	} attrs;
 } Idnt;
 
 typedef enum ConstKind {
@@ -392,16 +391,16 @@ typedef struct AstRoot {
 
 Expr* expr_new(ExprKind type, void* expr_value_ptr);
 
-Str* str_new(const char* string, SrcContext* context);
-Name* name_new(const char* value, SrcContext* context);
-Idnt* idnt_new(const char* idnt, SrcContext* context);
+Str* str_new(char* string, SrcContext* context);
+Name* name_new(char* value, SrcContext* context);
+Idnt* idnt_new(char* idnt, SrcContext* context);
 Const* const_new(ConstKind type, const char* svalue, SrcContext* context);
 FuncCall* func_call_new(Name* name, Expr** args);
 UnaryExpr* unary_expr_new(UnaryExprKind type, Expr* expr);
 BinaryExpr* binary_expr_new(BinaryExprKind type, Expr* lexpr, Expr* rexpr);
 TernaryExpr* ternary_expr_new(Expr* cond, Expr* lexpr, Expr* rexpr);
 Initializer* initializer_new(Expr** values);
-TypeVar* type_var_new(Type* type, const char* var);
+TypeVar* type_var_new(Type* type, char* var);
 
 Stmt* stmt_new(StmtType type, void* stmt_value_ptr);
 

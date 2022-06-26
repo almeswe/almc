@@ -1,12 +1,11 @@
 #ifndef _ALMC_TABLE2
 #define _ALMC_TABLE2
 
-#include "..\ast\ast.h"
-#include "..\..\utils\common.h"
-#include "..\..\utils\data-structures\sbuffer.h"
+#include "ast.h"
+#include "../utils/common.h"
+#include "../utils/data-structures/sbuffer.h"
 
-typedef enum TableEntityKind
-{
+typedef enum TableEntityKind {
 	TABLE_ENTITY_ENUM,
 	TABLE_ENTITY_UNION,
 	TABLE_ENTITY_STRUCT,
@@ -18,15 +17,13 @@ typedef enum TableEntityKind
 	TABLE_ENTITY_FUNCTION
 } TableEntityKind;
 
-typedef struct TableEntity
-{
+typedef struct TableEntity {
 	bool is_in_use;
 	bool is_unresolved;
 
 	//todo: add logic for used/not used entity
 
-	union _table_entity_value
-	{
+	union _table_entity_value {
 		VarDecl* local;
 		LabelDecl* label;
 		TypeVar* parameter;
@@ -36,42 +33,35 @@ typedef struct TableEntity
 		EnumDecl* enum_decl;
 		UnionDecl* union_decl;
 		StructDecl* struct_decl;
-	};
+	} value;
 
-	struct _table_entity_variable_data
-	{
+	struct _table_entity_variable_data {
 		bool is_ref_to_func;
 		bool is_initialized;
-	};
+	} meta;
 
 	enum TableEntityKind kind;
 } TableEntity;
 
-typedef struct Table
-{
-	struct _scope_data
-	{
+typedef struct Table {
+	struct _scope_data {
 		TableEntity** locals;
 		TableEntity** labels;
 		TableEntity** functions;
 		TableEntity** parameters;
 		TableEntity** enum_members;
 
-		struct _scope_typedecls_data
-		{
-			TableEntity** enums;
-			TableEntity** unions;
-			TableEntity** structs;
-		};
-	};
+		TableEntity** enums;
+		TableEntity** unions;
+		TableEntity** structs;
+	} scopes;
 
-	struct _scope_references
-	{
+	struct _scope_references {
 		LoopStmt*   in_loop;
 		SwitchStmt* in_switch;
 
 		FuncDecl* in_function;
-	};
+	} scope_refs;
 
 	struct Table*  nested_in;
 	struct Table** nesting;

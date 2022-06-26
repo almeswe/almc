@@ -1,33 +1,28 @@
 #include "common.h"
 
-char io_buffer[4096];
-
-char* frmt(const char* format, ...)
-{
+char* frmt(const char* format, ...) {
 	/*
 		Function which returns new formatted string
 		according to passed parameters.
-		Returned string must be freed.
 	*/
 
 	va_list args;
-
 	va_start(args, format);
-	vsprintf(io_buffer, format, args);
+	if (vsprintf(_frmt_buffer, format, args) < 0) {
+		printerr("%s\n", "vsprintf in frmt function errored."); exit(1);
+	}
 	va_end(args);
-	return io_buffer;
+	return _frmt_buffer;
 }
 
-bool isidnt(char c)
-{
+bool isidnt(char c) {
 	/*
 		Checks if the specified character is possible for identifier lexeme.
 	*/
 	return isalpha(c) || c == '_';
 }
 
-bool isidnt_ext(char c)
-{
+bool isidnt_ext(char c) {
 	/*
 		Checks for 'extended' identifier character pattern.
 		Digits included.
@@ -35,24 +30,21 @@ bool isidnt_ext(char c)
 	return isdigit(c) || isidnt(c);
 }
 
-bool isdigit_bin(char c)
-{
+bool isdigit_bin(char c) {
 	/*
 		Checks if the specified character has binary format.
 	*/
 	return c == '0' || c == '1';
 }
 
-bool isdigit_oct(char c)
-{
+bool isdigit_oct(char c) {
 	/*
 		Checks if the specified character has octal format.
 	*/
 	return isdigit(c) || (c >= '0' && c <= '7');
 }
 
-bool isdigit_hex(char c)
-{
+bool isdigit_hex(char c) {
 	/*
 		Checks if the specified character has hexidecimal format.
 		Includes both lower and upper.
@@ -60,8 +52,7 @@ bool isdigit_hex(char c)
 	return isdigit(c) || ((c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'));
 }
 
-bool isdigit_ext(char c)
-{
+bool isdigit_ext(char c) {
 	/*
 		Checks the 'extended' digit pattern for numeric lexemes.
 		[e, E] - exponential form.
@@ -72,8 +63,7 @@ bool isdigit_ext(char c)
 		c == '_';
 }
 
-bool isdigit_fext(char c)
-{
+bool isdigit_fext(char c) {
 	/*
 		Checks the 'extended' digit pattern for numeric lexemes.
 		[e, E] - exponential form.
@@ -81,36 +71,30 @@ bool isdigit_fext(char c)
 	return isdigit(c) || c == 'e' || c == 'E';
 }
 
-bool isstrc(char c)
-{
+bool isstrc(char c) {
 	/*
 		Checks character which means the end of string lexeme.
 	*/
 	return c != '\n' && c != '\"';
 }
 
-bool issquote(char c)
-{
+bool issquote(char c) {
 	return c == '\'';
 }
 
-bool isdquote(char c)
-{
+bool isdquote(char c) {
 	return c == '\"';
 }
 
-bool issharp(char c)
-{
+bool issharp(char c) {
 	return c == '#';
 }
 
-bool isescape(char c)
-{
+bool isescape(char c) {
 	/*
 		Checks for all available (for this compiler) escape characters.
 	*/
-	switch (c)
-	{
+	switch (c) {
 		case '\a':
 		case '\b':
 		case '\f':
