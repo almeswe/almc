@@ -5,15 +5,19 @@
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdbool.h>
 
 #include "xmemory/xmemory.h"
 
-#define _FRMT_BUFFER_SIZE 4096
+#define _FRMT_BUFFER_SIZE       4096
+#define _FRMT_BUFFER_MAX_LOAD   0.80
 
 char _frmt_buffer[_FRMT_BUFFER_SIZE];
 
 char* frmt(const char* format, ...);
+
+size_t _get_frmt_buffer_ptr();
 
 bool isidnt(char c);
 bool isidnt_ext(char c);

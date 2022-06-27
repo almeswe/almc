@@ -1,5 +1,11 @@
 #include "common.h"
 
+size_t _frmt_buffer_ptr = 0;
+
+size_t _get_frmt_buffer_ptr() {
+	return _frmt_buffer_ptr;
+}
+
 char* frmt(const char* format, ...) {
 	/*
 		Function which returns new formatted string
@@ -7,12 +13,24 @@ char* frmt(const char* format, ...) {
 	*/
 
 	va_list args;
+	size_t written = 0;
 	va_start(args, format);
-	if (vsprintf(_frmt_buffer, format, args) < 0) {
+	if ((written = vsprintf(_frmt_buffer+_frmt_buffer_ptr, format, args)) < 0) {
 		printerr("%s\n", "vsprintf in frmt function errored."); exit(1);
 	}
 	va_end(args);
-	return _frmt_buffer;
+	written += 1;
+	_frmt_buffer_ptr += written;
+	if (_frmt_buffer_ptr >= (size_t)(_FRMT_BUFFER_SIZE*_FRMT_BUFFER_MAX_LOAD)) {
+		va_start(args, format);
+		_frmt_buffer_ptr = 0;
+		if ((written = vsprintf(_frmt_buffer, format, args)) < 0) {
+			printerr("%s\n", "vsprintf in frmt function errored."); exit(1);
+		}
+		va_end(args);
+		_frmt_buffer_ptr += written;
+	}
+	return _frmt_buffer+_frmt_buffer_ptr-written;
 }
 
 bool isidnt(char c) {
