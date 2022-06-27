@@ -2,7 +2,8 @@
 #define _ALMC_AST_CONSOLE_PRINTER_H
 
 #include "ast.h"
-#include "..\..\utils\console\colors.h"
+#include "../utils/os.h"
+#include "../utils/console/colors.h"
 
 void print_expr(Expr* expr, const char* indent);
 void print_stmt(Stmt* stmt, const char* indent);
@@ -10,11 +11,11 @@ void print_stmt(Stmt* stmt, const char* indent);
 void print_ast(AstRoot* ast);
 
 void print_type_spec(Type* type, const char* indent);
-void print_type(Type* type, const char* indent);
-void print_idnt(Idnt* idnt, const char* indent);
-void print_str(Str* str, const char* indent);
-void print_const(Const* cnst, const char* indent);
-void print_func_call(FuncCall* func_call, const char* indent);
+void print_type(Type* type);
+void print_idnt(Idnt* idnt);
+void print_str(Str* str);
+void print_const(Const* cnst);
+void print_call(FuncCall* func_call, const char* indent);
 void print_unary_expr(UnaryExpr* expr, const char* indent);
 void print_binary_expr(BinaryExpr* expr, const char* indent);
 void print_ternary_expr(TernaryExpr* expr, const char* indent);

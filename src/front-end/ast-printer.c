@@ -1,6 +1,27 @@
 #include "ast-printer.h"
 
-void print_ast(AstRoot* ast)
+#define _b(e)		e; break
+#define _c(c, ...) 	c __VA_ARGS__ RESET
+
+#define TREE_BR 	"\\_"
+#define TREE_BV 	"| "
+#define TREE_BVR    "|_"
+
+void print_ast(AstRoot* ast) {
+	print_ast(ast); printf("\n");
+	for (size_t i = 0; i < sbuffer_len(ast->stmts); i++) {
+		//print_stmt(ast->stmts[i], "");
+	}
+}
+
+void print_ast_header(AstRoot* ast) {
+	char buffer[512];
+	const char* filename = basename(ast->from);
+	const char* abspath  = realpath(ast->from, buffer);
+	printf(_c(CYN, "ast-root") " <file=\"%s\", abs=\"%s\">", filename, abspath);
+}
+
+/*void print_ast(AstRoot* ast)
 {
 	printf("ast-root:\n");
 	for (size_t i = 0; i < sbuffer_len(ast->stmts); i++)
@@ -19,7 +40,7 @@ void print_type_spec(Type* type, const char* indent)
 	{
 	case TYPE_ARRAY:
 		printf("%sarray\n", indent);
-		print_expr(type->dimension, indent);
+		print_expr(type->attrs.arr.dimension, indent);
 		print_type_spec(type->base, frmt("%s   ", indent));
 		break;
 	case TYPE_POINTER:
@@ -63,7 +84,7 @@ void print_idnt(Idnt* idnt, const char* indent)
 	else
 		printfc(ALMC_CONSOLE_GRAY, "%sidnt: %s\n",
 			indent, idnt->svalue);
-	if (idnt->is_enum_member)
+	if (idnt->attrs.is_enum_member)
 		printfc(ALMC_CONSOLE_GRAY,
 			"%s   is_enum_member: 1\n", indent);
 }
@@ -238,45 +259,185 @@ void print_initializer(Initializer* initializer, const char* indent)
 		printf("%sitem %d:\n", indent, i + 1), 
 			print_expr(initializer->values[i], indent);
 }
+*/
 
-void print_expr(Expr* expr, const char* indent)
-{
-	// |——
-	char* new_indent = frmt("%s   ", indent);
-	if (!expr)
-		printf("%s   no-body\n", indent);
-	else
-	{
-		switch (expr->kind)
-		{
-		case EXPR_IDNT:
-			print_idnt(expr->idnt, new_indent);
-			break;
-		case EXPR_CONST:
-			print_const(expr->cnst, new_indent);
-			break;
-		case EXPR_STRING:
-			print_str(expr->str, new_indent);
-			break;
-		case EXPR_FUNC_CALL:
-			print_func_call(expr->func_call, new_indent);
-			break;
-		case EXPR_UNARY_EXPR:
-			print_unary_expr(expr->unary_expr, new_indent);
-			break;
-		case EXPR_BINARY_EXPR:
-			print_binary_expr(expr->binary_expr, new_indent);
+void print_type(Type* type) {
+	if (type == NULL || type->kind == TYPE_UNKNOWN) {
+		return printf("type=<" _c(BRED, "?") ">"), (void)0;
+	}
+	printf("type=<kind=%d, size=%d, " _c(BRED, "%s") ">", type->kind,
+		type->size, type_tostr_plain(type));
+}
+
+void print_idnt(Idnt* idnt) {
+	printf(_c(BCYN, "idnt") " <var=" _c(BYEL, "%s") ", ", idnt->svalue);
+	print_type(idnt->type);
+	printf(", attrs={enum_member=%d}>", idnt->attrs.is_enum_member);
+}
+
+char get_explicit_escapec(char escapec) {
+	switch (escapec) {
+		case '\a': 	return 'a';
+		case '\b': 	return 'b';
+		case '\f': 	return 'f';
+		case '\n': 	return 'n';
+		case '\r': 	return 'r';
+		case '\t': 	return 't';
+		case '\v': 	return 'v';
+		case '\0': 	return '0';
+		case '\\': 	return '\\';
+		case '\'':	return '\'';
+		case '\"':	return '\"';
+		default:
+			report_error("Unknown control character met in get_explicit_escapec()", NULL);
+	}
+}
+
+void print_const(Const* cnst) {
+	printf(_c(BCYN, "const") " <val=");
+	switch (cnst->kind) {
+		case CONST_CHAR: 	
+			if (!iscntrl((char)cnst->ivalue)) {
+				printf("\'" _c(BYEL, "%c") "\'(%d), ", cnst->ivalue, cnst->ivalue);
+			} else {
+				printf("\'" _c(BYEL, "\\%c") "\'(%d), ", 
+					get_explicit_escapec((char)cnst->ivalue), cnst->ivalue);
+			}
+		case CONST_FLOAT:	_b(printf(_c(BYEL "%.10f")", ", cnst->fvalue));
+		case CONST_INT:		_b(printf(_c(BYEL, "%ld") ", ", cnst->ivalue));
+		case CONST_UINT:	_b(printf(_c(BYEL, "%lu") ", ", cnst->uvalue));
+		default:
+			report_error("Unknown const kind met in print_const()\n", NULL);
+	}
+	print_type(cnst->type);
+	printf(">");
+}
+
+void print_str(Str* str) {
+	printf("%s", _c(BCYN, "const") " <val=\"" BYEL);
+	for (size_t i = 0; i < strlen(str->svalue); i++) {
+		char curr_char = str->svalue[i]; 
+		if (iscntrl(curr_char)) {
+			putc('\\', stdout), putc(get_explicit_escapec(curr_char), stdout);
+		} else {
+			putc(curr_char, stdout);
+		}
+	}
+	printf(RESET "\", ");
+	print_type(str->type);
+	printf(">");
+}
+
+void print_call(FuncCall* call, const char* indent) {
+	printf(_c(BCYN, "fcall") " <f=" _c(BYEL, "%s") ", argc=%d, ret-", 
+		call->name->value, sbuffer_len(call->args));
+	print_type(call->type);
+	printf(">\n");
+	const char* new_indent = frmt("%s   ", indent);
+	for (size_t i = 0; i < sbuffer_len(call->args); i++) {
+		printf("%s" TREE_BR "arg<%d> = ", new_indent, i+1);
+		print_expr(call->args[i], new_indent);
+		printf("\n");
+	}
+}
+
+void print_unary_expr(UnaryExpr* unary_expr, const char* indent) {
+	const char* unary_str[] = {
+		"+ (plus)", "- (minus)", "& (address)",
+		"* (deref)", "! (not)", "~ (bw-not)",
+		"cast",
+		"sizeof",
+		"lengthof",
+	};
+
+	printf(_c(BGRN, "unary") " <" _c(BYEL, "%s") ", ", unary_str[unary_expr->kind]);
+	print_type(unary_expr->type);
+	if (unary_expr->cast_type != NULL) {
+		printf(", %s-", unary_str[unary_expr->kind]);
+		print_type(unary_expr->cast_type);
+	}
+	printf(">\n");
+	const char* new_indent = frmt("%s   ", indent);
+	printf("%s" TREE_BR "expr = ", new_indent);
+	print_expr(unary_expr->expr, new_indent);
+}
+
+void print_binary_expr(BinaryExpr* binary_expr, const char* indent) {
+	const char* binary_str[] = {
+		"+ (add)",
+		"- (sub)",
+		"/ (div)",
+		"% (mod)",
+		"* (mul)",
+
+		", (comma)",
+		"<< (shl)",
+		">> (shr)",
+
+		"< (lessthan)",
+		"> (greaterthan)",
+		"<= (lesseqthan)",
+		">= (greatereqthan)",
+
+		"|| (or)",
+		"&& (and)",
+		"== (eq)",
+		"!= (neq)",
+
+		"| (bw-or)",
+		"& (bw-and)",
+		"^ (bw-xor)",
+
+		"=  (asgn)",
+		"+= (add-asgn)",
+		"-= (sub-asgn)",
+		"*= (mul-asgn)",
+		"/= (div-asgn)",
+		"%= (mod-asgn)",
+		"<<= (shl-asgn)",
+		">>= (shr-asgn)",
+		"|= (bw-or-asgn)",
+		"&= (bw-and-asgn)",
+		"^= (bw-xor-asgn)",
+
+		". (accessor)",
+		"-> (ptr-accessor)",
+		"[] (arr-accessor)",
+	};
+
+	printf(_c(BGRN, "binary") " <" _c(BYEL, "%s") ", ", binary_str[binary_expr->kind]);
+	print_type(binary_expr->type);
+	printf(">\n");
+	const char* new_indent = frmt("%s   ", indent);
+	printf("%s" TREE_BR "lexpr = ", new_indent);
+	print_expr(binary_expr->lexpr, new_indent);
+	printf("\n%s" TREE_BR "rexpr = ", new_indent);
+	print_expr(binary_expr->rexpr, new_indent);
+}
+
+void print_expr(Expr* expr, const char* indent) {
+	if (!expr) {
+		printf(_c(BRED, "%s"), "NULL");
+	}
+	else {
+		switch (expr->kind) {
+			case EXPR_IDNT:			_b(print_idnt(expr->idnt));
+			case EXPR_CONST:		_b(print_const(expr->cnst));
+			case EXPR_STRING:		_b(print_str(expr->str));
+			case EXPR_FUNC_CALL:	_b(print_call(expr->func_call, indent));
+			case EXPR_UNARY_EXPR:	_b(print_unary_expr(expr->unary_expr, indent));
+			case EXPR_BINARY_EXPR:  _b(print_binary_expr(expr->binary_expr, indent));
 			break;
 		case EXPR_TERNARY_EXPR:
-			print_ternary_expr(expr->ternary_expr, new_indent);
+			//print_ternary_expr(expr->ternary_expr, new_indent);
 			break;
 		case EXPR_INITIALIZER:
-			print_initializer(expr->initializer, new_indent);
+			//print_initializer(expr->initializer, new_indent);
 			break;
 		}
 	}
 }
-
+/*
 void print_type_var(TypeVar* type_var, const char* indent)
 {
 	if (type_var->type)
@@ -502,23 +663,23 @@ void print_if_stmt(IfStmt* if_stmt, const char* indent)
 
 void print_jump_stmt(JumpStmt* jump_stmt, const char* indent)
 {
-	printfc(ALMC_CONSOLE_DARKMAGENTA, indent);
+	printfc(ALMC_CONSOLE_DARKMAGENTA, "%s\n", indent);
 	switch (jump_stmt->kind)
 	{
 	case JUMP_GOTO:
-		printfc(ALMC_CONSOLE_DARKMAGENTA, "goto-stmt:\n");
+		printfc(ALMC_CONSOLE_DARKMAGENTA,, "%s\n" "goto-stmt:");
 		print_expr(jump_stmt->expr, indent);
 		break;
 	case JUMP_BREAK:
-		printfc(ALMC_CONSOLE_DARKMAGENTA, "break-stmt\n");
+		printfc(ALMC_CONSOLE_DARKMAGENTA, "%s\n", "break-stmt");
 		break;
 	case JUMP_RETURN:
-		printfc(ALMC_CONSOLE_DARKMAGENTA, "return-stmt\n");
+		printfc(ALMC_CONSOLE_DARKMAGENTA, "%s\n", "return-stmt");
 		if (jump_stmt->expr)
 			print_expr(jump_stmt->expr, indent);
 		break;
 	case JUMP_CONTINUE:
-		printfc(ALMC_CONSOLE_DARKMAGENTA, "continue-stmt\n");
+		printfc(ALMC_CONSOLE_DARKMAGENTA, "%s\n", "continue-stmt");
 		break;
 	default:
 		report_error(frmt("Unknown jump statemnt kind met"
@@ -615,4 +776,4 @@ void print_stmt(Stmt* stmt, const char* indent)
 				" in function: %s", __FUNCTION__), NULL);
 		}
 	}
-}
+}*/
