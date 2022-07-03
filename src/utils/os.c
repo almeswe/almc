@@ -84,7 +84,6 @@
 	}
 #elif __linux__
 
-	#define PATH_SEPARATOR '/'
 	#define _SHARED_BUFFER_SIZE 1024
 	char _shared_buffer[_SHARED_BUFFER_SIZE];
 

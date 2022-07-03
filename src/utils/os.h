@@ -12,12 +12,14 @@
 		#include <windows.h>
 	#undef _CRT_SECURE_NO_WARNINGS
 	#undef WIN32_LEAN_AND_MEAN
+	#define PATH_SEPARATOR '\\'
 #elif __linux__
 	#include <unistd.h>
 	#include <libgen.h>
 	#include <dirent.h>
+	#define PATH_SEPARATOR '/'
 #else
-	#error "OS module is not supported on this platform."
+	#error "this module is not supported on this platform."
 #endif
 
 char* get_drives();
