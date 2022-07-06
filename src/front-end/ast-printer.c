@@ -1,17 +1,24 @@
 #include "ast-printer.h"
 
-#define _b(e) e; break
-
 #define TREE_BR 	"\\_"
 #define TREE_BV 	"| "
 #define TREE_BVR    "|_"
 
 void print_ast(AstRoot* ast) {
+	printf(_c(BCYN, "%s-"), "main");
+	print_ast_root(ast, "");
+}
+
+void print_ast_root(AstRoot* ast, const char* indent) {
 	print_ast_header(ast); printf("\n");
-	const char* indent = "   "; 
-	for (size_t i = 0; i < sbuffer_len(ast->stmts); i++) {
-		printf("%s", indent);
-		print_stmt(ast->stmts[i], indent);
+	const char* new_indent = frmt("%s   ", indent);
+	const size_t size = sbuffer_len(ast->stmts);
+	for (size_t i = 0; i < size; i++) {
+		printf("%s", new_indent);
+		print_stmt(ast->stmts[i], new_indent);
+		if (i < (size-1)) {
+			printf("%s", "\n");
+		}
 	}
 }
 
@@ -28,9 +35,15 @@ void print_ast_header(AstRoot* ast) {
 
 void print_type(Type* type) {
 	if (type == NULL || type->kind == TYPE_UNKNOWN) {
+		return printf("%s", "type=" _c(RED, "?")), (void)0;
+	}
+	printf("type=" _c(BBLU, "%s") "(" _c(BBLU, "%lu") ")",
+		type_tostr_plain(type), type->size);
+	return;
+	if (type == NULL || type->kind == TYPE_UNKNOWN) {
 		return printf("%s", "type=<" _c(RED, "?") ">"), (void)0;
 	}
-	printf("type=<bytes=" _c(WHT, "%d") ", " _c(BBLU, "%s") ">",
+	printf("type=<bytes=" _c(WHT, "%lu") ", " _c(BBLU, "%s") ">",
 		type->size, type_tostr_plain(type));
 }
 
@@ -66,9 +79,9 @@ void print_const(Const* cnst) {
 	switch (cnst->kind) {
 		case CONST_CHAR: 	
 			if (!iscntrl((char)cnst->ivalue)) {
-				printf("\'" _c(BYEL, "%c") "\'(%d), ", cnst->ivalue, cnst->ivalue);
+				printf("\'" _c(BYEL, "%c") "\'(%ld), ", (char)cnst->ivalue, cnst->ivalue);
 			} else {
-				printf("\'" _c(BYEL, "\\%c") "\'(%d), ", 
+				printf("\'" _c(BYEL, "\\%c") "\'(%ld), ", 
 					get_explicit_escapec((char)cnst->ivalue), cnst->ivalue);
 			}
 			break;
@@ -104,7 +117,7 @@ void print_call(FuncCall* call, const char* indent) {
 	printf(">\n");
 	const char* new_indent = frmt("%s   ", indent);
 	for (size_t i = 0; i < sbuffer_len(call->args); i++) {
-		printf("%s" TREE_BR "arg<%d> = ", new_indent, i+1);
+		printf("%s" TREE_BR "arg<%lu> = ", new_indent, i+1);
 		print_expr(call->args[i], new_indent);
 	}
 }
@@ -202,7 +215,7 @@ void print_initializer_expr(Initializer* init_expr, const char* indent) {
 	printf("%s\n", ">");
 	const char* new_indent = frmt("%s   ", indent);
 	for (size_t i = 0; i < sbuffer_len(init_expr->values); i++) {
-		printf("%s" TREE_BR "val<%d> = ", new_indent, i+1);
+		printf("%s" TREE_BR "val<%lu> = ", new_indent, i+1);
 		print_expr(init_expr->values[i], new_indent);
 	}
 }
@@ -229,10 +242,14 @@ void print_expr(Expr* expr, const char* indent) {
 }
 
 void print_block_stmt(Block* block, const char* indent) {
+	if (block == NULL) {
+		printf(_c(BMAG, "scope") " <c=%lu>\n", 0ul);
+		return;
+	}
 	printf(_c(BMAG, "scope") " <c=%lu>\n", sbuffer_len(block->stmts));
 	const char* new_indent = frmt("%s   ", indent);
 	for (size_t i = 0; i < sbuffer_len(block->stmts); i++) {
-		printf("%s" TREE_BR "<%d> = ", new_indent, i+1);
+		printf("%s" TREE_BR "<%ld> = ", new_indent, i+1);
 		print_stmt(block->stmts[i], new_indent);
 	}
 }
@@ -253,7 +270,7 @@ void print_var_decl_stmt(VarDecl* var_decl_stmt, const char* indent) {
 }
 
 void print_struct_member(Member* member, const char* struct_name) {
-	printf("<name=" _c(BYEL, "%s") ", %s" _c(BYEL, "+%ld") ", ", 
+	printf("<name=" _c(BYEL, "%s") ", %s" _c(BYEL, "+%d") ", ", 
 		member->name, struct_name, member->offset);
 	print_type(member->type);
 	printf("%s\n", ">");
@@ -264,7 +281,7 @@ void print_enum(EnumDecl* enum_decl, const char* indent) {
 		enum_decl->name->value, sbuffer_len(enum_decl->members));	
 	const char* new_indent = frmt("%s   ", indent);
 	for (size_t i = 0; i < sbuffer_len(enum_decl->members); i++) {
-		printf("%s" TREE_BR "<%d> = " _c(BYEL, "%ld") " <", new_indent, i+1, 
+		printf("%s" TREE_BR "<%lu> = " _c(BYEL, "%ld") " <", new_indent, i+1, 
 			evaluate_expr_itype(enum_decl->members[i]->value));
 		print_type(retrieve_expr_type(enum_decl->members[i]->value));
 		printf("%s\n", ">");
@@ -276,7 +293,7 @@ void print_struct(StructDecl* struct_decl, const char* indent) {
 		struct_decl->name->value, sbuffer_len(struct_decl->members));	
 	const char* new_indent = frmt("%s   ", indent);
 	for (size_t i = 0; i < sbuffer_len(struct_decl->members); i++) {
-		printf("%s" TREE_BR "<%d> = ", new_indent, i+1); 
+		printf("%s" TREE_BR "<%lu> = ", new_indent, i+1); 
 		print_struct_member(struct_decl->members[i], struct_decl->name->value);
 	}
 }
@@ -286,7 +303,7 @@ void print_union(UnionDecl* union_decl, const char* indent) {
 		union_decl->name->value, sbuffer_len(union_decl->members));	
 	const char* new_indent = frmt("%s   ", indent);
 	for (size_t i = 0; i < sbuffer_len(union_decl->members); i++) {
-		printf("%s" TREE_BR "<%d> = ", new_indent, i+1);
+		printf("%s" TREE_BR "<%lu> = ", new_indent, i+1);
 		print_struct_member(union_decl->members[i], union_decl->name->value);
 	}
 }
@@ -323,10 +340,10 @@ void print_func_decl_stmt(FuncDecl* func_decl, const char* indent) {
 	print_type(func_decl->type); printf("%s\n", ">");
 	const char* new_indent = frmt("%s   ", indent);
 	for (size_t i = 0; i < sbuffer_len(func_decl->params); i++) {
-		printf("%s" TREE_BR " param<%d> = <name=" _c(BYEL, "%s") ", ", 
+		printf("%s" TREE_BR " param<%lu> = <name=" _c(BYEL, "%s") ", ", 
 			new_indent, i+1, func_decl->params[i]->var);
 		print_type(func_decl->params[i]->type);
-		printf("\n", "");
+		printf("%s", "\n");
 	}
 	printf("%s" TREE_BR "body = ", new_indent);
 	print_block_stmt(func_decl->body, new_indent);
@@ -342,8 +359,8 @@ void print_elif_stmt(ElseIf* elif_stmt, const char* indent) {
 }
 
 void print_if_stmt(IfStmt* if_stmt, const char* indent) {
-	printf(_c(BMAG, "if") " <else ifs=" _c(BYEL, "%lu") ", else=%lu>\n", 
-		sbuffer_len(if_stmt->elifs), if_stmt->else_body != NULL);
+	printf(_c(BMAG, "if") " <else ifs=" _c(BYEL, "%lu") ", else=%u>\n", 
+		sbuffer_len(if_stmt->elifs), (unsigned)(if_stmt->else_body != NULL));
 	const char* new_indent = frmt("%s   ", indent);
 	printf("%s" TREE_BR "condition = ", new_indent); 
 	print_expr(if_stmt->cond, new_indent);
@@ -430,7 +447,7 @@ void print_do_loop_stmt(DoLoop* do_stmt, const char* indent) {
 
 void print_loop_stmt(LoopStmt* loop_stmt, const char* indent) {
 	switch (loop_stmt->kind) {
-		case LOOP_DO: 		_b(print_do_loop_stmt(loop_stmt->for_loop, indent));
+		case LOOP_DO: 		_b(print_do_loop_stmt(loop_stmt->do_loop, indent));
 		case LOOP_FOR: 		_b(print_for_loop_stmt(loop_stmt->for_loop, indent));
 		case LOOP_WHILE: 	_b(print_while_loop_stmt(loop_stmt->while_loop, indent));
 		default:
@@ -443,6 +460,31 @@ void print_label_decl_stmt(LabelDecl* label_decl, const char* indent) {
 	printf(_c(BMAG, "label") " <l=" _c(BYEL, "%s") ">\n", label_decl->name->value);
 }
 
+void print_switch_case_stmt(SwitchStmt* switch_stmt, const char* indent) {
+	printf(_c(BMAG, "switch-case") " <cases=" _c(BYEL, "%lu") ", default=" _c(BYEL, "%d") ">\n",
+		sbuffer_len(switch_stmt->cases), switch_stmt->default_case != NULL);
+	const char* new_indent = frmt("%s   ", indent);
+	printf("%s" TREE_BR "condition = ", new_indent); 
+	print_expr(switch_stmt->cond, new_indent);
+	for (size_t i = 0; i < sbuffer_len(switch_stmt->cases); i++) {
+		printf("%s" TREE_BR "case " _c(BYEL, "%ld"), new_indent, 
+			evaluate_expr_itype(switch_stmt->cases[i]->value));
+		if (!switch_stmt->cases[i]->is_conjucted) {
+			printf("%s",  " = ");
+			print_block_stmt(switch_stmt->cases[i]->body, indent);
+		}
+	}
+	if (switch_stmt->default_case != NULL) {
+		printf("%s" TREE_BR "default-case = ", new_indent);
+		print_block_stmt(switch_stmt->default_case, new_indent);
+	}
+}
+
+void print_import_stmt(ImportStmt* import_stmt, const char* indent) {
+	printf(_c(BCYN, "%s-"), "imported");
+	print_ast_root(import_stmt->ast, indent);
+}
+
 void print_stmt(Stmt* stmt, const char* indent) {
 	if (stmt == NULL) {
 		printf(_c(BRED, "%s"), "NULL");
@@ -452,21 +494,15 @@ void print_stmt(Stmt* stmt, const char* indent) {
 			case STMT_IF:			_b(print_if_stmt(stmt->if_stmt, indent));
 			case STMT_LOOP:			_b(print_loop_stmt(stmt->loop_stmt, indent));
 			case STMT_EXPR:			_b(print_expr_stmt(stmt->expr_stmt, indent));
-			case STMT_JUMP:			_b(print_jump_stmt(stmt->expr_stmt, indent));
+			case STMT_JUMP:			_b(print_jump_stmt(stmt->jump_stmt, indent));
 			case STMT_BLOCK:		_b(print_block_stmt(stmt->block, indent));
+			case STMT_EMPTY:		_b(;);
+			case STMT_IMPORT:		_b(print_import_stmt(stmt->import_stmt, indent));
+			case STMT_SWITCH:		_b(print_switch_case_stmt(stmt->switch_stmt, indent));
 			case STMT_VAR_DECL:		_b(print_var_decl_stmt(stmt->var_decl, indent));
 			case STMT_TYPE_DECL:	_b(print_type_decl_stmt(stmt->type_decl, indent));
 			case STMT_FUNC_DECL:	_b(print_func_decl_stmt(stmt->func_decl, indent));
 			case STMT_LABEL_DECL:   _b(print_label_decl_stmt(stmt->label_decl, indent));
-			case STMT_EMPTY:		break;
-			/*
-			case STMT_SWITCH:
-				print_switch_stmt(stmt->switch_stmt, new_indent);
-				break;
-			case STMT_IMPORT:
-				print_import_stmt(stmt->import_stmt, new_indent);
-				break;
-			*/
 			default:
 				report_error(frmt("Unknown statement kind met"
 					" in function: %s", __FUNCTION__), NULL);
