@@ -24,13 +24,23 @@ void print_ast_root(AstRoot* ast, const char* indent) {
 
 void print_ast_header(AstRoot* ast) {
 	char buffer[512];
-	const char* filename = basename(ast->from);
-	const char* abspath  = get_curr_dir();
-	if (abspath[strlen(abspath)-1] != PATH_SEPARATOR) {
-		printf(_c(BCYN, "ast-root") " <from=\"" _c(BGRN, "%s/") _c(BYEL, "%s") "\">", abspath, filename);
-	} else {
-		printf(_c(BCYN, "ast-root") " <from=\"" _c(BGRN, "%s") _c(BYEL, "%s") "\">", abspath, filename);
+	printf(_c(BCYN, "%s"), "ast-root "); 
+	for (size_t i = 0; i < sbuffer_len(ast->from); i++) {
+		const char* filename = basename(ast->from[i]);
+		const char* abspath  = get_curr_dir();
+		if (i == 0) {
+			printf("%s", "<");
+		}
+		if (abspath[strlen(abspath)-1] != PATH_SEPARATOR) {
+			printf("from=\"" _c(BGRN, "%s/") _c(BYEL, "%s") "\"", abspath, filename);
+		} else {
+			printf("from=\"" _c(BGRN, "%s") _c(BYEL, "%s") "\"", abspath, filename);
+		}
+		if (i+1 < sbuffer_len(ast->from)) {
+			printf("%s", " ");
+		}
 	}
+	printf("%s", ">");
 }
 
 void print_type(Type* type) {

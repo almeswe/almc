@@ -13,7 +13,7 @@ static struct global_visitor_data visitor_data = {
 
 Visitor* visitor_new()
 {
-	Visitor* visitor = new(Visitor, visitor);
+	Visitor* visitor = new(Visitor);
 	visitor->global = table_new(NULL);
 	return visitor;
 }
@@ -101,10 +101,10 @@ void visit_type(Type* type, SrcContext* context, Table* table)
 
 	if (is_array_type(type)) {
 		// checking the index of current array dimension
-		visit_expr(type->dimension, table);
-		if (!is_const_expr(type->dimension)) {
+		visit_expr(type->attrs.arr.dimension, table);
+		if (!is_const_expr(type->attrs.arr.dimension)) {
 			report_error2("Index should be constant expression.",
-				get_expr_area(type->dimension));
+				get_expr_area(type->attrs.arr.dimension));
 		}
 		// call this function recursievly, because it might be 
 		// that there are multi-dimensional array type
@@ -249,8 +249,8 @@ void visit_idnt(Idnt* idnt, Table* table, bool is_in_assign)
 {
 	TableEntity* entity = NULL;
 	if (entity = get_enum_member(idnt->svalue, table)) {
-		idnt->is_enum_member = true;
-		idnt->enum_member = entity->enum_member;
+		idnt->attrs.is_enum_member = true;
+		idnt->attrs.enum_member = entity->value.enum_member;
 	}
 	else {
 		if (!get_parameter(idnt->svalue, table)) {
@@ -284,7 +284,7 @@ void visit_func_call(FuncCall* func_call, Table* table)
 	}
 
 	// synchronize few fields with function call structure
-	FuncDecl* func_decl = entity->function;
+	FuncDecl* func_decl = entity->value.function;
 	func_call->decl = func_decl;
 
 	// capture count of params of function declaration and
@@ -325,7 +325,7 @@ void visit_unary_expr(UnaryExpr* unary_expr, Table* table)
 	case UNARY_ADDRESS:
 	case UNARY_DEREFERENCE:
 		// check for addressable value
-		if (!is_addressable_expr(unary_expr->expr, table)) {
+		if (!is_addressable_expr(unary_expr->expr)) {
 			report_error2("Addressable expression required.",
 				unary_expr->area);
 		}
@@ -474,7 +474,7 @@ void visit_switch_stmt(SwitchStmt* switch_stmt, Table* table)
 
 	for (size_t i = 0; i < cases; i++) {
 		Table* local = table_new(table);
-		local->in_switch = switch_stmt;
+		local->scope_refs.in_switch = switch_stmt;
 
 		if (switch_stmt->cases[i]->body) {
 			visit_scope(switch_stmt->cases[i]->body->stmts, local);
@@ -494,7 +494,7 @@ void visit_switch_stmt(SwitchStmt* switch_stmt, Table* table)
 
 	if (switch_stmt->default_case) {
 		Table* local = table_new(table);
-		local->in_switch = switch_stmt;
+		local->scope_refs.in_switch = switch_stmt;
 		visit_scope(switch_stmt->default_case->stmts, local);
 		visit_block_stmts(switch_stmt->default_case, local);
 	}
@@ -503,7 +503,7 @@ void visit_switch_stmt(SwitchStmt* switch_stmt, Table* table)
 void visit_loop_stmt(LoopStmt* loop_stmt, Table* table)
 {
 	Table* local = table_new(table);
-	local->in_loop = loop_stmt;
+	local->scope_refs.in_loop = loop_stmt;
 	switch (loop_stmt->kind)
 	{
 	case LOOP_DO:
@@ -593,7 +593,7 @@ void visit_goto_stmt(JumpStmt* goto_stmt, Table* table)
 
 void visit_break_stmt(JumpStmt* break_stmt, Table* table)
 {
-	if (!table->in_loop && !table->in_switch) {
+	if (!table->scope_refs.in_loop && !table->scope_refs.in_switch) {
 		report_error2("Cannot use break statement"
 			" in this context.", break_stmt->area);
 	}
@@ -608,13 +608,13 @@ void visit_return_stmt(JumpStmt* return_stmt, Table* table)
 			- function return type.
 	*/
 
-	if (!table->in_function) {
+	if (!table->scope_refs.in_function) {
 		report_error2("Cannot use return statement"
 			" when its not located in function.", return_stmt->area);
 	}
 	else {
 		Expr* ret_expr = return_stmt->expr;
-		Type* func_ret_type = table->in_function->type;
+		Type* func_ret_type = table->scope_refs.in_function->type;
 		if (ret_expr != NULL) {
 			visit_expr(ret_expr, table);
 			Type* ret_expr_type = retrieve_expr_type(ret_expr);
@@ -635,7 +635,7 @@ void visit_return_stmt(JumpStmt* return_stmt, Table* table)
 
 void visit_continue_stmt(JumpStmt* continue_stmt, Table* table)
 {
-	if (!table->in_loop) {
+	if (!table->scope_refs.in_loop) {
 		report_error2("Cannot use continue statement"
 			" in this context.", continue_stmt->area);
 	}
@@ -731,7 +731,7 @@ void visit_enum(EnumDecl* enum_decl, Table* table)
 			}
 			else {
 				report_error(frmt("Enum member \'%s\' in \'%s\' is already declared in \'%s\'.",
-					current->name, enum_decl->name->value, entity->enum_member->from->name->value), current->context);
+					current->name, enum_decl->name->value, entity->value.enum_member->from->name->value), current->context);
 			}
 		}
 	}
@@ -871,7 +871,7 @@ void visit_func_decl_stmt(FuncDecl* func_decl, Table* table)
 	}
 	
 	Table* local = table_new(table);
-	local->in_function = func_decl;
+	local->scope_refs.in_function = func_decl;
 
 	visit_func_decl_specs(func_decl, table);
 	// do not visit scope statements if the function is external 
@@ -943,7 +943,7 @@ uint32_t get_size_of_type(Type* type, Table* table)
 		// so just return the size of i32
 		return i32_type.size;
 	case TYPE_POINTER:
-		return MACHINE_WORD;
+		return PTR_SIZE;
 	case TYPE_PRIMITIVE:
 		return type->size;
 	default:
@@ -964,8 +964,8 @@ uint32_t get_size_of_aggregate_type(Type* type, Table* table)
 	{
 	case TYPE_UNION:
 	case TYPE_STRUCT:
-		for (size_t i = 0; i < sbuffer_len(type->members); i++) {
-			buffer = type->members[i]->type->size;
+		for (size_t i = 0; i < sbuffer_len(type->type->attrs.compound.members); i++) {
+			buffer = type->attrs.compound.members[i]->type->size;
 			// when type is union, calculate max between size and size of current member
 			// otherwise just add member size to whole size (in case of struct)
 			size = type->kind == TYPE_UNION ? 
@@ -974,7 +974,7 @@ uint32_t get_size_of_aggregate_type(Type* type, Table* table)
 		return size;
 	case TYPE_ARRAY:
 		return (uint32_t)(get_size_of_type(type->base, table) *
-			evaluate_expr_itype(type->dimension));
+			evaluate_expr_itype(type->attrs.arr.dimension));
 	default:
 		report_error(frmt("Passed type \'%s\' is not aggregate in function: %s.",
 			type_tostr_plain(type), __FUNCTION__), NULL);

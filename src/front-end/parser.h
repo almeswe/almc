@@ -1,18 +1,17 @@
 #ifndef _ALMC_PARSER_H
 #define _ALMC_PARSER_H
 
+#include "ast.h"
 #include "lexer.h"
-#include "ast\ast.h"
 
-#include "..\utils\os.h"
+#include "../utils/os.h"
 
 #define ALMC_FILE_EXTENSION ".almc"
 
-typedef struct Parser
-{
+typedef struct Parser {
 	char* file;
 	Token** tokens;
-	uint32_t token_index;
+	size_t token_index;
 } Parser;
 
 Parser* parser_new(char* file, Token** tokens);
@@ -82,8 +81,8 @@ Block* parse_case_block(Parser* parser);
 Stmt* parse_switch_stmt(Parser* parser);
 
 void clear_imported_modules();
-char is_module_imported(const char* module);
-AstRoot* parse_module(const char* module_path);
+bool is_module_imported(const char* module);
+AstRoot* parse_module(char* module_path);
 Stmt* parse_import_stmt(Parser* parser);
 char* parse_import_path_desc(Parser* parser);
 Stmt* parse_from_import_stmt(Parser* parser);

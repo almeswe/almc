@@ -50,7 +50,7 @@ typedef struct Lexer {
 
 	StreamType input;
 
-	const char* curr_file;
+	char* curr_file;
 } Lexer;
 
 enum LexerMetrics {

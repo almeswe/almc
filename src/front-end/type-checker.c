@@ -110,8 +110,8 @@ Type* get_fvalue_type(double value)
 
 Type* get_idnt_type(Idnt* idnt, Table* table)
 {
-	if (idnt->is_enum_member) {
-		return retrieve_expr_type(idnt->enum_member->value, table);
+	if (idnt->attrs.is_enum_member) {
+		return retrieve_expr_type(idnt->attrs.enum_member->value);
 	}
 	TableEntity* varent = get_variable(idnt->svalue, table);
 	TableEntity* parament = get_parameter(idnt->svalue, table);
@@ -122,8 +122,9 @@ Type* get_idnt_type(Idnt* idnt, Table* table)
 		report_error(frmt("Bug with type identification met"
 			" in function: %s.", __FUNCTION__), NULL);
 	}
-	return varent ? varent->local->type_var->type :
-		parament->parameter->type;
+	
+	return varent ? varent->value.local->type_var->type :
+		parament->value.parameter->type;
 }
 
 Type* get_string_type(Str* str)
@@ -343,10 +344,11 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table)
 
 		// iterating through all struct's members, trying to find matching
 		if (is_struct_or_union_type(ltype)) {
-			for (size_t i = 0; i < sbuffer_len(ltype->members); i++) {
+			Member** members = ltype->attrs.compound.members;
+			for (size_t i = 0; i < sbuffer_len(members); i++) {
 				Idnt* member = get_member_idnt(binary_expr->rexpr);
-				if (str_eq(ltype->members[i]->name, member->svalue)) {
-					return member->type = ltype->members[i]->type;
+				if (str_eq(members[i]->name, member->svalue)) {
+					return member->type = members[i]->type;
 				}
 			}
 		}
@@ -708,7 +710,7 @@ SrcArea* get_expr_area(Expr* expr)
 	default:
 		report_error("Unknown expression kind for selecting any context.", NULL);
 	}
-	return &unknown_type;
+	return NULL;
 }
 
 const char* get_member_name(Expr* expr)

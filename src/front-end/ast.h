@@ -347,7 +347,7 @@ typedef struct JumpStmt {
 } JumpStmt;
 
 typedef struct AstRoot AstRoot;
-typedef struct {
+typedef struct ImportStmt {
 	AstRoot* ast;
 } ImportStmt;
 
@@ -387,7 +387,10 @@ typedef struct Stmt {
 
 typedef struct AstRoot {
 	Stmt** stmts;
+	char** from;
 } AstRoot;
+
+AstRoot* ast_new(char** from, Stmt** stmts);
 
 Expr* expr_new(ExprKind type, void* expr_value_ptr);
 

@@ -44,7 +44,9 @@ sp_data* get_spelling(const SrcContext* context) {
 	}
 	for (size_t i = 0; i < context->start; i++) {
 		data->marked[i] = ' ';
-		data->marked[i+context->start] = '~';
+	}
+	for (size_t i = 0; i < context->size; i++) {
+		data->marked[i+context->start-1] = '~';
 	}
 	return data;
 }

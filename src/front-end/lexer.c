@@ -554,8 +554,8 @@ Token* get_string_token(Lexer* lexer) {
 		size += (is_escape > 0) ? 2 : 1;
 	}
 	if (!matchc(lexer, '\"')) {
-		report_error(frmt("Expected double quote, but met (code %d): \'%c\'", (int)curr_char, curr_char),
-			src_context_new(context_unpack(lexer, size)));
+		report_error(frmt("Expected double quote, but met (code %d): \'%c\'", 
+			(int)curr_char, curr_char), src_context_new(context_unpack(lexer, size)));
 	}
 	str_builder_reduce_buffer(temp, str, index);
 	Token* token = token_new(TOKEN_STRING,

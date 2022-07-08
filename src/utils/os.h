@@ -2,8 +2,11 @@
 #define _ALMC_OS_H
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+
+#include "common.h"
 
 #ifdef _WIN32
 	#define WIN32_LEAN_AND_MEAN

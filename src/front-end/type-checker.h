@@ -2,7 +2,7 @@
 #define _ALMC_FRONT_END_TYPE_CHECKER_H
 
 #include "table.h"
-#include "..\ast\ast-evaluator.h"
+#include "ast-evaluator.h"
 
 /* Type priorities */
 enum _type_priority_table

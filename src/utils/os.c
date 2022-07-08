@@ -93,7 +93,8 @@
 
 	char* get_curr_dir() {
 		if (getcwd(_shared_buffer, sizeof _shared_buffer) != NULL) {
-			return _shared_buffer;
+			char* path = cnew(char, strlen(_shared_buffer)+1);
+			return strcpy(path, _shared_buffer), path;
 		}
 		return NULL;
 	}
@@ -103,11 +104,14 @@
 	}
 
 	char* get_root(char* path) {
-		return "/";
+		return strdup("/");
 	}
 
 	char* get_dir_parent(char* dir) {
-		return dirname(dir);
+		strcpy(_shared_buffer, dir);
+		dirname((char*)_shared_buffer);
+		dir = cnew(char, strlen(_shared_buffer)+1);
+		return strcpy(dir, _shared_buffer), dir;
 	}
 
 	char* path_combine(char* parent, char* child) {
@@ -122,7 +126,8 @@
 				return NULL;
 			}
 		}
-		return _shared_buffer;
+		char* path = cnew(char, strlen(_shared_buffer)+1);
+		return strcpy(path, _shared_buffer);
 	}
 
 	bool dir_exists(char* path) {

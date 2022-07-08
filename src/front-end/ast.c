@@ -1,5 +1,12 @@
 #include "ast.h"
 
+AstRoot* ast_new(char** from, Stmt** stmts) {
+	AstRoot* ast_root = new(AstRoot);
+	ast_root->from = from;
+	ast_root->stmts = stmts;
+	return ast_root;
+}
+
 Expr* expr_new(ExprKind type, void* expr_value_ptr) {
 	#define EXPR_SET_VALUE(type, field) \
 		expr->field = (type*)expr_value_ptr; break
@@ -366,6 +373,9 @@ void ast_free(AstRoot* root) {
 			stmt_free(root->stmts[i]);
 		}
 		sbuffer_free(root->stmts);
+		if (root->from != NULL) {
+			free(root->from);
+		}
 		free(root);
 	}
 }
