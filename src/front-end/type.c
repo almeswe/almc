@@ -1,7 +1,5 @@
 #include "type.h"
 
-// todo: add NULL check for all type functions
-
 Type* type_new(const char* repr) {
 	Type* type = cnew(Type, 1);
 	type->repr = repr;
@@ -26,7 +24,7 @@ Type* pointer_type_new(Type* base) {
 	pointer_type->repr = base->repr;
 	pointer_type->area = base->area;
 	pointer_type->kind = TYPE_POINTER;
-	pointer_type->size = MACHINE_WORD;
+	pointer_type->size = PTR_SIZE;
 	return pointer_type;
 }
 
@@ -43,12 +41,22 @@ Type* address_type(Type* type) {
 	return pointer_type_new(type);
 }
 
+Type* function_type_new(Type* type, Type** params) {
+	Type* function_type = type_new(NULL);
+	function_type->size = PTR_SIZE;
+	function_type->kind = TYPE_FUNCTION;
+	function_type->attrs.func.ret = type;
+	function_type->attrs.func.params = params;
+	return function_type;
+}
+
 const char* type_tostr_plain(Type* type)
 {
+	char* type_str = NULL;
 	switch (type->kind) {
 		case TYPE_ARRAY:
 			return frmt("%s[]", type_tostr_plain(type->base));
-		case TYPE_POINTER:
+		case TYPE_POINTER:	
 			return frmt("%s*", type_tostr_plain(type->base));
 		case TYPE_ENUM:
 			return frmt("enum %s", type->repr);
@@ -56,6 +64,16 @@ const char* type_tostr_plain(Type* type)
 			return frmt("union %s", type->repr);
 		case TYPE_STRUCT:
 			return frmt("struct %s", type->repr);
+		case TYPE_FUNCTION:
+			type_str = frmt("fnc(");
+			for (size_t i = 0; i < sbuffer_len(type->attrs.func.params); i++) {
+				type_str = frmt("%s%s", type_str, 
+					type_tostr_plain(type->attrs.func.params[i]));
+				if (i+1 < sbuffer_len(type->attrs.func.params)) {
+					type_str = frmt("%s,", type_str);
+				}
+			}
+			return frmt("%s)(%s)", type_str, type_tostr_plain(type->attrs.func.ret));
 		default:
 			return type->repr;
 	}
@@ -166,6 +184,10 @@ bool is_primitive_type(Type* type) {
 bool is_pointer_like_type(Type* type) {
 	return type->kind == TYPE_ARRAY || 
 		type->kind == TYPE_POINTER;
+}
+
+bool is_function_type(Type* type) {
+	return type->kind == TYPE_FUNCTION;
 }
 
 bool is_aggregate_type(Type* type) {

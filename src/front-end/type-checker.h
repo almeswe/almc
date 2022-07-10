@@ -5,8 +5,7 @@
 #include "ast-evaluator.h"
 
 /* Type priorities */
-enum _type_priority_table
-{
+enum _type_priority_table {
 	VOID_TYPE_PRIORITY = 0x1,
 	STR_TYPE_PRIORITY,
 

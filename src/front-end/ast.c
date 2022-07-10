@@ -680,7 +680,8 @@ void func_spec_free(FuncSpec* func_spec) {
 void func_decl_free(FuncDecl* func_decl) {
 	if (func_decl != NULL) {
 		name_free(func_decl->name);
-		type_free(func_decl->type);
+		type_free(func_decl->type->attrs.func.ret);
+		free(func_decl->type);
 		block_free(func_decl->body);
 		func_spec_free(func_decl->spec);
 		for (size_t i = 0; i < sbuffer_len(func_decl->params); i++) {

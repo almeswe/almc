@@ -11,6 +11,10 @@
 #include "xmemory/xmemory.h"
 
 #define _b(e) e; break
+#define _str(val) #val
+
+#define max(a, b) (((a) > (b)) ? (a) : (b))
+#define min(a, b) (((a) < (b)) ? (a) : (b))
 
 #define _FRMT_BUFFER_SIZE       4096
 #define _FRMT_BUFFER_MAX_LOAD   0.80

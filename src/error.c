@@ -34,8 +34,8 @@ sp_data* get_spelling(const SrcContext* context) {
 	fclose(fd);
 	size_t length = strlen(buffer);
 	sp_data* data = new(sp_data);
-	data->target = cnew(char, length);
-	data->marked = cnew(char, length);
+	data->target = cnew(char, length+1);
+	data->marked = cnew(char, length+1);
 	strcpy(data->target, buffer);
 
 	size_t margin = 0;

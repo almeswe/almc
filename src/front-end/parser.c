@@ -158,8 +158,21 @@ Type* parse_type_declarator(Parser* parser, Type* type) {
 			type = array_type_new(type, parse_expr(parser));
 			expect_with_skip(parser, TOKEN_CL_BRACKET, "]");
 			return parse_type_declarator(parser, type);
-		//case TOKEN_KEYWORD_FUNC:
-		// function type
+		case TOKEN_KEYWORD_FUNC:
+			get_next_token(parser);
+			type = function_type_new(NULL, NULL);
+			expect_with_skip(parser, TOKEN_OP_PAREN, "(");
+			while (!matcht(parser, TOKEN_CL_PAREN)) {
+				sbuffer_add(type->attrs.func.params, parse_type(parser));
+				if (!matcht(parser, TOKEN_CL_PAREN)) {
+					expect_with_skip(parser, TOKEN_COMMA, ",");
+				}
+			}
+			expect_with_skip(parser, TOKEN_CL_PAREN, ")");
+			expect_with_skip(parser, TOKEN_OP_PAREN, "(");
+			type->attrs.func.ret = parse_type(parser);
+			expect_with_skip(parser, TOKEN_CL_PAREN, ")");
+			return type;
 		default:
 			return type;
 	}
@@ -173,6 +186,8 @@ Type* parse_type(Parser* parser) {
 	context_starts(parser, context);
 
 	switch (token->type) {
+		case TOKEN_KEYWORD_FUNC:
+			break;
 		case TOKEN_KEYWORD_VOID: 	_assign(void_type);
 		case TOKEN_KEYWORD_CHAR: 	_assign(char_type);
 		case TOKEN_KEYWORD_INT8: 	_assign(i8_type);
@@ -192,8 +207,9 @@ Type* parse_type(Parser* parser) {
 			report_error(frmt("Type expected, but met: %s",
 				token_type_tostr(token->type)), token->attrs.context);
 	}
-
-	get_next_token(parser);
+	if (token->type != TOKEN_KEYWORD_FUNC) {
+		get_next_token(parser);
+	}
 	type = parse_type_declarator(parser, type);
 	context_ends(parser, context, type);
 	return type;
@@ -1028,7 +1044,10 @@ Stmt* parse_func_decl_stmt(Parser* parser) {
 	}
 	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
 	expect_with_skip(parser, TOKEN_COLON, ":");
-	Type* type = parse_type(parser);
+	Type* type = function_type_new(parse_type(parser), NULL);
+	for (size_t i = 0; i < sbuffer_len(params); i++) {
+		sbuffer_add(type->attrs.func.params, params[i]->type);
+	}
 	
 	// checking if function does not have any block
 	if (matcht(parser, TOKEN_SEMICOLON)) {

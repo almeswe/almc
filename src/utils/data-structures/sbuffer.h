@@ -5,8 +5,6 @@
 #include <stdlib.h>
 #include <stddef.h>
 
-//todo: fix warning, when sbuffer_add for NULL var
-
 typedef struct Buffer {
 	size_t cap;
 	size_t len;

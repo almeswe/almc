@@ -5,6 +5,7 @@
 
 #include "../utils/common.h"
 #include "../utils/context.h"
+#include "../utils/data-structures/sbuffer.h"
 #include "../utils/data-structures/str-builder.h"
 
 #define I8_TYPE		 "i8"
@@ -22,7 +23,7 @@
 #define STRING_TYPE	 "str"
 #define UNKNOWN_TYPE "unknown"
 
-#define MACHINE_WORD			 0x4
+#define MACHINE_WORD			 sizeof(void*)
 #define STRUCT_DEFAULT_ALIGNMENT 0x4
 
 #define MAX_STACK_SIZE			 0x4000
@@ -41,6 +42,8 @@
 
 #define F32_SIZE	sizeof(float)
 #define F64_SIZE	sizeof(double)
+
+#define PTR_SIZE	sizeof(void*)
 
 #define IS_TYPE(type, str)      (type && (strcmp(type->repr, str) == 0))
 
@@ -87,6 +90,7 @@ typedef enum TypeKind {
 	TYPE_ENUM,
 	TYPE_UNION,
 	TYPE_STRUCT,
+	TYPE_FUNCTION,
 
 	TYPE_INCOMPLETE,
 	TYPE_VOID,
@@ -94,7 +98,7 @@ typedef enum TypeKind {
 } TypeKind;
 
 typedef struct Type {
-	uint32_t size;
+	size_t size;
 	TypeKind kind;
 	SrcArea* area;
 	const char* repr;
@@ -106,12 +110,16 @@ typedef struct Type {
 			// can be accessed when type is TYPE_ARRAY
 			Expr* dimension;
 			// max capacity of current dimension
-			uint32_t capacity;
+			size_t capacity;
 		} arr;
+		struct _function_kind_data {
+			struct Type* ret;
+			struct Type** params;
+		} func;
 		struct _struct_or_union_kind_data {
 			// can be accessed when type is struct or union
 			Member** members;
-		} compound;
+		} cmpd;
 	} attrs;
 } Type;
 
@@ -142,6 +150,7 @@ Type* array_type_new(Type* base, Expr* index);
 Type* pointer_type_new(Type* base);
 Type* dereference_type(Type* type);
 Type* address_type(Type* type);
+Type* function_type_new(Type* type, Type** params);
 
 const char* type_tostr_plain(Type* type);
 
@@ -163,6 +172,7 @@ bool is_struct_type(Type* type);
 bool is_array_type(Type* type);
 bool is_pointer_type(Type* type);
 bool is_primitive_type(Type* type);
+bool is_function_type(Type* type);
 bool is_pointer_like_type(Type* type);
 bool is_incomplete_type(Type* type);
 

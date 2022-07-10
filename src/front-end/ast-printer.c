@@ -291,7 +291,7 @@ void print_enum(EnumDecl* enum_decl, const char* indent) {
 		enum_decl->name->value, sbuffer_len(enum_decl->members));	
 	const char* new_indent = frmt("%s   ", indent);
 	for (size_t i = 0; i < sbuffer_len(enum_decl->members); i++) {
-		printf("%s" TREE_BR "<%lu> = " _c(BYEL, "%ld") " <", new_indent, i+1, 
+		printf("%s" TREE_BR "<%s> = " _c(BYEL, "%ld") " <", new_indent, enum_decl->members[i]->name, 
 			evaluate_expr_itype(enum_decl->members[i]->value));
 		print_type(retrieve_expr_type(enum_decl->members[i]->value));
 		printf("%s\n", ">");
@@ -347,7 +347,7 @@ void print_func_decl_stmt(FuncDecl* func_decl, const char* indent) {
 	}
 	printf(_c(BYEL, "%s")", ", func_decl->conv->repr); 
 	printf("%s", "ret-");
-	print_type(func_decl->type); printf("%s\n", ">");
+	print_type(func_decl->type->attrs.func.ret); printf("%s\n", ">");
 	const char* new_indent = frmt("%s   ", indent);
 	for (size_t i = 0; i < sbuffer_len(func_decl->params); i++) {
 		printf("%s" TREE_BR " param<%lu> = <name=" _c(BYEL, "%s") ", ", 

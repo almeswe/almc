@@ -4,7 +4,7 @@
 #define STR_BUILDER_BUFFER_SIZE 128
 
 #define str_eq(str1, str2) \
-	(strcmp(str1, str2) == 0)
+	((str1 != NULL && str2 != NULL) && (strcmp(str1, str2) == 0))
 
 #define str_builder_create_buffer(buffer) \
 	char* buffer = newc(char, STR_BUILDER_BUFFER_SIZE)

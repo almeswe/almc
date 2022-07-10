@@ -4,11 +4,7 @@
 #include "type-checker.h"
 #include "flow-checker.h"
 
-// todo: mark functions and variables that in use, either they will be not generated
-// todo: make internal buffer for each 'to-string' converter function
-
-typedef struct Visitor
-{
+typedef struct Visitor {
 	Table* global;
 } Visitor;
 
@@ -30,7 +26,6 @@ void visit_func_call(FuncCall* func_call, Table* table);
 void visit_unary_expr(UnaryExpr* unary_expr, Table* table);
 void visit_binary_expr(BinaryExpr* binary_expr, Table* table);
 void visit_ternary_expr(TernaryExpr* ternary_expr, Table* table);
-//void visit_array_member_accessor(BinaryExpr* arr_accessor_expr, Table* table);
 
 void visit_condition(Expr* condition, Table* table);
 void visit_if_stmt(IfStmt* if_stmt, Table* table);
@@ -60,8 +55,8 @@ void visit_members(const char* type, Member** members, Table* table);
 
 void visit_entry_func_stmt(FuncDecl* func_decl, Table* table);
 
-uint32_t get_size_of_aggregate_type(Type* type, Table* table);
-uint32_t get_size_of_type(Type* type, Table* table);
+size_t get_size_of_aggregate_type(Type* type, Table* table);
+size_t get_size_of_type(Type* type, Table* table);
 
 void complete_size(Type* type, Table* table);
 void complete_type(Type* type, Table* table);
