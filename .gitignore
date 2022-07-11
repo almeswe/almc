@@ -1,7 +1,5 @@
-Debug
-almc\Debug
-almc-tests\Debug
-.vs
-*.exe
-*.obj
-*.asm
+.vscode/
+sandbox/
+
+*.o
+almc
