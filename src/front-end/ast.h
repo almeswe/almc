@@ -161,6 +161,16 @@ typedef struct FuncCall {
 	FuncDecl* decl;
 } FuncCall;
 
+typedef struct FuncCall2 {
+	Type* type;
+	Expr* rexpr;
+	Expr** args;
+	SrcArea* area;
+	struct _meta_data {
+		FuncDecl* decl;
+	} meta;
+} FuncCall2;
+
 typedef struct Initializer {
 	Type* type;
 	Expr** values;
@@ -172,6 +182,7 @@ typedef enum ExprKind {
 	EXPR_CONST,
 	EXPR_STRING,
 	EXPR_FUNC_CALL,
+	EXPR_FUNC_CALL2,
 	EXPR_UNARY_EXPR,
 	EXPR_BINARY_EXPR,
 	EXPR_TERNARY_EXPR,
@@ -185,6 +196,7 @@ typedef struct Expr {
 		Idnt* idnt;
 		Const* cnst;
 		FuncCall* func_call;
+		FuncCall2* func_call2;
 		UnaryExpr* unary_expr;
 		BinaryExpr* binary_expr;
 		TernaryExpr* ternary_expr;
@@ -399,6 +411,7 @@ Name* name_new(char* value, SrcContext* context);
 Idnt* idnt_new(char* idnt, SrcContext* context);
 Const* const_new(ConstKind type, const char* svalue, SrcContext* context);
 FuncCall* func_call_new(Name* name, Expr** args);
+FuncCall2* func_call2_new(Expr* rexpr, Expr** args);
 UnaryExpr* unary_expr_new(UnaryExprKind type, Expr* expr);
 BinaryExpr* binary_expr_new(BinaryExprKind type, Expr* lexpr, Expr* rexpr);
 TernaryExpr* ternary_expr_new(Expr* cond, Expr* lexpr, Expr* rexpr);
@@ -445,6 +458,7 @@ void name_free(Name* name);
 void idnt_free(Idnt* idnt);
 void const_free(Const* cnst);
 void func_call_free(FuncCall* func_call);
+void func_call2_free(FuncCall2* func_call);
 void unary_expr_free(UnaryExpr* unary_expr);
 void binary_expr_free(BinaryExpr* binary_expr);
 void ternary_expr_free(TernaryExpr* ternary_expr);

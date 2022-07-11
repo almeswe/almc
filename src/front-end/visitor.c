@@ -182,6 +182,7 @@ void visit_expr(Expr* expr, Table* table) {
 		case EXPR_STRING: 		_b(;);
 		case EXPR_IDNT:			_b(visit_idnt(expr->idnt, table, 0));
 		case EXPR_FUNC_CALL:	_b(visit_func_call(expr->func_call, table));
+		case EXPR_FUNC_CALL2:	_b(visit_func_call2(expr->func_call2, table));
 		case EXPR_UNARY_EXPR:	_b(visit_unary_expr(expr->unary_expr, table));
 		case EXPR_BINARY_EXPR:	_b(visit_binary_expr(expr->binary_expr, table));
 		case EXPR_TERNARY_EXPR:	_b(visit_ternary_expr(expr->ternary_expr, table));
@@ -264,6 +265,39 @@ void visit_func_call(FuncCall* func_call, Table* table) {
 			func_call->name->value), func_call->name->context);
 	}
 
+	// resolvig all passed arguments to function call
+	for (size_t i = 0; i < sbuffer_len(func_call->args); i++) {
+		visit_expr(func_call->args[i], table);
+	}
+}
+
+void visit_func_call2(FuncCall2* func_call, Table* table) {
+	visit_expr(func_call->rexpr, table);
+	if (func_call->rexpr->kind == EXPR_IDNT) {
+		// check if the expression is identifier
+		// in this case it probably can be direct call of declared function
+		Idnt* identifier = func_call->rexpr->idnt; 
+		TableEntity* entity = get_function(identifier->svalue, table);
+		if (entity != NULL) {
+			func_call->meta.decl = entity->value.function;	
+		}
+	}
+	Type* rexpr_type = retrieve_expr_type(func_call->rexpr);
+	SrcArea* rexpr_area = get_expr_area(func_call->rexpr);
+	if (!is_function_type(rexpr_type)) {
+		report_error2("Cannot call expression of non-function type.", rexpr_area);
+	}
+
+	size_t args = sbuffer_len(func_call->args);
+	size_t params = sbuffer_len(rexpr_type->attrs.func.params);
+
+	if (args < params) {
+		report_error2("More arguments expected for function call.", rexpr_area);
+	}
+	// todo: check for vararg
+	else if (args > params) {
+		report_error2("Less arguments expected for function call.", rexpr_area);
+	}
 	// resolvig all passed arguments to function call
 	for (size_t i = 0; i < sbuffer_len(func_call->args); i++) {
 		visit_expr(func_call->args[i], table);
@@ -997,7 +1031,7 @@ bool is_addressable_expr(Expr* expr) {
 		value to this expression: variable, array index etc.)
 	*/
 
-	if (expr != NULL) {
+	if (expr == NULL) {
 		return false;
 	}
 	switch (expr->kind) {

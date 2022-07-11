@@ -26,8 +26,6 @@
 #define MACHINE_WORD			 sizeof(void*)
 #define STRUCT_DEFAULT_ALIGNMENT 0x4
 
-#define MAX_STACK_SIZE			 0x4000
-
 #define I8_SIZE		sizeof(int8_t)
 #define U8_SIZE		sizeof(uint8_t)
 #define CHAR_SIZE	sizeof(int8_t)
@@ -44,38 +42,6 @@
 #define F64_SIZE	sizeof(double)
 
 #define PTR_SIZE	sizeof(void*)
-
-#define IS_TYPE(type, str)      (type && (strcmp(type->repr, str) == 0))
-
-#define IS_ARRAY_TYPE(type)     (type && (type->kind == TYPE_ARRAY))
-#define IS_POINTER_TYPE(type)   (type && (type->kind == TYPE_POINTER))
-#define IS_PRIMITIVE_TYPE(type) (type && (type->kind == TYPE_PRIMITIVE))
-
-#define IS_UNKNOWN_TYPE(type)	 (type && (type->kind == TYPE_UNKNOWN))
-#define IS_INCOMPLETE_TYPE(type) (type && (type->kind == TYPE_INCOMPLETE))
-
-#define IS_ENUM_TYPE(type)		(type && (type->kind == TYPE_ENUM))
-#define IS_UNION_TYPE(type)		(type && (type->kind == TYPE_UNION))
-#define IS_STRUCT_TYPE(type)	(type && (type->kind == TYPE_STRUCT))
-
-#define IS_STRUCT_OR_UNION_TYPE(type) (IS_UNION_TYPE(type) || IS_STRUCT_TYPE(type))
-#define IS_AGGREGATE_TYPE(type)       (IS_STRUCT_OR_UNION_TYPE(type) || IS_ARRAY_TYPE(type)) 
-
-#define IS_I8_TYPE(type)		(IS_PRIMITIVE_TYPE(type) && IS_TYPE(type, I8_TYPE))
-#define IS_I16_TYPE(type)		(IS_PRIMITIVE_TYPE(type) && IS_TYPE(type, I16_TYPE))
-#define IS_I32_TYPE(type)		(IS_PRIMITIVE_TYPE(type) && IS_TYPE(type, I32_TYPE))
-#define IS_I64_TYPE(type)		(IS_PRIMITIVE_TYPE(type) && IS_TYPE(type, I64_TYPE))
-#define IS_U8_TYPE(type)		(IS_PRIMITIVE_TYPE(type) && IS_TYPE(type, U8_TYPE))
-#define IS_U16_TYPE(type)		(IS_PRIMITIVE_TYPE(type) && IS_TYPE(type, U16_TYPE))
-#define IS_U32_TYPE(type)		(IS_PRIMITIVE_TYPE(type) && IS_TYPE(type, U32_TYPE))
-#define IS_U64_TYPE(type)		(IS_PRIMITIVE_TYPE(type) && IS_TYPE(type, U64_TYPE))
-#define IS_F32_TYPE(type)		(IS_PRIMITIVE_TYPE(type) && IS_TYPE(type, F32_TYPE))
-#define IS_F64_TYPE(type)		(IS_PRIMITIVE_TYPE(type) && IS_TYPE(type, F64_TYPE))
-#define IS_CHAR_TYPE(type)	    (IS_PRIMITIVE_TYPE(type) && IS_TYPE(type, CHAR_TYPE))
-#define IS_STRING_TYPE(type)	(IS_PRIMITIVE_TYPE(type) && IS_TYPE(type, STRING_TYPE))
-#define IS_VOID_TYPE(type)	    (type && (type->kind == TYPE_VOID))
-
-#define IS_CHAR_POINTER_TYPE(type) (type && (IS_CHAR_TYPE(type->base) && IS_POINTER_TYPE(type)))
 
 typedef struct Expr Expr;
 typedef struct Member Member;
@@ -188,9 +154,9 @@ bool is_signed_type(Type* type);
 bool is_unsigned_type(Type* type);
 
 bool is_one(Type* type1, Type* type2, TypeKind kind);
-bool is_onea(Type* type1, Type* type2, bool (action_func)(Type*));
+bool is_one_action(Type* type1, Type* type2, bool (action_func)(Type*));
 bool is_both(Type* type1, Type* type2, TypeKind kind);
-bool is_botha(Type* type1, Type* type2, bool (action_func)(Type*));
+bool is_both_action(Type* type1, Type* type2, bool (action_func)(Type*));
 
 Type* get_base_type(Type* type);
 Type* get_array_base_type(Type* type);

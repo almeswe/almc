@@ -132,6 +132,19 @@ void print_call(FuncCall* call, const char* indent) {
 	}
 }
 
+void print_call2(FuncCall2* call, const char* indent) {
+	printf(_c(BGRN, "fcall2") ", argc=%lu, ret-", sbuffer_len(call->args));
+	print_type(call->type);
+	printf(">\n");
+	const char* new_indent = frmt("%s   ", indent);
+	printf("%s" TREE_BR "rexpr = ", new_indent);
+	print_expr(call->rexpr, new_indent);
+	for (size_t i = 0; i < sbuffer_len(call->args); i++) {
+		printf("%s" TREE_BR "arg<%lu> = ", new_indent, i+1);
+		print_expr(call->args[i], new_indent);
+	}
+}
+
 void print_unary_expr(UnaryExpr* unary_expr, const char* indent) {
 	const char* unary_str[] = {
 		"+ (plus)", "- (minus)", "& (address)",
@@ -240,6 +253,7 @@ void print_expr(Expr* expr, const char* indent) {
 			case EXPR_CONST:		_b(print_const(expr->cnst));
 			case EXPR_STRING:		_b(print_str(expr->str));
 			case EXPR_FUNC_CALL:	_b(print_call(expr->func_call, indent));
+			case EXPR_FUNC_CALL2:	_b(print_call2(expr->func_call2, indent));
 			case EXPR_UNARY_EXPR:	_b(print_unary_expr(expr->unary_expr, indent));
 			case EXPR_BINARY_EXPR:  _b(print_binary_expr(expr->binary_expr, indent));
 			case EXPR_TERNARY_EXPR: _b(print_ternary_expr(expr->ternary_expr, indent));

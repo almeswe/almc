@@ -23,6 +23,7 @@ void visit_expr(Expr* expr, Table* table);
 void visit_addr_expr(Expr* expr, Table* table);
 void visit_idnt(Idnt* idnt, Table* table, bool is_in_assign);
 void visit_func_call(FuncCall* func_call, Table* table);
+void visit_func_call2(FuncCall2* func_call, Table* table);
 void visit_unary_expr(UnaryExpr* unary_expr, Table* table);
 void visit_binary_expr(BinaryExpr* binary_expr, Table* table);
 void visit_ternary_expr(TernaryExpr* ternary_expr, Table* table);

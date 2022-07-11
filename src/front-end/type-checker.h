@@ -33,6 +33,7 @@ Type* get_fvalue_type(double value);
 Type* get_ivalue_type(int64_t value);
 Type* get_idnt_type(Idnt* idnt, Table* table);
 Type* get_func_call_type(FuncCall* func_call, Table* table);
+Type* get_func_call2_type(FuncCall2* func_call2, Table* table);
 
 Type* retrieve_expr_type(Expr* expr);
 

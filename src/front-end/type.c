@@ -183,7 +183,8 @@ bool is_primitive_type(Type* type) {
 
 bool is_pointer_like_type(Type* type) {
 	return type->kind == TYPE_ARRAY || 
-		type->kind == TYPE_POINTER;
+		type->kind == TYPE_POINTER  ||
+		type->kind == TYPE_FUNCTION;
 }
 
 bool is_function_type(Type* type) {
@@ -197,8 +198,8 @@ bool is_aggregate_type(Type* type) {
 
 bool is_user_defined_type(Type* type) {
 	Type* base = get_base_type(type);
-	return IS_ENUM_TYPE(base) || 
-		IS_STRUCT_OR_UNION_TYPE(base);
+	return is_enum_type(base) || 
+		is_struct_or_union_type(base);
 }
 
 bool is_array_type(Type* type) {
@@ -235,7 +236,7 @@ bool is_one(Type* type1, Type* type2, TypeKind kind) {
 	return type1->kind == kind || type2->kind == kind;
 }
 
-bool is_onea(Type* type1, Type* type2, bool (action_func)(Type*)) {
+bool is_one_action(Type* type1, Type* type2, bool (action_func)(Type*)) {
 	return action_func(type1) || action_func(type2);
 }
 
@@ -243,7 +244,7 @@ bool is_both(Type* type1, Type* type2, TypeKind kind) {
 	return type1->kind == kind && type2->kind == kind;
 }
 
-bool is_botha(Type* type1, Type* type2, bool (action_func)(Type*)) {
+bool is_both_action(Type* type1, Type* type2, bool (action_func)(Type*)) {
 	return action_func(type1) && action_func(type2);
 }
 
@@ -252,14 +253,15 @@ Type* get_base_type(Type* type) {
 		case TYPE_ARRAY:
 		case TYPE_POINTER:
 			return get_base_type(type->base);
+		case TYPE_FUNCTION:
+			return &u64_type;
 	}
 	return type;
 }
 
 Type* get_array_base_type(Type* type) {
-	switch (type->kind) {
-		case TYPE_ARRAY:
-			return get_array_base_type(type->base);
+	if (type->kind == TYPE_ARRAY) {
+		return get_array_base_type(type->base);
 	}
 	return type;
 }
@@ -275,11 +277,11 @@ uint32_t get_pointer_rank(Type* type) {
 
 bool can_be_freed(Type* type) {
 	return is_pointer_like_type(type) ||
-		IS_STRUCT_OR_UNION_TYPE(type);
+		is_struct_or_union_type(type);
 }
 
 Expr* get_array_dimension(Type* type, uint32_t dimension) {
-	if (!IS_ARRAY_TYPE(type->base)) {
+	if (!is_array_type(type->base)) {
 		return type->attrs.arr.dimension;
 	}
 	if (dimension == 1) {
@@ -295,10 +297,10 @@ uint32_t get_array_dimensions(Type* type) {
 
 void type_free(Type* type) {
 	if (type && can_be_freed(type)) {
-		if (IS_ARRAY_TYPE(type)) {
+		if (is_array_type(type)) {
 			expr_free(type->attrs.arr.dimension);
 		}
-		if (IS_STRUCT_OR_UNION_TYPE(type)) {
+		if (is_struct_or_union_type(type)) {
 			free(type->area);
 		}
 		type_free(type->base);

@@ -4,7 +4,7 @@
 #define _c(c, ...) c __VA_ARGS__ RESET 
 
 #ifdef _WIN32
-	#error "this module cannot be compiled on this platfrom" 
+	#error "this module cannot be compiled on this platform" 
 	#define WIN32_LEAN_AND_MEAN
 	#include <windows.h>
 	#undef  WIN32_LEAN_AND_MEAN

@@ -1,3 +1,8 @@
 - func type
-- () operator support
+    get rid of old funccall (ast, visitor, type-checker)
+    
 - conventions? 
+- type aliasing ?
+
+BUGS:
+    when func type has 0 params, spelling_free function crashes

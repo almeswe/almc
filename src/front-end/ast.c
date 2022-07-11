@@ -17,6 +17,7 @@ Expr* expr_new(ExprKind type, void* expr_value_ptr) {
 		case EXPR_CONST:		EXPR_SET_VALUE(Const, cnst);
 		case EXPR_STRING:		EXPR_SET_VALUE(Str, str);
 		case EXPR_FUNC_CALL:	EXPR_SET_VALUE(FuncCall, func_call);
+		case EXPR_FUNC_CALL2:	EXPR_SET_VALUE(FuncCall2, func_call2);
 		case EXPR_UNARY_EXPR:	EXPR_SET_VALUE(UnaryExpr, unary_expr);
 		case EXPR_BINARY_EXPR:	EXPR_SET_VALUE(BinaryExpr, binary_expr);
 		case EXPR_TERNARY_EXPR:	EXPR_SET_VALUE(TernaryExpr, ternary_expr);
@@ -92,6 +93,13 @@ FuncCall* func_call_new(Name* func_name, Expr** func_args) {
 	func_call->args = func_args;
 	func_call->name = func_name;
 	func_call->type = &unknown_type;
+	return func_call;
+}
+
+FuncCall2* func_call2_new(Expr* rexpr, Expr** args) {
+	FuncCall2* func_call = cnew(FuncCall2, 1);
+	func_call->args = args; 
+	func_call->rexpr = rexpr; 
 	return func_call;
 }
 
@@ -342,8 +350,7 @@ SwitchStmt* switch_stmt_new(Expr* cond, Case** cases, Block* default_case) {
 	return switch_stmt;
 }
 
-ImportStmt* import_stmt_new(AstRoot* ast)
-{
+ImportStmt* import_stmt_new(AstRoot* ast) {
 	ImportStmt* import_stmt = new(ImportStmt);
 	import_stmt->ast = ast;
 	return import_stmt;
@@ -383,30 +390,15 @@ void ast_free(AstRoot* root) {
 void expr_free(Expr* expr) {
 	if (expr != NULL) {
 		switch (expr->kind) {
-			case EXPR_IDNT:
-				idnt_free(expr->idnt);
-				break;
-			case EXPR_CONST:
-				const_free(expr->cnst);
-				break;
-			case EXPR_STRING:
-				str_free(expr->str);
-				break;
-			case EXPR_FUNC_CALL:
-				func_call_free(expr->func_call);
-				break;
-			case EXPR_UNARY_EXPR:
-				unary_expr_free(expr->unary_expr);
-				break;
-			case EXPR_BINARY_EXPR:
-				binary_expr_free(expr->binary_expr);
-				break;
-			case EXPR_TERNARY_EXPR:
-				ternary_expr_free(expr->ternary_expr);
-				break;
-			case EXPR_INITIALIZER:
-				initializer_free(expr->initializer);
-				break;
+			case EXPR_IDNT:			_b(idnt_free(expr->idnt));
+			case EXPR_CONST:		_b(const_free(expr->cnst));
+			case EXPR_STRING:		_b(str_free(expr->str));
+			case EXPR_FUNC_CALL:	_b(func_call_free(expr->func_call));
+			case EXPR_FUNC_CALL2:	_b(func_call2_free(expr->func_call2));
+			case EXPR_UNARY_EXPR:	_b(unary_expr_free(expr->unary_expr));
+			case EXPR_BINARY_EXPR:	_b(binary_expr_free(expr->binary_expr));
+			case EXPR_TERNARY_EXPR:	_b(ternary_expr_free(expr->ternary_expr));
+			case EXPR_INITIALIZER:	_b(initializer_free(expr->initializer));
 			default:
 				report_error("Unexpected expr type in expr_free().", NULL);
 		}
@@ -441,6 +433,18 @@ void const_free(Const* cnst) {
 void func_call_free(FuncCall* func_call) {
 	if (func_call != NULL) {
 		name_free(func_call->name);
+		for (size_t i = 0; i < sbuffer_len(func_call->args); i++) {
+			expr_free(func_call->args[i]);
+		}
+		sbuffer_free(func_call->args);
+		free(func_call->area);
+		free(func_call);
+	}
+}
+
+void func_call2_free(FuncCall2* func_call) {
+	if (func_call != NULL) {
+		expr_free(func_call->rexpr);
 		for (size_t i = 0; i < sbuffer_len(func_call->args); i++) {
 			expr_free(func_call->args[i]);
 		}

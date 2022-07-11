@@ -10,6 +10,7 @@
 	(((value) <= (ubound)) && ((value) >= (bbound)))
 
 extern Type* retrieve_expr_type(Expr* expr);
+extern SrcArea* get_expr_area(Expr* expr);
 
 double evaluate_expr(Expr* expr);
 int64_t evaluate_expr_itype(Expr* expr);

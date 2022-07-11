@@ -4,7 +4,6 @@ Type* retrieve_expr_type(Expr* expr) {
 	if (expr == NULL) {
 		return &unknown_type;
 	}
-
 	switch (expr->kind) {
 		case EXPR_IDNT:
 			return expr->idnt->type;
@@ -14,6 +13,8 @@ Type* retrieve_expr_type(Expr* expr) {
 			return expr->str->type;
 		case EXPR_FUNC_CALL:
 			return expr->func_call->type;
+		case EXPR_FUNC_CALL2:
+			return expr->func_call2->type;
 		case EXPR_UNARY_EXPR:
 			return expr->unary_expr->type;
 		case EXPR_BINARY_EXPR:
@@ -31,7 +32,6 @@ Type* get_expr_type(Expr* expr, Table* table) {
 	if (expr == NULL) {
 		return &unknown_type;
 	}
-
 	switch (expr->kind) {
 		case EXPR_IDNT:
 			return get_idnt_type(expr->idnt, table);
@@ -41,6 +41,8 @@ Type* get_expr_type(Expr* expr, Table* table) {
 			return get_string_type(expr->str);
 		case EXPR_FUNC_CALL:
 			return get_func_call_type(expr->func_call, table);
+		case EXPR_FUNC_CALL2:
+			return get_func_call2_type(expr->func_call2, table);
 		case EXPR_UNARY_EXPR:
 			return get_unary_expr_type(expr->unary_expr, table);
 		case EXPR_BINARY_EXPR:
@@ -140,6 +142,21 @@ Type* get_func_call_type(FuncCall* func_call, Table* table) {
 	return origin->type->attrs.func.ret;
 }
 
+Type* get_func_call2_type(FuncCall2* func_call2, Table* table) {
+	Type* rexpr_type = get_expr_type(func_call2->rexpr, table);
+	if (!is_function_type(rexpr_type)) {
+		report_error2("Cannot call expression of non-function type.", 
+			get_expr_area(func_call2->rexpr));
+	}
+	Type** params = rexpr_type->attrs.func.params;
+	for (size_t i = 0; i < sbuffer_len(params); i++) {
+		cast_implicitly(params[i], 
+			get_expr_type(func_call2->args[i], table),
+				get_expr_area(func_call2->args[i]));
+	}
+	return rexpr_type->attrs.func.ret;
+}
+
 Type* get_unary_expr_type(UnaryExpr* unary_expr, Table* table) {
 	Type* type = get_and_set_expr_type(unary_expr->expr, table);
 
@@ -220,8 +237,8 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table) {
 		case BINARY_GREATER_THAN:
 		case BINARY_LESS_EQ_THAN:
 		case BINARY_GREATER_EQ_THAN:
-			if (is_onea(ltype, rtype, is_numeric_type) ||
-				is_onea(ltype, rtype, is_pointer_like_type)) {
+			if (is_one_action(ltype, rtype, is_numeric_type) ||
+				is_one_action(ltype, rtype, is_pointer_like_type)) {
 				if (can_cast_implicitly(ltype, rtype) ||
 					can_cast_implicitly(rtype, ltype)) {
 					return &i32_type;
@@ -241,7 +258,7 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table) {
 		case BINARY_SUB_ASSIGN:
 		case BINARY_DIV_ASSIGN:
 		case BINARY_MUL_ASSIGN:
-			if (is_botha(ltype, rtype, is_numeric_type)) {
+			if (is_both_action(ltype, rtype, is_numeric_type)) {
 				return cast_implicitly_when_assign(ltype, rtype, binary_expr->area);
 			}
 			report_error2("Cannot use this operator with these operand types.", 
@@ -254,7 +271,7 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table) {
 		case BINARY_BW_XOR_ASSIGN:
 		case BINARY_LSHIFT_ASSIGN:
 		case BINARY_RSHIFT_ASSIGN:		
-			if (is_botha(ltype, rtype, is_integral_type)) {
+			if (is_both_action(ltype, rtype, is_integral_type)) {
 				return cast_implicitly_when_assign(ltype, rtype, binary_expr->area);
 			}
 			report_error2("Cannot use this operator with these operand types.", 
@@ -276,7 +293,7 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table) {
 		case BINARY_MULT:
 		case BINARY_LG_OR:
 		case BINARY_LG_AND:
-			if (is_botha(ltype, rtype, is_numeric_type)) {
+			if (is_both_action(ltype, rtype, is_numeric_type)) {
 				return can_cast_implicitly(rtype, ltype) ? 
 					cast_implicitly(rtype, ltype, binary_expr->area) : 
 					cast_implicitly(ltype, rtype, binary_expr->area);
@@ -292,7 +309,7 @@ Type* get_binary_expr_type(BinaryExpr* binary_expr, Table* table) {
 		case BINARY_BW_XOR:
 		case BINARY_LSHIFT:
 		case BINARY_RSHIFT:
-			if (is_botha(ltype, rtype, is_integral_type)) {
+			if (is_both_action(ltype, rtype, is_integral_type)) {
 				return can_cast_implicitly(rtype, ltype) ?
 					cast_implicitly(rtype, ltype, binary_expr->area) :
 					cast_implicitly(ltype, rtype, binary_expr->area);
@@ -398,12 +415,17 @@ Type* get_and_set_expr_type(Expr* expr, Table* table) {
 			return expr->str->type = type;
 		case EXPR_FUNC_CALL:
 			return expr->func_call->type = type;
+		case EXPR_FUNC_CALL2:
+			return expr->func_call2->type = type;
 		case EXPR_UNARY_EXPR:
 			return expr->unary_expr->type = type;
 		case EXPR_BINARY_EXPR:
 			return expr->binary_expr->type = type;
 		case EXPR_TERNARY_EXPR:
 			return expr->ternary_expr->type = type;
+		default:
+			report_error(frmt("Unknown expression kind met, "
+				"in function %s", __FUNCTION__), NULL);
 	}
 	return &unknown_type;
 }
@@ -450,9 +472,6 @@ uint32_t get_type_priority(Type* type) {
 	if (is_f64_type(type)) {
 		return F64_TYPE_PRIORITY;
 	}
-	if (IS_STRING_TYPE(type)) {
-		return STR_TYPE_PRIORITY;
-	}
 	if (is_void_type(type)) {
 		return VOID_TYPE_PRIORITY;
 	}
@@ -479,18 +498,18 @@ Type* cast_implicitly(Type* to, Type* type, SrcArea* area) {
 	}
 	else {
 		// if both are pointer-like
-		if (is_onea(to, type, is_pointer_type) &&
-			is_onea(to, type, is_array_type)) {
+		if (is_one_action(to, type, is_pointer_type) &&
+			is_one_action(to, type, is_array_type)) {
 				return is_pointer_type(to) ? to : type;
 		}
 		// if one is enum and second is integral
-		if (is_onea(to, type, is_enum_type) &&
-			is_onea(to, type, is_integral_type)) {
+		if (is_one_action(to, type, is_enum_type) &&
+			is_one_action(to, type, is_integral_type)) {
 				return is_integral_type(to) ? to : type;
 		}
 
-		if (is_onea(to, type, is_integral_type) ||
-			is_onea(to, type, is_pointer_like_type)) {
+		if (is_one_action(to, type, is_integral_type) ||
+			is_one_action(to, type, is_pointer_like_type)) {
 			if (is_pointer_like_type(to)) {
 				return type->size > i32_type.size ? type : to;
 			}
@@ -500,7 +519,7 @@ Type* cast_implicitly(Type* to, Type* type, SrcArea* area) {
 		}
 
 		// if both are function types
-		if (is_botha(to, type, is_function_type)) {
+		if (is_both_action(to, type, is_function_type)) {
 			return type;
 		}
 
@@ -526,7 +545,7 @@ bool can_cast_enum_type(Type* to, Type* type) {
 	if (is_both(to, type, TYPE_ENUM)) {
 		return true;
 	}
-	if (IS_ENUM_TYPE(to) && is_integral_type(type)) {
+	if (is_enum_type(to) && is_integral_type(type)) {
 		if (type->size <= i32_type.size) {
 			return true;
 		}
@@ -584,11 +603,6 @@ bool can_cast_function_types(Type* to, Type* type) {
 }
 
 bool can_cast_implicitly(Type* to, Type* type) {
-	// if both types are equal, no need for 
-	// any additional processing.
-	if (str_eq(to->repr, type->repr)) {
-		return true;
-	}
 	// trying to check if at least one of passed types 
 	// is incomplete, pure void, or unknown.
 	// In this case cast is impossible.
@@ -599,7 +613,7 @@ bool can_cast_implicitly(Type* to, Type* type) {
 	}
 	// trying to cast if both passed types are pointer-like types
 	//		- pointers, arrays, [function types ?]
-	if (is_botha(to, type, is_pointer_like_type)) {
+	if (is_both_action(to, type, is_pointer_like_type)) {
 		return can_cast_pointer_types(to, type);
 	}
 	// trying to cast if at least one type is enum type
@@ -610,13 +624,13 @@ bool can_cast_implicitly(Type* to, Type* type) {
 	}
 	// trying to cast if one type is integral type,
 	// and second type is pointer
-	if (is_onea(to, type, is_integral_type) &&
-		is_onea(to, type, is_pointer_like_type)) {
+	if (is_one_action(to, type, is_integral_type) &&
+		is_one_action(to, type, is_pointer_like_type)) {
 			return can_cast_intptr_types(to, type);
 	}
 
 	// trying to cast if both types are func types
-	if (is_botha(to, type, is_function_type)) {
+	if (is_both_action(to, type, is_function_type)) {
 		return can_cast_function_types(to, type);
 	}
 
@@ -694,6 +708,12 @@ bool can_cast_implicitly(Type* to, Type* type) {
 				return true;
 		}
 	}
+	// if both types are equal, no need for 
+	// any additional processing.
+	if (str_eq(to->repr, type->repr)) {
+		return true;
+	}
+
 	return false;
 }
 
@@ -707,6 +727,8 @@ SrcArea* get_expr_area(Expr* expr) {
 			return src_area_new(expr->str->context, NULL);
 		case EXPR_FUNC_CALL:
 			return expr->func_call->area;
+		case EXPR_FUNC_CALL2:
+			return expr->func_call2->area;
 		case EXPR_INITIALIZER:
 			return expr->initializer->area;
 		case EXPR_UNARY_EXPR:
@@ -734,16 +756,15 @@ Idnt* get_member_idnt(Expr* expr) {
 		case EXPR_IDNT:
 			return expr->idnt;
 		case EXPR_BINARY_EXPR:
-			switch (expr->binary_expr->kind)
-			{
-			case BINARY_MEMBER_ACCESSOR:
-			case BINARY_PTR_MEMBER_ACCESSOR:
-			case BINARY_ARR_MEMBER_ACCESSOR:
-				return get_member_idnt(expr->binary_expr->lexpr);
-			default:
-				report_error2("Cannot get member name from binary expression.",
-					expr->binary_expr->area);
-				break;
+			switch (expr->binary_expr->kind) {
+				case BINARY_MEMBER_ACCESSOR:
+				case BINARY_PTR_MEMBER_ACCESSOR:
+				case BINARY_ARR_MEMBER_ACCESSOR:
+					return get_member_idnt(expr->binary_expr->lexpr);
+				default:
+					report_error2("Cannot get member name from binary expression.",
+						expr->binary_expr->area);
+					break;
 			}
 			break;
 		default:

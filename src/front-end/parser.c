@@ -251,21 +251,6 @@ Expr* parse_func_call_expr(Parser* parser) {
 	return expr;
 }
 
-Expr* parse_idnt_ambiguity(Parser* parser) {
-	// todo: remove this function when `()` become operator
-	get_next_token(parser);
-	if (matcht(parser, TOKEN_OP_PAREN)) {
-		unget_curr_token(parser);
-		return parse_func_call_expr(parser);
-	}
-	else {
-		unget_curr_token(parser);
-		return expr_new(EXPR_IDNT,
-			idnt_new(get_curr_token(parser)->lexeme,
-				get_curr_token(parser)->attrs.context));
-	}
-}
-
 Expr* parse_primary_expr(Parser* parser) {
 	Expr* expr = NULL;
 	Token* token = get_curr_token(parser);
@@ -283,9 +268,8 @@ Expr* parse_primary_expr(Parser* parser) {
 				const_new(CONST_FLOAT, token->lexeme, token->attrs.context));
 			break;
 		case TOKEN_IDNT:
-			expr = parse_idnt_ambiguity(parser);
-			if (expr->kind == EXPR_FUNC_CALL)
-				return expr;
+			expr = expr_new(EXPR_IDNT,
+				idnt_new(token->lexeme, token->attrs.context));
 			break;
 		case TOKEN_STRING:
 			expr = expr_new(EXPR_STRING,
@@ -348,12 +332,31 @@ Expr* parse_member_accessor_expr(Parser* parser, Expr* rexpr, TokenKind accessor
 	}
 }
 
+Expr* parse_func_call_expr2(Parser* parser, Expr* rexpr) {
+	Expr** func_args = NULL;
+
+	context_starts(parser, context);
+	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
+	while (!matcht(parser, TOKEN_CL_PAREN)) {
+		sbuffer_add(func_args, parse_assignment_expr(parser));
+		if (!matcht(parser, TOKEN_CL_PAREN)) {
+			expect_with_skip(parser, TOKEN_COMMA, ",");
+		}
+	}
+	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
+	Expr* expr = expr_new(EXPR_FUNC_CALL2, 
+		func_call2_new(rexpr, func_args));
+	context_ends(parser, context, expr->func_call2);
+	return expr;
+}
+
 Expr* parse_postfix_expr(Parser* parser) {
 	Expr* postfix_expr = NULL;
 	Expr* primary_expr = parse_primary_expr(parser);
 
 	while (matcht(parser, TOKEN_DOT)
 		|| matcht(parser, TOKEN_ARROW)
+		|| matcht(parser, TOKEN_OP_PAREN)
 		|| matcht(parser, TOKEN_OP_BRACKET)) {
 		Expr* rexpr = postfix_expr ?
 			postfix_expr : primary_expr;
@@ -363,6 +366,9 @@ Expr* parse_postfix_expr(Parser* parser) {
 			case TOKEN_ARROW:
 				postfix_expr = parse_member_accessor_expr(parser,
 					rexpr, get_curr_token(parser)->type);
+				break;
+			case TOKEN_OP_PAREN:
+				postfix_expr = parse_func_call_expr2(parser, rexpr);
 				break;
 			case TOKEN_OP_BRACKET:
 				postfix_expr = parse_array_accessor_expr(parser, rexpr);
@@ -1317,7 +1323,10 @@ char* parse_import_path_desc(Parser* parser) {
 			goto continue_building_relative_path;
 			break;
 		case TOKEN_STRING:
-			_assign_path(get_curr_token(parser)->lexeme);
+			// string representation of path can be useful when:
+				// - source file contains different from '.almc' extension 
+				// - source path contains unsupported by idnt token characters ('-', '?', ...)
+			_assign_path(path_combine(path, get_curr_token(parser)->lexeme));
 			expect_with_skip(parser, TOKEN_STRING, "absolute path");
 			break;
 		case TOKEN_NAV_CURR_DIR:
@@ -1392,7 +1401,7 @@ Stmt* parse_import_stmt(Parser* parser) {
 Stmt* parse_from_import_stmt(Parser* parser) {
 	char* temp_module_path = NULL;
 	AstRoot* module = ast_new(NULL, NULL);   // module that will represent extracted statements from module
-	AstRoot* temp_module = NULL; // whole module imported via import
+	AstRoot* temp_module = NULL; 			 // whole module imported via import
 
 	expect_with_skip(parser, TOKEN_KEYWORD_FROM, "from");
 	temp_module_path = parse_import_path_desc(parser);
