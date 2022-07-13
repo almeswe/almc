@@ -63,6 +63,7 @@ Stmt* parse_expr_stmt(Parser* parser);
 Stmt* parse_empty_stmt(Parser* parser);
 Stmt* parse_var_decl_stmt(Parser* parser);
 Stmt* parse_auto_var_decl_stmt(Parser* parser);
+Stmt* parse_typedef_stmt(Parser* parser);
 Stmt* parse_func_decl_stmt(Parser* parser);
 Stmt* parse_label_decl_stmt(Parser* parser);
 

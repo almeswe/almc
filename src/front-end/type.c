@@ -3,9 +3,18 @@
 Type* type_new(const char* repr) {
 	Type* type = cnew(Type, 1);
 	type->repr = repr;
+	type->is_alias = false;
 	type->kind = TYPE_INCOMPLETE;
 	type->base = &unknown_type;
 	return type;
+}
+
+Type* alias_type_new(const char* alias, Type* base) {
+	Type* alias_type = type_new(alias);
+	alias_type->base = base;
+	alias_type->repr = alias;
+	alias_type->is_alias = true;
+	return alias_type;
 }
 
 Type* array_type_new(Type* base, Expr* index) {
@@ -200,6 +209,10 @@ bool is_user_defined_type(Type* type) {
 	Type* base = get_base_type(type);
 	return is_enum_type(base) || 
 		is_struct_or_union_type(base);
+}
+
+bool is_alias_type(Type* type) {
+	return type && type->is_alias;
 }
 
 bool is_array_type(Type* type) {

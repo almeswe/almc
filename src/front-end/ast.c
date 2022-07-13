@@ -16,7 +16,6 @@ Expr* expr_new(ExprKind type, void* expr_value_ptr) {
 		case EXPR_IDNT:			EXPR_SET_VALUE(Idnt, idnt);
 		case EXPR_CONST:		EXPR_SET_VALUE(Const, cnst);
 		case EXPR_STRING:		EXPR_SET_VALUE(Str, str);
-		case EXPR_FUNC_CALL:	EXPR_SET_VALUE(FuncCall, func_call);
 		case EXPR_FUNC_CALL2:	EXPR_SET_VALUE(FuncCall2, func_call2);
 		case EXPR_UNARY_EXPR:	EXPR_SET_VALUE(UnaryExpr, unary_expr);
 		case EXPR_BINARY_EXPR:	EXPR_SET_VALUE(BinaryExpr, binary_expr);
@@ -86,16 +85,6 @@ Const* const_new(ConstKind type, const char* svalue, SrcContext* context) {
 	return cnst;
 }
 
-FuncCall* func_call_new(Name* func_name, Expr** func_args) {
-	FuncCall* func_call = cnew(FuncCall, 1);
-	func_call->area = NULL;
-	func_call->decl = NULL;
-	func_call->args = func_args;
-	func_call->name = func_name;
-	func_call->type = &unknown_type;
-	return func_call;
-}
-
 FuncCall2* func_call2_new(Expr* rexpr, Expr** args) {
 	FuncCall2* func_call = cnew(FuncCall2, 1);
 	func_call->args = args; 
@@ -155,12 +144,14 @@ Stmt* stmt_new(StmtType type, void* stmt_value_ptr) {
 		case STMT_EMPTY:		SET_STMT_VALUE(EmptyStmt, empty_stmt);
 		case STMT_SWITCH:		SET_STMT_VALUE(SwitchStmt, switch_stmt);
 		case STMT_IMPORT:		SET_STMT_VALUE(ImportStmt, import_stmt);
+		case STMT_TYPEDEF:		SET_STMT_VALUE(TypedefStmt, typedef_stmt);
 		case STMT_VAR_DECL:		SET_STMT_VALUE(VarDecl, var_decl);
 		case STMT_TYPE_DECL:	SET_STMT_VALUE(TypeDecl, type_decl);
 		case STMT_FUNC_DECL:	SET_STMT_VALUE(FuncDecl, func_decl);
 		case STMT_LABEL_DECL:	SET_STMT_VALUE(LabelDecl, label_decl);
 		default:
-			report_error("Unexpected stmt type.", NULL);
+			report_error(frmt("Unexpected stmt type met" 
+			" in function: %s", __FUNCTION__), NULL);
 	}
 	return stmt;
 
@@ -250,6 +241,13 @@ TypeVar* type_var_new(Type* type, char* var) {
 	type_var->type = type;
 	type_var->area = NULL;
 	return type_var;
+}
+
+TypedefStmt* typedef_stmt_new(Name* typename, Type* typealias) {
+	TypedefStmt* typedef_stmt = cnew(TypedefStmt, 1);
+	typedef_stmt->typename = typename;
+	typedef_stmt->typealias = typealias;
+	return typedef_stmt;
 }
 
 VarDecl* var_decl_new(bool is_auto, TypeVar* type_var, Expr* init) {
@@ -393,7 +391,6 @@ void expr_free(Expr* expr) {
 			case EXPR_IDNT:			_b(idnt_free(expr->idnt));
 			case EXPR_CONST:		_b(const_free(expr->cnst));
 			case EXPR_STRING:		_b(str_free(expr->str));
-			case EXPR_FUNC_CALL:	_b(func_call_free(expr->func_call));
 			case EXPR_FUNC_CALL2:	_b(func_call2_free(expr->func_call2));
 			case EXPR_UNARY_EXPR:	_b(unary_expr_free(expr->unary_expr));
 			case EXPR_BINARY_EXPR:	_b(binary_expr_free(expr->binary_expr));
@@ -427,18 +424,6 @@ void idnt_free(Idnt* idnt) {
 void const_free(Const* cnst) {
 	if (cnst != NULL) {
 		free(cnst);
-	}
-}
-
-void func_call_free(FuncCall* func_call) {
-	if (func_call != NULL) {
-		name_free(func_call->name);
-		for (size_t i = 0; i < sbuffer_len(func_call->args); i++) {
-			expr_free(func_call->args[i]);
-		}
-		sbuffer_free(func_call->args);
-		free(func_call->area);
-		free(func_call);
 	}
 }
 
@@ -509,42 +494,19 @@ void initializer_free(Initializer* initializer) {
 void stmt_free(Stmt* stmt) {
 	if (stmt != NULL) {
 		switch (stmt->kind) {
-			case STMT_IF:
-				if_stmt_free(stmt->if_stmt);
-				break;
-			case STMT_EXPR:
-				expr_stmt_free(stmt->expr_stmt);
-				break;
-			case STMT_BLOCK:
-				block_free(stmt->block);
-				break;
-			case STMT_LOOP:
-				loop_stmt_free(stmt->loop_stmt);
-				break;
-			case STMT_JUMP:
-				jump_stmt_free(stmt->jump_stmt);
-				break;
-			case STMT_EMPTY:
-				empty_stmt_free(stmt->empty_stmt);
-				break;
-			case STMT_SWITCH:
-				switch_stmt_free(stmt->switch_stmt);
-				break;
-			case STMT_IMPORT:
-				import_stmt_free(stmt->import_stmt);
-				break;
-			case STMT_VAR_DECL:
-				var_decl_free(stmt->var_decl);
-				break;
-			case STMT_TYPE_DECL:
-				type_decl_free(stmt->type_decl);
-				break;
-			case STMT_FUNC_DECL:
-				func_decl_free(stmt->func_decl);
-				break;
-			case STMT_LABEL_DECL:
-				label_decl_free(stmt->label_decl);
-				break;
+			case STMT_IF:			_b(if_stmt_free(stmt->if_stmt));
+			case STMT_EXPR:			_b(expr_stmt_free(stmt->expr_stmt));
+			case STMT_BLOCK:		_b(block_free(stmt->block));
+			case STMT_LOOP:			_b(loop_stmt_free(stmt->loop_stmt));
+			case STMT_JUMP:			_b(jump_stmt_free(stmt->jump_stmt));
+			case STMT_EMPTY:		_b(empty_stmt_free(stmt->empty_stmt));
+			case STMT_SWITCH:		_b(switch_stmt_free(stmt->switch_stmt));
+			case STMT_IMPORT:		_b(import_stmt_free(stmt->import_stmt));
+			case STMT_TYPEDEF:		_b(typedef_stmt_free(stmt->typedef_stmt));
+			case STMT_VAR_DECL:		_b(var_decl_free(stmt->var_decl));
+			case STMT_TYPE_DECL:	_b(type_decl_free(stmt->type_decl));
+			case STMT_FUNC_DECL:	_b(func_decl_free(stmt->func_decl));
+			case STMT_LABEL_DECL:	_b(label_decl_free(stmt->label_decl));
 			default:
 				report_error(frmt("Unexpected stmt kind met"
 					" in function: %s", __FUNCTION__), NULL);
@@ -556,17 +518,12 @@ void stmt_free(Stmt* stmt) {
 void type_decl_free(TypeDecl* type_decl) {
 	if (type_decl != NULL) {
 		switch (type_decl->kind) {
-			case TYPE_DECL_ENUM:
-				enum_decl_free(type_decl->enum_decl);
-				break;
-			case TYPE_DECL_UNION:
-				union_decl_free(type_decl->union_decl);
-				break;
-			case TYPE_DECL_STRUCT:
-				struct_decl_free(type_decl->struct_decl);
-				break;
+			case TYPE_DECL_ENUM:	_b(enum_decl_free(type_decl->enum_decl));
+			case TYPE_DECL_UNION:	_b(union_decl_free(type_decl->union_decl));
+			case TYPE_DECL_STRUCT:	_b(struct_decl_free(type_decl->struct_decl));
 			default:
-				report_error("Unexpected typedecl type.", NULL);
+				report_error(frmt("Unexpected typedecl type met" 
+				" in function: %s", __FUNCTION__), NULL);
 		}
 		free(type_decl);
 	}
@@ -664,6 +621,13 @@ void type_var_free(TypeVar* type_var) {
 	}
 }
 
+void typedef_stmt_free(TypedefStmt* typedef_stmt) {
+	if (typedef_stmt != NULL) {
+		name_free(typedef_stmt->typename);
+		free(typedef_stmt);
+	}
+}
+
 void var_decl_free(VarDecl* var_decl) {
 	if (var_decl != NULL) {
 		expr_free(var_decl->var_init);
@@ -707,15 +671,9 @@ void label_decl_free(LabelDecl* label_decl) {
 void loop_stmt_free(LoopStmt* loop_stmt) {
 	if (loop_stmt != NULL) {
 		switch (loop_stmt->kind) {
-			case LOOP_DO:
-				do_loop_free(loop_stmt->do_loop);
-				break;
-			case LOOP_FOR:
-				for_loop_free(loop_stmt->for_loop);
-				break;
-			case LOOP_WHILE:
-				while_loop_free(loop_stmt->while_loop);
-				break;
+			case LOOP_DO:		_b(do_loop_free(loop_stmt->do_loop));
+			case LOOP_FOR:		_b(for_loop_free(loop_stmt->for_loop));
+			case LOOP_WHILE:	_b(while_loop_free(loop_stmt->while_loop));
 			default:
 				report_error("Unexpected loop statement type.", NULL);
 		}
@@ -802,12 +760,11 @@ void jump_stmt_free(JumpStmt* jump_stmt) {
 	if (jump_stmt != NULL) {
 		switch (jump_stmt->kind) {
 			case JUMP_BREAK:
-			case JUMP_CONTINUE:
-				break;
+			case JUMP_CONTINUE:	
+				_b(;);
 			case JUMP_GOTO:
 			case JUMP_RETURN:
-				expr_free(jump_stmt->expr);
-				break;
+				_b(expr_free(jump_stmt->expr));
 			default:
 				report_error("Unexpected jump statement kind in jump_stmt_free().", NULL);
 		}

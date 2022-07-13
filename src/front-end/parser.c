@@ -233,24 +233,6 @@ Expr* parse_paren_expr(Parser* parser) {
 	return expr;
 }
 
-Expr* parse_func_call_expr(Parser* parser) {
-	Expr** func_args = NULL;
-	Name* func_name = parse_name(parser);
-	context_starts(parser, context);
-	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
-	while (!matcht(parser, TOKEN_CL_PAREN)) {
-		sbuffer_add(func_args, parse_assignment_expr(parser));
-		if (!matcht(parser, TOKEN_CL_PAREN)) {
-			expect_with_skip(parser, TOKEN_COMMA, ",");
-		}
-	}
-	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
-	Expr* expr = expr_new(EXPR_FUNC_CALL,
-		func_call_new(func_name, func_args));
-	context_ends(parser, context, expr->func_call);
-	return expr;
-}
-
 Expr* parse_primary_expr(Parser* parser) {
 	Expr* expr = NULL;
 	Token* token = get_curr_token(parser);
@@ -953,6 +935,9 @@ Stmt* parse_var_decl_stmt(Parser* parser) {
 		return parse_auto_var_decl_stmt(parser);
 	}
 	expect_with_skip(parser, TOKEN_KEYWORD_LET, "let");
+	if (matcht(parser, TOKEN_KEYWORD_TYPEDEF)) {
+		return parse_typedef_stmt(parser);
+	}
 	type_var = parse_type_var(parser);
 	if (matcht(parser, TOKEN_ASSIGN)) {
 		get_next_token(parser);
@@ -978,6 +963,15 @@ Stmt* parse_auto_var_decl_stmt(Parser* parser) {
 		var_decl_new(true, type_var, var_init));
 }
 
+Stmt* parse_typedef_stmt(Parser* parser) {
+	expect_with_skip(parser, TOKEN_KEYWORD_TYPEDEF, "typedef");
+	expect_with_skip(parser, TOKEN_COLON, ":");
+	Name* typename = parse_name(parser);
+	expect_with_skip(parser, TOKEN_ASSIGN, "=");
+	Type* typealias = parse_type(parser);
+	return stmt_new(STMT_TYPEDEF, typedef_stmt_new(typename, typealias));
+}
+
 Convention* calling_convention_new() {
 	Convention* convention = cnew(Convention, 1);
 	convention->repr = "c";
@@ -992,10 +986,10 @@ Convention* parse_func_calling_convention(Parser* parser) {
 
 	char* token_str = get_curr_token(parser)->lexeme;
 
-	if (strcmp(token_str, "cdecl") == 0) {
+	if (str_eq(token_str, "cdecl")) {
 		get_next_token(parser);
 	}
-	else if (strcmp(token_str, "stdcall") == 0) {
+	else if (str_eq(token_str, "stdcall")) {
 		get_next_token(parser);
 		convention->kind = CALL_CONV_STDCALL,
 			convention->repr = token_str;
@@ -1265,6 +1259,7 @@ AstRoot* parse_module(char* module_path) {
 
 bool is_stmt_for_import(Stmt* stmt) {
 	switch (stmt->kind) {
+		case STMT_TYPEDEF:
 		case STMT_VAR_DECL:
 		case STMT_TYPE_DECL:
 		case STMT_FUNC_DECL:
@@ -1285,6 +1280,8 @@ char* parse_import_member_name(Stmt* stmt) {
 			return stmt->type_decl->struct_decl->name->value;
 		}
 		break;
+		case STMT_TYPEDEF:
+			return stmt->typedef_stmt->typename->value;
 		case STMT_VAR_DECL:
 			return stmt->var_decl->type_var->var;
 		case STMT_FUNC_DECL:

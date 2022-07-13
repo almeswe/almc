@@ -23,25 +23,9 @@
 #define STRING_TYPE	 "str"
 #define UNKNOWN_TYPE "unknown"
 
+#define PTR_SIZE				 sizeof(void*)
 #define MACHINE_WORD			 sizeof(void*)
 #define STRUCT_DEFAULT_ALIGNMENT 0x4
-
-#define I8_SIZE		sizeof(int8_t)
-#define U8_SIZE		sizeof(uint8_t)
-#define CHAR_SIZE	sizeof(int8_t)
-
-#define I16_SIZE	sizeof(int16_t)
-#define U16_SIZE	sizeof(uint16_t)
-#define I32_SIZE	sizeof(int32_t)
-#define U32_SIZE	sizeof(uint32_t)
-
-#define I64_SIZE	sizeof(int64_t)
-#define U64_SIZE	sizeof(uint64_t)
-
-#define F32_SIZE	sizeof(float)
-#define F64_SIZE	sizeof(double)
-
-#define PTR_SIZE	sizeof(void*)
 
 typedef struct Expr Expr;
 typedef struct Member Member;
@@ -71,6 +55,7 @@ typedef struct Type {
 
 	// Used by pointer and array types
 	struct Type* base;
+	bool is_alias;
 	union _type_attributes {
 		struct _array_kind_data {
 			// can be accessed when type is TYPE_ARRAY
@@ -90,28 +75,29 @@ typedef struct Type {
 } Type;
 
 /* Initialization of primitive types */
-static Type unknown_type = { 0, TYPE_UNKNOWN, NULL, UNKNOWN_TYPE };
+static Type unknown_type = { 0, TYPE_UNKNOWN, NULL, UNKNOWN_TYPE, false };
 
-static Type i8_type = { I8_SIZE, TYPE_PRIMITIVE, NULL, I8_TYPE, &unknown_type };
-static Type u8_type = { U8_SIZE, TYPE_PRIMITIVE, NULL, U8_TYPE, &unknown_type };
-static Type char_type = { CHAR_SIZE, TYPE_PRIMITIVE, NULL, CHAR_TYPE, &unknown_type };
+static Type i8_type = { sizeof(int8_t), TYPE_PRIMITIVE, NULL, I8_TYPE, &unknown_type, false };
+static Type u8_type = { sizeof(uint8_t), TYPE_PRIMITIVE, NULL, U8_TYPE, &unknown_type, false };
+static Type char_type = { sizeof(char), TYPE_PRIMITIVE, NULL, CHAR_TYPE, &unknown_type, false };
 
-static Type i16_type = { I16_SIZE, TYPE_PRIMITIVE, NULL, I16_TYPE, &unknown_type };
-static Type u16_type = { U16_SIZE, TYPE_PRIMITIVE, NULL, U16_TYPE, &unknown_type };
+static Type i16_type = { sizeof(int16_t), TYPE_PRIMITIVE, NULL, I16_TYPE, &unknown_type, false };
+static Type u16_type = { sizeof(uint16_t), TYPE_PRIMITIVE, NULL, U16_TYPE, &unknown_type, false };
 
-static Type i32_type = { I32_SIZE, TYPE_PRIMITIVE, NULL, I32_TYPE, &unknown_type };
-static Type u32_type = { U32_SIZE, TYPE_PRIMITIVE, NULL, U32_TYPE, &unknown_type };
-static Type f32_type = { F32_SIZE, TYPE_PRIMITIVE, NULL, F32_TYPE, &unknown_type };
+static Type i32_type = { sizeof(int32_t), TYPE_PRIMITIVE, NULL, I32_TYPE, &unknown_type, false };
+static Type u32_type = { sizeof(uint32_t), TYPE_PRIMITIVE, NULL, U32_TYPE, &unknown_type, false };
+static Type f32_type = { sizeof(float), TYPE_PRIMITIVE, NULL, F32_TYPE, &unknown_type, false };
 
-static Type i64_type = { I64_SIZE, TYPE_PRIMITIVE, NULL, I64_TYPE, &unknown_type };
-static Type u64_type = { U64_SIZE, TYPE_PRIMITIVE, NULL, U64_TYPE, &unknown_type };
-static Type f64_type = { F64_SIZE, TYPE_PRIMITIVE, NULL, F64_TYPE, &unknown_type };
+static Type i64_type = { sizeof(int64_t), TYPE_PRIMITIVE, NULL, I64_TYPE, &unknown_type, false };
+static Type u64_type = { sizeof(uint64_t), TYPE_PRIMITIVE, NULL, U64_TYPE, &unknown_type, false };
+static Type f64_type = { sizeof(double), TYPE_PRIMITIVE, NULL, F64_TYPE, &unknown_type, false };
 
 /* Initialization of some other supply types */
-static Type void_type = { 0, TYPE_VOID, NULL, VOID_TYPE };
+static Type void_type = { sizeof(void), TYPE_VOID, NULL, VOID_TYPE, false };
 
 Type* type_new(const char* repr);
 
+Type* alias_type_new(const char* alias, Type* base);
 Type* array_type_new(Type* base, Expr* index);
 Type* pointer_type_new(Type* base);
 Type* dereference_type(Type* type);
@@ -135,6 +121,7 @@ bool is_void_type(Type* type);
 bool is_enum_type(Type* type);
 bool is_union_type(Type* type);
 bool is_struct_type(Type* type);
+bool is_alias_type(Type* type);
 bool is_array_type(Type* type);
 bool is_pointer_type(Type* type);
 bool is_primitive_type(Type* type);

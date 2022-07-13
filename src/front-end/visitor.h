@@ -22,7 +22,6 @@ void visit_block_stmts(Block* block, Table* table);
 void visit_expr(Expr* expr, Table* table);
 void visit_addr_expr(Expr* expr, Table* table);
 void visit_idnt(Idnt* idnt, Table* table, bool is_in_assign);
-void visit_func_call(FuncCall* func_call, Table* table);
 void visit_func_call2(FuncCall2* func_call, Table* table);
 void visit_unary_expr(UnaryExpr* unary_expr, Table* table);
 void visit_binary_expr(BinaryExpr* binary_expr, Table* table);
@@ -48,6 +47,7 @@ void visit_var_decl_stmt(VarDecl* var_decl, Table* table);
 void visit_type_decl_stmt(TypeDecl* type_decl, Table* table);
 void visit_func_decl_stmt(FuncDecl* func_decl, Table* table);
 void visit_import_stmt(ImportStmt* import_stmt, Table* table);
+void visit_typedef_stmt(TypedefStmt* typedef_stmt, Table* table);
 
 void visit_enum(EnumDecl* enum_decl, Table* table);
 void visit_union(UnionDecl* union_decl, Table* table);

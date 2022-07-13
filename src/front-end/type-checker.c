@@ -11,8 +11,6 @@ Type* retrieve_expr_type(Expr* expr) {
 			return expr->cnst->type;
 		case EXPR_STRING:
 			return expr->str->type;
-		case EXPR_FUNC_CALL:
-			return expr->func_call->type;
 		case EXPR_FUNC_CALL2:
 			return expr->func_call2->type;
 		case EXPR_UNARY_EXPR:
@@ -39,8 +37,6 @@ Type* get_expr_type(Expr* expr, Table* table) {
 			return get_const_type(expr->cnst);
 		case EXPR_STRING:
 			return get_string_type(expr->str);
-		case EXPR_FUNC_CALL:
-			return get_func_call_type(expr->func_call, table);
 		case EXPR_FUNC_CALL2:
 			return get_func_call2_type(expr->func_call2, table);
 		case EXPR_UNARY_EXPR:
@@ -129,17 +125,6 @@ Type* get_idnt_type(Idnt* idnt, Table* table) {
 
 Type* get_string_type(Str* str) {
 	return pointer_type_new(&char_type);
-}
-
-Type* get_func_call_type(FuncCall* func_call, Table* table) {
-	// also checking type of each function's argument with type of passed value
-	FuncDecl* origin = func_call->decl;
-	for (size_t i = 0; i < sbuffer_len(origin->params); i++) {
-		cast_implicitly(origin->params[i]->type, 
-			get_expr_type(func_call->args[i], table),
-				get_expr_area(func_call->args[i]));
-	}
-	return origin->type->attrs.func.ret;
 }
 
 Type* get_func_call2_type(FuncCall2* func_call2, Table* table) {
@@ -413,8 +398,6 @@ Type* get_and_set_expr_type(Expr* expr, Table* table) {
 			return expr->cnst->type = type;
 		case EXPR_STRING:
 			return expr->str->type = type;
-		case EXPR_FUNC_CALL:
-			return expr->func_call->type = type;
 		case EXPR_FUNC_CALL2:
 			return expr->func_call2->type = type;
 		case EXPR_UNARY_EXPR:
@@ -725,8 +708,6 @@ SrcArea* get_expr_area(Expr* expr) {
 			return src_area_new(expr->cnst->context, NULL);
 		case EXPR_STRING:
 			return src_area_new(expr->str->context, NULL);
-		case EXPR_FUNC_CALL:
-			return expr->func_call->area;
 		case EXPR_FUNC_CALL2:
 			return expr->func_call2->area;
 		case EXPR_INITIALIZER:

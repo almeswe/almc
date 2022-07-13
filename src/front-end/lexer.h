@@ -70,7 +70,7 @@ enum LexerMetrics {
 
 	// just predefined keywords like:
 	// for, fnc, while, i32 ...
-	KEYWORDS = 42,
+	KEYWORDS = 41,
 	KEYWORD_IN_TOKEN_ENUM_OFFSET = TOKEN_KEYWORD_BREAK
 };
 

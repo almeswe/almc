@@ -20,10 +20,7 @@ void table_free(Table* table) {
 		table_entities_free(table->scopes.parameters);
 		table_entities_free(table->scopes.labels);
 		table_entities_free(table->scopes.enum_members);
-
-		table_entities_free(table->scopes.enums);
-		table_entities_free(table->scopes.unions);
-		table_entities_free(table->scopes.structs);
+		table_entities_free(table->scopes.types);
 
 		for (size_t i = 0; i < sbuffer_len(table->nesting); i++) {
 			table_free(table->nesting[i]);
@@ -89,12 +86,8 @@ bool is_table_entity_declared(const char* decl_name,
 	}	
 
 	switch (kind) {
-		case TABLE_ENTITY_ENUM:	
-		case TABLE_ENTITY_UNION:
-		case TABLE_ENTITY_STRUCT:
-			_decld_in(structs, struct_decl->name->value);
-			_decld_in(enums, enum_decl->name->value);
-			_decld_in(unions, union_decl->name->value);
+		case TABLE_ENTITY_TYPE:
+			_decld_in(types, type->repr);
 			return false;
 		case TABLE_ENTITY_LABEL:
 		case TABLE_ENTITY_VARIABLE:
@@ -130,9 +123,7 @@ bool add_table_entity(TableEntity*** entities, void* decl,
 	if (!(declared = is_table_entity_declared(decl_name, kind, table))) {
 		TableEntity* entity = table_entity_new(kind);
 		switch (kind) {
-			case TABLE_ENTITY_ENUM:			_set_as(enum_decl);
-			case TABLE_ENTITY_UNION:		_set_as(union_decl);
-			case TABLE_ENTITY_STRUCT:		_set_as(struct_decl);
+			case TABLE_ENTITY_TYPE:			_set_as(type);
 			case TABLE_ENTITY_VARIABLE:		_set_as(local);
 			case TABLE_ENTITY_PARAMETER:	_set_as(parameter);
 			case TABLE_ENTITY_LABEL:		_set_as(label);
@@ -153,19 +144,29 @@ bool add_enum_member(EnumMember* enum_member, Table* table) {
 		enum_member->name, TABLE_ENTITY_ENUM_MEMBER, table);
 }
 
+bool add_type(Type* type, Table* table) {
+	return add_table_entity(&table->scopes.types, (void*)type, 
+		type->repr, TABLE_ENTITY_TYPE, table);
+}
+
 bool add_enum(EnumDecl* enum_decl, Table* table) {
-	return add_table_entity(&table->scopes.enums, (void*)enum_decl, 
-		enum_decl->name->value, TABLE_ENTITY_ENUM, table);
+	Type* enum_type = type_new(enum_decl->name->value);
+	enum_type->kind = TYPE_ENUM;
+	return add_type(enum_type, table);
 }
 
 bool add_struct(StructDecl* struct_decl, Table* table) {
-	return add_table_entity(&table->scopes.structs, (void*)struct_decl,
-		struct_decl->name->value, TABLE_ENTITY_STRUCT, table);
+	Type* struct_type = type_new(struct_decl->name->value);
+	struct_type->kind = TYPE_STRUCT;
+	struct_type->attrs.cmpd.members = struct_decl->members;
+	return add_type(struct_type, table);
 }
 
 bool add_union(UnionDecl* union_decl, Table* table) {
-	return add_table_entity(&table->scopes.unions, (void*)union_decl,
-		union_decl->name->value, TABLE_ENTITY_UNION, table);
+	Type* union_type = type_new(union_decl->name->value);
+	union_type->kind = TYPE_UNION;
+	union_type->attrs.cmpd.members = union_decl->members;
+	return add_type(union_type, table);
 }
 
 TableEntity* get_table_entity(const char* entity_name,
@@ -185,14 +186,12 @@ TableEntity* get_table_entity(const char* entity_name,
 	return NULL
 
 	// Validation of table entity kind
-	if (kind < TABLE_ENTITY_ENUM || 
+	if (kind < TABLE_ENTITY_TYPE || 
 		kind > TABLE_ENTITY_FUNCTION) {
 			return NULL;
 	}
 	switch (kind) {
-		case TABLE_ENTITY_ENUM:			_get_from(enums, enum_decl->name->value);
-		case TABLE_ENTITY_UNION:		_get_from(unions, union_decl->name->value);
-		case TABLE_ENTITY_STRUCT:		_get_from(structs, struct_decl->name->value);
+		case TABLE_ENTITY_TYPE:			_get_from(types, type->repr);
 		case TABLE_ENTITY_VARIABLE:		_get_from(locals, local->type_var->var);
 		case TABLE_ENTITY_PARAMETER:	_get_from(parameters, parameter->var);
 		case TABLE_ENTITY_LABEL:		_get_from(labels, label->name->value);
@@ -231,17 +230,7 @@ TableEntity* get_function(const char* func_name, Table* table) {
 		TABLE_ENTITY_FUNCTION, table);
 }
 
-TableEntity* get_enum(const char* enum_name, Table* table) {
-	return get_table_entity(enum_name,
-		TABLE_ENTITY_ENUM, table);
-}
-
-TableEntity* get_union(const char* union_name, Table* table) {
-	return get_table_entity(union_name,
-		TABLE_ENTITY_UNION, table);
-}
-
-TableEntity* get_struct(const char* struct_name, Table* table) {
-	return get_table_entity(struct_name,
-		TABLE_ENTITY_STRUCT, table);
+TableEntity* get_type(const char* type_name, Table* table) {
+	return get_table_entity(type_name,
+		TABLE_ENTITY_TYPE, table);
 }

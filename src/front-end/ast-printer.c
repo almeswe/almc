@@ -120,27 +120,15 @@ void print_str(Str* str) {
 	printf("%s\n", ">");
 }
 
-void print_call(FuncCall* call, const char* indent) {
-	printf(_c(BCYN, "fcall") " <f=" _c(BYEL, "%s") ", argc=%lu, ret-", 
-		call->name->value, sbuffer_len(call->args));
-	print_type(call->type);
-	printf(">\n");
-	const char* new_indent = frmt("%s   ", indent);
-	for (size_t i = 0; i < sbuffer_len(call->args); i++) {
-		printf("%s" TREE_BR "arg<%lu> = ", new_indent, i+1);
-		print_expr(call->args[i], new_indent);
-	}
-}
-
 void print_call2(FuncCall2* call, const char* indent) {
 	printf(_c(BGRN, "fcall2") ", argc=%lu, ret-", sbuffer_len(call->args));
 	print_type(call->type);
 	printf(">\n");
 	const char* new_indent = frmt("%s   ", indent);
-	printf("%s" TREE_BR "rexpr = ", new_indent);
+	printf("%s" TREE_BR " rexpr = ", new_indent);
 	print_expr(call->rexpr, new_indent);
 	for (size_t i = 0; i < sbuffer_len(call->args); i++) {
-		printf("%s" TREE_BR "arg<%lu> = ", new_indent, i+1);
+		printf("%s" TREE_BR " arg<%lu> = ", new_indent, i+1);
 		print_expr(call->args[i], new_indent);
 	}
 }
@@ -162,7 +150,7 @@ void print_unary_expr(UnaryExpr* unary_expr, const char* indent) {
 	}
 	printf("%s\n", ">");
 	const char* new_indent = frmt("%s   ", indent);
-	printf("%s" TREE_BR "expr = ", new_indent);
+	printf("%s" TREE_BR " expr = ", new_indent);
 	print_expr(unary_expr->expr, new_indent);
 }
 
@@ -213,9 +201,9 @@ void print_binary_expr(BinaryExpr* binary_expr, const char* indent) {
 	print_type(binary_expr->type);
 	printf("%s\n", ">");
 	const char* new_indent = frmt("%s   ", indent);
-	printf("%s" TREE_BR "lexpr = ", new_indent);
+	printf("%s" TREE_BR " lexpr = ", new_indent);
 	print_expr(binary_expr->lexpr, new_indent);
-	printf("%s" TREE_BR "rexpr = ", new_indent);
+	printf("%s" TREE_BR " rexpr = ", new_indent);
 	print_expr(binary_expr->rexpr, new_indent);
 }
 
@@ -224,11 +212,11 @@ void print_ternary_expr(TernaryExpr* ternary_expr, const char* indent) {
 	print_type(ternary_expr->type);
 	printf("%s\n", ">");
 	const char* new_indent = frmt("%s   ", indent);
-	printf("%s" TREE_BR "cexpr = ", new_indent);
+	printf("%s" TREE_BR " cexpr = ", new_indent);
 	print_expr(ternary_expr->cond, new_indent);
-	printf("\n%s" TREE_BR "lexpr = ", new_indent);
+	printf("\n%s" TREE_BR " lexpr = ", new_indent);
 	print_expr(ternary_expr->lexpr, new_indent);
-	printf("\n%s" TREE_BR "rexpr = ", new_indent);
+	printf("\n%s" TREE_BR " rexpr = ", new_indent);
 	print_expr(ternary_expr->rexpr, new_indent);
 }
 
@@ -238,7 +226,7 @@ void print_initializer_expr(Initializer* init_expr, const char* indent) {
 	printf("%s\n", ">");
 	const char* new_indent = frmt("%s   ", indent);
 	for (size_t i = 0; i < sbuffer_len(init_expr->values); i++) {
-		printf("%s" TREE_BR "val<%lu> = ", new_indent, i+1);
+		printf("%s" TREE_BR " val<%lu> = ", new_indent, i+1);
 		print_expr(init_expr->values[i], new_indent);
 	}
 }
@@ -252,7 +240,6 @@ void print_expr(Expr* expr, const char* indent) {
 			case EXPR_IDNT:			_b(print_idnt(expr->idnt));
 			case EXPR_CONST:		_b(print_const(expr->cnst));
 			case EXPR_STRING:		_b(print_str(expr->str));
-			case EXPR_FUNC_CALL:	_b(print_call(expr->func_call, indent));
 			case EXPR_FUNC_CALL2:	_b(print_call2(expr->func_call2, indent));
 			case EXPR_UNARY_EXPR:	_b(print_unary_expr(expr->unary_expr, indent));
 			case EXPR_BINARY_EXPR:  _b(print_binary_expr(expr->binary_expr, indent));
@@ -289,7 +276,7 @@ void print_var_decl_stmt(VarDecl* var_decl_stmt, const char* indent) {
 	print_type(var_decl_stmt->type_var->type);
 	printf("%s\n", ">");
 	const char* new_indent = frmt("%s   ", indent);
-	printf("%s" TREE_BR "expr_init = ", new_indent);
+	printf("%s" TREE_BR " expr_init = ", new_indent);
 	print_expr(var_decl_stmt->var_init, new_indent);
 }
 
@@ -347,7 +334,7 @@ void print_func_decl_stmt(FuncDecl* func_decl, const char* indent) {
 	printf(_c(BMAG, "fnc") " <name=" _c(BYEL, "%s") ", paramc=%lu, ", 
 		func_decl->name->value, sbuffer_len(func_decl->params));
 	if (func_decl->spec->is_entry | func_decl->spec->is_external | func_decl->spec->is_vararg) {
-		printf("%s", "specs={");
+		printf("%s", "specs={ ");
 		if (func_decl->spec->is_entry) {
 			printf("%s", "entry ");
 		}
@@ -369,16 +356,16 @@ void print_func_decl_stmt(FuncDecl* func_decl, const char* indent) {
 		print_type(func_decl->params[i]->type);
 		printf("%s", "\n");
 	}
-	printf("%s" TREE_BR "body = ", new_indent);
+	printf("%s" TREE_BR " body = ", new_indent);
 	print_block_stmt(func_decl->body, new_indent);
 }
 
 void print_elif_stmt(ElseIf* elif_stmt, const char* indent) {
 	printf(_c(BMAG, "%s\n"), "elseif");
 	const char* new_indent = frmt("%s   ", indent);
-	printf("%s" TREE_BR "condition = ", new_indent); 
+	printf("%s" TREE_BR " condition = ", new_indent); 
 	print_expr(elif_stmt->cond, new_indent);
-	printf("%s" TREE_BR "body = ", new_indent); 
+	printf("%s" TREE_BR " body = ", new_indent); 
 	print_block_stmt(elif_stmt->body, new_indent);
 }
 
@@ -386,9 +373,9 @@ void print_if_stmt(IfStmt* if_stmt, const char* indent) {
 	printf(_c(BMAG, "if") " <else ifs=" _c(BYEL, "%lu") ", else=%u>\n", 
 		sbuffer_len(if_stmt->elifs), (unsigned)(if_stmt->else_body != NULL));
 	const char* new_indent = frmt("%s   ", indent);
-	printf("%s" TREE_BR "condition = ", new_indent); 
+	printf("%s" TREE_BR " condition = ", new_indent); 
 	print_expr(if_stmt->cond, new_indent);
-	printf("%s" TREE_BR "body = ", new_indent); 
+	printf("%s" TREE_BR " body = ", new_indent); 
 	print_block_stmt(if_stmt->body, new_indent);
 	for (size_t i = 0; i < sbuffer_len(if_stmt->elifs); i++) {
 		printf("%s" TREE_BR, new_indent);
@@ -422,7 +409,7 @@ void print_goto_stmt(JumpStmt* jump_stmt, const char* indent) {
 void print_return_stmt(JumpStmt* jump_stmt, const char* indent) {
 	printf(_c(BRED, "%s"), "return\n");
 	const char* new_indent = frmt("%s   ", indent);
-	printf("%s" TREE_BR "value = ", new_indent); 
+	printf("%s" TREE_BR " value = ", new_indent); 
 	print_expr(jump_stmt->expr, new_indent);
 }
 
@@ -441,31 +428,31 @@ void print_jump_stmt(JumpStmt* jump_stmt, const char* indent) {
 void print_while_loop_stmt(WhileLoop* while_stmt, const char* indent) {
 	printf(_c(BMAG, "%s"), "while-loop\n");
 	const char* new_indent = frmt("%s   ", indent);
-	printf("%s" TREE_BR "condition = ", new_indent); 
+	printf("%s" TREE_BR " condition = ", new_indent); 
 	print_expr(while_stmt->cond, new_indent);
-	printf("%s" TREE_BR "body = ", new_indent); 
+	printf("%s" TREE_BR " body = ", new_indent); 
 	print_block_stmt(while_stmt->body, new_indent);
 }
 
 void print_for_loop_stmt(ForLoop* for_stmt, const char* indent) {
 	printf(_c(BMAG, "%s"), "for-loop\n");
 	const char* new_indent = frmt("%s   ", indent);
-	printf("%s" TREE_BR "init = ", new_indent); 
+	printf("%s" TREE_BR " init = ", new_indent); 
 	print_var_decl_stmt(for_stmt->init, new_indent);
-	printf("%s" TREE_BR "condition = ", new_indent); 
+	printf("%s" TREE_BR " condition = ", new_indent); 
 	print_expr(for_stmt->cond, new_indent);
-	printf("%s" TREE_BR "step = ", new_indent); 
+	printf("%s" TREE_BR " step = ", new_indent); 
 	print_expr(for_stmt->step, new_indent);
-	printf("%s" TREE_BR "body = ", new_indent); 
+	printf("%s" TREE_BR " body = ", new_indent); 
 	print_block_stmt(for_stmt->body, new_indent);
 }
 
 void print_do_loop_stmt(DoLoop* do_stmt, const char* indent) {
 	printf(_c(BMAG, "%s"), "do-while-loop\n");
 	const char* new_indent = frmt("%s   ", indent);
-	printf("%s" TREE_BR "body = ", new_indent); 
+	printf("%s" TREE_BR " body = ", new_indent); 
 	print_block_stmt(do_stmt->body, new_indent);
-	printf("%s" TREE_BR "condition = ", new_indent); 
+	printf("%s" TREE_BR " condition = ", new_indent); 
 	print_expr(do_stmt->cond, new_indent);
 }
 
@@ -509,6 +496,14 @@ void print_import_stmt(ImportStmt* import_stmt, const char* indent) {
 	print_ast_root(import_stmt->ast, indent);
 }
 
+void print_typedef_stmt(TypedefStmt* typedef_stmt, const char* indent) {
+	printf(_c(BMAG, "typedef-stmt") " <typename=" _c(BYEL, "%s") ">\n", 
+		typedef_stmt->typename->value);
+	const char* new_indent = frmt("%s   ", indent);
+	printf("%s" TREE_BR " alias-", new_indent); 
+	print_type(typedef_stmt->typealias);
+}
+
 void print_stmt(Stmt* stmt, const char* indent) {
 	if (stmt == NULL) {
 		printf(_c(BRED, "%s"), "NULL");
@@ -522,6 +517,7 @@ void print_stmt(Stmt* stmt, const char* indent) {
 			case STMT_BLOCK:		_b(print_block_stmt(stmt->block, indent));
 			case STMT_EMPTY:		_b(;);
 			case STMT_IMPORT:		_b(print_import_stmt(stmt->import_stmt, indent));
+			case STMT_TYPEDEF:		_b(print_typedef_stmt(stmt->typedef_stmt, indent));
 			case STMT_SWITCH:		_b(print_switch_case_stmt(stmt->switch_stmt, indent));
 			case STMT_VAR_DECL:		_b(print_var_decl_stmt(stmt->var_decl, indent));
 			case STMT_TYPE_DECL:	_b(print_type_decl_stmt(stmt->type_decl, indent));

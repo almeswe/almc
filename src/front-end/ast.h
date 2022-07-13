@@ -153,14 +153,6 @@ typedef struct Const {
 } Const;
 
 typedef struct FuncDecl FuncDecl;
-typedef struct FuncCall {
-	Name* name;
-	Type* type;
-	Expr** args;
-	SrcArea* area;
-	FuncDecl* decl;
-} FuncCall;
-
 typedef struct FuncCall2 {
 	Type* type;
 	Expr* rexpr;
@@ -181,7 +173,6 @@ typedef enum ExprKind {
 	EXPR_IDNT,
 	EXPR_CONST,
 	EXPR_STRING,
-	EXPR_FUNC_CALL,
 	EXPR_FUNC_CALL2,
 	EXPR_UNARY_EXPR,
 	EXPR_BINARY_EXPR,
@@ -195,7 +186,6 @@ typedef struct Expr {
 		Str* str;
 		Idnt* idnt;
 		Const* cnst;
-		FuncCall* func_call;
 		FuncCall2* func_call2;
 		UnaryExpr* unary_expr;
 		BinaryExpr* binary_expr;
@@ -217,6 +207,11 @@ typedef struct TypeVar {
 	SrcArea* area;
 	char* var;
 } TypeVar;
+
+typedef struct TypedefStmt {
+	Name* typename;
+	Type* typealias;
+} TypedefStmt;
 
 typedef struct VarDecl {
 	bool is_auto;
@@ -308,8 +303,7 @@ typedef enum LoopStmtKind {
 
 typedef struct LoopStmt {
 	LoopStmtKind kind;
-	union
-	{
+	union {
 		DoLoop* do_loop;
 		ForLoop* for_loop;
 		WhileLoop* while_loop;
@@ -372,6 +366,7 @@ typedef enum StmtType {
 	STMT_EMPTY,
 	STMT_SWITCH,
 	STMT_IMPORT,
+	STMT_TYPEDEF,
 	STMT_VAR_DECL,
 	STMT_TYPE_DECL,
 	STMT_FUNC_DECL,
@@ -389,6 +384,7 @@ typedef struct Stmt {
 		EmptyStmt* empty_stmt;
 		SwitchStmt* switch_stmt;
 		ImportStmt* import_stmt;
+		TypedefStmt* typedef_stmt;
 
 		VarDecl* var_decl;
 		TypeDecl* type_decl;
@@ -410,13 +406,13 @@ Str* str_new(char* string, SrcContext* context);
 Name* name_new(char* value, SrcContext* context);
 Idnt* idnt_new(char* idnt, SrcContext* context);
 Const* const_new(ConstKind type, const char* svalue, SrcContext* context);
-FuncCall* func_call_new(Name* name, Expr** args);
 FuncCall2* func_call2_new(Expr* rexpr, Expr** args);
 UnaryExpr* unary_expr_new(UnaryExprKind type, Expr* expr);
 BinaryExpr* binary_expr_new(BinaryExprKind type, Expr* lexpr, Expr* rexpr);
 TernaryExpr* ternary_expr_new(Expr* cond, Expr* lexpr, Expr* rexpr);
 Initializer* initializer_new(Expr** values);
 TypeVar* type_var_new(Type* type, char* var);
+TypedefStmt* typedef_stmt_new(Name* typename, Type* typealias);
 
 Stmt* stmt_new(StmtType type, void* stmt_value_ptr);
 
@@ -457,7 +453,6 @@ void str_free(Str* str);
 void name_free(Name* name);
 void idnt_free(Idnt* idnt);
 void const_free(Const* cnst);
-void func_call_free(FuncCall* func_call);
 void func_call2_free(FuncCall2* func_call);
 void unary_expr_free(UnaryExpr* unary_expr);
 void binary_expr_free(BinaryExpr* binary_expr);
@@ -476,6 +471,7 @@ void expr_stmt_free(ExprStmt* expr_stmt);
 
 void block_free(Block* block);
 void type_var_free(TypeVar* type_var);
+void typedef_stmt_free(TypedefStmt* typedef_stmt);
 void var_decl_free(VarDecl* var_decl);
 void func_decl_free(FuncDecl* func_decl);
 void label_decl_free(LabelDecl* label_decl);

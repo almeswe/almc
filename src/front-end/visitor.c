@@ -52,8 +52,9 @@ void visit_stmt(Stmt* stmt, Table* table) {
 		case STMT_EMPTY:		_b(;);
 		case STMT_LABEL_DECL:	_b(;);
 		case STMT_IMPORT:		_b(visit_import_stmt(stmt->import_stmt, table));
+		case STMT_TYPEDEF:		_b(visit_typedef_stmt(stmt->typedef_stmt, table));
 		default:
-			report_error(frmt("Unknown statement kind to visit"
+			report_error(frmt("Unknown statement kind met"
 				" in function: %s.", __FUNCTION__), NULL);
 	}
 }
@@ -181,7 +182,6 @@ void visit_expr(Expr* expr, Table* table) {
 		case EXPR_CONST:		_b(;);
 		case EXPR_STRING: 		_b(;);
 		case EXPR_IDNT:			_b(visit_idnt(expr->idnt, table, 0));
-		case EXPR_FUNC_CALL:	_b(visit_func_call(expr->func_call, table));
 		case EXPR_FUNC_CALL2:	_b(visit_func_call2(expr->func_call2, table));
 		case EXPR_UNARY_EXPR:	_b(visit_unary_expr(expr->unary_expr, table));
 		case EXPR_BINARY_EXPR:	_b(visit_binary_expr(expr->binary_expr, table));
@@ -231,43 +231,6 @@ void visit_idnt(Idnt* idnt, Table* table, bool is_in_assign) {
 		//	//	report_error(frmt("Variable \'%s\' is not initialized in current scope.",
 		//	//		idnt->svalue), idnt->context);
 		//}
-	}
-}
-
-void visit_func_call(FuncCall* func_call, Table* table) {
-	// trying to get function declaration from the table
-	TableEntity* entity = get_function(
-		func_call->name->value, table);
-
-	if (entity == NULL) {
-		// print resolve error if there are no any declaration for
-		// this function call
-		return report_error2(frmt("Cannot resolve function \'%s\'.",
-			func_call->name->value), func_call->area), (void)1;
-	}
-
-	// synchronize few fields with function call structure
-	FuncDecl* func_decl = entity->value.function;
-	func_call->decl = func_decl;
-
-	// capture count of params of function declaration and
-	// count of passed arguments to function call
-	size_t args = sbuffer_len(func_call->args);
-	size_t params = sbuffer_len(func_decl->params);
-
-	if (args < params) {
-		report_error(frmt("More arguments expected for function call \'%s\'.",
-			func_call->name->value), func_call->name->context);
-	}
-	else if (args > params && !func_decl->spec->is_vararg) {
-		// print this error only when the function declaration has vararg property
-		report_error(frmt("Less arguments expected for function call \'%s\'.",
-			func_call->name->value), func_call->name->context);
-	}
-
-	// resolvig all passed arguments to function call
-	for (size_t i = 0; i < sbuffer_len(func_call->args); i++) {
-		visit_expr(func_call->args[i], table);
 	}
 }
 
@@ -728,7 +691,7 @@ void visit_members(const char* type, Member** members, Table* table) {
 	for (size_t i = 0; i < sbuffer_len(members); i++) {
 		visit_type(members[i]->type,
 			members[i]->area->begins, table);
-		if (strcmp(members[i]->type->repr, type) == 0) {
+		if (str_eq(members[i]->type->repr, type)) {
 			if (members[i]->type->kind != TYPE_POINTER) {
 				report_error2(frmt("Member declared with unresolved type \'%s\'.",
 					type), members[i]->area);
@@ -738,7 +701,7 @@ void visit_members(const char* type, Member** members, Table* table) {
 			if (members[i] == members[j]) {
 				continue;
 			}
-			if (strcmp(members[i]->name, members[j]->name) == 0) {
+			if (str_eq(members[i]->name, members[j]->name)) {
 				report_error2(frmt("Member is already declared in \'%s\'",
 					type), members[i]->area);
 			}
@@ -861,6 +824,19 @@ void visit_import_stmt(ImportStmt* import_stmt, Table* table) {
 	}
 }
 
+void visit_typedef_stmt(TypedefStmt* typedef_stmt, Table* table) {
+	TableEntity* entity = NULL;
+	if ((entity = get_type(typedef_stmt->typename->value, table)) != NULL) {
+		report_error(frmt("Type \'%s\' is already declared.", typedef_stmt->typename->value),
+			typedef_stmt->typename->context);
+	}
+	visit_type(typedef_stmt->typealias, NULL, table);
+	Type* typedef_type = alias_type_new(typedef_stmt->typename->value, typedef_stmt->typealias);
+	if (!add_type(typedef_type, table)) {
+		report_error(frmt("Cannot add type, in function: %s", __FUNCTION__), NULL);
+	}
+}
+
 void visit_entry_func_stmt(FuncDecl* func_decl, Table* table) {
 	if (visitor_data.entry != NULL) {
 		report_error("Entry function is already declared here.",
@@ -886,6 +862,7 @@ size_t get_size_of_type(Type* type, Table* table) {
 			// so just return the size of i32
 			return i32_type.size;
 		case TYPE_POINTER:
+		case TYPE_FUNCTION:
 			return PTR_SIZE;
 		case TYPE_PRIMITIVE:
 			return type->size;
@@ -962,23 +939,19 @@ void complete_type(Type* type, Table* table) {
 		if its struct, enum or union type + gets it's size
 	*/
 
-	TableEntity* user_type = NULL;
+	TableEntity* entity = NULL;
 	Type* base = get_base_type(type);
 
 	// type void cannot be completed
 	if (type->kind == TYPE_VOID) {
 		return;
 	}
-	if (user_type = get_struct(base->repr, table)) {
-		base->kind = TYPE_STRUCT;
-		base->attrs.cmpd.members = user_type->value.struct_decl->members;
-	}
-	else if (get_enum(base->repr, table)) {
-		base->kind = TYPE_ENUM;
-	}
-	else if (user_type = get_union(base->repr, table)) {
-		base->kind = TYPE_UNION;
-		base->attrs.cmpd.members = user_type->value.union_decl->members;
+	if (entity = get_type(base->repr, table)) {
+		Type* retrieved = entity->value.type;
+		if (retrieved->is_alias) {
+			retrieved = retrieved->base;
+		}
+		*base = *retrieved;
 	}
 }
 
