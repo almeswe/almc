@@ -27,7 +27,7 @@ void print_ast_header(AstRoot* ast) {
 	printf(_c(BCYN, "%s"), "ast-root "); 
 	for (size_t i = 0; i < sbuffer_len(ast->from); i++) {
 		const char* filename = basename(ast->from[i]);
-		const char* abspath  = get_curr_dir();
+		const char* abspath  = dirname(ast->from[i]);
 		if (i == 0) {
 			printf("%s", "<");
 		}
@@ -502,6 +502,7 @@ void print_typedef_stmt(TypedefStmt* typedef_stmt, const char* indent) {
 	const char* new_indent = frmt("%s   ", indent);
 	printf("%s" TREE_BR " alias-", new_indent); 
 	print_type(typedef_stmt->typealias);
+	printf("%s", "\n");
 }
 
 void print_stmt(Stmt* stmt, const char* indent) {

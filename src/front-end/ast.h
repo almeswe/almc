@@ -405,46 +405,45 @@ Expr* expr_new(ExprKind type, void* expr_value_ptr);
 Str* str_new(char* string, SrcContext* context);
 Name* name_new(char* value, SrcContext* context);
 Idnt* idnt_new(char* idnt, SrcContext* context);
-Const* const_new(ConstKind type, const char* svalue, SrcContext* context);
+Const* const_new(ConstKind type, char* svalue, SrcContext* context);
 FuncCall2* func_call2_new(Expr* rexpr, Expr** args);
+
 UnaryExpr* unary_expr_new(UnaryExprKind type, Expr* expr);
 BinaryExpr* binary_expr_new(BinaryExprKind type, Expr* lexpr, Expr* rexpr);
 TernaryExpr* ternary_expr_new(Expr* cond, Expr* lexpr, Expr* rexpr);
 Initializer* initializer_new(Expr** values);
-TypeVar* type_var_new(Type* type, char* var);
-TypedefStmt* typedef_stmt_new(Name* typename, Type* typealias);
+
 
 Stmt* stmt_new(StmtType type, void* stmt_value_ptr);
-
-Block* block_new(Stmt** stmts);
-ElseIf* elif_stmt_new(Expr* cond, Block* body);
-IfStmt* if_stmt_new(Expr* cond, Block* body, ElseIf** elifs, Block* else_body);
-
-DoLoop* do_loop_new(Expr* cond, Block* body);
-ForLoop* for_loop_new(VarDecl* init, Expr* cond, Expr* step, Block* body);
-WhileLoop* while_loop_new(Expr* cond, Block* body);
-LoopStmt* loop_stmt_new(LoopStmtKind type, void* loop_stmt_value_ptr);
-
-ExprStmt* expr_stmt_new(Expr* expr);
-
-EmptyStmt* empty_stmt_new();
-JumpStmt* jump_stmt_new(JumpStmtKind type, Expr* return_expr);
-ImportStmt* import_stmt_new(AstRoot* ast);
-
-Case* case_stmt_new(Expr* value, Block* body, bool is_conjucted);
-SwitchStmt* switch_stmt_new(Expr* cond, Case** cases, Block* default_case);
-
-LabelDecl* label_decl_new(Name* name);
-VarDecl* var_decl_new(bool is_auto, TypeVar* type_var, Expr* init);
-FuncDecl* func_decl_new(Name* name, TypeVar** params, Type* type, Block* body, FuncSpec* spec, Convention* conv);
-
 TypeDecl* type_decl_new(TypeDeclKind type, void* type_decl_value_ptr);
 EnumDecl* enum_decl_new(EnumMember** members, Name* name);
 UnionDecl* union_decl_new(Member** members, Name* name);
 StructDecl* struct_decl_new(Member** members, Name* name);
-
 Member* member_new(char* name, Type* type, SrcArea* area);
 EnumMember* enum_member_new(char* name, Expr* value, SrcContext* context);
+
+EmptyStmt* empty_stmt_new();
+ExprStmt* expr_stmt_new(Expr* expr);
+
+Block* block_new(Stmt** stmts);
+TypeVar* type_var_new(Type* type, char* var);
+TypedefStmt* typedef_stmt_new(Name* typename, Type* typealias);
+VarDecl* var_decl_new(bool is_auto, TypeVar* type_var, Expr* init);
+FuncDecl* func_decl_new(Name* name, TypeVar** params, Type* type, Block* body, FuncSpec* spec, Convention* conv);
+LabelDecl* label_decl_new(Name* name);
+
+LoopStmt* loop_stmt_new(LoopStmtKind type, void* loop_stmt_value_ptr);
+DoLoop* do_loop_new(Expr* cond, Block* body);
+ForLoop* for_loop_new(VarDecl* init, Expr* cond, Expr* step, Block* body);
+WhileLoop* while_loop_new(Expr* cond, Block* body);
+
+ElseIf* elif_stmt_new(Expr* cond, Block* body);
+IfStmt* if_stmt_new(Expr* cond, Block* body, ElseIf** elifs, Block* else_body);
+
+Case* case_stmt_new(Expr* value, Block* body, bool is_conjucted);
+SwitchStmt* switch_stmt_new(Expr* cond, Case** cases, Block* default_case);
+ImportStmt* import_stmt_new(AstRoot* ast);
+JumpStmt* jump_stmt_new(JumpStmtKind type, Expr* return_expr);
 
 void ast_free(AstRoot* root);
 

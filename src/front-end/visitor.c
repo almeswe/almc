@@ -24,6 +24,7 @@ void visitor_free(Visitor* visitor) {
 	if (visitor) {
 		table_free(visitor->global);
 		visitor_data_free();
+	    registered_types_free();
 		free(visitor);
 	}
 }
@@ -156,7 +157,7 @@ void visit_scope(Stmt** stmts, Table* table) {
 		and its return type, to avoid incomplete types during
 		function calls before the actual function declaration 
 		resolving process is done.
-	*/
+	
 
 	for (size_t i = 0; i < sbuffer_len(func_decls); i++) {
 		for (size_t p = 0; p < sbuffer_len(func_decls[i]->params); p++) {
@@ -168,7 +169,7 @@ void visit_scope(Stmt** stmts, Table* table) {
 		if (func_decls[i]->type->attrs.func.ret->kind != TYPE_VOID) {
 			visit_type(func_decls[i]->type->attrs.func.ret, NULL, table);
 		}
-	}
+	}*/
 	sbuffer_free(func_decls);
 }
 
@@ -246,20 +247,25 @@ void visit_func_call2(FuncCall2* func_call, Table* table) {
 		}
 	}
 	Type* rexpr_type = retrieve_expr_type(func_call->rexpr);
+	visit_type(rexpr_type, NULL, table);
 	SrcArea* rexpr_area = get_expr_area(func_call->rexpr);
 	if (!is_function_type(rexpr_type)) {
 		report_error2("Cannot call expression of non-function type.", rexpr_area);
 	}
 
+	// capture count of params of function type (under which call is performed)
+	// and count of passed arguments to function call
 	size_t args = sbuffer_len(func_call->args);
 	size_t params = sbuffer_len(rexpr_type->attrs.func.params);
 
 	if (args < params) {
 		report_error2("More arguments expected for function call.", rexpr_area);
 	}
-	// todo: check for vararg
 	else if (args > params) {
-		report_error2("Less arguments expected for function call.", rexpr_area);
+		// print this error only when the function declaration has vararg property
+		if (!func_call->meta.decl || !func_call->meta.decl->spec->is_vararg) {
+			report_error2("Less arguments expected for function call.", rexpr_area);
+		}
 	}
 	// resolvig all passed arguments to function call
 	for (size_t i = 0; i < sbuffer_len(func_call->args); i++) {
@@ -807,13 +813,14 @@ void visit_func_decl_stmt(FuncDecl* func_decl, Table* table) {
 			}
 		}
 	}
-
+	// resolving types of all parameters + return type
+	// this occurs because func_decl->type is function type itself 
+	visit_type(func_decl->type, NULL, table);	
+	
 	// no need to check body if this function is external
 	// and also no need for return flow check
 	if (!func_decl->spec->is_external) {
 		visit_block_stmts(func_decl->body, local);
-		// todo: comeback for flow checker later
-		//check_func_return_flow(func_decl);
 	}
 }
 

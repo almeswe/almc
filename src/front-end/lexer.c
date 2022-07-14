@@ -27,7 +27,6 @@ char* keychars[] = {
 char* keywords[] = {
 	"break",
 	"case",
-	CHAR_TYPE,
 	"cast",
 	"continue",
 	"default",
@@ -37,7 +36,6 @@ char* keywords[] = {
 	"for",
 	"fnc",
 	"from",
-	"false",
 	F32_TYPE,
 	F64_TYPE,
 	"goto",
@@ -51,7 +49,6 @@ char* keywords[] = {
 	"struct",
 	"switch",
 	"sizeof",
-	"true",
 	"typedef",
 	"union",
 	U8_TYPE,

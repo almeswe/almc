@@ -26,6 +26,9 @@ void table_free(Table* table) {
 			table_free(table->nesting[i]);
 		}
 		sbuffer_free(table->nesting);
+		//for (size_t i = 0; i < sbuffer_len(table->scopes.types); i++) {
+		//	type_free(table->scopes.types[i]->value.type);
+		//}
 		free(table);
 	}
 }

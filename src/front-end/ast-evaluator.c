@@ -1,10 +1,7 @@
 #include "ast-evaluator.h"
 
 #define static_eval_cast(value, type) 	\
-	if (is_char_type(type)) {         	\
-		return (char)value;			  	\
-	}        							\
-	else if (is_i8_type(type)) {       	\
+	if (is_i8_type(type)) {       		\
 		return (int8_t)value;			\
 	}									\
 	else if (is_i16_type(type)) {		\

@@ -54,7 +54,7 @@ Idnt* idnt_new(char* idnt, SrcContext* context) {
 	return identifier;
 }
 
-Const* const_new(ConstKind type, const char* svalue, SrcContext* context) {
+Const* const_new(ConstKind type, char* svalue, SrcContext* context) {
 #define CONST_CONVERSION(to, type, func)	   								\
 	if (strlen(svalue) <= 1) {				   								\
 		cnst->to = (type)atof(svalue);		   								\
@@ -378,9 +378,9 @@ void ast_free(AstRoot* root) {
 			stmt_free(root->stmts[i]);
 		}
 		sbuffer_free(root->stmts);
-		if (root->from != NULL) {
-			free(root->from);
-		}
+		//if (root->from != NULL) {
+		//	free(root->from);
+		//}
 		free(root);
 	}
 }
@@ -447,7 +447,7 @@ void unary_expr_free(UnaryExpr* unary_expr) {
 		switch (unary_expr->kind) {
 			case UNARY_CAST:
 			case UNARY_SIZEOF:
-				type_free(unary_expr->cast_type);
+				//type_free(unary_expr->cast_type);
 				break;
 			case UNARY_ADDRESS:
 				if (unary_expr->type) {
@@ -584,7 +584,7 @@ void struct_decl_free(StructDecl* struct_decl) {
 
 void member_free(Member* member) {
 	if (member != NULL) {
-		type_free(member->type);
+		//type_free(member->type);
 		free(member->area);
 		free(member);
 	}
@@ -615,7 +615,7 @@ void block_free(Block* block) {
 
 void type_var_free(TypeVar* type_var) {
 	if (type_var != NULL) {
-		type_free(type_var->type);
+		//type_free(type_var->type);
 		free(type_var->area);
 		free(type_var);
 	}
@@ -648,8 +648,8 @@ void func_spec_free(FuncSpec* func_spec) {
 void func_decl_free(FuncDecl* func_decl) {
 	if (func_decl != NULL) {
 		name_free(func_decl->name);
-		type_free(func_decl->type->attrs.func.ret);
-		free(func_decl->type);
+		//type_free(func_decl->type->attrs.func.ret);
+		//free(func_decl->type);
 		block_free(func_decl->body);
 		func_spec_free(func_decl->spec);
 		for (size_t i = 0; i < sbuffer_len(func_decl->params); i++) {

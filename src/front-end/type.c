@@ -1,12 +1,17 @@
 #include "type.h"
 
+Type** registered_types = NULL;
+
+#define register_type(type) \
+	sbuffer_add(registered_types, type), type
+
 Type* type_new(const char* repr) {
 	Type* type = cnew(Type, 1);
 	type->repr = repr;
 	type->is_alias = false;
 	type->kind = TYPE_INCOMPLETE;
 	type->base = &unknown_type;
-	return type;
+	return register_type(type);
 }
 
 Type* alias_type_new(const char* alias, Type* base) {
@@ -18,23 +23,30 @@ Type* alias_type_new(const char* alias, Type* base) {
 }
 
 Type* array_type_new(Type* base, Expr* index) {
-	Type* array_type = cnew(Type, 1);
+	Type* array_type = type_new(base->repr);
 	array_type->base = base;
 	array_type->kind = TYPE_ARRAY;
-	array_type->repr = base->repr;
 	array_type->area = base->area;
 	array_type->attrs.arr.dimension = index;
 	return array_type;
 }
 
 Type* pointer_type_new(Type* base) {
-	Type* pointer_type = cnew(Type, 1);
+	Type* pointer_type = type_new(base->repr);
 	pointer_type->base = base;
-	pointer_type->repr = base->repr;
 	pointer_type->area = base->area;
 	pointer_type->kind = TYPE_POINTER;
 	pointer_type->size = PTR_SIZE;
 	return pointer_type;
+}
+
+Type* function_type_new(Type* type, Type** params) {
+	Type* function_type = type_new(NULL);
+	function_type->size = PTR_SIZE;
+	function_type->kind = TYPE_FUNCTION;
+	function_type->attrs.func.ret = type;
+	function_type->attrs.func.params = params;
+	return function_type;
 }
 
 Type* dereference_type(Type* type) {
@@ -50,14 +62,6 @@ Type* address_type(Type* type) {
 	return pointer_type_new(type);
 }
 
-Type* function_type_new(Type* type, Type** params) {
-	Type* function_type = type_new(NULL);
-	function_type->size = PTR_SIZE;
-	function_type->kind = TYPE_FUNCTION;
-	function_type->attrs.func.ret = type;
-	function_type->attrs.func.params = params;
-	return function_type;
-}
 
 const char* type_tostr_plain(Type* type)
 {
@@ -138,11 +142,6 @@ bool is_f64_type(Type* type) {
 		str_eq(type->repr, F64_TYPE);
 }
 
-bool is_char_type(Type* type) {
-	return type->kind == TYPE_PRIMITIVE &&
-		str_eq(type->repr, CHAR_TYPE);
-}
-
 bool is_void_type(Type* type) {
 	return type->kind == TYPE_PRIMITIVE &&
 		str_eq(type->repr, VOID_TYPE);
@@ -169,7 +168,7 @@ bool is_numeric_type(Type* type) {
 }
 
 bool is_integral_type(Type* type) {
-	if (is_i8_type(type)  || is_u8_type(type)  || is_char_type(type) ||
+	if (is_i8_type(type)  || is_u8_type(type)  ||
 		is_i16_type(type) || is_u16_type(type) ||
 		is_i32_type(type) || is_u32_type(type) ||
 		is_i64_type(type) || is_u64_type(type)) {
@@ -236,7 +235,7 @@ bool is_signed_type(Type* type) {
 }
 
 bool is_unsigned_type(Type* type) {
-	if (is_u8_type(type)  || is_char_type(type) ||
+	if (is_u8_type(type)  ||
 		is_u16_type(type) ||
 		is_u32_type(type) ||
 		is_u64_type(type)) {
@@ -309,14 +308,18 @@ uint32_t get_array_dimensions(Type* type) {
 }
 
 void type_free(Type* type) {
-	if (type && can_be_freed(type)) {
-		if (is_array_type(type)) {
-			expr_free(type->attrs.arr.dimension);
+	if (type != NULL) {
+		switch (type->kind) {
+			case TYPE_ARRAY:
+				_b(expr_free(type->attrs.arr.dimension));
 		}
-		if (is_struct_or_union_type(type)) {
-			free(type->area);
-		}
-		type_free(type->base);
 		free(type);
 	}
+}
+
+void registered_types_free() {
+	for (size_t i = 0; i < sbuffer_len(registered_types); i++) {
+		type_free(registered_types[i]);
+	}
+	sbuffer_free(registered_types);
 }

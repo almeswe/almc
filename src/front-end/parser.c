@@ -189,7 +189,6 @@ Type* parse_type(Parser* parser) {
 		case TOKEN_KEYWORD_FUNC:
 			break;
 		case TOKEN_KEYWORD_VOID: 	_assign(void_type);
-		case TOKEN_KEYWORD_CHAR: 	_assign(char_type);
 		case TOKEN_KEYWORD_INT8: 	_assign(i8_type);
 		case TOKEN_KEYWORD_INT16:	_assign(i16_type);
 		case TOKEN_KEYWORD_INT32:	_assign(i32_type);
@@ -266,11 +265,6 @@ Expr* parse_primary_expr(Parser* parser) {
 			return parse_paren_expr(parser);
 		//case TOKEN_OP_BRACE:
 		//	return parse_initializer_expr(parser);
-		case TOKEN_KEYWORD_TRUE:
-		case TOKEN_KEYWORD_FALSE:
-			expr = expr_new(EXPR_CONST, const_new(CONST_INT, 
-				token->type == TOKEN_KEYWORD_TRUE ? "1" : "0", token->attrs.context));
-			break;
 		default:
 			report_error(frmt("Primary expression token expected, but met: %s",
 				token_type_tostr(token->type)), token->attrs.context);
@@ -969,6 +963,7 @@ Stmt* parse_typedef_stmt(Parser* parser) {
 	Name* typename = parse_name(parser);
 	expect_with_skip(parser, TOKEN_ASSIGN, "=");
 	Type* typealias = parse_type(parser);
+	expect_with_skip(parser, TOKEN_SEMICOLON, ";");
 	return stmt_new(STMT_TYPEDEF, typedef_stmt_new(typename, typealias));
 }
 
@@ -1033,6 +1028,9 @@ Stmt* parse_func_decl_stmt(Parser* parser) {
 	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
 	while (!matcht(parser, TOKEN_CL_PAREN)) {
 		if (matcht(parser, TOKEN_TRIPLE_DOT)) {
+			if (sbuffer_len(params) == 0) {
+				parse_type_var(parser);
+			}
 			spec->is_vararg = true;
 			get_next_token(parser);
 			break;

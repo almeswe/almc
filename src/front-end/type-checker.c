@@ -64,7 +64,7 @@ Type* get_const_type(Const* cnst) {
 			return IN_BOUNDS_OF(FLT_MAX, FLT_MIN, cnst->fvalue) ?
 				&f32_type : &f64_type;
 		case CONST_CHAR:
-			return &char_type;
+			return &u8_type;
 	}
 	return &unknown_type;
 }
@@ -124,7 +124,7 @@ Type* get_idnt_type(Idnt* idnt, Table* table) {
 }
 
 Type* get_string_type(Str* str) {
-	return pointer_type_new(&char_type);
+	return pointer_type_new(&u8_type);
 }
 
 Type* get_func_call2_type(FuncCall2* func_call2, Table* table) {
@@ -428,9 +428,6 @@ uint32_t get_type_priority(Type* type) {
 	if (is_i8_type(type)) {
 		return I8_TYPE_PRIORITY;
 	}
-	if (is_char_type(type)) {
-		return CHAR_TYPE_PRIORITY;
-	}
 	if (is_u16_type(type)) {
 		return U16_TYPE_PRIORITY;
 	}
@@ -619,10 +616,9 @@ bool can_cast_implicitly(Type* to, Type* type) {
 
 	// trying to cast if both types are just primitive
 	if (is_both(to, type, TYPE_PRIMITIVE)) {
-		// types that can be casted to u8 and char
-		if ((is_u8_type(to)   || is_char_type(to)) &&
-			(is_u8_type(type) || is_char_type(type))) {
-				return true;
+		// types that can be casted to u8
+		if (is_u8_type(to) && is_u8_type(type)) {
+			return true;
 		}
 
 		// types that can be casted to i8
@@ -632,35 +628,34 @@ bool can_cast_implicitly(Type* to, Type* type) {
 
 		// types that can be casted to u16
 		else if (is_u16_type(to) &&
-			(is_i8_type(type) || is_char_type(type) ||
-			 is_u8_type(type) || is_u16_type(type))) {
+			(is_i8_type(type) || is_u8_type(type) || is_u16_type(type))) {
 				return true;
 		}
 
 		// types that can be casted to i16
 		else if (is_i16_type(to) &&
-			(is_i8_type(type) || is_char_type(type) || 
+			(is_i8_type(type) || 
 			 is_u8_type(type) || is_i16_type(type))) {
 				return true;
 		}
 
 		// types that can be casted to u32
 		else if (is_u32_type(to) &&
-			(is_i8_type(type)  || is_char_type(type) || is_u8_type(type) ||
+			(is_i8_type(type)  || is_u8_type(type) ||
 			 is_i16_type(type) || is_u16_type(type)  || is_u32_type(type))) {
 				return true;
 		}
 
 		// types that can be casted to i32
 		else if (is_i32_type(to) &&
-			(is_i8_type(type)  || is_char_type(type) || is_u8_type(type) ||
+			(is_i8_type(type)  || is_u8_type(type) ||
 		     is_i16_type(type) || is_u16_type(type)  || is_i32_type(type))) {
 				return true;
 		}
 
 		// types that can be casted to u64
 		else if (is_u64_type(to) &&
-			(is_i8_type(type)  || is_char_type(type) || is_u8_type(type) ||
+			(is_i8_type(type)  || is_u8_type(type) ||
 			 is_i16_type(type) || is_u16_type(type)  ||
 			 is_i32_type(type) || is_u32_type(type)  || is_u64_type(type))) {
 				return true;
@@ -668,7 +663,7 @@ bool can_cast_implicitly(Type* to, Type* type) {
 
 		// types that can be casted to i64
 		else if (is_i64_type(to) &&
-			(is_i8_type(type)  || is_char_type(type) || is_u8_type(type)  ||
+			(is_i8_type(type)  || is_u8_type(type)  ||
 			 is_i16_type(type) || is_u16_type(type)  || is_i32_type(type) || 
 			 is_u32_type(type) || is_i64_type(type))) {
 				return true;
@@ -676,7 +671,7 @@ bool can_cast_implicitly(Type* to, Type* type) {
 
 		// types that can be casted to f32
 		else if (is_f32_type(to) &&
-			(is_i8_type(type) || is_char_type(type) || is_u8_type(type) ||
+			(is_i8_type(type) || is_u8_type(type) ||
 			is_i16_type(type) || is_u16_type(type)  ||
 			is_i32_type(type) || is_u32_type(type)  || is_f32_type(type))) {
 				return true;
@@ -684,7 +679,7 @@ bool can_cast_implicitly(Type* to, Type* type) {
 
 		// types that can be casted to f64
 		else if (is_f64_type(to) &&
-			(is_i8_type(type) || is_char_type(type) || is_u8_type(type) ||
+			(is_i8_type(type) || is_u8_type(type) ||
 			is_i16_type(type) || is_u16_type(type) ||
 			is_i32_type(type) || is_u32_type(type) ||
 			is_i64_type(type) || is_u64_type(type) || is_f32_type(type))) {

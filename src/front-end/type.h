@@ -18,9 +18,7 @@
 #define U64_TYPE	 "u64"
 #define F32_TYPE	 "f32"
 #define F64_TYPE	 "f64"
-#define CHAR_TYPE	 "char"
 #define VOID_TYPE	 "void"
-#define STRING_TYPE	 "str"
 #define UNKNOWN_TYPE "unknown"
 
 #define PTR_SIZE				 sizeof(void*)
@@ -79,7 +77,6 @@ static Type unknown_type = { 0, TYPE_UNKNOWN, NULL, UNKNOWN_TYPE, false };
 
 static Type i8_type = { sizeof(int8_t), TYPE_PRIMITIVE, NULL, I8_TYPE, &unknown_type, false };
 static Type u8_type = { sizeof(uint8_t), TYPE_PRIMITIVE, NULL, U8_TYPE, &unknown_type, false };
-static Type char_type = { sizeof(char), TYPE_PRIMITIVE, NULL, CHAR_TYPE, &unknown_type, false };
 
 static Type i16_type = { sizeof(int16_t), TYPE_PRIMITIVE, NULL, I16_TYPE, &unknown_type, false };
 static Type u16_type = { sizeof(uint16_t), TYPE_PRIMITIVE, NULL, U16_TYPE, &unknown_type, false };
@@ -116,7 +113,6 @@ bool is_u64_type(Type* type);
 bool is_i64_type(Type* type);
 bool is_f32_type(Type* type);
 bool is_f64_type(Type* type);
-bool is_char_type(Type* type);
 bool is_void_type(Type* type);
 bool is_enum_type(Type* type);
 bool is_union_type(Type* type);
@@ -152,5 +148,6 @@ uint32_t get_array_dimensions(Type* type);
 Expr* get_array_dimension(Type* type, uint32_t dimension);
 
 void type_free(Type* type);
+void registered_types_free();
 
 #endif // _ALMC_TYPES_H
