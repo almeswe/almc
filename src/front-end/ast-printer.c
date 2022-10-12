@@ -333,20 +333,20 @@ void print_type_decl_stmt(TypeDecl* type_decl_stmt, const char* indent) {
 void print_func_decl_stmt(FuncDecl* func_decl, const char* indent) {
 	printf(_c(BMAG, "fnc") " <name=" _c(BYEL, "%s") ", paramc=%lu, ", 
 		func_decl->name->value, sbuffer_len(func_decl->params));
-	if (func_decl->spec->is_entry | func_decl->spec->is_external | func_decl->spec->is_vararg) {
+	if (func_decl->specs > 0) {
 		printf("%s", "specs={ ");
-		if (func_decl->spec->is_entry) {
+		if (func_decl->specs & FUNC_SPEC_ENTRY) {
 			printf("%s", "entry ");
 		}
-		if (func_decl->spec->is_external) {
+		if (func_decl->specs & FUNC_SPEC_EXTERN) {
 			printf("%s", "external ");
 		}
-		if (func_decl->spec->is_vararg) {
+		if (func_decl->specs & FUNC_SPEC_VARARG) {
 			printf("%s", "vararg");
 		}
 		printf("%s", "}, ");
 	}
-	printf(_c(BYEL, "%s")", ", func_decl->conv->repr); 
+	//printf(_c(BYEL, "%s")", ", func_decl->conv->repr); 
 	printf("%s", "ret-");
 	print_type(func_decl->type->attrs.func.ret); printf("%s\n", ">");
 	const char* new_indent = frmt("%s   ", indent);

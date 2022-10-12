@@ -72,28 +72,11 @@ typedef enum BinaryExprKind {
 	BINARY_ARR_MEMBER_ACCESSOR,
 } BinaryExprKind;
 
-typedef enum {
-	CALL_CONV_CDECL = 0,
-	CALL_CONV_STDCALL = 1
-} ConventionKind;
-
-typedef struct Convention {
-	// representation of the convention
-	// in masm proto function declaration
-	char* repr;
-	ConventionKind kind;
-} Convention;
-
-typedef struct {
-	char* lib;
-} ExternalFuncSpec;
-
-typedef struct FuncSpec {
-	bool is_entry;
-	bool is_vararg;
-	bool is_external;
-	ExternalFuncSpec* proto;
-} FuncSpec;
+typedef enum FuncSpecs {
+	FUNC_SPEC_ENTRY  = 0b001,
+	FUNC_SPEC_VARARG = 0b010,
+	FUNC_SPEC_EXTERN = 0b100
+} FuncSpecs;
 
 typedef struct BinaryExpr {
 	Type* type;
@@ -224,8 +207,7 @@ typedef struct FuncDecl {
 	Type* type;
 	Block* body;
 	TypeVar** params;
-	FuncSpec* spec;
-	Convention* conv;
+	int8_t specs;
 } FuncDecl;
 
 typedef struct LabelDecl {
@@ -429,7 +411,7 @@ Block* block_new(Stmt** stmts);
 TypeVar* type_var_new(Type* type, char* var);
 TypedefStmt* typedef_stmt_new(Name* typename, Type* typealias);
 VarDecl* var_decl_new(bool is_auto, TypeVar* type_var, Expr* init);
-FuncDecl* func_decl_new(Name* name, TypeVar** params, Type* type, Block* body, FuncSpec* spec, Convention* conv);
+FuncDecl* func_decl_new(Name* name, TypeVar** params, Type* type, Block* body, int8_t specs);
 LabelDecl* label_decl_new(Name* name);
 
 LoopStmt* loop_stmt_new(LoopStmtKind type, void* loop_stmt_value_ptr);

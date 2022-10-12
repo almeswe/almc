@@ -33,6 +33,7 @@ char* keywords[] = {
 	"enum",
 	"elif",
 	"entry",
+	"extern",
 	"for",
 	"fnc",
 	"from",

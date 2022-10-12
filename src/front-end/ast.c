@@ -258,15 +258,13 @@ VarDecl* var_decl_new(bool is_auto, TypeVar* type_var, Expr* init) {
 	return var_decl;
 }
 
-FuncDecl* func_decl_new(Name* name, TypeVar** params, Type* type, 
-		Block* body, FuncSpec* spec, Convention* conv) {
+FuncDecl* func_decl_new(Name* name, TypeVar** params, Type* type, Block* body, int8_t specs) {
 	FuncDecl* func_decl = new(FuncDecl);
 	func_decl->name = name;
 	func_decl->type = type;
 	func_decl->body = body;
 	func_decl->params = params;
-	func_decl->spec = spec;
-	func_decl->conv = conv;
+	func_decl->specs = specs;
 	return func_decl;
 }
 
@@ -636,27 +634,14 @@ void var_decl_free(VarDecl* var_decl) {
 	}
 }
 
-void func_spec_free(FuncSpec* func_spec) {
-	if (func_spec != NULL) {
-		if (func_spec->proto) {
-			free(func_spec->proto);
-		}
-		free(func_spec);
-	}
-}
-
 void func_decl_free(FuncDecl* func_decl) {
 	if (func_decl != NULL) {
 		name_free(func_decl->name);
-		//type_free(func_decl->type->attrs.func.ret);
-		//free(func_decl->type);
 		block_free(func_decl->body);
-		func_spec_free(func_decl->spec);
 		for (size_t i = 0; i < sbuffer_len(func_decl->params); i++) {
 			type_var_free(func_decl->params[i]);
 		}
 		sbuffer_free(func_decl->params);
-		free(func_decl->conv);
 		free(func_decl);
 	}
 }

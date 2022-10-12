@@ -107,8 +107,6 @@ void visit_scope(Stmt** stmts, Table* table) {
 		be order independent for other callers.
 	*/
 
-	FuncDecl** func_decls = NULL;
-
 #define _add_decl(kind, name, c)										\
 	if (!add_##kind(stmts[i]->kind##_decl, table))						\
 		report_error(frmt("%s \'%s\' is already declared.", _str(kind),	\
@@ -125,7 +123,6 @@ void visit_scope(Stmt** stmts, Table* table) {
 		switch (stmts[i]->kind) {
 			case STMT_FUNC_DECL:
 				_add_decl(func, name->value, name->context);
-				sbuffer_add(func_decls, stmts[i]->func_decl);
 				break;
 			case STMT_LABEL_DECL:
 				_add_decl(label, name->value, name->context);
@@ -151,26 +148,6 @@ void visit_scope(Stmt** stmts, Table* table) {
 #undef _add_typedecl
 		}
 	}
-	
-	/*
-		Resolving types of parameters of each function
-		and its return type, to avoid incomplete types during
-		function calls before the actual function declaration 
-		resolving process is done.
-	
-
-	for (size_t i = 0; i < sbuffer_len(func_decls); i++) {
-		for (size_t p = 0; p < sbuffer_len(func_decls[i]->params); p++) {
-			visit_type(func_decls[i]->params[p]->type, NULL, table);
-		}
-		// no need for type resolving in case of void
-		// because it just means that function does not return any value
-		// (void in this context just exceptional case)
-		if (func_decls[i]->type->attrs.func.ret->kind != TYPE_VOID) {
-			visit_type(func_decls[i]->type->attrs.func.ret, NULL, table);
-		}
-	}*/
-	sbuffer_free(func_decls);
 }
 
 void visit_expr(Expr* expr, Table* table) {
@@ -263,7 +240,7 @@ void visit_func_call2(FuncCall2* func_call, Table* table) {
 	}
 	else if (args > params) {
 		// print this error only when the function declaration has vararg property
-		if (!func_call->meta.decl || !func_call->meta.decl->spec->is_vararg) {
+		if (!func_call->meta.decl || !(func_call->meta.decl->specs & FUNC_SPEC_VARARG)) {
 			report_error2("Less arguments expected for function call.", rexpr_area);
 		}
 	}
@@ -750,28 +727,18 @@ void visit_block_stmts(Block* block, Table* table) {
 	}
 }
 
-void visit_func_decl_callconv(FuncDecl* func_decl) {
-	if (func_decl->conv->kind == CALL_CONV_STDCALL &&
-			func_decl->spec->is_vararg) {
-		report_error("Cannot use __VA_ARGS__ with stdcall.",
-			func_decl->name->context);
-	}
-}
-
 void visit_func_decl_specs(FuncDecl* func_decl, Table* table) {
-	if (func_decl->spec->is_entry) {
+	if (func_decl->specs & FUNC_SPEC_ENTRY) {
 		visit_entry_func_stmt(func_decl, table);
 	}
 
-	visit_func_decl_callconv(func_decl);
-
 	// check the possibility of existence of function's body in case 
 	// when function is external or not.
-	if (func_decl->spec->is_external && func_decl->body) {
+	if ((func_decl->specs & FUNC_SPEC_EXTERN) && func_decl->body) {
 		report_error(frmt("Function \'%s\' specified like external.",
 			func_decl->name->value), func_decl->name->context);
 	}
-	if (!func_decl->spec->is_external && !func_decl->body) {
+	if ((!(func_decl->specs & FUNC_SPEC_EXTERN)) && !func_decl->body) {
 		report_error(frmt("Function \'%s\' needs body, its not external.",
 			func_decl->name->value), func_decl->name->context);
 	}
@@ -791,7 +758,7 @@ void visit_func_decl_stmt(FuncDecl* func_decl, Table* table) {
 	visit_func_decl_specs(func_decl, table);
 	// do not visit scope statements if the function is external 
 	// (there are no any body in that case)
-	if (!func_decl->spec->is_external) {
+	if (!(func_decl->specs & FUNC_SPEC_EXTERN)) {
 		visit_scope(func_decl->body->stmts, local);
 	}
 
@@ -819,7 +786,7 @@ void visit_func_decl_stmt(FuncDecl* func_decl, Table* table) {
 	
 	// no need to check body if this function is external
 	// and also no need for return flow check
-	if (!func_decl->spec->is_external) {
+	if (!(func_decl->specs & FUNC_SPEC_EXTERN)) {
 		visit_block_stmts(func_decl->body, local);
 	}
 }
@@ -947,7 +914,7 @@ void complete_type(Type* type, Table* table) {
 	*/
 
 	TableEntity* entity = NULL;
-	Type* base = get_base_type(type);
+	Type* base = type->is_alias ? type : get_base_type(type);
 
 	// type void cannot be completed
 	if (type->kind == TYPE_VOID) {

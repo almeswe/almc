@@ -4,8 +4,6 @@
 #define SPELL_WARN 		"Warning"
 #define SPELL_TABSIZE 	8
 
-#define BLOCK_SIZE 4096
-
 #define SPELL_YEL   "\x1B[33m"
 #define SPELL_RED   "\x1B[31m"
 #define SPELL_RESET "\x1B[0m"

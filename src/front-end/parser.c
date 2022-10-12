@@ -967,63 +967,19 @@ Stmt* parse_typedef_stmt(Parser* parser) {
 	return stmt_new(STMT_TYPEDEF, typedef_stmt_new(typename, typealias));
 }
 
-Convention* calling_convention_new() {
-	Convention* convention = cnew(Convention, 1);
-	convention->repr = "c";
-	convention->kind = CALL_CONV_CDECL;
-	return convention;
-}
-
-Convention* parse_func_calling_convention(Parser* parser) {
-	// cdecl will be set by default
-	Convention* convention = 
-		calling_convention_new();
-
-	char* token_str = get_curr_token(parser)->lexeme;
-
-	if (str_eq(token_str, "cdecl")) {
-		get_next_token(parser);
-	}
-	else if (str_eq(token_str, "stdcall")) {
-		get_next_token(parser);
-		convention->kind = CALL_CONV_STDCALL,
-			convention->repr = token_str;
-	}
-	return convention;
-}
-
-ExternalFuncSpec* parse_func_proto_spec(Parser* parser) {
-	ExternalFuncSpec* proto = cnew(ExternalFuncSpec, 1);
-	expect_with_skip(parser, TOKEN_KEYWORD_FROM, "from keyword");
-	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
-	proto->lib = get_curr_token(parser)->lexeme;
-	expect_with_skip(parser, TOKEN_STRING, "lib name");
-	expect_with_skip(parser, TOKEN_CL_PAREN, ")");
-	return proto;
-}
-
-FuncSpec* parse_func_specifiers(Parser* parser) {
-	FuncSpec* spec = cnew(FuncSpec, 1);
-	switch (get_curr_token(parser)->type) {
-		case TOKEN_KEYWORD_FROM:
-			spec->proto = parse_func_proto_spec(parser);
-			spec->is_external = true;
-			break;
-		case TOKEN_KEYWORD_ENTRY:
-			get_next_token(parser);
-			spec->is_entry = true;
-			break;
-	}
-	return spec;
-}
-
 Stmt* parse_func_decl_stmt(Parser* parser) {
+	int8_t specs = 0;
 	Block* body = NULL;
 	TypeVar** params = NULL;
 
 	expect_with_skip(parser, TOKEN_KEYWORD_FUNC, "fnc");
-	Convention* call_conv = parse_func_calling_convention(parser);
-	FuncSpec* spec = parse_func_specifiers(parser);
+	switch (get_curr_token(parser)->type) {
+		case TOKEN_KEYWORD_ENTRY: 	_b(specs |= FUNC_SPEC_ENTRY);
+		case TOKEN_KEYWORD_EXTERN: 	_b(specs |= FUNC_SPEC_EXTERN);
+	}
+	if (specs > 0) {
+		get_next_token(parser);
+	}
 	Name* name = parse_name(parser);
 	expect_with_skip(parser, TOKEN_OP_PAREN, "(");
 	while (!matcht(parser, TOKEN_CL_PAREN)) {
@@ -1031,7 +987,7 @@ Stmt* parse_func_decl_stmt(Parser* parser) {
 			if (sbuffer_len(params) == 0) {
 				parse_type_var(parser);
 			}
-			spec->is_vararg = true;
+			specs |= FUNC_SPEC_VARARG;
 			get_next_token(parser);
 			break;
 		}
@@ -1056,8 +1012,7 @@ Stmt* parse_func_decl_stmt(Parser* parser) {
 			expect_with_skip(parser, TOKEN_OP_BRACE, "{");
 		body = parse_block(parser)->block;
 	}
-	return stmt_new(STMT_FUNC_DECL, func_decl_new(name, 
-		params, type, body, spec, call_conv));
+	return stmt_new(STMT_FUNC_DECL, func_decl_new(name, params, type, body, specs));
 }
 
 Stmt* parse_label_decl_stmt(Parser* parser) {
