@@ -753,6 +753,7 @@ void visit_func_decl_stmt(FuncDecl* func_decl, Table* table) {
 	}
 	
 	Table* local = table_new(table);
+	func_decl->scope = local;
 	local->scope_refs.in_function = func_decl;
 
 	visit_func_decl_specs(func_decl, table);

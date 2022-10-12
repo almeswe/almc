@@ -124,9 +124,11 @@ typedef enum ConstKind {
 	CONST_CHAR,
 } ConstKind;
 
+// todo: add string value from which these values was retrieved 
 typedef struct Const {
 	Type* type;
 	ConstKind kind;
+	char* svalue;
 	union {
 		double fvalue;
 		int64_t ivalue;
@@ -202,11 +204,13 @@ typedef struct VarDecl {
 	TypeVar* type_var;
 } VarDecl;
 
+typedef struct Table Table;
 typedef struct FuncDecl {
 	Name* name;
 	Type* type;
 	Block* body;
 	TypeVar** params;
+	Table* scope;
 	int8_t specs;
 } FuncDecl;
 

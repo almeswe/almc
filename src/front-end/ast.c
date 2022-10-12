@@ -70,6 +70,7 @@ Const* const_new(ConstKind type, char* svalue, SrcContext* context) {
 	break
 
 	Const* cnst = new(Const);
+	cnst->svalue = svalue;
 	cnst->type = &unknown_type;
 	cnst->context = context;
 
