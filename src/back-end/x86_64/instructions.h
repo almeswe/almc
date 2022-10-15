@@ -36,7 +36,7 @@ enum x86_64_instruction_set {
 };
 
 enum x86_64_SSE_instruction_set {
-	MOVSS =    XOR+1,     MOVAPS,      MOVUPS, MOVLPS,
+	MOVSS =    XOR+1,     MOVSD,       MOVAPS, MOVUPS, MOVLPS,
 	MOVHPS,    MOVLHPS,   MOVHLPS,     ADDSS,
 	SUBSS,     MULSS,     DIVSS,       RCPSS,
 	SQRTSS,    MAXSS,     MINSS,       RSQRTSS,
@@ -175,6 +175,7 @@ static const char* instructions_str[] = {
 
 	// SSE instructions
 	[MOVSS]			= "movss",
+	[MOVSD]			= "movsd",
 	[MOVAPS]		= "movaps",
 	[MOVUPS]		= "movups",
 	[MOVLPS]		= "movlps",

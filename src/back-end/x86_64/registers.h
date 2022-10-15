@@ -7,8 +7,8 @@
 #include "../../error.h"
 
 #define reg_tostr(reg)		(reg_str[reg])
-#define is_genp_reg(reg) 	((reg) >= RAX && (reg) < RSP)
-#define is_simd_reg(reg)	((reg) >= XMM0 && (reg) <= XMM15)
+#define is_genp_reg(reg) 	(((reg) >= RAX) && ((reg) < RSP))
+#define is_simd_reg(reg)	(((reg) >= XMM0) && ((reg) <= XMM15))
 
 #define genp_regs_count 	(DIL)
 #define simd_regs_count 	(XMM15-XMM0)
@@ -17,7 +17,7 @@
 typedef uint8_t regid;
 
 enum x86_64_registers {
-	RAX, EAX, AX, AL,
+	RAX=1, EAX, AX, AL,
 	RBX, EBX, BX, BL,
 	RCX, ECX, CX, CL,
 	RDX, EDX, DX, DL,
@@ -143,10 +143,6 @@ static const char* reg_str[] = {
 
 void reserve(regid reg);
 regstate unreserve(regid reg);
-
 regid reserve_any(regtype type);
-
-void reserve_many(int count, ...);
-void unreserve_many(int count, ...);
 
 #endif

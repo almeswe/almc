@@ -5,26 +5,18 @@
 #include "../x86_64/instructions.h"
 #include "../../front-end/front-end.h"
 
-#define CRLF "\r\n"
-#define INDN "    "
 #define instr_size_tostr(size) (instr_size_str[size])
 #define instr_spec_tostr(spec) (instr_spec_str[spec])
 
-#define putasm(fd, format, ...)                 \
-    if (fprintf(fd, format, __VA_ARGS__) < 0) { \
-        report_error(frmt("Runtime error in putasm macro %s:%d.", __FILE__, __LINE__), NULL);  \
-    }
+#define instr(x)            text_instr_new(x, INSTRUCTION_NOP, NULL, NULL);
+#define instr_un(x)         text_instr_new(x, INSTRUCTION_UNARY, NULL, NULL);
+#define instr_bin(x)        text_instr_new(x, INSTRUCTION_BINARY, NULL, NULL);
+#define instr_arg(x)        text_instrarg_new(x, SPEC_NONE, 0, false);
+#define instr_arg_reg(x)    instr_arg(reg_tostr(x))
 
-#define putasmn(fd, format, ...) \
-    putasm(fd, format CRLF, __VA_ARGS__)
+#define data_instr(n, v, s, t) data_instr_new(n, v, t, s, false, 0);
 
-#define instr(i)        text_instr_new(i, INSTRUCTION_NOP, NULL, NULL);
-#define instr_un(i)     text_instr_new(i, INSTRUCTION_UNARY, NULL, NULL);
-#define instr_bin(i)    text_instr_new(i, INSTRUCTION_BINARY, NULL, NULL);
-
-#define instrarg(v)     text_instrarg_new(v, SPEC_NONE, 0, false);
-
-#define data_instr(n, v, s) data_instr_new(n, v, s, false, 0);
+extern char* alloc_label_def();
 
 extern regid regtable[regs_count]; // defining register table as external
 
@@ -61,6 +53,7 @@ typedef struct x86_64_DataInstruction {
     char** value;                               // values with which this label will be initialized
     bool times;                                 // has times directive
     long times_value;                           // if times directive is listed, indicates its argument
+    DataInstructionKind kind;                   // kind of data instruction
     InstructionArgumentSize size;               // size (db, dw, dd, dq)
 } DataInstruction;
 
@@ -103,6 +96,12 @@ typedef struct x86_64_Assembly {
     TextSegment* text;
 } Assembly;
 
+regid get_reg_part(regid reg, InstructionArgumentSize size);
+
+TextInstruction* label();
+TextInstruction* flabel(char* label);
+TextInstruction* comment(char* comment);
+
 void text_instrarg_to_stream(TextInstructionArg* text_instrarg, FILE* fd);
 void text_instr_to_stream(TextInstruction* text_instr, FILE* fd);
 void text_seg_to_stream(Assembly* assembly, TextSegment* text_seg, FILE* fd);
@@ -114,9 +113,9 @@ TextInstructionArg* text_instrarg_new(const char* value, InstructionArgumentSize
 
 BssSegment* bss_seg_new();
 DataSegment* data_seg_new();
-DataInstruction* data_instr_new(char* name, char** value, InstructionArgumentSize size, bool times, long times_value);
+DataInstruction* data_instr_new(char* name, char** value, DataInstructionKind kind, InstructionArgumentSize size, bool times, long times_value);
 
-Assembly* asm_new(const char* global);
+Assembly* asm_new();
 
 void text_seg_free(TextSegment* text_seg);
 void text_instr_free(TextInstruction* text_instr);
@@ -127,6 +126,5 @@ void data_seg_free(DataSegment* data_seg);
 void data_instr_free(DataInstruction* data_instr);
 
 void asm_free(Assembly* assembly);
-
 
 #endif

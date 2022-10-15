@@ -1,5 +1,15 @@
 #include "ir.h"
 
+#define CRLF "\r\n"
+#define INDN "    "
+
+#define putasm(fd, format, ...)                 \
+    if (fprintf(fd, format, __VA_ARGS__) < 0) { \
+        report_error(frmt("Runtime error in putasm macro %s:%d.", __FILE__, __LINE__), NULL);  \
+    }
+
+#define putasmn(fd, format, ...) putasm(fd, format CRLF, __VA_ARGS__)
+
 void reserve(regid reg) {
     // in case of SIMD (SSE), there are no subregisters
     int subregs = is_simd_reg(reg) ? 1 : (RBX-RAX);
@@ -97,18 +107,36 @@ regid reserve_any(regtype type) {
     }
 }
 
-void reserve_many(int count, ...) {
-    regid* starts = (regid*)(&count+sizeof(count));
-    for (int i = 0; i < count; i++) {
-        reserve(*(starts+(i*sizeof(regid))));
+regid get_reg_part(regid reg, InstructionArgumentSize size) {
+    if (is_simd_reg(reg)) {
+        return reg;
+    }
+    switch (size) {
+        case SPEC_NONE:  return reg;
+        case SPEC_BYTE:  return (regid)(reg+3);
+        case SPEC_WORD:  return (regid)(reg+3);
+        case SPEC_DWORD: return (regid)(reg+3);
+        case SPEC_QWORD: return (regid)(reg+0);
+        default:
+            report_error(frmt("Unknown spec kind met"
+                " in function: %s", __FUNCTION__), NULL);
     }
 }
 
-void unreserve_many(int count, ...) {
-    regid* starts = (regid*)(&count+sizeof(count));
-    for (int i = 0; i < count; i++) {
-        unreserve(*(starts+(i*sizeof(regid))));
-    }
+TextInstruction* label() {
+    return flabel(alloc_label_def());
+}
+
+TextInstruction* flabel(char* label) {
+    TextInstruction* instr = instr_un(LABEL);
+    instr->left = instr_arg(label);
+    return instr;
+}
+
+TextInstruction* comment(char* comment) {
+    TextInstruction* instr = instr_un(COMMENT);
+    instr->left = instr_arg(comment);
+    return instr;
 }
 
 void text_instrarg_to_stream(TextInstructionArg* text_instrarg, FILE* fd) {
@@ -212,6 +240,21 @@ void asm_to_stream(Assembly* assembly, FILE* fd) {
     bss_seg_to_stream(assembly->bss, fd);
 }
 
+void predef_data_instrs(DataSegment* data_seg) {
+    /* 
+        Function that specifies some useful constants
+        in data segment, which will be used by generator
+    */
+
+    // dobule precision float constant for negation of xmm registers
+    char** values = NULL;
+    sbuffer_add(values, "8000000000000000h");  
+    DataInstruction* data_instr = data_instr("__real@neg", values,
+        SPEC_QWORD, DATA_FLOAT_CONST);
+    sbuffer_add(data_seg->instructions, data_instr);
+    // ------------------------------
+}
+
 TextSegment* text_seg_new() {
     TextSegment* text_seg = new(TextSegment);
     text_seg->instructions = NULL;
@@ -245,25 +288,27 @@ BssSegment* bss_seg_new() {
 DataSegment* data_seg_new() {
     DataSegment* data_seg = new(DataSegment);
     data_seg->instructions = NULL;
+    predef_data_instrs(data_seg);
     return data_seg;
 }
 
-DataInstruction* data_instr_new(char* name, char** value, InstructionArgumentSize size, bool times, long times_value) {
+DataInstruction* data_instr_new(char* name, char** value, DataInstructionKind kind, InstructionArgumentSize size, bool times, long times_value) {
     DataInstruction* data_instr = new(DataInstruction);
     data_instr->name = name;
     data_instr->size = size;
+    data_instr->kind = kind;
     data_instr->value = value;
     data_instr->times = times;
     data_instr->times_value = times_value;
     return data_instr;
 }
 
-Assembly* asm_new(const char* global) {
+Assembly* asm_new() {
     Assembly* assembly = new(Assembly);
     assembly->bss = bss_seg_new();
     assembly->data = data_seg_new();
     assembly->text = text_seg_new();
-    assembly->global = global;
+    assembly->global = NULL;
     return assembly;
 }
 
