@@ -266,6 +266,9 @@ FuncDecl* func_decl_new(Name* name, TypeVar** params, Type* type, Block* body, i
 	func_decl->body = body;
 	func_decl->params = params;
 	func_decl->specs = specs;
+	// todo: add calling convention to constructor
+	// todo: add calling convention support for parser
+	func_decl->callconv = CC_LINUX_x86_64;
 	return func_decl;
 }
 
@@ -449,9 +452,9 @@ void unary_expr_free(UnaryExpr* unary_expr) {
 				//type_free(unary_expr->cast_type);
 				break;
 			case UNARY_ADDRESS:
-				if (unary_expr->type) {
-					free(unary_expr->type);
-				}
+				//if (unary_expr->type) {
+				//	free(unary_expr->type);
+				//}
 				break;
 		}
 		expr_free(unary_expr->expr);

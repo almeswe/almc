@@ -1,6 +1,9 @@
 #include "ast-evaluator.h"
 
 #define static_eval_cast(value, type) 	\
+	if (is_pointer_like_type(type)) {	\
+		return value;					\
+	}									\
 	if (is_i8_type(type)) {       		\
 		return (int8_t)value;			\
 	}									\

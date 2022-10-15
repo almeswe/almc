@@ -62,7 +62,6 @@ Type* address_type(Type* type) {
 	return pointer_type_new(type);
 }
 
-
 const char* type_tostr_plain(Type* type)
 {
 	char* type_str = NULL;

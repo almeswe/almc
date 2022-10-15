@@ -75,8 +75,13 @@ typedef enum BinaryExprKind {
 typedef enum FuncSpecs {
 	FUNC_SPEC_ENTRY  = 0b001,
 	FUNC_SPEC_VARARG = 0b010,
-	FUNC_SPEC_EXTERN = 0b100
+	FUNC_SPEC_EXTERN = 0b100,
 } FuncSpecs;
+
+typedef enum FuncCallConv {
+	CC_CDECL		= 0b001,
+	CC_LINUX_x86_64 = 0b010
+} FuncCallConv;
 
 typedef struct BinaryExpr {
 	Type* type;
@@ -212,6 +217,7 @@ typedef struct FuncDecl {
 	TypeVar** params;
 	Table* scope;
 	int8_t specs;
+	int8_t callconv;
 } FuncDecl;
 
 typedef struct LabelDecl {
