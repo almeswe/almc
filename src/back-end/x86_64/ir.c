@@ -107,15 +107,16 @@ regid reserve_any(regtype type) {
     }
 }
 
-regid get_reg_part(regid reg, InstructionArgumentSize size) {
+regid get_subreg(regid reg, InstrArgSize size) {
     if (is_simd_reg(reg)) {
         return reg;
     }
+    reg = reg - (reg % (RBX-RAX));
     switch (size) {
         case SPEC_NONE:  return reg;
         case SPEC_BYTE:  return (regid)(reg+3);
-        case SPEC_WORD:  return (regid)(reg+3);
-        case SPEC_DWORD: return (regid)(reg+3);
+        case SPEC_WORD:  return (regid)(reg+2);
+        case SPEC_DWORD: return (regid)(reg+1);
         case SPEC_QWORD: return (regid)(reg+0);
         default:
             report_error(frmt("Unknown spec kind met"
@@ -123,23 +124,40 @@ regid get_reg_part(regid reg, InstructionArgumentSize size) {
     }
 }
 
-TextInstruction* label() {
+regid get_subreg_from_type(regid reg, Type* type) {
+    return get_subreg(reg, get_size_spec(type));
+}
+
+InstrArgSize get_size_spec(Type* type) {
+    if (is_primitive_type(type) || is_pointer_like_type(type)) {
+        switch (type->size) {
+            case 1: return SPEC_BYTE;
+            case 2: return SPEC_WORD;
+            case 4: return SPEC_DWORD;
+            case 8: return SPEC_QWORD;
+        }
+    }
+    report_error(frmt("Cannot determine size of type %s, "
+        "in %s", type_tostr_plain(type), __FUNCTION__), NULL);
+}
+
+TextInstr* label() {
     return flabel(alloc_label_def());
 }
 
-TextInstruction* flabel(char* label) {
-    TextInstruction* instr = instr_un(LABEL);
+TextInstr* flabel(char* label) {
+    TextInstr* instr = instr_un(LABEL);
     instr->left = instr_arg(label);
     return instr;
 }
 
-TextInstruction* comment(char* comment) {
-    TextInstruction* instr = instr_un(COMMENT);
+TextInstr* comment(char* comment) {
+    TextInstr* instr = instr_un(COMMENT);
     instr->left = instr_arg(comment);
     return instr;
 }
 
-void text_instrarg_to_stream(TextInstructionArg* text_instrarg, FILE* fd) {
+void text_instrarg_to_stream(TextInstrArg* text_instrarg, FILE* fd) {
     switch (text_instrarg->spec) {
         case SPEC_NONE: _b(;);
         case SPEC_BYTE:
@@ -167,7 +185,7 @@ void text_instrarg_to_stream(TextInstructionArg* text_instrarg, FILE* fd) {
     }
 }
 
-void text_instr_to_stream(TextInstruction* text_instr, FILE* fd) {
+void text_instr_to_stream(TextInstr* text_instr, FILE* fd) {
     switch (text_instr->instruction) {
         case LABEL:    _b(putasmn(fd, INDN "%s:", text_instr->left->value));
         case COMMENT:  _b(putasmn(fd, INDN "; %s", text_instr->left->value));
@@ -201,7 +219,7 @@ void text_seg_to_stream(Assembly* assembly, TextSegment* text_seg, FILE* fd) {
     }
 }
 
-void data_instr_to_stream(DataInstruction* data_instr, FILE* fd) {
+void data_instr_to_stream(DataInstr* data_instr, FILE* fd) {
     putasm(fd, "\t%s", data_instr->name);
     if (data_instr->times) {
         putasm(fd, ": times %ld", data_instr->times_value);
@@ -249,7 +267,7 @@ void predef_data_instrs(DataSegment* data_seg) {
     // dobule precision float constant for negation of xmm registers
     char** values = NULL;
     sbuffer_add(values, "8000000000000000h");  
-    DataInstruction* data_instr = data_instr("__real@neg", values,
+    DataInstr* data_instr = data_instr("__real@neg", values,
         SPEC_QWORD, DATA_FLOAT_CONST);
     sbuffer_add(data_seg->instructions, data_instr);
     // ------------------------------
@@ -261,17 +279,18 @@ TextSegment* text_seg_new() {
     return text_seg;
 }
 
-TextInstruction* text_instr_new(unsigned instr, TextInstructionKind kind, TextInstructionArg* lop, TextInstructionArg* rop) {
-    TextInstruction* text_instr = new(TextInstruction);
+TextInstr* text_instr_new(unsigned instr, TextInstrKind kind, TextInstrArg* lop, TextInstrArg* rop) {
+    TextInstr* text_instr = new(TextInstr);
     text_instr->kind = kind;
     text_instr->left = lop;
     text_instr->right = rop;
     text_instr->instruction = instr;
+    text_instr->included_in_data = true;
     return text_instr;
 }
 
-TextInstructionArg* text_instrarg_new(const char* value, InstructionArgumentSize spec, long offset, bool dereference) {
-    TextInstructionArg* text_instrarg = new(TextInstructionArg);
+TextInstrArg* text_instrarg_new(const char* value, InstrArgSize spec, long offset, bool dereference) {
+    TextInstrArg* text_instrarg = new(TextInstrArg);
     text_instrarg->spec = spec;
     text_instrarg->value = value;
     text_instrarg->offset = offset;
@@ -292,8 +311,8 @@ DataSegment* data_seg_new() {
     return data_seg;
 }
 
-DataInstruction* data_instr_new(char* name, char** value, DataInstructionKind kind, InstructionArgumentSize size, bool times, long times_value) {
-    DataInstruction* data_instr = new(DataInstruction);
+DataInstr* data_instr_new(char* name, char** value, DataInstrKind kind, InstrArgSize size, bool times, long times_value) {
+    DataInstr* data_instr = new(DataInstr);
     data_instr->name = name;
     data_instr->size = size;
     data_instr->kind = kind;
@@ -322,7 +341,7 @@ void text_seg_free(TextSegment* text_seg) {
     }
 }
 
-void text_instr_free(TextInstruction* text_instr) {
+void text_instr_free(TextInstr* text_instr) {
     if (text_instr != NULL) {
         text_instrarg_free(text_instr->left);
         text_instrarg_free(text_instr->right);
@@ -330,9 +349,8 @@ void text_instr_free(TextInstruction* text_instr) {
     }
 }
 
-void text_instrarg_free(TextInstructionArg* text_instr_arg) {
+void text_instrarg_free(TextInstrArg* text_instr_arg) {
     if (text_instr_arg != NULL) {
-        // todo: check if i need to free or not
         free(text_instr_arg);
     }
 }
@@ -357,7 +375,7 @@ void data_seg_free(DataSegment* data_seg) {
     }
 }
 
-void data_instr_free(DataInstruction* data_instr) {
+void data_instr_free(DataInstr* data_instr) {
     if (data_instr != NULL) {
         // todo: same thing as in text_instrarg_free
         free(data_instr);

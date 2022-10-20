@@ -17,7 +17,7 @@
 typedef uint8_t regid;
 
 enum x86_64_registers {
-	RAX=1, EAX, AX, AL,
+	RAX, EAX, AX, AL,
 	RBX, EBX, BX, BL,
 	RCX, ECX, CX, CL,
 	RDX, EDX, DX, DL,

@@ -31,19 +31,21 @@ typedef struct x86_64_global_gen_data {
 } global_gen_data;
 
 typedef struct x86_64_gen_data {
-    regid reg;
-    int offset;
-
-    // todo: add another possible location of immediate object (variable, constant)
-    int _test_reg;
-    int _test_offset;
-    //uint8_t is_in_reg;
-    TextInstruction** text_instrs;      // generated text instructions
-    DataInstruction** data_instrs;      // generated data instructiins
+    regid reg;                    // register in which the whole generationg result is stored
+    int offset;                   // offset relative to the register in `reg` field.
+    struct directplace {
+                                  // the idea behind this is to optimize
+                                  // assigning of EXPR_CONST, EXPR_STRING, EXPR_IDNT directly
+                                  // without intermediate storage
+        TextInstrArg* arg;        // this field maps field of TextInstruction.subst
+    } direct;
+    bool has_direct_access;       // indicates if result can be accessed directly
+    TextInstr** text_instrs;      // generated text instructions
+    DataInstr** data_instrs;      // generated data instructiins
 } gen_data;
 
 // these functions are needed for creating definitions for different objects
-// they are allocated here because all allocated definitions must be appended to `allocated_definitions` in global_gen_data
+// they are defined here because all allocated definitions must be appended to `allocated_definitions` in global_gen_data
 // few of these functions are defined as `extern` in frame.h, because stack frame generates these definitions inside
 
 char* alloc_str_def();
@@ -69,5 +71,6 @@ gen_data gen_var_decl_stmt(VarDecl* var_decl);
 gen_data gen_func_decl_stmt(FuncDecl* func_decl);
 
 void global_gen_data_free();
+void direct_data_free(gen_data data);
 
 #endif
