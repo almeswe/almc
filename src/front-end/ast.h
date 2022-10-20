@@ -129,7 +129,6 @@ typedef enum ConstKind {
 	CONST_CHAR,
 } ConstKind;
 
-// todo: add string value from which these values was retrieved 
 typedef struct Const {
 	Type* type;
 	ConstKind kind;

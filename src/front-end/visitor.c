@@ -1,7 +1,5 @@
 #include "visitor.h"
 
-//todo: create extern without file specifying (to be able to add static libs in compiler args)
-
 struct global_visitor_data {
 	FuncDecl* entry;
 };
