@@ -3,45 +3,6 @@
 regid regtable[regs_count] = {0};
 global_gen_data glob_info = {0};
 
-#define puttext(instr)   sbuffer_add(data.text_instrs, instr) 
-#define putdata(instr)   sbuffer_add(data.data_instrs, instr)
-#define putalloc(data)   sbuffer_add(glob_info.allocated_defs, data)
-
-#define is_primitive_or_pointer(type) (is_primitive_type(type) || is_pointer_like_type(type))
-
-char* alloc_float_def() {
-    char* def = cnew(char, 64);
-    sprintf(def, "__real@%ld",
-        glob_info.count_of.floats++);
-    return putalloc(def), def;
- }
-
-char* alloc_label_def() {
-    char* def = cnew(char, 64);
-    sprintf(def, "_L@%ld", 
-        glob_info.count_of.labels++);
-    return putalloc(def), def;
-}
-
-char* alloc_str_def() {
-    char* def = cnew(char, 64);
-    sprintf(def, "__str@%ld", 
-        glob_info.count_of.floats++);
-    return putalloc(def), def;
-}
-
-char* alloc_func_def(const char* base) {
-    char* def = cnew(char, strlen(base)+2);
-    sprintf(def, "_%s", base);
-    return putalloc(def), def;
-}
-
-char* alloc_var_def(const char* base) {
-    char* def = cnew(char, strlen(base)+3);
-    sprintf(def, "_%s$", base);
-    return putalloc(def), def;
-}
-
 void global_gen_info_init(Assembly* assembly) {
     memset(&glob_info, 0, sizeof(global_gen_data));
     glob_info.curr_asm = assembly;

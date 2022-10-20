@@ -4,6 +4,17 @@
 #include "ir.h"
 #include "frame.h"
 
+#define puttext(instr)   sbuffer_add(data.text_instrs, instr) 
+#define putdata(instr)   sbuffer_add(data.data_instrs, instr)
+#define putalloc(data)   sbuffer_add(glob_info.allocated_defs, data)
+
+#define include(instr)  instr->included_in_data = true
+#define exclude(instr)  instr->included_in_data = false
+#define exclude_last()  exclude(data.text_instrs[sbuffer_len(data.text_instrs)-1])
+
+#define is_const_and_direct(expr)       (is_const_expr(expr) && data.has_direct_access)
+#define is_primitive_or_pointer(type)   (is_primitive_type(type) || is_pointer_like_type(type))
+
 typedef struct x86_64_global_gen_data {
     struct counters {
         size_t labels;                  // count of labels in this assembly file
