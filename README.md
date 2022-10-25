@@ -3,7 +3,7 @@
 ![status](https://www.repostatus.org/badges/latest/active.svg)
  
 ### About
-   x86-64 compiler written on C from scratch as hobby project (without flex, bison etc.)                            <br />
+   x86-64 compiler written on C from scratch as hobby project (without flex, bison and other tools)                 <br />
    Targets Linux platform only, uses GNU toolchain to compile itself, and for compiling programs on this language.  <br />
    There are not user-friendly interface yet, this project mostly serves as educational purpose.     				<br />
 
@@ -12,7 +12,7 @@
 ```bash
 ── almc
    ├── back-end
-   │   └── x86_64
+   │   └── x86_64 (nasm)
    │      ├── ir  (not fully impl yet)
    │      └── gen (not fully impl yet)
    └── front-end
@@ -29,11 +29,12 @@
           ├── memory          (libc wrappers)
           └── data structures (stretchy buffers)
 ```
-
+-------------------------
 ### TODO
-- Full support for initializers
-
-
+- Initializers suport
+- x86-64 back-end
+- Minimal standart library
+-------------------------
 ### Compilation
    Compiled with **gcc 9.4.0**
 
